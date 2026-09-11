@@ -156,9 +156,10 @@ export function fnbTotal(session: Session) {
   return session.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
 }
 
-export type StationStatus = "idle" | "playing" | "timeup";
+export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
 export function stationStatus(station: Station, now: number): StationStatus {
+  if (!station.session && station.availability !== "available") return station.availability;
   if (!station.session) return "idle";
   if (station.session.mode === "open") return "playing";
   return remainingSeconds(station.session, now) <= 0 ? "timeup" : "playing";

@@ -55,6 +55,7 @@ function Dashboard() {
   }, [stations, now]);
 
   const active = stations.filter((s) => s.session);
+  const available = stations.filter((s) => stationStatus(s, now) === "idle");
   const openBill = active.reduce(
     (sum, s) =>
       sum + rentalTotal(s.session!, now) + fnbTotal(s.session!),
@@ -76,11 +77,11 @@ function Dashboard() {
         </Button>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<MonitorPlay className="size-5" />}
           label="TV Tersedia"
-          value={`${stations.length - active.length} / ${stations.length}`}
+          value={`${available.length} / ${stations.length}`}
         />
         <StatCard
           icon={<Activity className="size-5" />}
@@ -92,6 +93,7 @@ function Dashboard() {
           label="Tagihan Berjalan"
           value={formatRupiah(openBill)}
         />
+        <StatCard icon={<Coins className="size-5" />} label="Pendapatan Hari Ini" value={formatRupiah(0)} />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -14,8 +14,11 @@ import {
 
 const statusLabel = {
   idle: "Tersedia",
+  booked: "Booking",
   playing: "Sedang Main",
   timeup: "Waktu Habis",
+  maintenance: "Maintenance",
+  offline: "Offline",
 } as const;
 
 export function StationCard({
@@ -37,8 +40,11 @@ export function StationCard({
       className={cn(
         "surface-panel group relative overflow-hidden p-5 text-left transition-transform duration-200 hover:-translate-y-1",
         status === "idle" && "opacity-90 hover:glow-primary",
+        status === "booked" && "border-primary/60 glow-primary",
         status === "playing" && "glow-accent",
         status === "timeup" && "alarm-pulse",
+        status === "maintenance" && "border-warning/60",
+        status === "offline" && "opacity-55",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -47,6 +53,8 @@ export function StationCard({
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Gamepad2 className="size-4" />
             {station.console}
+            <span aria-hidden="true">·</span>
+            {station.booth}
           </p>
         </div>
         <Badge
@@ -54,8 +62,11 @@ export function StationCard({
           className={cn(
             "border-current text-xs uppercase tracking-wider",
             status === "idle" && "text-muted-foreground",
+            status === "booked" && "text-primary",
             status === "playing" && "text-accent",
             status === "timeup" && "text-destructive",
+            status === "maintenance" && "text-warning",
+            status === "offline" && "text-muted-foreground",
           )}
         >
           {statusLabel[status]}
