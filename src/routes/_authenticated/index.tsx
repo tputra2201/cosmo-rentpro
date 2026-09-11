@@ -8,6 +8,7 @@ import { StationDialog } from "@/components/StationDialog";
 import {
   fnbTotal,
   formatRupiah,
+  paidTotal,
   playAlarm,
   rentalTotal,
   stationStatus,
