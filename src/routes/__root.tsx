@@ -44,7 +44,7 @@ import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
-import { APP_SIGNATURE } from "@/lib/app-info";
+import { appSignature } from "@/lib/app-info";
 import { supabase } from "@/integrations/supabase/client";
 
 
