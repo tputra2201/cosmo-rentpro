@@ -150,6 +150,9 @@ type Ctx = State & {
   removeStation: (stationId: string) => void;
   addMenuItem: (name: string, price: number) => void;
   removeMenuItem: (id: string) => void;
+  addPaymentMethod: (name: string) => void;
+  updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
+  removePaymentMethod: (id: string) => void;
   clearHistory: () => void;
 };
 
