@@ -382,7 +382,7 @@ function AppShell() {
         ) : (
           <>
             {session && !isAuthPage && daysLeft !== null && daysLeft <= 10 && (
-              <div className="blink-warning mb-6 rounded-lg border border-destructive/60 bg-destructive/10 px-4 py-3 text-center text-sm font-semibold text-destructive">
+              <div className="blink-warning mb-6 rounded-lg border border-warning/60 bg-warning/10 px-4 py-3 text-center text-sm font-semibold text-warning">
                 Masa aktif aplikasi berakhir dalam {daysLeft} hari ({expiryLabel}
                 ). Segera hubungi Developer untuk perpanjangan.
               </div>
