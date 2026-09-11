@@ -9,6 +9,8 @@ type AuthCtx = {
   user: User | null;
   role: AppRole | null;
   fullName: string;
+  mustChangePassword: boolean;
+  markPasswordChanged: () => void;
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -19,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
@@ -27,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!next) {
         setRole(null);
         setFullName("");
+        setMustChangePassword(false);
       }
       setLoading(false);
     });
@@ -43,14 +48,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     let cancelled = false;
     (async () => {
-      const [{ data: roles }, { data: profile }] = await Promise.all([
+      const [{ data: roles }, { data: profileRow }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("full_name, must_change_password")
+          .eq("id", userId)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
+      const profile = profileRow as
+        | { full_name: string | null; must_change_password: boolean | null }
+        | null;
       const list = (roles ?? []).map((r) => r.role as AppRole);
       setRole(list.includes("admin") ? "admin" : (list[0] ?? "kasir"));
       setFullName(profile?.full_name ?? "");
+      setMustChangePassword(profile?.must_change_password === true);
     })();
     return () => {
       cancelled = true;
@@ -61,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setSession(null);
     setRole(null);
+    setMustChangePassword(false);
   };
 
   return (
@@ -70,10 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         role,
         fullName,
+        mustChangePassword,
+        markPasswordChanged: () => setMustChangePassword(false),
         loading,
         signOut,
       }}
     >
+
       {children}
     </Ctx.Provider>
   );

@@ -35,6 +35,8 @@ import { AuthProvider, useAuth, roleLabel, adminOnlyPaths } from "@/lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
+import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+
 
 function NotFoundComponent() {
   return (
@@ -169,11 +171,12 @@ function RootComponent() {
 }
 
 function AppShell() {
-  const { session, role, fullName, user, signOut } = useAuth();
+  const { session, role, fullName, user, signOut, mustChangePassword } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
+
 
   useEffect(() => {
     setMenuOpen(false);
@@ -286,6 +289,8 @@ function AppShell() {
           <Outlet />
         )}
       </main>
+      {session && !isAuthPage && mustChangePassword && <ForcePasswordChange />}
     </div>
   );
 }
+

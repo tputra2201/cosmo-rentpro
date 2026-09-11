@@ -80,7 +80,10 @@ export const createUser = createServerFn({ method: "POST" })
 
     await supabaseAdmin
       .from("profiles")
-      .upsert({ id, full_name: data.fullName }, { onConflict: "id" });
+      .upsert(
+        { id, full_name: data.fullName, must_change_password: true } as never,
+        { onConflict: "id" },
+      );
     await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
@@ -88,6 +91,7 @@ export const createUser = createServerFn({ method: "POST" })
     if (roleError) throw new Error(roleError.message);
     return { id };
   });
+
 
 export const updateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -118,7 +122,14 @@ export const updateUser = createServerFn({ method: "POST" })
         password: data.password,
       });
       if (error) throw new Error(error.message);
+      await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          { id: data.id, must_change_password: true } as never,
+          { onConflict: "id" },
+        );
     }
+
     if (data.role) {
       if (data.role !== "admin" && data.id === (context as unknown as Ctx).userId) {
         throw new Error("Kamu tidak bisa menurunkan level akunmu sendiri.");
@@ -141,6 +152,22 @@ export const deleteUser = createServerFn({ method: "POST" })
     if (data.id === ctx.userId) throw new Error("Kamu tidak bisa menghapus akunmu sendiri.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Dipanggil setelah pengguna berhasil mengganti kata sandinya sendiri. */
+export const markPasswordChanged = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ctx = context as unknown as Ctx;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        { id: ctx.userId, must_change_password: false } as never,
+        { onConflict: "id" },
+      );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
