@@ -54,34 +54,35 @@ export const listUsers = createServerFn({ method: "GET" })
     }));
   });
 
-export const createUser = createServerFn({ method: "POST" })
+export const inviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z
       .object({
         email: z.string().email(),
-        password: z.string().min(6),
         fullName: z.string().min(1),
         role: z.enum(["admin", "kasir"]),
+        redirectTo: z.string().url(),
       })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { full_name: data.fullName },
-    });
+    const { data: created, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+      data.email,
+      {
+        data: { full_name: data.fullName },
+        redirectTo: data.redirectTo,
+      },
+    );
     if (error) throw new Error(error.message);
     const id = created.user!.id;
 
     await supabaseAdmin
       .from("profiles")
       .upsert(
-        { id, full_name: data.fullName, must_change_password: true } as never,
+        { id, full_name: data.fullName, must_change_password: false } as never,
         { onConflict: "id" },
       );
     await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
@@ -91,6 +92,37 @@ export const createUser = createServerFn({ method: "POST" })
     if (roleError) throw new Error(roleError.message);
     return { id };
   });
+
+export const resendInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ email: z.string().email(), redirectTo: z.string().url() }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context as unknown as Ctx);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const sendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ email: z.string().email(), redirectTo: z.string().url() }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context as unknown as Ctx);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 
 export const updateUser = createServerFn({ method: "POST" })
