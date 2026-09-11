@@ -17,6 +17,7 @@ import {
   Joystick,
   Receipt,
   Wallet,
+  DatabaseBackup,
   Menu,
   CalendarDays,
   Users,
@@ -145,6 +146,7 @@ const navItems = [
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/unit", label: "Unit TV", icon: Tv },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
+  { to: "/backup", label: "Backup", icon: DatabaseBackup },
 ] as const;
 
 function RootComponent() {

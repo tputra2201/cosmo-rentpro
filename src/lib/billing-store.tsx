@@ -329,7 +329,12 @@ type Ctx = State & {
   updatePromotion: (id: string, patch: Partial<Omit<Promotion, "id">>) => void;
   removePromotion: (id: string) => void;
   clearHistory: () => void;
+  exportSnapshot: () => BillingSnapshot;
+  replaceAll: (data: unknown) => void;
+  resetAll: () => void;
 };
+
+export type BillingSnapshot = State;
 
 const BillingContext = createContext<Ctx | null>(null);
 
@@ -734,6 +739,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
       removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
+      exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
+      replaceAll: (data) => setState(migrateState(data)),
+      resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
     }),
     [
       state,
