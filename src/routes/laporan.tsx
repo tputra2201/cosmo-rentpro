@@ -127,6 +127,9 @@ function LaporanPage() {
                     <TableCell>
                       {h.mode === "open" ? "Sepuasnya" : "Per Jam"}
                     </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {h.payment ?? "Cash"}
+                    </TableCell>
                     <TableCell className="text-right">{h.minutes} mnt</TableCell>
                     <TableCell className="text-right">
                       {formatRupiah(h.rentalTotal)}
