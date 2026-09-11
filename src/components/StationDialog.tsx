@@ -450,7 +450,7 @@ export function StationDialog({
                   {splits.map((row, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <Select
-                        value={row.method || activePayments[0]?.name}
+                        value={row.method || activePayments[0]?.name || "Cash"}
                         onValueChange={(v) =>
                           setSplits((prev) =>
                             prev.map((r, idx) => (idx === i ? { ...r, method: v } : r)),
