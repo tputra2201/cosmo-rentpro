@@ -10,14 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BookingRouteImport } from './routes/booking'
 import { Route as KasirRouteImport } from './routes/kasir'
 import { Route as LaporanRouteImport } from './routes/laporan'
+import { Route as PelangganRouteImport } from './routes/pelanggan'
 import { Route as PembayaranRouteImport } from './routes/pembayaran'
+import { Route as PromoRouteImport } from './routes/promo'
 import { Route as TarifRouteImport } from './routes/tarif'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingRoute = BookingRouteImport.update({
+  id: '/booking',
+  path: '/booking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KasirRoute = KasirRouteImport.update({
@@ -30,9 +38,19 @@ const LaporanRoute = LaporanRouteImport.update({
   path: '/laporan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PelangganRoute = PelangganRouteImport.update({
+  id: '/pelanggan',
+  path: '/pelanggan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PembayaranRoute = PembayaranRouteImport.update({
   id: '/pembayaran',
   path: '/pembayaran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromoRoute = PromoRouteImport.update({
+  id: '/promo',
+  path: '/promo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TarifRoute = TarifRouteImport.update({
@@ -43,39 +61,76 @@ const TarifRoute = TarifRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pelanggan': typeof PelangganRoute
   '/pembayaran': typeof PembayaranRoute
+  '/promo': typeof PromoRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pelanggan': typeof PelangganRoute
   '/pembayaran': typeof PembayaranRoute
+  '/promo': typeof PromoRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pelanggan': typeof PelangganRoute
   '/pembayaran': typeof PembayaranRoute
+  '/promo': typeof PromoRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
+  fullPaths:
+    | '/'
+    | '/booking'
+    | '/kasir'
+    | '/laporan'
+    | '/pelanggan'
+    | '/pembayaran'
+    | '/promo'
+    | '/tarif'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
-  id: '__root__' | '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
+  to:
+    | '/'
+    | '/booking'
+    | '/kasir'
+    | '/laporan'
+    | '/pelanggan'
+    | '/pembayaran'
+    | '/promo'
+    | '/tarif'
+  id:
+    | '__root__'
+    | '/'
+    | '/booking'
+    | '/kasir'
+    | '/laporan'
+    | '/pelanggan'
+    | '/pembayaran'
+    | '/promo'
+    | '/tarif'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BookingRoute: typeof BookingRoute
   KasirRoute: typeof KasirRoute
   LaporanRoute: typeof LaporanRoute
+  PelangganRoute: typeof PelangganRoute
   PembayaranRoute: typeof PembayaranRoute
+  PromoRoute: typeof PromoRoute
   TarifRoute: typeof TarifRoute
 }
 
@@ -86,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking': {
+      id: '/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof BookingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kasir': {
@@ -102,11 +164,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LaporanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pelanggan': {
+      id: '/pelanggan'
+      path: '/pelanggan'
+      fullPath: '/pelanggan'
+      preLoaderRoute: typeof PelangganRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pembayaran': {
       id: '/pembayaran'
       path: '/pembayaran'
       fullPath: '/pembayaran'
       preLoaderRoute: typeof PembayaranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promo': {
+      id: '/promo'
+      path: '/promo'
+      fullPath: '/promo'
+      preLoaderRoute: typeof PromoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tarif': {
@@ -121,9 +197,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BookingRoute: BookingRoute,
   KasirRoute: KasirRoute,
   LaporanRoute: LaporanRoute,
+  PelangganRoute: PelangganRoute,
   PembayaranRoute: PembayaranRoute,
+  PromoRoute: PromoRoute,
   TarifRoute: TarifRoute,
 }
 export const routeTree = rootRouteImport
