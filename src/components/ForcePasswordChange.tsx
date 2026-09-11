@@ -35,7 +35,8 @@ export function ForcePasswordChange() {
       if (error) throw error;
       await markDone({});
       markPasswordChanged();
-      toast.success("Kata sandi baru tersimpan. Selamat bekerja!");
+      toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
+      await signOut();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mengubah kata sandi");
     } finally {

@@ -83,8 +83,9 @@ function AturSandiPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password: next });
       if (error) throw error;
-      toast.success("Kata sandi tersimpan. Selamat datang!");
-      navigate({ to: "/", replace: true });
+      await supabase.auth.signOut();
+      toast.success("Kata sandi tersimpan. Silakan masuk dengan sandi baru.");
+      navigate({ to: "/auth", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal menyimpan kata sandi");
     } finally {
