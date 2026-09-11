@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Activity, Coins, MonitorPlay, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Activity, Coins, MonitorPlay } from "lucide-react";
 import { StationCard } from "@/components/StationCard";
 import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
@@ -37,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
-  const { stations, now, addStation } = useBilling();
+  const { stations, now } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const alerted = useRef<Set<string>>(new Set());
 
@@ -82,9 +81,6 @@ function Dashboard() {
             Klik kartu TV untuk mulai sesi, tambah pesanan, atau akhiri billing.
           </p>
         </div>
-        <Button variant="outline" onClick={() => addStation()}>
-          <Plus className="size-4" /> Tambah TV
-        </Button>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
