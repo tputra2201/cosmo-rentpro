@@ -63,7 +63,19 @@ export type Station = {
   session: Session | null;
 };
 
-export type MenuItem = { id: string; name: string; price: number };
+export type MenuItem = { id: string; name: string; price: number; category: string };
+
+export type CafeTable = {
+  id: string;
+  name: string; // nomor meja
+  area: string;
+  seats: number;
+  customerName: string;
+  notes: string;
+  openedAt: number | null;
+  orders: OrderItem[];
+};
+
 
 export type PaymentMethod = { id: string; name: string; active: boolean };
 export type RentalPackage = {
