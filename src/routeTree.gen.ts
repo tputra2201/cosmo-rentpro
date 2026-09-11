@@ -17,6 +17,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAkunRouteImport } from './routes/_authenticated/akun'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedBookingRouteImport } from './routes/_authenticated/booking'
+import { Route as AuthenticatedKafeRouteImport } from './routes/_authenticated/kafe'
 import { Route as AuthenticatedKasirRouteImport } from './routes/_authenticated/kasir'
 import { Route as AuthenticatedLaporanRouteImport } from './routes/_authenticated/laporan'
 import { Route as AuthenticatedPelangganRouteImport } from './routes/_authenticated/pelanggan'
@@ -65,6 +66,11 @@ const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
 const AuthenticatedBookingRoute = AuthenticatedBookingRouteImport.update({
   id: '/booking',
   path: '/booking',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedKafeRoute = AuthenticatedKafeRouteImport.update({
+  id: '/kafe',
+  path: '/kafe',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedKasirRoute = AuthenticatedKasirRouteImport.update({
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
+  '/kafe': typeof AuthenticatedKafeRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
+  '/kafe': typeof AuthenticatedKafeRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated/akun': typeof AuthenticatedAkunRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
+  '/_authenticated/kafe': typeof AuthenticatedKafeRoute
   '/_authenticated/kasir': typeof AuthenticatedKasirRoute
   '/_authenticated/laporan': typeof AuthenticatedLaporanRoute
   '/_authenticated/pelanggan': typeof AuthenticatedPelangganRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/akun'
     | '/backup'
     | '/booking'
+    | '/kafe'
     | '/kasir'
     | '/laporan'
     | '/pelanggan'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/akun'
     | '/backup'
     | '/booking'
+    | '/kafe'
     | '/kasir'
     | '/laporan'
     | '/pelanggan'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/_authenticated/akun'
     | '/_authenticated/backup'
     | '/_authenticated/booking'
+    | '/_authenticated/kafe'
     | '/_authenticated/kasir'
     | '/_authenticated/laporan'
     | '/_authenticated/pelanggan'
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBookingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/kafe': {
+      id: '/_authenticated/kafe'
+      path: '/kafe'
+      fullPath: '/kafe'
+      preLoaderRoute: typeof AuthenticatedKafeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/kasir': {
       id: '/_authenticated/kasir'
       path: '/kasir'
@@ -381,6 +400,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAkunRoute: typeof AuthenticatedAkunRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
   AuthenticatedBookingRoute: typeof AuthenticatedBookingRoute
+  AuthenticatedKafeRoute: typeof AuthenticatedKafeRoute
   AuthenticatedKasirRoute: typeof AuthenticatedKasirRoute
   AuthenticatedLaporanRoute: typeof AuthenticatedLaporanRoute
   AuthenticatedPelangganRoute: typeof AuthenticatedPelangganRoute
@@ -397,6 +417,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAkunRoute: AuthenticatedAkunRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
   AuthenticatedBookingRoute: AuthenticatedBookingRoute,
+  AuthenticatedKafeRoute: AuthenticatedKafeRoute,
   AuthenticatedKasirRoute: AuthenticatedKasirRoute,
   AuthenticatedLaporanRoute: AuthenticatedLaporanRoute,
   AuthenticatedPelangganRoute: AuthenticatedPelangganRoute,
