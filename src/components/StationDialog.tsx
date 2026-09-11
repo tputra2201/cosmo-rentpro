@@ -61,6 +61,8 @@ export function StationDialog({
     rates,
     consoleTypes,
     menu,
+    menuCategories,
+
     startSession,
     stopSession,
     settleSession,
