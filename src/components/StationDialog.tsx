@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,12 +36,14 @@ import {
   fnbTotal,
   formatClock,
   formatRupiah,
+  paidTotal,
   remainingSeconds,
   rentalTotal,
   useBilling,
   type ConsoleType,
   type Station,
 } from "@/lib/billing-store";
+
 
 const DURATIONS = [30, 60, 90, 120, 180];
 
@@ -51,6 +63,8 @@ export function StationDialog({
     menu,
     startSession,
     stopSession,
+    settleSession,
+    removeSettlement,
     addTime,
     addOrder,
     removeOrder,
@@ -72,6 +86,8 @@ export function StationDialog({
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
+  const [confirmPay, setConfirmPay] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
 
   const activePayments = paymentMethods.filter((p) => p.active);
@@ -83,58 +99,89 @@ export function StationDialog({
   const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
+  const alreadyPaid = paidTotal(session);
+  const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
+  const isSettled = dueAmount <= 0;
 
   const splitRows = splits.map((s) => ({
     method: s.method || activePayments[0]?.name || "Cash",
     amount: Math.max(0, Number(s.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, s) => sum + s.amount, 0);
-  const splitRemaining = Math.max(0, sessionTotal - splitPaid);
+  const splitRemaining = Math.max(0, dueAmount - splitPaid);
+  const cashReceived =
+    amountPaid === "" ? dueAmount : Math.max(0, Number(amountPaid) || 0);
 
-  const handleStop = () => {
-    if (splitMode) {
-      const rows = splitRows.filter((s) => s.amount > 0);
-      if (rows.length === 0) {
-        toast.error("Isi jumlah tiap metode pembayaran");
-        return;
-      }
-      if (splitPaid < sessionTotal) {
-        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
-        return;
-      }
-      const rec = stopSession(station.id, undefined, splitPaid, rows);
-      onOpenChange(false);
-      setSplitMode(false);
-      setSplits([]);
-      setPayment("");
-      setAmountPaid("");
-      if (rec) {
-        toast.success(`${rec.stationName} selesai`, {
-          description: `Total ${formatRupiah(rec.total)} — ${rec.payment}`,
-        });
-      }
-      return;
-    }
-    const cashReceived =
-      selectedPayment === "Cash"
-        ? amountPaid === ""
-          ? sessionTotal
-          : Number(amountPaid)
-        : undefined;
-    if (selectedPayment === "Cash" && cashReceived !== undefined && cashReceived < sessionTotal) {
-      toast.error("Uang diterima masih kurang");
-      return;
-    }
-    const record = stopSession(station.id, selectedPayment, cashReceived);
-    onOpenChange(false);
+  const resetPaymentForm = () => {
+    setSplitMode(false);
+    setSplits([]);
     setPayment("");
     setAmountPaid("");
-    if (record) {
-      toast.success(`${record.stationName} selesai`, {
-        description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+  };
+
+  const validatePayment = () => {
+    if (dueAmount <= 0) {
+      toast.error("Tagihan sudah lunas");
+      return false;
+    }
+    if (splitMode) {
+      if (splitRows.filter((s) => s.amount > 0).length === 0) {
+        toast.error("Isi jumlah tiap metode pembayaran");
+        return false;
+      }
+      if (splitPaid < dueAmount) {
+        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+        return false;
+      }
+      return true;
+    }
+    if (selectedPayment === "Cash" && cashReceived < dueAmount) {
+      toast.error("Uang diterima masih kurang");
+      return false;
+    }
+    return true;
+  };
+
+  const handlePay = () => {
+    if (splitMode) {
+      const rows = splitRows.filter((s) => s.amount > 0);
+      settleSession(station.id, {
+        payments: rows,
+        amount: dueAmount,
+        amountPaid: splitPaid,
+      });
+    } else {
+      settleSession(station.id, {
+        payment: selectedPayment,
+        amount: dueAmount,
+        amountPaid: selectedPayment === "Cash" ? cashReceived : dueAmount,
       });
     }
+    toast.success("Pembayaran diterima", {
+      description: `${formatRupiah(dueAmount)} — ${
+        splitMode
+          ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ")
+          : selectedPayment
+      }`,
+    });
+    resetPaymentForm();
   };
+
+  const handleEnd = () => {
+    const record = stopSession(station.id);
+    if (!record) {
+      toast.error("Sesi belum bisa diakhiri", {
+        description: `Sisa tagihan ${formatRupiah(dueAmount)} harus dibayar dulu`,
+      });
+      return;
+    }
+    onOpenChange(false);
+    resetPaymentForm();
+    toast.success(`${record.stationName} selesai`, {
+      description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+    });
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -353,7 +400,7 @@ export function StationDialog({
               )}
             </div>
 
-            {!splitMode && selectedPayment === "Cash" && (
+            {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="amount-paid">Uang diterima</Label>
@@ -372,20 +419,14 @@ export function StationDialog({
                     className="pl-9"
                     type="number"
                     min={0}
-                    value={amountPaid === "" ? String(sessionTotal) : amountPaid}
+                    value={amountPaid === "" ? String(dueAmount) : amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Kembalian</span>
                   <span className="font-semibold text-accent">
-                    {formatRupiah(
-                      Math.max(
-                        0,
-                        (amountPaid === "" ? sessionTotal : Number(amountPaid)) -
-                          sessionTotal,
-                      ),
-                    )}
+                    {formatRupiah(Math.max(0, cashReceived - dueAmount))}
                   </span>
                 </div>
               </div>
@@ -404,11 +445,59 @@ export function StationDialog({
               </div>
               <div className="flex justify-between font-display text-lg font-semibold">
                 <span>Total</span>
-                <span className="text-accent">
-                  {formatRupiah(rentalTotal(session, now) + fnbTotal(session))}
-                </span>
+                <span className="text-accent">{formatRupiah(sessionTotal)}</span>
               </div>
+              {alreadyPaid > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sudah dibayar</span>
+                    <span>{formatRupiah(alreadyPaid)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Sisa tagihan</span>
+                    <span className={dueAmount > 0 ? "text-destructive" : "text-accent"}>
+                      {dueAmount > 0 ? formatRupiah(dueAmount) : "Lunas"}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
+
+            {(session.settlements ?? []).length > 0 && (
+              <div className="space-y-1.5 rounded-md border border-border p-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-accent">
+                  <CheckCircle2 className="size-4" /> Pembayaran diterima
+                </p>
+                <ul className="space-y-1">
+                  {(session.settlements ?? []).map((s) => (
+                    <li key={s.id} className="flex items-center justify-between text-sm">
+                      <span className="truncate text-muted-foreground">
+                        {s.payment} ·{" "}
+                        {new Date(s.at).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {formatRupiah(s.amount)}
+                        <button
+                          type="button"
+                          aria-label="Batalkan pembayaran"
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          onClick={() => {
+                            removeSettlement(station.id, s.id);
+                            toast.success("Pembayaran dibatalkan");
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
 
             {session.mode === "prepaid" &&
               remainingSeconds(session, now) <= 0 && (
@@ -417,7 +506,9 @@ export function StationDialog({
                 </Badge>
               )}
 
+            {!isSettled && (
             <div className="space-y-2">
+
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Tipe pembayaran</p>
                 {activePayments.length > 1 && (
@@ -431,7 +522,7 @@ export function StationDialog({
                       } else {
                         setSplitMode(true);
                         setSplits([
-                          { method: activePayments[0]?.name ?? "Cash", amount: String(sessionTotal) },
+                          { method: activePayments[0]?.name ?? "Cash", amount: String(dueAmount) },
                           { method: activePayments[1]?.name ?? "QRIS", amount: "0" },
                         ]);
                       }
@@ -522,7 +613,7 @@ export function StationDialog({
                     >
                       {splitRemaining > 0
                         ? `Kurang ${formatRupiah(splitRemaining)}`
-                        : `Kembalian ${formatRupiah(splitPaid - sessionTotal)}`}
+                        : `Kembalian ${formatRupiah(splitPaid - dueAmount)}`}
                     </span>
                   </div>
                 </div>
@@ -544,15 +635,71 @@ export function StationDialog({
                 </Select>
               )}
             </div>
+            )}
 
-            <Button variant="destructive" className="w-full" onClick={handleStop}>
-              <Square className="size-4" /> Akhiri &amp; Bayar (
-              {splitMode
-                ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
-                  "gabungan"
-                : selectedPayment}
-              )
-            </Button>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                className="w-full"
+                disabled={isSettled || activePayments.length === 0}
+                onClick={() => {
+                  if (validatePayment()) setConfirmPay(true);
+                }}
+              >
+                <Wallet className="size-4" />
+                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(dueAmount)}`}
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full"
+                disabled={!isSettled}
+                onClick={() => setConfirmEnd(true)}
+              >
+                <Square className="size-4" /> Akhiri Sesi
+              </Button>
+            </div>
+            {!isSettled && (
+              <p className="text-center text-xs text-muted-foreground">
+                Sesi hanya bisa diakhiri setelah seluruh tagihan lunas.
+              </p>
+            )}
+
+            <AlertDialog open={confirmPay} onOpenChange={setConfirmPay}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Selesaikan pembayaran?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {station.name} — {formatRupiah(dueAmount)} melalui{" "}
+                    {splitMode
+                      ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
+                        "gabungan"
+                      : selectedPayment}
+                    . Sesi rental tetap berjalan setelah pembayaran.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handlePay}>Ya, terima pembayaran</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Akhiri sesi rental?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {station.name} akan dikosongkan dan transaksi masuk ke riwayat. Tindakan ini
+                    tidak bisa dibatalkan.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEnd}>Ya, akhiri sesi</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
           </div>
         )}
       </DialogContent>
