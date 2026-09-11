@@ -31,6 +31,12 @@ export type Session = {
   member: boolean;
   packageName: string;
   notes: string;
+  customerId?: string;
+  bookingId?: string;
+  promoName?: string;
+  discountType?: "percent" | "fixed";
+  discountValue?: number;
+  discountMax?: number;
 };
 
 export type Station = {
@@ -53,6 +59,43 @@ export type RentalPackage = {
   active: boolean;
 };
 
+export type CustomerLevel = "Bronze" | "Silver" | "Gold";
+export type Customer = {
+  id: string;
+  name: string;
+  phone: string;
+  member: boolean;
+  level: CustomerLevel;
+  points: number;
+  visits: number;
+  totalSpent: number;
+  createdAt: number;
+};
+export type BookingStatus = "confirmed" | "checked-in" | "completed" | "cancelled";
+export type Booking = {
+  id: string;
+  stationId: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  startAt: number;
+  endAt: number;
+  notes: string;
+  status: BookingStatus;
+};
+export type Promotion = {
+  id: string;
+  name: string;
+  type: "percent" | "fixed";
+  value: number;
+  minSpend: number;
+  maxDiscount: number;
+  startsAt: number;
+  endsAt: number;
+  active: boolean;
+};
+export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
+
 export type HistoryRecord = {
   id: string;
   stationName: string;
@@ -71,6 +114,10 @@ export type HistoryRecord = {
   amountPaid?: number;
   change?: number;
   orders?: OrderItem[];
+  customerId?: string;
+  promoName?: string;
+  discount?: number;
+  pointsEarned?: number;
 };
 
 export type Rates = Record<ConsoleType, number>;
@@ -83,6 +130,11 @@ type State = {
   packages: RentalPackage[];
   roundingRule: RoundingRule;
   history: HistoryRecord[];
+  customers: Customer[];
+  bookings: Booking[];
+  promotions: Promotion[];
+  pointEntries: PointEntry[];
+  pointsPerRupiah: number;
 };
 
 const STORAGE_KEY = "billing-ps-state-v1";
@@ -120,6 +172,11 @@ const defaultState: State = {
   ],
   roundingRule: "minute",
   history: [],
+  customers: [],
+  bookings: [],
+  promotions: [],
+  pointEntries: [],
+  pointsPerRupiah: 10000,
 };
 
 export function formatRupiah(value: number) {
@@ -156,6 +213,17 @@ export function fnbTotal(session: Session) {
   return session.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
 }
 
+export function discountTotal(session: Session, now: number) {
+  const subtotal = rentalTotal(session, now) + fnbTotal(session);
+  if (!session.discountType || !session.discountValue) return 0;
+  const raw = session.discountType === "percent" ? subtotal * session.discountValue / 100 : session.discountValue;
+  return Math.min(subtotal, session.discountMax ? Math.min(raw, session.discountMax) : raw);
+}
+
+export function billingTotal(session: Session, now: number) {
+  return rentalTotal(session, now) + fnbTotal(session) - discountTotal(session, now);
+}
+
 export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
 export function stationStatus(station: Station, now: number): StationStatus {
@@ -188,6 +256,11 @@ function migrateState(raw: unknown): State {
     paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
+    customers: parsed.customers ?? defaultState.customers,
+    bookings: parsed.bookings ?? defaultState.bookings,
+    promotions: parsed.promotions ?? defaultState.promotions,
+    pointEntries: parsed.pointEntries ?? defaultState.pointEntries,
+    pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
   };
 }
 
@@ -197,7 +270,7 @@ type Ctx = State & {
     stationId: string,
     mode: PlayMode,
     durationMin: number,
-    details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes">>,
+    details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
   ) => void;
   stopSession: (stationId: string, payment?: string, amountPaid?: number) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
@@ -217,6 +290,17 @@ type Ctx = State & {
   updatePackage: (id: string, patch: Partial<Omit<RentalPackage, "id">>) => void;
   removePackage: (id: string) => void;
   setRoundingRule: (rule: RoundingRule) => void;
+  addCustomer: (input: Pick<Customer, "name" | "phone" | "member" | "level">) => Customer;
+  updateCustomer: (id: string, patch: Partial<Omit<Customer, "id" | "createdAt">>) => void;
+  removeCustomer: (id: string) => void;
+  adjustPoints: (customerId: string, points: number, reason: string) => void;
+  setPointsPerRupiah: (value: number) => void;
+  addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
+  updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
+  removeBooking: (id: string) => void;
+  addPromotion: (input: Omit<Promotion, "id">) => void;
+  updatePromotion: (id: string, patch: Partial<Omit<Promotion, "id">>) => void;
+  removePromotion: (id: string) => void;
   clearHistory: () => void;
 };
 
@@ -301,6 +385,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     member: details?.member || false,
                     packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
                     notes: details?.notes || "",
+                    customerId: details?.customerId,
+                    bookingId: details?.bookingId,
+                    promoName: details?.promoName,
+                    discountType: details?.discountType,
+                    discountValue: details?.discountValue,
+                    discountMax: details?.discountMax,
                 },
               }
             : s,
@@ -320,6 +410,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const session = station.session;
         const rental = rentalTotal(session, endAt);
         const fnb = fnbTotal(session);
+        const discount = discountTotal(session, endAt);
+        const total = rental + fnb - discount;
+        const pointsEarned = session.customerId && session.member
+          ? Math.floor(total / Math.max(1, prev.pointsPerRupiah))
+          : 0;
         const completedRecord: HistoryRecord = {
           id: `${stationId}-${endAt}`,
           stationName: station.name,
@@ -330,7 +425,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
           fnbTotal: fnb,
-          total: rental + fnb,
+          total,
           payment: payment || "Cash",
           customerName: session.customerName,
           customerPhone: session.customerPhone,
@@ -339,14 +434,26 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ? {}
             : {
                 amountPaid,
-                change: Math.max(0, amountPaid - rental - fnb),
+                change: Math.max(0, amountPaid - total),
               }),
           orders: session.orders,
+          customerId: session.customerId,
+          promoName: session.promoName,
+          discount,
+          pointsEarned,
         };
         record = completedRecord;
         return {
           ...prev,
           history: [completedRecord, ...prev.history],
+          customers: prev.customers.map((customer) => customer.id === session.customerId ? {
+            ...customer,
+            visits: customer.visits + 1,
+            totalSpent: customer.totalSpent + total,
+            points: customer.points + pointsEarned,
+          } : customer),
+          pointEntries: pointsEarned > 0 && session.customerId ? [{ id: `point-${endAt}`, customerId: session.customerId, points: pointsEarned, reason: `Transaksi ${station.name}`, createdAt: endAt }, ...prev.pointEntries] : prev.pointEntries,
+          bookings: prev.bookings.map((booking) => booking.id === session.bookingId ? { ...booking, status: "completed" as const } : booking),
           stations: prev.stations.map((s) =>
             s.id === stationId ? { ...s, session: null } : s,
           ),
@@ -498,6 +605,42 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removePackage: (id) =>
         update((prev) => ({ ...prev, packages: prev.packages.filter((item) => item.id !== id) })),
       setRoundingRule: (roundingRule) => update((prev) => ({ ...prev, roundingRule })),
+      addCustomer: (input) => {
+        const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
+        update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
+        return customer;
+      },
+      updateCustomer: (id, patch) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === id ? { ...item, ...patch } : item) })),
+      removeCustomer: (id) => update((prev) => ({ ...prev, customers: prev.customers.filter((item) => item.id !== id) })),
+      adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
+      setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
+      addBooking: (input) => {
+        let added = false;
+        update((prev) => {
+          const conflict = prev.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
+          if (conflict) return prev;
+          added = true;
+          return { ...prev, bookings: [{ ...input, id: `booking-${Date.now()}`, status: "confirmed" }, ...prev.bookings] };
+        });
+        return added;
+      },
+      updateBooking: (id, patch) => {
+        let updated = false;
+        update((prev) => {
+          const current = prev.bookings.find((item) => item.id === id);
+          if (!current) return prev;
+          const candidate = { ...current, ...patch };
+          const conflict = prev.bookings.some((item) => item.id !== id && item.stationId === candidate.stationId && item.status !== "cancelled" && item.status !== "completed" && candidate.startAt < item.endAt && candidate.endAt > item.startAt);
+          if (conflict) return prev;
+          updated = true;
+          return { ...prev, bookings: prev.bookings.map((item) => item.id === id ? candidate : item) };
+        });
+        return updated;
+      },
+      removeBooking: (id) => update((prev) => ({ ...prev, bookings: prev.bookings.filter((item) => item.id !== id) })),
+      addPromotion: (input) => update((prev) => ({ ...prev, promotions: [{ ...input, id: `promo-${Date.now()}` }, ...prev.promotions] })),
+      updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
+      removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
     }),
     [
