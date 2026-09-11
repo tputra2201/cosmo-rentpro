@@ -571,7 +571,7 @@ export function StationDialog({
                     >
                       {splitRemaining > 0
                         ? `Kurang ${formatRupiah(splitRemaining)}`
-                        : `Kembalian ${formatRupiah(splitPaid - sessionTotal)}`}
+                        : `Kembalian ${formatRupiah(splitPaid - dueAmount)}`}
                     </span>
                   </div>
                 </div>
