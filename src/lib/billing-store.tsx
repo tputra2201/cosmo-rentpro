@@ -739,6 +739,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
       removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
+      exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
+      replaceAll: (data) => setState(migrateState(data)),
+      resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
     }),
     [
       state,
