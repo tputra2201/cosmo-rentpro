@@ -471,6 +471,45 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const fnb = fnbTotal(session);
         const discount = discountTotal(session, endAt);
         const total = rental + fnb - discount;
+
+        const prior = session.settlements ?? [];
+        const priorPaid = prior.reduce((sum, s) => sum + s.amount, 0);
+        const hasDirect = Boolean(payment) || Boolean(payments && payments.length);
+        const directDue = Math.max(0, total - priorPaid);
+        const directAmount = hasDirect ? directDue : 0;
+        const directReceived = hasDirect
+          ? payments && payments.length
+            ? payments.reduce((sum, p) => sum + p.amount, 0)
+            : amountPaid ?? directDue
+          : 0;
+        // Sesi hanya boleh diakhiri bila seluruh tagihan sudah lunas.
+        if (priorPaid + (hasDirect ? directReceived : 0) + 0.5 < total) return prev;
+
+        const methodNames = [
+          ...prior.flatMap((s) => (s.payments?.length ? s.payments.map((p) => p.method) : [s.payment])),
+          ...(hasDirect
+            ? payments && payments.length
+              ? payments.map((p) => p.method)
+              : [payment || "Cash"]
+            : []),
+        ].filter(Boolean);
+        const uniqueMethods = Array.from(new Set(methodNames));
+        const allSplits: PaymentSplit[] = [
+          ...prior.flatMap((s) =>
+            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          ),
+          ...(hasDirect
+            ? payments && payments.length
+              ? payments
+              : [{ method: payment || "Cash", amount: directAmount }]
+            : []),
+        ];
+        const totalReceived =
+          prior.reduce((sum, s) => sum + s.amountPaid, 0) + directReceived;
+        const totalChange =
+          prior.reduce((sum, s) => sum + s.change, 0) +
+          Math.max(0, directReceived - directAmount);
+
         const pointsEarned = session.customerId && session.member
           ? Math.floor(total / Math.max(1, prev.pointsPerRupiah))
           : 0;
@@ -485,27 +524,20 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           rentalTotal: rental,
           fnbTotal: fnb,
           total,
-          payment:
-            payment ||
-            (payments && payments.length
-              ? payments.map((p) => p.method).join(" + ")
-              : "Cash"),
-          ...(payments && payments.length ? { payments } : {}),
+          payment: uniqueMethods.join(" + ") || "Cash",
+          ...(allSplits.length > 1 ? { payments: allSplits } : {}),
           customerName: session.customerName,
           customerPhone: session.customerPhone,
           packageName: session.packageName,
-          ...(amountPaid === undefined
-            ? {}
-            : {
-                amountPaid,
-                change: Math.max(0, amountPaid - total),
-              }),
+          amountPaid: totalReceived,
+          change: totalChange,
           orders: session.orders,
           ...(session.customerId ? { customerId: session.customerId } : {}),
           ...(session.promoName ? { promoName: session.promoName } : {}),
           discount,
           pointsEarned,
         };
+
         record = completedRecord;
         return {
           ...prev,
