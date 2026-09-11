@@ -35,6 +35,8 @@ export type Station = {
 
 export type MenuItem = { id: string; name: string; price: number };
 
+export type PaymentMethod = { id: string; name: string; active: boolean };
+
 export type HistoryRecord = {
   id: string;
   stationName: string;
@@ -46,6 +48,7 @@ export type HistoryRecord = {
   rentalTotal: number;
   fnbTotal: number;
   total: number;
+  payment?: string;
 };
 
 export type Rates = Record<ConsoleType, number>;
@@ -54,6 +57,7 @@ type State = {
   stations: Station[];
   rates: Rates;
   menu: MenuItem[];
+  paymentMethods: PaymentMethod[];
   history: HistoryRecord[];
 };
 
@@ -76,6 +80,14 @@ const defaultState: State = {
     { id: "m4", name: "Indomie Goreng", price: 10000 },
     { id: "m5", name: "Nasi Goreng", price: 15000 },
     { id: "m6", name: "Snack Ringan", price: 7000 },
+  ],
+  paymentMethods: [
+    { id: "pm-cash", name: "Cash", active: true },
+    { id: "pm-qris", name: "QRIS", active: true },
+    { id: "pm-giftcard", name: "Gift Card", active: true },
+    { id: "pm-transfer", name: "Transfer Bank", active: true },
+    { id: "pm-compliment", name: "Compliment", active: true },
+    { id: "pm-lainnya", name: "Lainnya", active: true },
   ],
   history: [],
 };
@@ -128,7 +140,7 @@ type Ctx = State & {
     mode: PlayMode,
     durationMin: number,
   ) => void;
-  stopSession: (stationId: string) => HistoryRecord | null;
+  stopSession: (stationId: string, payment?: string) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
@@ -138,6 +150,9 @@ type Ctx = State & {
   removeStation: (stationId: string) => void;
   addMenuItem: (name: string, price: number) => void;
   removeMenuItem: (id: string) => void;
+  addPaymentMethod: (name: string) => void;
+  updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
+  removePaymentMethod: (id: string) => void;
   clearHistory: () => void;
 };
 
@@ -222,7 +237,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   void startSession;
 
   const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId) => {
+    (stationId, payment) => {
       let record: HistoryRecord | null = null;
       setState((prev) => {
         const station = prev.stations.find((s) => s.id === stationId);
@@ -242,6 +257,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           rentalTotal: rental,
           fnbTotal: fnb,
           total: rental + fnb,
+          payment: payment || "Cash",
         };
         return {
           ...prev,
@@ -359,6 +375,26 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({
           ...prev,
           menu: prev.menu.filter((m) => m.id !== id),
+        })),
+      addPaymentMethod: (name) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: [
+            ...prev.paymentMethods,
+            { id: `pm-${Date.now()}`, name, active: true },
+          ],
+        })),
+      updatePaymentMethod: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: prev.paymentMethods.map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          ),
+        })),
+      removePaymentMethod: (id) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: prev.paymentMethods.filter((p) => p.id !== id),
         })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
     }),
