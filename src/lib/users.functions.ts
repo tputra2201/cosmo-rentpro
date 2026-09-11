@@ -122,7 +122,14 @@ export const updateUser = createServerFn({ method: "POST" })
         password: data.password,
       });
       if (error) throw new Error(error.message);
+      await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          { id: data.id, must_change_password: true } as never,
+          { onConflict: "id" },
+        );
     }
+
     if (data.role) {
       if (data.role !== "admin" && data.id === (context as unknown as Ctx).userId) {
         throw new Error("Kamu tidak bisa menurunkan level akunmu sendiri.");
