@@ -8,6 +8,7 @@ import {
   remainingSeconds,
   rentalTotal,
   fnbTotal,
+  paidTotal,
   stationStatus,
   type Station,
 } from "@/lib/billing-store";
