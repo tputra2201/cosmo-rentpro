@@ -65,8 +65,12 @@ function PenggunaPage() {
   const [role, setRole] = useState<"admin" | "kasir">("kasir");
 
   const add = useMutation({
-    mutationFn: (vars: { data: Parameters<typeof createUser>[0] extends never ? never : any }) =>
-      addFn({ data: vars.data }),
+    mutationFn: (data: {
+      email: string;
+      password: string;
+      fullName: string;
+      role: "admin" | "kasir";
+    }) => addFn({ data }),
     onSuccess: () => {
       toast.success("Pengguna baru dibuat");
       setEmail("");
@@ -116,7 +120,7 @@ function PenggunaPage() {
         className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5"
         onSubmit={(e) => {
           e.preventDefault();
-          add.mutate({ data: { email, password, fullName, role } });
+          add.mutate({ email, password, fullName, role });
         }}
       >
         <div className="grid gap-2">
