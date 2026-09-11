@@ -64,8 +64,20 @@ function PenggunaPage() {
   const onError = (err: unknown) =>
     toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
 
-  const redirectTo = () =>
-    typeof window === "undefined" ? "" : `${window.location.origin}/atur-sandi`;
+  // Domain editor/preview Lovable butuh izin pemilik proyek, jadi tautan email
+  // selalu diarahkan ke alamat publik aplikasi.
+  const PUBLIC_APP_URL =
+    "https://project--f7796085-bc67-492a-9669-7e31cdf0ef88.lovable.app";
+  const redirectTo = () => {
+    if (typeof window === "undefined") return `${PUBLIC_APP_URL}/atur-sandi`;
+    const host = window.location.hostname;
+    const isEditorPreview =
+      host.includes("lovableproject.com") ||
+      host.startsWith("id-preview--") ||
+      host === "localhost";
+    const base = isEditorPreview ? PUBLIC_APP_URL : window.location.origin;
+    return `${base}/atur-sandi`;
+  };
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
