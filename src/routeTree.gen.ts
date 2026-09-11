@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as KasirRouteImport } from './routes/kasir'
 import { Route as LaporanRouteImport } from './routes/laporan'
 import { Route as TarifRouteImport } from './routes/tarif'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KasirRoute = KasirRouteImport.update({
+  id: '/kasir',
+  path: '/kasir',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LaporanRoute = LaporanRouteImport.update({
@@ -31,30 +37,34 @@ const TarifRoute = TarifRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/laporan' | '/tarif'
+  fullPaths: '/' | '/kasir' | '/laporan' | '/tarif'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/laporan' | '/tarif'
-  id: '__root__' | '/' | '/laporan' | '/tarif'
+  to: '/' | '/kasir' | '/laporan' | '/tarif'
+  id: '__root__' | '/' | '/kasir' | '/laporan' | '/tarif'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KasirRoute: typeof KasirRoute
   LaporanRoute: typeof LaporanRoute
   TarifRoute: typeof TarifRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kasir': {
+      id: '/kasir'
+      path: '/kasir'
+      fullPath: '/kasir'
+      preLoaderRoute: typeof KasirRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/laporan': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KasirRoute: KasirRoute,
   LaporanRoute: LaporanRoute,
   TarifRoute: TarifRoute,
 }

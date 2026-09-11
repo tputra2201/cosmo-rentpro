@@ -7,7 +7,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { LayoutGrid, Settings2, BarChart3, Joystick } from "lucide-react";
+import {
+  LayoutGrid,
+  Settings2,
+  BarChart3,
+  Joystick,
+  Receipt,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -119,6 +125,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
+  { to: "/kasir", label: "Kasir", icon: Receipt },
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
 ] as const;
