@@ -49,7 +49,9 @@ function PenggunaPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listUsers);
-  const addFn = useServerFn(createUser);
+  const addFn = useServerFn(inviteUser);
+  const resendFn = useServerFn(resendInvite);
+  const resetFn = useServerFn(sendPasswordReset);
   const editFn = useServerFn(updateUser);
   const delFn = useServerFn(deleteUser);
 
@@ -62,28 +64,43 @@ function PenggunaPage() {
   const onError = (err: unknown) =>
     toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
 
+  const redirectTo = () =>
+    typeof window === "undefined" ? "" : `${window.location.origin}/atur-sandi`;
+
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"admin" | "kasir">("kasir");
 
   const add = useMutation({
     mutationFn: (data: {
       email: string;
-      password: string;
       fullName: string;
       role: "admin" | "kasir";
-    }) => addFn({ data }),
+    }) => addFn({ data: { ...data, redirectTo: redirectTo() } }),
     onSuccess: () => {
-      toast.success("Pengguna baru dibuat");
+      toast.success("Undangan terkirim ke email staf");
       setEmail("");
-      setPassword("");
       setFullName("");
       setRole("kasir");
       invalidate();
     },
     onError,
   });
+
+  const resend = useMutation({
+    mutationFn: (mail: string) =>
+      resendFn({ data: { email: mail, redirectTo: redirectTo() } }),
+    onSuccess: () => toast.success("Undangan dikirim ulang"),
+    onError,
+  });
+
+  const reset = useMutation({
+    mutationFn: (mail: string) =>
+      resetFn({ data: { email: mail, redirectTo: redirectTo() } }),
+    onSuccess: () => toast.success("Tautan atur ulang sandi dikirim"),
+    onError,
+  });
+
 
   const edit = useMutation({
     mutationFn: (data: {
