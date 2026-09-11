@@ -24,7 +24,7 @@ import {
   Percent,
   LogOut,
 } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -169,6 +169,11 @@ function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isAuthPage = pathname === "/auth";
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const items = navItems.filter(
     ({ to }) => role === "admin" || !adminOnlyPaths.includes(to),
@@ -226,7 +231,7 @@ function AppShell() {
                 >
                   <LogOut className="size-4" />
                 </Button>
-                <Sheet>
+                <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                   <SheetTrigger asChild>
                     <Button
                       variant="outline"
@@ -245,6 +250,7 @@ function AppShell() {
                           key={to}
                           to={to}
                           activeOptions={{ exact: to === "/" }}
+                          onClick={() => setMenuOpen(false)}
                           className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground"
                           activeProps={{ className: "bg-secondary text-primary" }}
                         >
