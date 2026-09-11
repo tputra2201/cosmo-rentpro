@@ -592,14 +592,68 @@ export function StationDialog({
               )}
             </div>
 
-            <Button variant="destructive" className="w-full" onClick={handleStop}>
-              <Square className="size-4" /> Akhiri &amp; Bayar (
-              {splitMode
-                ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
-                  "gabungan"
-                : selectedPayment}
-              )
-            </Button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                className="w-full"
+                disabled={isSettled || activePayments.length === 0}
+                onClick={() => {
+                  if (validatePayment()) setConfirmPay(true);
+                }}
+              >
+                <Wallet className="size-4" />
+                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(dueAmount)}`}
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full"
+                disabled={!isSettled}
+                onClick={() => setConfirmEnd(true)}
+              >
+                <Square className="size-4" /> Akhiri Sesi
+              </Button>
+            </div>
+            {!isSettled && (
+              <p className="text-center text-xs text-muted-foreground">
+                Sesi hanya bisa diakhiri setelah seluruh tagihan lunas.
+              </p>
+            )}
+
+            <AlertDialog open={confirmPay} onOpenChange={setConfirmPay}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Selesaikan pembayaran?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {station.name} — {formatRupiah(dueAmount)} melalui{" "}
+                    {splitMode
+                      ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
+                        "gabungan"
+                      : selectedPayment}
+                    . Sesi rental tetap berjalan setelah pembayaran.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handlePay}>Ya, terima pembayaran</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Akhiri sesi rental?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {station.name} akan dikosongkan dan transaksi masuk ke riwayat. Tindakan ini
+                    tidak bisa dibatalkan.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEnd}>Ya, akhiri sesi</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
           </div>
         )}
       </DialogContent>
