@@ -880,16 +880,180 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         })),
       updateStation: (stationId, patch) =>
         mapStation(stationId, (station) => ({ ...station, ...patch })),
-      addMenuItem: (name, price) =>
+      addMenuItem: (name, price, category) =>
+        update((prev) => {
+          const cat = category?.trim() || prev.menuCategories[0] || "Lainnya";
+          return {
+            ...prev,
+            menuCategories: prev.menuCategories.includes(cat)
+              ? prev.menuCategories
+              : [...prev.menuCategories, cat],
+            menu: [...prev.menu, { id: `m-${Date.now()}`, name, price, category: cat }],
+          };
+        }),
+      updateMenuItem: (id, patch) =>
         update((prev) => ({
           ...prev,
-          menu: [...prev.menu, { id: `m-${Date.now()}`, name, price }],
+          menu: prev.menu.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       removeMenuItem: (id) =>
         update((prev) => ({
           ...prev,
           menu: prev.menu.filter((m) => m.id !== id),
         })),
+      addMenuCategory: (name) => {
+        const clean = name.trim();
+        if (!clean) return false;
+        if (state.menuCategories.some((c) => c.toLowerCase() === clean.toLowerCase())) return false;
+        update((prev) => ({ ...prev, menuCategories: [...prev.menuCategories, clean] }));
+        return true;
+      },
+      renameMenuCategory: (oldName, newName) => {
+        const clean = newName.trim();
+        if (!clean || clean === oldName) return false;
+        if (state.menuCategories.some((c) => c.toLowerCase() === clean.toLowerCase())) return false;
+        update((prev) => ({
+          ...prev,
+          menuCategories: prev.menuCategories.map((c) => (c === oldName ? clean : c)),
+          menu: prev.menu.map((m) => (m.category === oldName ? { ...m, category: clean } : m)),
+        }));
+        return true;
+      },
+      removeMenuCategory: (name) => {
+        if (state.menu.some((m) => m.category === name)) return false;
+        if (state.menuCategories.length <= 1) return false;
+        update((prev) => ({
+          ...prev,
+          menuCategories: prev.menuCategories.filter((c) => c !== name),
+        }));
+        return true;
+      },
+      addCafeTable: (init) =>
+        update((prev) => {
+          const n = prev.cafeTables.length + 1;
+          return {
+            ...prev,
+            cafeTables: [
+              ...prev.cafeTables,
+              {
+                id: `meja-${Date.now()}`,
+                name: init?.name?.trim() || `Meja ${String(n).padStart(2, "0")}`,
+                area: init?.area?.trim() || "Indoor",
+                seats: Math.max(1, init?.seats ?? 2),
+                customerName: "",
+                notes: "",
+                openedAt: null,
+                orders: [],
+              },
+            ],
+          };
+        }),
+      updateCafeTable: (tableId, patch) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) => (t.id === tableId ? { ...t, ...patch } : t)),
+        })),
+      removeCafeTable: (tableId) => {
+        const table = state.cafeTables.find((t) => t.id === tableId);
+        if (table && (table.openedAt || table.orders.length > 0)) return false;
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.filter((t) => t.id !== tableId),
+        }));
+        return true;
+      },
+      openCafeTable: (tableId, customerName, notes) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId
+              ? {
+                  ...t,
+                  openedAt: t.openedAt ?? Date.now(),
+                  customerName: customerName ?? t.customerName,
+                  notes: notes ?? t.notes,
+                }
+              : t,
+          ),
+        })),
+      addCafeOrder: (tableId, item, qty) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId
+              ? {
+                  ...t,
+                  openedAt: t.openedAt ?? Date.now(),
+                  orders: [
+                    ...t.orders,
+                    { id: `${item.id}-${Date.now()}`, name: item.name, price: item.price, qty },
+                  ],
+                }
+              : t,
+          ),
+        })),
+      removeCafeOrder: (tableId, orderId) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId ? { ...t, orders: t.orders.filter((o) => o.id !== orderId) } : t,
+          ),
+        })),
+      clearCafeTable: (tableId) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+          ),
+        })),
+      payCafeTable: (tableId, input) => {
+        let record: HistoryRecord | null = null;
+        setState((prev) => {
+          const table = prev.cafeTables.find((t) => t.id === tableId);
+          if (!table || table.orders.length === 0) return prev;
+          const endAt = Date.now();
+          const total = table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
+          const splits = input.payments?.length ? input.payments : [];
+          const received = splits.length
+            ? splits.reduce((sum, p) => sum + p.amount, 0)
+            : (input.amountPaid ?? total);
+          if (received + 0.5 < total) return prev;
+          const label = splits.length
+            ? Array.from(new Set(splits.map((p) => p.method))).join(" + ")
+            : input.payment || "Cash";
+          const completed: HistoryRecord = {
+            id: `cafe-${tableId}-${endAt}`,
+            stationName: table.name,
+            console: "Kafe",
+            mode: "prepaid",
+            startAt: table.openedAt ?? endAt,
+            endAt,
+            minutes: 0,
+            rentalTotal: 0,
+            fnbTotal: total,
+            total,
+            payment: label,
+            ...(splits.length > 1 ? { payments: splits } : {}),
+            customerName: table.customerName || "Pelanggan Kafe",
+            packageName: "Kafe",
+            amountPaid: received,
+            change: Math.max(0, received - total),
+            orders: table.orders,
+            kind: "cafe",
+            tableName: table.name,
+          };
+          record = completed;
+          return {
+            ...prev,
+            history: [completed, ...prev.history],
+            cafeTables: prev.cafeTables.map((t) =>
+              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+            ),
+          };
+        });
+        return record;
+      },
+
       addPaymentMethod: (name) =>
         update((prev) => ({
           ...prev,
