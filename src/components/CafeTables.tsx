@@ -59,34 +59,36 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   return (
     <>
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {cafeTables.map((t) => {
           const filled = t.orders.length > 0 || Boolean(t.openedAt);
           return (
             <div
               key={t.id}
-              className={`surface-panel p-5 ${filled ? "border-primary/50" : ""}`}
+              className={`surface-panel p-3 ${filled ? "border-primary/50" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-lg font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+                    {t.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
                     {t.area} · {t.seats} kursi
                   </p>
                 </div>
-                <Badge variant={filled ? "default" : "secondary"}>
+                <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
                   {filled ? "Terisi" : "Kosong"}
                 </Badge>
               </div>
 
-              <p className="mt-4 text-2xl font-bold text-neon">
+              <p className="mt-3 font-display text-2xl font-extrabold text-neon">
                 {formatRupiah(tableTotal(t))}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 {t.orders.length} item{t.customerName ? ` · ${t.customerName}` : ""}
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   onClick={() => {
