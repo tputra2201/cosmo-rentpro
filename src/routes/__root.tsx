@@ -17,6 +17,7 @@ import {
   Joystick,
   Receipt,
   Wallet,
+  DatabaseBackup,
   Menu,
   CalendarDays,
   Users,
