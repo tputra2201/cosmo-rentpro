@@ -106,13 +106,21 @@ export function StationCard({
       <div className="mt-5 flex items-end justify-between border-t border-border pt-4">
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Total tagihan
+            {paid > 0 ? "Sisa tagihan" : "Total tagihan"}
           </p>
-          <p className="font-display text-lg font-semibold">
-            {session
-              ? formatRupiah(rentalTotal(session, now) + fnbTotal(session))
-              : formatRupiah(0)}
+          <p
+            className={cn(
+              "font-display text-lg font-semibold",
+              paid > 0 && due <= 0 && "text-accent",
+            )}
+          >
+            {paid > 0 && due <= 0 ? "Lunas" : formatRupiah(due)}
           </p>
+          {paid > 0 && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Dibayar {formatRupiah(paid)} dari {formatRupiah(total)}
+            </p>
+          )}
         </div>
         {session && session.orders.length > 0 && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
