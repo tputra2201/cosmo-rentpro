@@ -12,4 +12,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // Scan the complete client graph before serving. Without explicit entries,
+    // Vite can discover route dependencies mid-boot and replace the optimized
+    // React chunk, leaving hooks connected to a stale React dispatcher.
+    optimizeDeps: {
+      entries: ["src/**/*.{ts,tsx}"],
+    },
+  },
 });
