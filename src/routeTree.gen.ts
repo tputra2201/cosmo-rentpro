@@ -27,6 +27,7 @@ import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
 import { Route as AuthenticatedUnitRouteImport } from './routes/_authenticated/unit'
 import { Route as ApiPublicStoreControlRouteImport } from './routes/api/public/store-control'
+import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -117,6 +118,11 @@ const ApiPublicStoreControlRoute = ApiPublicStoreControlRouteImport.update({
   path: '/api/public/store-control',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicStoreRegistryRoute = ApiPublicStoreRegistryRouteImport.update({
+  id: '/api/public/store-registry',
+  path: '/api/public/store-registry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/tarif': typeof AuthenticatedTarifRoute
   '/unit': typeof AuthenticatedUnitRoute
   '/api/public/store-control': typeof ApiPublicStoreControlRoute
+  '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
 export interface FileRoutesByTo {
   '/atur-sandi': typeof AturSandiRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/unit': typeof AuthenticatedUnitRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/store-control': typeof ApiPublicStoreControlRoute
+  '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/_authenticated/unit': typeof AuthenticatedUnitRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/store-control': typeof ApiPublicStoreControlRoute
+  '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/tarif'
     | '/unit'
     | '/api/public/store-control'
+    | '/api/public/store-registry'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/atur-sandi'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/unit'
     | '/'
     | '/api/public/store-control'
+    | '/api/public/store-registry'
   id:
     | '__root__'
     | '/_authenticated'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_authenticated/unit'
     | '/_authenticated/'
     | '/api/public/store-control'
+    | '/api/public/store-registry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   KontrolRoute: typeof KontrolRoute
   ApiPublicStoreControlRoute: typeof ApiPublicStoreControlRoute
+  ApiPublicStoreRegistryRoute: typeof ApiPublicStoreRegistryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStoreControlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/store-registry': {
+      id: '/api/public/store-registry'
+      path: '/api/public/store-registry'
+      fullPath: '/api/public/store-registry'
+      preLoaderRoute: typeof ApiPublicStoreRegistryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -418,6 +438,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   KontrolRoute: KontrolRoute,
   ApiPublicStoreControlRoute: ApiPublicStoreControlRoute,
+  ApiPublicStoreRegistryRoute: ApiPublicStoreRegistryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
