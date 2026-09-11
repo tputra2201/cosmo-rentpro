@@ -686,6 +686,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removePackage: (id) =>
         update((prev) => ({ ...prev, packages: prev.packages.filter((item) => item.id !== id) })),
       setRoundingRule: (roundingRule) => update((prev) => ({ ...prev, roundingRule })),
+      setDefaultBonusMin: (minutes) => update((prev) => ({ ...prev, defaultBonusMin: Math.round(minutes) })),
+      adjustBonusTime: (stationId, deltaMin) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? { ...s, session: { ...s.session, bonusMin: (s.session.bonusMin ?? 0) + Math.round(deltaMin) } }
+            : s,
+        ),
+      setSessionBonus: (stationId, bonusMin) =>
+        mapStation(stationId, (s) =>
+          s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
+        ),
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
         update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
