@@ -183,6 +183,7 @@ function ControlCenter() {
         store?: StoreRow;
         ok?: boolean;
         invited?: boolean;
+        emailSent?: "invite" | "reset" | null;
       };
       if (json.store) {
         setStores((prev) => {
