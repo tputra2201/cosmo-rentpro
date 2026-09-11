@@ -400,7 +400,7 @@ export function StationDialog({
               )}
             </div>
 
-            {!splitMode && selectedPayment === "Cash" && (
+            {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="amount-paid">Uang diterima</Label>
@@ -419,20 +419,14 @@ export function StationDialog({
                     className="pl-9"
                     type="number"
                     min={0}
-                    value={amountPaid === "" ? String(sessionTotal) : amountPaid}
+                    value={amountPaid === "" ? String(dueAmount) : amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Kembalian</span>
                   <span className="font-semibold text-accent">
-                    {formatRupiah(
-                      Math.max(
-                        0,
-                        (amountPaid === "" ? sessionTotal : Number(amountPaid)) -
-                          sessionTotal,
-                      ),
-                    )}
+                    {formatRupiah(Math.max(0, cashReceived - dueAmount))}
                   </span>
                 </div>
               </div>
@@ -451,11 +445,59 @@ export function StationDialog({
               </div>
               <div className="flex justify-between font-display text-lg font-semibold">
                 <span>Total</span>
-                <span className="text-accent">
-                  {formatRupiah(rentalTotal(session, now) + fnbTotal(session))}
-                </span>
+                <span className="text-accent">{formatRupiah(sessionTotal)}</span>
               </div>
+              {alreadyPaid > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sudah dibayar</span>
+                    <span>{formatRupiah(alreadyPaid)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Sisa tagihan</span>
+                    <span className={dueAmount > 0 ? "text-destructive" : "text-accent"}>
+                      {dueAmount > 0 ? formatRupiah(dueAmount) : "Lunas"}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
+
+            {(session.settlements ?? []).length > 0 && (
+              <div className="space-y-1.5 rounded-md border border-border p-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-accent">
+                  <CheckCircle2 className="size-4" /> Pembayaran diterima
+                </p>
+                <ul className="space-y-1">
+                  {(session.settlements ?? []).map((s) => (
+                    <li key={s.id} className="flex items-center justify-between text-sm">
+                      <span className="truncate text-muted-foreground">
+                        {s.payment} ·{" "}
+                        {new Date(s.at).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {formatRupiah(s.amount)}
+                        <button
+                          type="button"
+                          aria-label="Batalkan pembayaran"
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          onClick={() => {
+                            removeSettlement(station.id, s.id);
+                            toast.success("Pembayaran dibatalkan");
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
 
             {session.mode === "prepaid" &&
               remainingSeconds(session, now) <= 0 && (
