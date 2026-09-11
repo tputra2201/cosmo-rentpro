@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,12 +36,14 @@ import {
   fnbTotal,
   formatClock,
   formatRupiah,
+  paidTotal,
   remainingSeconds,
   rentalTotal,
   useBilling,
   type ConsoleType,
   type Station,
 } from "@/lib/billing-store";
+
 
 const DURATIONS = [30, 60, 90, 120, 180];
 
