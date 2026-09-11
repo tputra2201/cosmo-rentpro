@@ -82,9 +82,6 @@ function Dashboard() {
             Klik kartu TV untuk mulai sesi, tambah pesanan, atau akhiri billing.
           </p>
         </div>
-        <Button variant="outline" onClick={() => addStation()}>
-          <Plus className="size-4" /> Tambah TV
-        </Button>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
