@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "./auth";
+import { useStoreSync, type SyncStatus } from "./store-sync";
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
@@ -357,6 +359,7 @@ type Ctx = State & {
   exportSnapshot: () => BillingSnapshot;
   replaceAll: (data: unknown) => void;
   resetAll: () => void;
+  sync: SyncStatus;
 };
 
 export type BillingSnapshot = State;
@@ -714,6 +717,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [mapStation],
   );
 
+  const { session: authSession } = useAuth();
+  const sync = useStoreSync({
+    state,
+    hydrated,
+    enabled: Boolean(authSession),
+    applyRemote: setState,
+  });
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
@@ -900,10 +911,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
+      sync,
     }),
     [
       state,
       now,
+      sync,
       startSessionWithRate,
       stopSession,
       settleSession,

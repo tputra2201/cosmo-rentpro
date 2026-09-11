@@ -26,6 +26,9 @@ import {
   UserCog,
   KeyRound,
   Store,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -45,7 +48,8 @@ import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { appSignature } from "@/lib/app-info";
-import { supabase } from "@/integrations/supabase/client";
+import { useStoreInfo } from "@/lib/store-info";
+import { useBilling } from "@/lib/billing-store";
 
 
 function NotFoundComponent() {
@@ -187,39 +191,11 @@ function AppShell() {
   const navigate = useNavigate();
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
-  const [storeName, setStoreName] = useState("");
-  const [signature, setSignature] = useState(() => appSignature());
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!session) {
-      setStoreName("");
-      setExpiresAt(null);
-      setSignature(appSignature());
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("store_settings")
-        .select("store_name, app_version, dev_contact, expires_at")
-        .limit(1)
-        .maybeSingle();
-      if (cancelled) return;
-      const row = data as {
-        store_name: string | null;
-        app_version: string | null;
-        dev_contact: string | null;
-        expires_at: string | null;
-      } | null;
-      setStoreName(row?.store_name?.trim() ?? "");
-      setExpiresAt(row?.expires_at ?? null);
-      setSignature(appSignature(row?.app_version, row?.dev_contact));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+  const { store } = useStoreInfo(Boolean(session));
+  const { sync } = useBilling();
+  const storeName = store?.store_name?.trim() ?? "";
+  const signature = appSignature(store?.app_version, store?.dev_contact);
+  const expiresAt = store?.expires_at ?? null;
 
   const expiryDate = expiresAt ? new Date(expiresAt) : null;
   const msLeft = expiryDate ? expiryDate.getTime() - Date.now() : null;
@@ -306,6 +282,29 @@ function AppShell() {
                 ))}
               </nav>
               <div className="flex items-center gap-2">
+                <span
+                  title={
+                    sync.online
+                      ? sync.pending > 0
+                        ? `${sync.pending} perubahan menunggu terkirim`
+                        : "Data tersimpan di pusat"
+                      : "Mode luring — data disimpan di perangkat dan dikirim otomatis saat internet kembali"
+                  }
+                  className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:inline-flex ${
+                    sync.online
+                      ? sync.pending > 0
+                        ? "border-warning/50 bg-warning/10 text-warning"
+                        : "border-success/50 bg-success/10 text-success"
+                      : "border-destructive/50 bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  {sync.online ? (sync.pending > 0 ? <RefreshCw className="size-3 animate-spin" /> : <Wifi className="size-3" />) : <WifiOff className="size-3" />}
+                  {sync.online
+                    ? sync.pending > 0
+                      ? `Mengirim ${sync.pending}`
+                      : "Tersinkron"
+                    : "Mode luring"}
+                </span>
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium leading-tight">
                     {fullName || user?.email}
