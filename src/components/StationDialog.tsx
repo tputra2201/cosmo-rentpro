@@ -712,12 +712,15 @@ export function StationDialog({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Selesaikan pembayaran?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {station.name} — {formatRupiah(dueAmount)} melalui{" "}
+                    {station.name} — {formatRupiah(payTarget)} melalui{" "}
                     {splitMode
                       ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
                         "gabungan"
                       : selectedPayment}
-                    . Sesi rental tetap berjalan setelah pembayaran.
+                    .{" "}
+                    {dueAmount - payTarget > 0
+                      ? `Sisa ${formatRupiah(dueAmount - payTarget)} tetap jadi tagihan berjalan.`
+                      : "Sesi rental tetap berjalan setelah pembayaran."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
