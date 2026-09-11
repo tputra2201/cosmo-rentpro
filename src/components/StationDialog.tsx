@@ -464,7 +464,9 @@ export function StationDialog({
                 </Badge>
               )}
 
+            {!isSettled && (
             <div className="space-y-2">
+
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Tipe pembayaran</p>
                 {activePayments.length > 1 && (
