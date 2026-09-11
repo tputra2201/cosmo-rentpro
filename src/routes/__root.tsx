@@ -23,6 +23,8 @@ import {
   Users,
   Percent,
   LogOut,
+  UserCog,
+  KeyRound,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -146,7 +148,9 @@ const navItems = [
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/unit", label: "Unit TV", icon: Tv },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
+  { to: "/pengguna", label: "Pengguna", icon: UserCog },
   { to: "/backup", label: "Backup", icon: DatabaseBackup },
+  { to: "/akun", label: "Akun", icon: KeyRound },
 ] as const;
 
 function RootComponent() {
