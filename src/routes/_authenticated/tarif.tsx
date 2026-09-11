@@ -81,6 +81,10 @@ function TarifPage() {
         </p>
       </header>
 
+      <ThemePicker />
+
+
+
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Jenis Konsol & Tarif per Jam</h2>
         <p className="text-sm text-muted-foreground">
