@@ -47,6 +47,7 @@ export function StationDialog({
   const {
     now,
     rates,
+    consoleTypes,
     menu,
     startSession,
     stopSession,
@@ -128,9 +129,9 @@ export function StationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["PS3", "PS4", "PS5"] as ConsoleType[]).map((c) => (
+                  {consoleTypes.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c} — {formatRupiah(rates[c])} / jam
+                      {c} — {formatRupiah(rates[c] ?? 0)} / jam
                     </SelectItem>
                   ))}
                 </SelectContent>

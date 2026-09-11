@@ -41,10 +41,9 @@ export const Route = createFileRoute("/_authenticated/kasir")({
   component: KasirPage,
 });
 
-const consoleOrder: ConsoleType[] = ["PS3", "PS4", "PS5"];
 
 function KasirPage() {
-  const { stations, rates, now } = useBilling();
+  const { stations, rates, consoleTypes, now } = useBilling();
 
   const active = stations.filter((s) => s.session);
   const grandTotal = active.reduce(
@@ -65,7 +64,7 @@ function KasirPage() {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        {consoleOrder.map((c) => (
+        {consoleTypes.map((c) => (
           <Card key={c} className="surface-panel">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -75,7 +74,7 @@ function KasirPage() {
             </CardHeader>
             <CardContent>
               <p className="font-display text-2xl font-bold text-neon">
-                {formatRupiah(rates[c])}
+                {formatRupiah(rates[c] ?? 0)}
               </p>
               <p className="text-xs text-muted-foreground">per jam</p>
             </CardContent>

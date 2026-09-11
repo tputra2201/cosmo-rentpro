@@ -43,7 +43,11 @@ export const Route = createFileRoute("/_authenticated/tarif")({
 function TarifPage() {
   const {
     rates,
-    setRates,
+    consoleTypes,
+    addConsoleType,
+    renameConsoleType,
+    setConsoleRate,
+    removeConsoleType,
     menu,
     addMenuItem,
     removeMenuItem,
@@ -63,6 +67,8 @@ function TarifPage() {
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
+  const [newConsole, setNewConsole] = useState("");
+  const [newConsoleRate, setNewConsoleRate] = useState("");
 
   return (
     <div className="space-y-10">
@@ -74,27 +80,89 @@ function TarifPage() {
       </header>
 
       <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Tarif per Jam</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {(["PS3", "PS4", "PS5"] as ConsoleType[]).map((c) => (
-            <div key={c} className="space-y-2">
-              <Label htmlFor={`rate-${c}`}>{c}</Label>
+        <h2 className="text-xl font-semibold">Jenis Konsol & Tarif per Jam</h2>
+        <p className="text-sm text-muted-foreground">
+          Tambah, ubah nama, atau hapus jenis konsol beserta tarifnya.
+        </p>
+        <ul className="mt-4 space-y-2">
+          {consoleTypes.map((c) => (
+            <li
+              key={c}
+              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_160px_auto_auto]"
+            >
               <Input
-                id={`rate-${c}`}
+                defaultValue={c}
+                aria-label={`Nama konsol ${c}`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (!next || next === c) {
+                    e.target.value = c;
+                    return;
+                  }
+                  if (!renameConsoleType(c, next)) {
+                    e.target.value = c;
+                    toast.error("Nama konsol sudah dipakai");
+                  }
+                }}
+              />
+              <Input
                 type="number"
                 min={0}
                 step={500}
-                value={rates[c]}
-                onChange={(e) =>
-                  setRates({ ...rates, [c]: Number(e.target.value) || 0 })
-                }
+                value={rates[c] ?? 0}
+                aria-label={`Tarif ${c}`}
+                onChange={(e) => setConsoleRate(c, Number(e.target.value) || 0)}
               />
-              <p className="text-xs text-muted-foreground">
-                {formatRupiah(rates[c])} / jam
-              </p>
-            </div>
+              <span className="text-xs text-muted-foreground">
+                {formatRupiah(rates[c] ?? 0)} / jam
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Hapus ${c}`}
+                onClick={() => {
+                  if (!removeConsoleType(c))
+                    toast.error(
+                      "Konsol masih dipakai unit TV atau minimal satu konsol harus ada",
+                    );
+                  else toast.success(`Konsol ${c} dihapus`);
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </li>
           ))}
-        </div>
+        </ul>
+        <form
+          className="mt-4 grid gap-2 sm:grid-cols-[1fr_160px_auto]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!addConsoleType(newConsole, Number(newConsoleRate) || 0)) {
+              toast.error("Nama konsol kosong atau sudah ada");
+              return;
+            }
+            toast.success(`Konsol ${newConsole.trim()} ditambahkan`);
+            setNewConsole("");
+            setNewConsoleRate("");
+          }}
+        >
+          <Input
+            placeholder="Nama konsol (mis. PS2, Nintendo)"
+            value={newConsole}
+            onChange={(e) => setNewConsole(e.target.value)}
+          />
+          <Input
+            type="number"
+            min={0}
+            step={500}
+            placeholder="Tarif / jam"
+            value={newConsoleRate}
+            onChange={(e) => setNewConsoleRate(e.target.value)}
+          />
+          <Button type="submit">
+            <Plus className="size-4" /> Tambah
+          </Button>
+        </form>
       </section>
 
       <section className="surface-panel p-6">
@@ -125,7 +193,7 @@ function TarifPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["PS3", "PS4", "PS5"] as ConsoleType[]).map((c) => (
+                  {consoleTypes.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
