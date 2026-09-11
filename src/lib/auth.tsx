@@ -9,6 +9,8 @@ type AuthCtx = {
   user: User | null;
   role: AppRole | null;
   fullName: string;
+  mustChangePassword: boolean;
+  markPasswordChanged: () => void;
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -19,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
