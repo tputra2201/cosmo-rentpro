@@ -292,7 +292,7 @@ function ControlCenter() {
       email: invite.email.trim(),
       full_name: invite.full_name.trim(),
       role: "installer",
-      redirect_to: `${window.location.origin}/atur-sandi`,
+      redirect_to: passwordSetupUrl(),
     });
     if (json?.ok) {
       toast.success(
