@@ -42,7 +42,7 @@ export function StationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "surface-panel group relative overflow-hidden p-5 text-left transition-transform duration-200 hover:-translate-y-1",
+        "surface-panel group relative overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
         status === "idle" && "opacity-90 hover:glow-primary",
         status === "booked" && "border-primary/60 glow-primary",
         status === "playing" && "glow-accent",
@@ -51,11 +51,13 @@ export function StationCard({
         status === "offline" && "opacity-55",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-display text-2xl font-bold">{station.name}</h3>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Gamepad2 className="size-4" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+            {station.name}
+          </h3>
+          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Gamepad2 className="size-3.5" />
             {station.console}
             <span aria-hidden="true">·</span>
             {station.booth}
@@ -64,7 +66,7 @@ export function StationCard({
         <Badge
           variant="outline"
           className={cn(
-            "border-current text-xs uppercase tracking-wider",
+            "border-current text-[10px] uppercase tracking-wider",
             status === "idle" && "text-muted-foreground",
             status === "booked" && "text-primary",
             status === "playing" && "text-accent",
@@ -77,58 +79,58 @@ export function StationCard({
         </Badge>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-3">
         {!session ? (
-          <p className="timer-digits text-4xl text-muted-foreground">--:--:--</p>
+          <p className="timer-digits text-2xl text-muted-foreground">--:--:--</p>
         ) : session.mode === "open" ? (
           <div>
-            <p className="timer-digits text-4xl text-accent">
+            <p className="timer-digits text-2xl text-accent">
               {formatClock(elapsedSeconds(session, now))}
             </p>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <InfinityIcon className="size-3.5" /> Main Sepuasnya
+            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <InfinityIcon className="size-3" /> Main Sepuasnya
             </p>
           </div>
         ) : (
           <div>
             <p
               className={cn(
-                "timer-digits text-4xl",
+                "timer-digits text-2xl",
                 status === "timeup" ? "text-destructive" : "text-primary",
               )}
             >
               {formatClock(Math.max(0, remainingSeconds(session, now)))}
             </p>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="size-3.5" /> Paket {session.durationMin} menit
+            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Clock className="size-3" /> Paket {session.durationMin} menit
             </p>
           </div>
         )}
       </div>
 
-      <div className="mt-5 flex items-end justify-between border-t border-border pt-4">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+      <div className="mt-3 flex items-end justify-between gap-2 border-t border-border pt-3">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {paid > 0 ? "Sisa tagihan" : "Total tagihan"}
           </p>
           <p
             className={cn(
-              "font-display text-lg font-semibold",
-              paid > 0 && due <= 0 && "text-accent",
+              "font-display text-2xl font-extrabold",
+              paid > 0 && due <= 0 ? "text-accent" : "text-neon",
             )}
           >
             {paid > 0 && due <= 0 ? "Lunas" : formatRupiah(due)}
           </p>
           {paid > 0 && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               Dibayar {formatRupiah(paid)} dari {formatRupiah(total)}
             </p>
           )}
         </div>
         {session && session.orders.length > 0 && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Utensils className="size-3.5" />
-            {session.orders.length} item
+          <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+            <Utensils className="size-3" />
+            {session.orders.length}
           </span>
         )}
       </div>
