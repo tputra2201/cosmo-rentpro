@@ -869,6 +869,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       now,
       startSessionWithRate,
       stopSession,
+      settleSession,
+      removeSettlement,
+
       addTime,
       addOrder,
       removeOrder,
