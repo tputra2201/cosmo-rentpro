@@ -91,4 +91,10 @@ export const roleLabel: Record<AppRole, string> = {
 };
 
 /** Menu yang hanya boleh diakses Admin */
-export const adminOnlyPaths = ["/tarif", "/pembayaran", "/laporan", "/promo"];
+export const adminOnlyPaths = [
+  "/tarif",
+  "/unit",
+  "/pembayaran",
+  "/laporan",
+  "/promo",
+];
