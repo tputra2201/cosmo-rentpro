@@ -560,6 +560,62 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [setState],
   );
 
+  const settleSession = useCallback<Ctx["settleSession"]>(
+    (stationId, input) => {
+      let created: Settlement | null = null;
+      setState((prev) => {
+        const station = prev.stations.find((s) => s.id === stationId);
+        if (!station?.session) return prev;
+        const at = Date.now();
+        const amount = Math.max(0, Math.round(input.amount));
+        const amountPaid = Math.max(0, Math.round(input.amountPaid));
+        if (amount <= 0) return prev;
+        const label =
+          input.payments && input.payments.length
+            ? Array.from(new Set(input.payments.map((p) => p.method))).join(" + ")
+            : input.payment || "Cash";
+        const settlement: Settlement = {
+          id: `pay-${at}`,
+          at,
+          payment: label,
+          ...(input.payments && input.payments.length ? { payments: input.payments } : {}),
+          amount,
+          amountPaid,
+          change: Math.max(0, amountPaid - amount),
+        };
+        created = settlement;
+        return {
+          ...prev,
+          stations: prev.stations.map((s) =>
+            s.id === stationId && s.session
+              ? { ...s, session: { ...s.session, settlements: [...(s.session.settlements ?? []), settlement] } }
+              : s,
+          ),
+        };
+      });
+      return created;
+    },
+    [setState],
+  );
+
+  const removeSettlement = useCallback<Ctx["removeSettlement"]>(
+    (stationId, settlementId) =>
+      mapStation(stationId, (s) =>
+        s.session
+          ? {
+              ...s,
+              session: {
+                ...s.session,
+                settlements: (s.session.settlements ?? []).filter((x) => x.id !== settlementId),
+              },
+            }
+          : s,
+      ),
+    [mapStation],
+  );
+
+
+
   const addTime = useCallback<Ctx["addTime"]>(
     (stationId, extraMin) =>
       mapStation(stationId, (s) =>
