@@ -565,7 +565,7 @@ export function StationDialog({
                       } else {
                         setSplitMode(true);
                         setSplits([
-                          { method: activePayments[0]?.name ?? "Cash", amount: String(dueAmount) },
+                          { method: activePayments[0]?.name ?? "Cash", amount: String(payTarget) },
                           { method: activePayments[1]?.name ?? "QRIS", amount: "0" },
                         ]);
                       }
