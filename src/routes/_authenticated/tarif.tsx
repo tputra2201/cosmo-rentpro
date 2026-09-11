@@ -20,6 +20,8 @@ import {
   type RoundingRule,
   type StationAvailability,
 } from "@/lib/billing-store";
+import { ThemePicker } from "@/components/ThemePicker";
+
 
 export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
