@@ -308,6 +308,12 @@ type Ctx = State & {
     details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "bonusMin" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
   ) => void;
   stopSession: (stationId: string, payment?: string, amountPaid?: number, payments?: PaymentSplit[]) => HistoryRecord | null;
+  settleSession: (
+    stationId: string,
+    input: { payment?: string; payments?: PaymentSplit[]; amount: number; amountPaid: number },
+  ) => Settlement | null;
+  removeSettlement: (stationId: string, settlementId: string) => void;
+
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
