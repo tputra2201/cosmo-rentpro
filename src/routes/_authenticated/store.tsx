@@ -107,6 +107,8 @@ function StorePage() {
           city: row.city ?? "",
           owner_name: row.owner_name ?? "",
           phone: row.phone ?? "",
+          app_version: row.app_version || "v1.0",
+          dev_contact: row.dev_contact ?? "",
         });
       }
       setLoading(false);
