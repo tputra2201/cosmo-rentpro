@@ -217,23 +217,31 @@ function PenggunaPage() {
 function UserRow({
   user,
   isSelf,
+  busy,
   onSave,
+  onResend,
+  onReset,
   onDelete,
 }: {
   user: ManagedUser;
   isSelf: boolean;
-  onSave: (p: { fullName?: string; role?: "admin" | "kasir"; password?: string }) => void;
+  busy: boolean;
+  onSave: (p: { fullName?: string; role?: "admin" | "kasir" }) => void;
+  onResend: () => void;
+  onReset: () => void;
   onDelete: () => void;
 }) {
   const [name, setName] = useState(user.fullName);
   const [role, setRole] = useState<"admin" | "kasir">(user.role);
-  const [newPass, setNewPass] = useState("");
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_0.8fr_1fr_auto] lg:items-end">
+    <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_auto_auto_auto] lg:items-end">
       <div className="grid gap-1">
         <Label className="text-xs text-muted-foreground">
-          {user.email} {isSelf && "· akun kamu"}
+          {user.email} {isSelf && "· akun kamu"}{" "}
+          {user.pending && (
+            <span className="text-primary">· menunggu buat sandi</span>
+          )}
         </Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} />
       </div>
@@ -253,31 +261,32 @@ function UserRow({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-1">
-        <Label className="text-xs text-muted-foreground">Sandi baru</Label>
-        <Input
-          value={newPass}
-          onChange={(e) => setNewPass(e.target.value)}
-          placeholder="opsional"
-        />
-      </div>
       <Button
         variant="outline"
         onClick={() => {
-          const payload: {
-            fullName?: string;
-            role?: "admin" | "kasir";
-            password?: string;
-          } = {};
+          const payload: { fullName?: string; role?: "admin" | "kasir" } = {};
           if (name && name !== user.fullName) payload.fullName = name;
           if (role !== user.role) payload.role = role;
-          if (newPass.length >= 6) payload.password = newPass;
           if (Object.keys(payload).length === 0) return;
           onSave(payload);
-          setNewPass("");
         }}
       >
-        <KeyRound className="size-4" /> Simpan
+        Simpan
+      </Button>
+      <Button
+        variant="outline"
+        disabled={busy}
+        onClick={user.pending ? onResend : onReset}
+      >
+        {user.pending ? (
+          <>
+            <Send className="size-4" /> Kirim ulang undangan
+          </>
+        ) : (
+          <>
+            <MailCheck className="size-4" /> Tautan atur sandi
+          </>
+        )}
       </Button>
       <Button
         variant="destructive"
@@ -288,6 +297,7 @@ function UserRow({
       >
         <Trash2 className="size-4" />
       </Button>
+
     </div>
   );
 }
