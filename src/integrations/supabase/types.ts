@@ -83,6 +83,76 @@ export type Database = {
         }
         Relationships: []
       }
+      store_data: {
+        Row: {
+          created_at: string
+          deleted: boolean
+          entity_id: string
+          kind: string
+          payload: Json
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted?: boolean
+          entity_id: string
+          kind: string
+          payload?: Json
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted?: boolean
+          entity_id?: string
+          kind?: string
+          payload?: Json
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_data_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_members: {
+        Row: {
+          created_at: string
+          id: string
+          store_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          store_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          store_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_members_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
           address: string
@@ -127,6 +197,60 @@ export type Database = {
           owner_name?: string
           phone?: string
           singleton?: boolean
+          store_code?: string
+          store_email?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stores: {
+        Row: {
+          active: boolean
+          address: string
+          app_version: string
+          city: string
+          created_at: string
+          dev_contact: string
+          expires_at: string
+          id: string
+          note: string
+          owner_name: string
+          phone: string
+          store_code: string
+          store_email: string
+          store_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string
+          app_version?: string
+          city?: string
+          created_at?: string
+          dev_contact?: string
+          expires_at?: string
+          id?: string
+          note?: string
+          owner_name?: string
+          phone?: string
+          store_code?: string
+          store_email?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          app_version?: string
+          city?: string
+          created_at?: string
+          dev_contact?: string
+          expires_at?: string
+          id?: string
+          note?: string
+          owner_name?: string
+          phone?: string
           store_code?: string
           store_email?: string
           store_name?: string
