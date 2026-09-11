@@ -54,7 +54,7 @@ function BookingPage() {
     const startAt = new Date(start).getTime();
     const minutes = Number(duration);
     if (!stationId || !name.trim() || !Number.isFinite(startAt) || minutes <= 0) { toast.error("Lengkapi data booking"); return; }
-    const ok = addBooking({ stationId, customerId: customerId || undefined, customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes });
+    const ok = addBooking({ stationId, ...(customerId ? { customerId } : {}), customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes });
     if (!ok) { toast.error("Jadwal bentrok dengan booking lain pada unit tersebut"); return; }
     toast.success("Booking berhasil ditambahkan"); setName(""); setPhone(""); setCustomerId(""); setNotes("");
   };
