@@ -290,7 +290,7 @@ type Ctx = State & {
     durationMin: number,
     details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "bonusMin" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
   ) => void;
-  stopSession: (stationId: string, payment?: string, amountPaid?: number) => HistoryRecord | null;
+  stopSession: (stationId: string, payment?: string, amountPaid?: number, payments?: PaymentSplit[]) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
