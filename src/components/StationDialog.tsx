@@ -353,8 +353,42 @@ export function StationDialog({
               )}
             </div>
 
-            {selectedPayment === "Cash" && (
-              <div className="space-y-2"><Label htmlFor="amount-paid">Uang diterima</Label><div className="relative"><Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id="amount-paid" className="pl-9" type="number" min={0} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder={String(Math.ceil(sessionTotal / 1000) * 1000)} /></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">Kembalian</span><span className="font-semibold text-accent">{formatRupiah(Math.max(0, Number(amountPaid) - sessionTotal))}</span></div></div>
+            {!splitMode && selectedPayment === "Cash" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="amount-paid">Uang diterima</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                    onClick={() => setAmountPaid("")}
+                  >
+                    Uang pas
+                  </button>
+                </div>
+                <div className="relative">
+                  <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="amount-paid"
+                    className="pl-9"
+                    type="number"
+                    min={0}
+                    value={amountPaid === "" ? String(sessionTotal) : amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                  />
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Kembalian</span>
+                  <span className="font-semibold text-accent">
+                    {formatRupiah(
+                      Math.max(
+                        0,
+                        (amountPaid === "" ? sessionTotal : Number(amountPaid)) -
+                          sessionTotal,
+                      ),
+                    )}
+                  </span>
+                </div>
+              </div>
             )}
 
             <Separator />
