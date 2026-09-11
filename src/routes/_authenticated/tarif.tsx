@@ -61,6 +61,8 @@ function TarifPage() {
     removePackage,
     roundingRule,
     setRoundingRule,
+    defaultBonusMin,
+    setDefaultBonusMin,
   } = useBilling();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
