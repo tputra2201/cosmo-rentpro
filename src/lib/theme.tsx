@@ -1,0 +1,49 @@
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+export type ThemeName = "gelap" | "terang" | "berwarna";
+
+const STORAGE_KEY = "billing-theme-v1";
+
+export const themeOptions: { value: ThemeName; label: string; hint: string }[] = [
+  { value: "gelap", label: "Gelap", hint: "Latar gelap, nyaman untuk ruangan redup" },
+  { value: "terang", label: "Putih", hint: "Latar putih bersih, terang dan tajam" },
+  { value: "berwarna", label: "Berwarna", hint: "Latar biru lembut dengan aksen ungu" },
+];
+
+const classFor: Record<ThemeName, string> = {
+  gelap: "dark theme-gelap",
+  terang: "theme-terang",
+  berwarna: "theme-berwarna",
+};
+
+type Ctx = { theme: ThemeName; setTheme: (t: ThemeName) => void };
+const ThemeCtx = createContext<Ctx | null>(null);
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<ThemeName>("gelap");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(STORAGE_KEY) as ThemeName | null;
+    if (saved && saved in classFor) setTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.className = classFor[theme];
+    try {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      /* penyimpanan penuh — abaikan */
+    }
+  }, [theme]);
+
+  const value = useMemo(() => ({ theme, setTheme }), [theme]);
+  return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeCtx);
+  if (!ctx) throw new Error("useTheme harus dipakai di dalam ThemeProvider");
+  return ctx;
+}
