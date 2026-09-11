@@ -42,6 +42,7 @@ export type Database = {
           city: string
           created_at: string
           dev_contact: string
+          expires_at: string
           id: string
           owner_name: string
           phone: string
@@ -57,6 +58,7 @@ export type Database = {
           city?: string
           created_at?: string
           dev_contact?: string
+          expires_at?: string
           id?: string
           owner_name?: string
           phone?: string
@@ -72,6 +74,7 @@ export type Database = {
           city?: string
           created_at?: string
           dev_contact?: string
+          expires_at?: string
           id?: string
           owner_name?: string
           phone?: string
