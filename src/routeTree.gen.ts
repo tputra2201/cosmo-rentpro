@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KasirRouteImport } from './routes/kasir'
 import { Route as LaporanRouteImport } from './routes/laporan'
+import { Route as PembayaranRouteImport } from './routes/pembayaran'
 import { Route as TarifRouteImport } from './routes/tarif'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const LaporanRoute = LaporanRouteImport.update({
   path: '/laporan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PembayaranRoute = PembayaranRouteImport.update({
+  id: '/pembayaran',
+  path: '/pembayaran',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TarifRoute = TarifRouteImport.update({
   id: '/tarif',
   path: '/tarif',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pembayaran': typeof PembayaranRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pembayaran': typeof PembayaranRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/kasir': typeof KasirRoute
   '/laporan': typeof LaporanRoute
+  '/pembayaran': typeof PembayaranRoute
   '/tarif': typeof TarifRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/kasir' | '/laporan' | '/tarif'
+  fullPaths: '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/kasir' | '/laporan' | '/tarif'
-  id: '__root__' | '/' | '/kasir' | '/laporan' | '/tarif'
+  to: '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
+  id: '__root__' | '/' | '/kasir' | '/laporan' | '/pembayaran' | '/tarif'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KasirRoute: typeof KasirRoute
   LaporanRoute: typeof LaporanRoute
+  PembayaranRoute: typeof PembayaranRoute
   TarifRoute: typeof TarifRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LaporanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pembayaran': {
+      id: '/pembayaran'
+      path: '/pembayaran'
+      fullPath: '/pembayaran'
+      preLoaderRoute: typeof PembayaranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tarif': {
       id: '/tarif'
       path: '/tarif'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KasirRoute: KasirRoute,
   LaporanRoute: LaporanRoute,
+  PembayaranRoute: PembayaranRoute,
   TarifRoute: TarifRoute,
 }
 export const routeTree = rootRouteImport

@@ -107,6 +107,7 @@ function LaporanPage() {
                   <TableHead>Jam</TableHead>
                   <TableHead>TV</TableHead>
                   <TableHead>Mode</TableHead>
+                  <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Durasi</TableHead>
                   <TableHead className="text-right">Rental</TableHead>
                   <TableHead className="text-right">F&amp;B</TableHead>
@@ -125,6 +126,9 @@ function LaporanPage() {
                     </TableCell>
                     <TableCell>
                       {h.mode === "open" ? "Sepuasnya" : "Per Jam"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {h.payment ?? "Cash"}
                     </TableCell>
                     <TableCell className="text-right">{h.minutes} mnt</TableCell>
                     <TableCell className="text-right">

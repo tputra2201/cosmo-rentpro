@@ -13,6 +13,7 @@ import {
   BarChart3,
   Joystick,
   Receipt,
+  Wallet,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
@@ -126,6 +127,7 @@ function RootShell({ children }: { children: ReactNode }) {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
+  { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
 ] as const;
