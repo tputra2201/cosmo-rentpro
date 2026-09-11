@@ -42,7 +42,7 @@ export function StationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "surface-panel group relative overflow-hidden p-5 text-left transition-transform duration-200 hover:-translate-y-1",
+        "surface-panel group relative overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
         status === "idle" && "opacity-90 hover:glow-primary",
         status === "booked" && "border-primary/60 glow-primary",
         status === "playing" && "glow-accent",
@@ -51,11 +51,13 @@ export function StationCard({
         status === "offline" && "opacity-55",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-display text-2xl font-bold">{station.name}</h3>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Gamepad2 className="size-4" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+            {station.name}
+          </h3>
+          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Gamepad2 className="size-3.5" />
             {station.console}
             <span aria-hidden="true">·</span>
             {station.booth}
@@ -64,7 +66,7 @@ export function StationCard({
         <Badge
           variant="outline"
           className={cn(
-            "border-current text-xs uppercase tracking-wider",
+            "border-current text-[10px] uppercase tracking-wider",
             status === "idle" && "text-muted-foreground",
             status === "booked" && "text-primary",
             status === "playing" && "text-accent",
