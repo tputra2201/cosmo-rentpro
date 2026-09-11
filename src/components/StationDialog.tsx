@@ -78,7 +78,9 @@ export function StationDialog({
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
+  const [menuCategory, setMenuCategory] = useState("semua");
   const [payment, setPayment] = useState("");
+
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [member, setMember] = useState(false);
