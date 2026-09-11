@@ -96,6 +96,7 @@ export type Promotion = {
   active: boolean;
 };
 export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
+export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
   id: string;
