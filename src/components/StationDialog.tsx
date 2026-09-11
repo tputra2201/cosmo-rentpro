@@ -83,6 +83,7 @@ export function StationDialog({
   const [packageId, setPackageId] = useState("");
   const [notes, setNotes] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  const [payAmount, setPayAmount] = useState("");
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
