@@ -16,6 +16,8 @@ import {
   BarChart3,
   Joystick,
   Receipt,
+  Coffee,
+
   Wallet,
   DatabaseBackup,
   Menu,
