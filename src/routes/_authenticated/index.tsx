@@ -83,7 +83,7 @@ function Dashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           icon={<MonitorPlay className="size-5" />}
           label="TV Tersedia"
@@ -99,7 +99,7 @@ function Dashboard() {
           label="Tagihan Berjalan"
           value={formatRupiah(openBill)}
         />
-        <StatCard icon={<Coins className="size-5" />} label="Pendapatan Hari Ini" value={formatRupiah(0)} />
+        
       </section>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
