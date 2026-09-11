@@ -320,7 +320,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const session = station.session;
         const rental = rentalTotal(session, endAt);
         const fnb = fnbTotal(session);
-        record = {
+        const completedRecord: HistoryRecord = {
           id: `${stationId}-${endAt}`,
           stationName: station.name,
           console: station.console,
@@ -335,13 +335,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           customerName: session.customerName,
           customerPhone: session.customerPhone,
           packageName: session.packageName,
-          amountPaid,
-          change: amountPaid === undefined ? undefined : Math.max(0, amountPaid - rental - fnb),
+          ...(amountPaid === undefined
+            ? {}
+            : {
+                amountPaid,
+                change: Math.max(0, amountPaid - rental - fnb),
+              }),
           orders: session.orders,
         };
+        record = completedRecord;
         return {
           ...prev,
-          history: [record, ...prev.history],
+          history: [completedRecord, ...prev.history],
           stations: prev.stations.map((s) =>
             s.id === stationId ? { ...s, session: null } : s,
           ),
