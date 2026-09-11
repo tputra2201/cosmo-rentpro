@@ -44,6 +44,8 @@ import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+import { APP_SIGNATURE } from "@/lib/app-info";
+import { supabase } from "@/integrations/supabase/client";
 
 
 function NotFoundComponent() {
@@ -185,6 +187,28 @@ function AppShell() {
   const navigate = useNavigate();
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
+  const [storeName, setStoreName] = useState("");
+
+  useEffect(() => {
+    if (!session) {
+      setStoreName("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("store_settings")
+        .select("store_name")
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      const row = data as { store_name: string | null } | null;
+      setStoreName(row?.store_name?.trim() ?? "");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
 
   useEffect(() => {
@@ -228,11 +252,16 @@ function AppShell() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
               <Joystick className="size-5" />
             </span>
-            <span className="font-display text-lg font-bold tracking-wide text-neon">
-              BILLING RENTAL PS
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate font-display text-lg font-bold tracking-wide text-neon">
+                {storeName || "BILLING RENTAL PS"}
+              </span>
+              <span className="truncate font-mono text-[11px] tracking-wide text-muted-foreground">
+                {APP_SIGNATURE}
+              </span>
             </span>
           </Link>
           {session && !isAuthPage && (
