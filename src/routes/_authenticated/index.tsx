@@ -14,7 +14,7 @@ import {
   useBilling,
 } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Dashboard TV — Billing Rental PS" },

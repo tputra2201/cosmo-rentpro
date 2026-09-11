@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { formatRupiah, useBilling } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/pembayaran")({
+export const Route = createFileRoute("/_authenticated/pembayaran")({
   head: () => ({
     meta: [
       { title: "Pengaturan Pembayaran — Billing Rental PS" },

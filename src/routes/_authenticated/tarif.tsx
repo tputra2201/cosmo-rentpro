@@ -21,7 +21,7 @@ import {
   type StationAvailability,
 } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/tarif")({
+export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
     meta: [
       { title: "Manajemen Tarif — Billing Rental PS" },

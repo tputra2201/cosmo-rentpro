@@ -4,6 +4,8 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -18,12 +20,14 @@ import {
   CalendarDays,
   Users,
   Percent,
+  LogOut,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BillingProvider } from "../lib/billing-store";
+import { AuthProvider, useAuth, roleLabel, adminOnlyPaths } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
@@ -146,46 +150,128 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BillingProvider>
-        <div className="min-h-screen">
-          <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
-            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <Link to="/" className="flex items-center gap-2.5">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
-                  <Joystick className="size-5" />
-                </span>
-                <span className="font-display text-lg font-bold tracking-wide text-neon">
-                  BILLING RENTAL PS
-                </span>
-              </Link>
+      <AuthProvider>
+        <BillingProvider>
+          <AppShell />
+          <Toaster position="top-right" richColors />
+        </BillingProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+function AppShell() {
+  const { session, role, fullName, user, signOut } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const isAuthPage = pathname === "/auth";
+
+  const items = navItems.filter(
+    ({ to }) => role === "admin" || !adminOnlyPaths.includes(to),
+  );
+  const blocked =
+    session !== null && role === "kasir" && adminOnlyPaths.includes(pathname);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
+  return (
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
+              <Joystick className="size-5" />
+            </span>
+            <span className="font-display text-lg font-bold tracking-wide text-neon">
+              BILLING RENTAL PS
+            </span>
+          </Link>
+          {session && !isAuthPage && (
+            <>
               <nav className="hidden items-center gap-1 xl:flex">
-                {navItems.map(({ to, label, icon: Icon }) => (
+                {items.map(({ to, label, icon: Icon }) => (
                   <Link
                     key={to}
                     to={to}
                     activeOptions={{ exact: to === "/" }}
                     className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    activeProps={{
-                      className: "bg-secondary text-primary",
-                    }}
+                    activeProps={{ className: "bg-secondary text-primary" }}
                   >
                     <Icon className="size-4" />
                     {label}
                   </Link>
                 ))}
               </nav>
-              <Sheet>
-                <SheetTrigger asChild><Button variant="outline" size="icon" className="xl:hidden" aria-label="Buka menu"><Menu className="size-5" /></Button></SheetTrigger>
-                <SheetContent side="right" className="w-72"><SheetTitle>Menu Operasional</SheetTitle><nav className="mt-6 grid gap-2">{navItems.map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground" activeProps={{ className: "bg-secondary text-primary" }}><Icon className="size-4" />{label}</Link>)}</nav></SheetContent>
-              </Sheet>
-            </div>
-          </header>
-          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-            <Outlet />
-          </main>
+              <div className="flex items-center gap-2">
+                <div className="hidden text-right sm:block">
+                  <p className="text-sm font-medium leading-tight">
+                    {fullName || user?.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {role ? roleLabel[role] : "Memuat…"}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Keluar"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="size-4" />
+                </Button>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="xl:hidden"
+                      aria-label="Buka menu"
+                    >
+                      <Menu className="size-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-72">
+                    <SheetTitle>Menu Operasional</SheetTitle>
+                    <nav className="mt-6 grid gap-2">
+                      {items.map(({ to, label, icon: Icon }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          activeOptions={{ exact: to === "/" }}
+                          className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground"
+                          activeProps={{ className: "bg-secondary text-primary" }}
+                        >
+                          <Icon className="size-4" />
+                          {label}
+                        </Link>
+                      ))}
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </>
+          )}
         </div>
-        <Toaster position="top-right" richColors />
-      </BillingProvider>
-    </QueryClientProvider>
+      </header>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+        {blocked ? (
+          <div className="surface-panel mx-auto max-w-md p-8 text-center">
+            <h1 className="text-xl font-semibold">Akses terbatas</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu
+              membutuhkan aksesnya.
+            </p>
+            <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
+              Kembali ke Dashboard
+            </Button>
+          </div>
+        ) : (
+          <Outlet />
+        )}
+      </main>
+    </div>
   );
 }
