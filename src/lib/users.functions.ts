@@ -4,22 +4,36 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Ctx = { supabase: any; userId: string };
 
-async function assertAdmin(context: Ctx) {
+async function myRoles(context: Ctx): Promise<string[]> {
   const { data, error } = await context.supabase
     .from("user_roles")
     .select("role")
-    .eq("user_id", context.userId)
-    .eq("role", "admin")
-    .maybeSingle();
+    .eq("user_id", context.userId);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Hanya Admin yang boleh mengelola pengguna.");
+  return (data ?? []).map((r: { role: string }) => r.role);
 }
+
+async function assertAdmin(context: Ctx) {
+  const roles = await myRoles(context);
+  if (!roles.includes("admin") && !roles.includes("installer")) {
+    throw new Error("Hanya Admin yang boleh mengelola pengguna.");
+  }
+}
+
+async function assertInstaller(context: Ctx) {
+  const roles = await myRoles(context);
+  if (!roles.includes("installer")) {
+    throw new Error("Hanya Installer yang boleh mengatur level Installer.");
+  }
+}
+
+export type AppRole = "installer" | "admin" | "kasir";
 
 export type ManagedUser = {
   id: string;
   email: string;
   fullName: string;
-  role: "admin" | "kasir";
+  role: AppRole;
   createdAt: string;
   pending: boolean;
 
@@ -42,11 +56,12 @@ export const listUsers = createServerFn({ method: "GET" })
     ]);
 
     const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-    const roleById = new Map<string, "admin" | "kasir">();
+    const roleById = new Map<string, AppRole>();
+    const rank: Record<string, number> = { installer: 3, admin: 2, kasir: 1 };
     for (const r of roles ?? []) {
       const current = roleById.get(r.user_id);
-      if (current === "admin") continue;
-      roleById.set(r.user_id, r.role as "admin" | "kasir");
+      if (current && (rank[current] ?? 0) >= (rank[r.role] ?? 0)) continue;
+      roleById.set(r.user_id, r.role as AppRole);
     }
 
     return list.users.map((u) => ({
@@ -67,13 +82,14 @@ export const inviteUser = createServerFn({ method: "POST" })
       .object({
         email: z.string().email(),
         fullName: z.string().min(1),
-        role: z.enum(["admin", "kasir"]),
+        role: z.enum(["installer", "admin", "kasir"]),
         redirectTo: z.string().url(),
       })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
+    if (data.role === "installer") await assertInstaller(context as unknown as Ctx);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: created, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       data.email,
@@ -138,7 +154,7 @@ export const updateUser = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         fullName: z.string().min(1).optional(),
-        role: z.enum(["admin", "kasir"]).optional(),
+        role: z.enum(["installer", "admin", "kasir"]).optional(),
         password: z.string().min(6).optional(),
       })
       .parse(data),
@@ -169,7 +185,8 @@ export const updateUser = createServerFn({ method: "POST" })
     }
 
     if (data.role) {
-      if (data.role !== "admin" && data.id === (context as unknown as Ctx).userId) {
+      if (data.role === "installer") await assertInstaller(context as unknown as Ctx);
+      if (data.role !== "admin" && data.role !== "installer" && data.id === (context as unknown as Ctx).userId) {
         throw new Error("Kamu tidak bisa menurunkan level akunmu sendiri.");
       }
       await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id);
