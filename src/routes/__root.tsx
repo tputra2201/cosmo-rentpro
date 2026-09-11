@@ -16,6 +16,8 @@ import {
   BarChart3,
   Joystick,
   Receipt,
+  Coffee,
+
   Wallet,
   DatabaseBackup,
   Menu,
@@ -159,6 +161,8 @@ function RootShell({ children }: { children: ReactNode }) {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
+  { to: "/kafe", label: "Kafe", icon: Coffee },
+
   { to: "/booking", label: "Booking", icon: CalendarDays },
   { to: "/pelanggan", label: "Pelanggan", icon: Users },
   { to: "/promo", label: "Promo", icon: Percent },

@@ -63,7 +63,19 @@ export type Station = {
   session: Session | null;
 };
 
-export type MenuItem = { id: string; name: string; price: number };
+export type MenuItem = { id: string; name: string; price: number; category: string };
+
+export type CafeTable = {
+  id: string;
+  name: string; // nomor meja
+  area: string;
+  seats: number;
+  customerName: string;
+  notes: string;
+  openedAt: number | null;
+  orders: OrderItem[];
+};
+
 
 export type PaymentMethod = { id: string; name: string; active: boolean };
 export type RentalPackage = {
@@ -135,6 +147,8 @@ export type HistoryRecord = {
   promoName?: string;
   discount?: number;
   pointsEarned?: number;
+  kind?: "rental" | "cafe";
+  tableName?: string;
 };
 
 export type Rates = Record<string, number>;
@@ -144,6 +158,8 @@ type State = {
   consoleTypes: string[];
   rates: Rates;
   menu: MenuItem[];
+  menuCategories: string[];
+  cafeTables: CafeTable[];
   paymentMethods: PaymentMethod[];
   packages: RentalPackage[];
   roundingRule: RoundingRule;
@@ -155,6 +171,7 @@ type State = {
   pointEntries: PointEntry[];
   pointsPerRupiah: number;
 };
+
 
 const STORAGE_KEY = "billing-ps-state-v1";
 
@@ -170,13 +187,23 @@ const defaultState: State = {
   consoleTypes: ["PS3", "PS4", "PS5"],
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   menu: [
-    { id: "m1", name: "Air Mineral", price: 4000 },
-    { id: "m2", name: "Teh Botol", price: 6000 },
-    { id: "m3", name: "Kopi Sachet", price: 5000 },
-    { id: "m4", name: "Indomie Goreng", price: 10000 },
-    { id: "m5", name: "Nasi Goreng", price: 15000 },
-    { id: "m6", name: "Snack Ringan", price: 7000 },
+    { id: "m1", name: "Air Mineral", price: 4000, category: "Minuman" },
+    { id: "m2", name: "Teh Botol", price: 6000, category: "Minuman" },
+    { id: "m3", name: "Kopi Hitam", price: 8000, category: "Coffee" },
+    { id: "m4", name: "Es Kopi Susu", price: 15000, category: "Coffee" },
+    { id: "m5", name: "Juice Jeruk", price: 14000, category: "Juice" },
+    { id: "m6", name: "Indomie Goreng", price: 10000, category: "Snack" },
+    { id: "m7", name: "Snack Ringan", price: 7000, category: "Snack" },
+    { id: "m8", name: "Nasi Goreng", price: 15000, category: "Main Course" },
   ],
+  menuCategories: ["Coffee", "Juice", "Minuman", "Snack", "Main Course"],
+  cafeTables: [
+    { id: "meja-1", name: "Meja 01", area: "Indoor", seats: 2, customerName: "", notes: "", openedAt: null, orders: [] },
+    { id: "meja-2", name: "Meja 02", area: "Indoor", seats: 4, customerName: "", notes: "", openedAt: null, orders: [] },
+    { id: "meja-3", name: "Meja 03", area: "Indoor", seats: 4, customerName: "", notes: "", openedAt: null, orders: [] },
+    { id: "meja-4", name: "Meja 04", area: "Outdoor", seats: 4, customerName: "", notes: "", openedAt: null, orders: [] },
+  ],
+
   paymentMethods: [
     { id: "pm-cash", name: "Cash", active: true },
     { id: "pm-qris", name: "QRIS", active: true },
@@ -289,6 +316,25 @@ function migrateState(raw: unknown): State {
       parsed.consoleTypes && parsed.consoleTypes.length
         ? parsed.consoleTypes
         : Object.keys(parsed.rates ?? defaultState.rates),
+    menu: (parsed.menu ?? defaultState.menu).map((item) => ({
+      ...item,
+      category: item.category?.trim() ? item.category : "Lainnya",
+    })),
+    menuCategories: (() => {
+      const fromItems = (parsed.menu ?? []).map((m) => m.category).filter(Boolean) as string[];
+      const base = parsed.menuCategories?.length ? parsed.menuCategories : defaultState.menuCategories;
+      return Array.from(new Set([...base, ...fromItems]));
+    })(),
+    cafeTables: (parsed.cafeTables ?? defaultState.cafeTables).map((table, index) => ({
+      ...table,
+      name: table.name ?? `Meja ${String(index + 1).padStart(2, "0")}`,
+      area: table.area ?? "Indoor",
+      seats: table.seats ?? 2,
+      customerName: table.customerName ?? "",
+      notes: table.notes ?? "",
+      openedAt: table.openedAt ?? null,
+      orders: table.orders ?? [],
+    })),
     paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
@@ -298,6 +344,7 @@ function migrateState(raw: unknown): State {
     promotions: parsed.promotions ?? defaultState.promotions,
     pointEntries: parsed.pointEntries ?? defaultState.pointEntries,
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
+
   };
 }
 
@@ -335,8 +382,24 @@ type Ctx = State & {
     booth?: string;
   }) => void;
   removeStation: (stationId: string) => void;
-  addMenuItem: (name: string, price: number) => void;
+  addMenuItem: (name: string, price: number, category?: string) => void;
+  updateMenuItem: (id: string, patch: Partial<Omit<MenuItem, "id">>) => void;
   removeMenuItem: (id: string) => void;
+  addMenuCategory: (name: string) => boolean;
+  renameMenuCategory: (oldName: string, newName: string) => boolean;
+  removeMenuCategory: (name: string) => boolean;
+  addCafeTable: (init?: { name?: string; area?: string; seats?: number }) => void;
+  updateCafeTable: (tableId: string, patch: Partial<Omit<CafeTable, "id" | "orders">>) => void;
+  removeCafeTable: (tableId: string) => boolean;
+  openCafeTable: (tableId: string, customerName?: string, notes?: string) => void;
+  addCafeOrder: (tableId: string, item: MenuItem, qty: number) => void;
+  removeCafeOrder: (tableId: string, orderId: string) => void;
+  clearCafeTable: (tableId: string) => void;
+  payCafeTable: (
+    tableId: string,
+    input: { payment?: string; payments?: PaymentSplit[]; amountPaid?: number },
+  ) => HistoryRecord | null;
+
   addPaymentMethod: (name: string) => void;
   updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
   removePaymentMethod: (id: string) => void;
@@ -817,16 +880,180 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         })),
       updateStation: (stationId, patch) =>
         mapStation(stationId, (station) => ({ ...station, ...patch })),
-      addMenuItem: (name, price) =>
+      addMenuItem: (name, price, category) =>
+        update((prev) => {
+          const cat = category?.trim() || prev.menuCategories[0] || "Lainnya";
+          return {
+            ...prev,
+            menuCategories: prev.menuCategories.includes(cat)
+              ? prev.menuCategories
+              : [...prev.menuCategories, cat],
+            menu: [...prev.menu, { id: `m-${Date.now()}`, name, price, category: cat }],
+          };
+        }),
+      updateMenuItem: (id, patch) =>
         update((prev) => ({
           ...prev,
-          menu: [...prev.menu, { id: `m-${Date.now()}`, name, price }],
+          menu: prev.menu.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       removeMenuItem: (id) =>
         update((prev) => ({
           ...prev,
           menu: prev.menu.filter((m) => m.id !== id),
         })),
+      addMenuCategory: (name) => {
+        const clean = name.trim();
+        if (!clean) return false;
+        if (state.menuCategories.some((c) => c.toLowerCase() === clean.toLowerCase())) return false;
+        update((prev) => ({ ...prev, menuCategories: [...prev.menuCategories, clean] }));
+        return true;
+      },
+      renameMenuCategory: (oldName, newName) => {
+        const clean = newName.trim();
+        if (!clean || clean === oldName) return false;
+        if (state.menuCategories.some((c) => c.toLowerCase() === clean.toLowerCase())) return false;
+        update((prev) => ({
+          ...prev,
+          menuCategories: prev.menuCategories.map((c) => (c === oldName ? clean : c)),
+          menu: prev.menu.map((m) => (m.category === oldName ? { ...m, category: clean } : m)),
+        }));
+        return true;
+      },
+      removeMenuCategory: (name) => {
+        if (state.menu.some((m) => m.category === name)) return false;
+        if (state.menuCategories.length <= 1) return false;
+        update((prev) => ({
+          ...prev,
+          menuCategories: prev.menuCategories.filter((c) => c !== name),
+        }));
+        return true;
+      },
+      addCafeTable: (init) =>
+        update((prev) => {
+          const n = prev.cafeTables.length + 1;
+          return {
+            ...prev,
+            cafeTables: [
+              ...prev.cafeTables,
+              {
+                id: `meja-${Date.now()}`,
+                name: init?.name?.trim() || `Meja ${String(n).padStart(2, "0")}`,
+                area: init?.area?.trim() || "Indoor",
+                seats: Math.max(1, init?.seats ?? 2),
+                customerName: "",
+                notes: "",
+                openedAt: null,
+                orders: [],
+              },
+            ],
+          };
+        }),
+      updateCafeTable: (tableId, patch) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) => (t.id === tableId ? { ...t, ...patch } : t)),
+        })),
+      removeCafeTable: (tableId) => {
+        const table = state.cafeTables.find((t) => t.id === tableId);
+        if (table && (table.openedAt || table.orders.length > 0)) return false;
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.filter((t) => t.id !== tableId),
+        }));
+        return true;
+      },
+      openCafeTable: (tableId, customerName, notes) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId
+              ? {
+                  ...t,
+                  openedAt: t.openedAt ?? Date.now(),
+                  customerName: customerName ?? t.customerName,
+                  notes: notes ?? t.notes,
+                }
+              : t,
+          ),
+        })),
+      addCafeOrder: (tableId, item, qty) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId
+              ? {
+                  ...t,
+                  openedAt: t.openedAt ?? Date.now(),
+                  orders: [
+                    ...t.orders,
+                    { id: `${item.id}-${Date.now()}`, name: item.name, price: item.price, qty },
+                  ],
+                }
+              : t,
+          ),
+        })),
+      removeCafeOrder: (tableId, orderId) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId ? { ...t, orders: t.orders.filter((o) => o.id !== orderId) } : t,
+          ),
+        })),
+      clearCafeTable: (tableId) =>
+        update((prev) => ({
+          ...prev,
+          cafeTables: prev.cafeTables.map((t) =>
+            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+          ),
+        })),
+      payCafeTable: (tableId, input) => {
+        let record: HistoryRecord | null = null;
+        setState((prev) => {
+          const table = prev.cafeTables.find((t) => t.id === tableId);
+          if (!table || table.orders.length === 0) return prev;
+          const endAt = Date.now();
+          const total = table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
+          const splits = input.payments?.length ? input.payments : [];
+          const received = splits.length
+            ? splits.reduce((sum, p) => sum + p.amount, 0)
+            : (input.amountPaid ?? total);
+          if (received + 0.5 < total) return prev;
+          const label = splits.length
+            ? Array.from(new Set(splits.map((p) => p.method))).join(" + ")
+            : input.payment || "Cash";
+          const completed: HistoryRecord = {
+            id: `cafe-${tableId}-${endAt}`,
+            stationName: table.name,
+            console: "Kafe",
+            mode: "prepaid",
+            startAt: table.openedAt ?? endAt,
+            endAt,
+            minutes: 0,
+            rentalTotal: 0,
+            fnbTotal: total,
+            total,
+            payment: label,
+            ...(splits.length > 1 ? { payments: splits } : {}),
+            customerName: table.customerName || "Pelanggan Kafe",
+            packageName: "Kafe",
+            amountPaid: received,
+            change: Math.max(0, received - total),
+            orders: table.orders,
+            kind: "cafe",
+            tableName: table.name,
+          };
+          record = completed;
+          return {
+            ...prev,
+            history: [completed, ...prev.history],
+            cafeTables: prev.cafeTables.map((t) =>
+              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+            ),
+          };
+        });
+        return record;
+      },
+
       addPaymentMethod: (name) =>
         update((prev) => ({
           ...prev,

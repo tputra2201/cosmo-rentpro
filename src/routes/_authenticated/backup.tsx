@@ -43,6 +43,8 @@ const SHEETS: { sheet: string; key: string }[] = [
   { sheet: "Unit TV", key: "stations" },
   { sheet: "Tarif", key: "rates" },
   { sheet: "Menu", key: "menu" },
+  { sheet: "Meja Kafe", key: "cafeTables" },
+
   { sheet: "Pembayaran", key: "paymentMethods" },
   { sheet: "Paket", key: "packages" },
   { sheet: "Pelanggan", key: "customers" },

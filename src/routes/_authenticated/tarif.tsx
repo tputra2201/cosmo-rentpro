@@ -51,8 +51,14 @@ function TarifPage() {
     setConsoleRate,
     removeConsoleType,
     menu,
+    menuCategories,
     addMenuItem,
+    updateMenuItem,
     removeMenuItem,
+    addMenuCategory,
+    renameMenuCategory,
+    removeMenuCategory,
+
     stations,
     setStationConsole,
     removeStation,
@@ -68,11 +74,14 @@ function TarifPage() {
   } = useBilling();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [itemCategory, setItemCategory] = useState("");
+  const [newCategory, setNewCategory] = useState("");
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
   const [newConsole, setNewConsole] = useState("");
   const [newConsoleRate, setNewConsoleRate] = useState("");
+
 
   return (
     <div className="space-y-10">
@@ -235,33 +244,124 @@ function TarifPage() {
       </section>
 
       <section className="surface-panel p-6">
+        <h2 className="text-xl font-semibold">Kategori Menu</h2>
+        <p className="text-sm text-muted-foreground">
+          Kategori bebas ditambah, diganti nama, atau dihapus (jika tidak ada menu di dalamnya).
+        </p>
+        <ul className="mt-4 space-y-2">
+          {menuCategories.map((c) => (
+            <li
+              key={c}
+              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_auto_auto]"
+            >
+              <Input
+                defaultValue={c}
+                aria-label={`Nama kategori ${c}`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (!next || next === c) {
+                    e.target.value = c;
+                    return;
+                  }
+                  if (!renameMenuCategory(c, next)) {
+                    e.target.value = c;
+                    toast.error("Nama kategori sudah dipakai");
+                  }
+                }}
+              />
+              <span className="text-xs text-muted-foreground">
+                {menu.filter((m) => m.category === c).length} menu
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Hapus kategori ${c}`}
+                onClick={() => {
+                  if (!removeMenuCategory(c)) {
+                    toast.error("Kategori masih dipakai menu atau minimal satu kategori harus ada");
+                    return;
+                  }
+                  toast.success(`Kategori ${c} dihapus`);
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <form
+          className="mt-4 flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!addMenuCategory(newCategory)) {
+              toast.error("Nama kategori kosong atau sudah ada");
+              return;
+            }
+            toast.success(`Kategori ${newCategory.trim()} ditambahkan`);
+            setNewCategory("");
+          }}
+        >
+          <Input
+            placeholder="Kategori baru (mis. Coffee, Juice, Snack)"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            className="w-56 flex-1"
+          />
+          <Button type="submit">
+            <Plus className="size-4" /> Tambah
+          </Button>
+        </form>
+      </section>
+
+      <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Menu Makanan &amp; Minuman</h2>
         <ul className="mt-4 space-y-2">
           {menu.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between rounded-lg bg-secondary/60 px-4 py-2.5"
+              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_180px_140px_auto]"
             >
-              <span>{m.name}</span>
-              <span className="flex items-center gap-3">
-                <span className="text-muted-foreground">
-                  {formatRupiah(m.price)}
-                </span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Hapus ${m.name}`}
-                  onClick={() => removeMenuItem(m.id)}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </span>
+              <Input
+                value={m.name}
+                aria-label={`Nama ${m.name}`}
+                onChange={(e) => updateMenuItem(m.id, { name: e.target.value })}
+              />
+              <Select
+                value={menuCategories.includes(m.category) ? m.category : ""}
+                onValueChange={(value) => updateMenuItem(m.id, { category: value })}
+              >
+                <SelectTrigger aria-label={`Kategori ${m.name}`}>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {menuCategories.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min={0}
+                value={m.price}
+                aria-label={`Harga ${m.name}`}
+                onChange={(e) => updateMenuItem(m.id, { price: Number(e.target.value) || 0 })}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Hapus ${m.name}`}
+                onClick={() => removeMenuItem(m.id)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
             </li>
           ))}
         </ul>
 
         <form
-          className="mt-4 flex flex-wrap gap-2"
+          className="mt-4 grid gap-2 sm:grid-cols-[1fr_180px_140px_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             const p = Number(price);
@@ -269,7 +369,7 @@ function TarifPage() {
               toast.error("Isi nama menu dan harga yang valid");
               return;
             }
-            addMenuItem(name.trim(), p);
+            addMenuItem(name.trim(), p, itemCategory || menuCategories[0]);
             setName("");
             setPrice("");
             toast.success("Menu ditambahkan");
@@ -279,21 +379,35 @@ function TarifPage() {
             placeholder="Nama menu"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-48 flex-1"
           />
+          <Select
+            value={itemCategory || menuCategories[0] || ""}
+            onValueChange={setItemCategory}
+          >
+            <SelectTrigger aria-label="Kategori menu baru">
+              <SelectValue placeholder="Kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              {menuCategories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             type="number"
             min={0}
             placeholder="Harga"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="w-32"
           />
           <Button type="submit">
             <Plus className="size-4" /> Tambah
           </Button>
         </form>
       </section>
+
     </div>
   );
 }

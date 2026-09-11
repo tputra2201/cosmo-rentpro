@@ -61,6 +61,8 @@ export function StationDialog({
     rates,
     consoleTypes,
     menu,
+    menuCategories,
+
     startSession,
     stopSession,
     settleSession,
@@ -76,7 +78,9 @@ export function StationDialog({
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
+  const [menuCategory, setMenuCategory] = useState("semua");
   const [payment, setPayment] = useState("");
+
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [member, setMember] = useState(false);
@@ -368,8 +372,29 @@ export function StationDialog({
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  size="sm"
+                  variant={menuCategory === "semua" ? "default" : "outline"}
+                  onClick={() => setMenuCategory("semua")}
+                >
+                  Semua
+                </Button>
+                {menuCategories.map((c) => (
+                  <Button
+                    key={c}
+                    size="sm"
+                    variant={menuCategory === c ? "default" : "outline"}
+                    onClick={() => setMenuCategory(c)}
+                  >
+                    {c}
+                  </Button>
+                ))}
+              </div>
               <div className="grid grid-cols-2 gap-2">
-                {menu.map((item) => (
+                {menu
+                  .filter((item) => menuCategory === "semua" || item.category === menuCategory)
+                  .map((item) => (
                   <Button
                     key={item.id}
                     size="sm"
@@ -385,6 +410,7 @@ export function StationDialog({
                   </Button>
                 ))}
               </div>
+
               {session.orders.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {session.orders.map((o) => (
