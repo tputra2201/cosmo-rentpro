@@ -19,6 +19,8 @@ export type ManagedUser = {
   fullName: string;
   role: "admin" | "kasir";
   createdAt: string;
+  pending: boolean;
+
 };
 
 export const listUsers = createServerFn({ method: "GET" })
