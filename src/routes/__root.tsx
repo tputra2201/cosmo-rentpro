@@ -279,20 +279,26 @@ function AppShell() {
                       <Menu className="size-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-72">
-                    <SheetTitle>Menu Operasional</SheetTitle>
-                    <nav className="mt-6 grid gap-2">
+                  <SheetContent
+                    side="right"
+                    className="flex w-[min(20rem,88vw)] flex-col gap-0 p-4"
+                  >
+                    <SheetTitle className="text-base">Menu Operasional</SheetTitle>
+                    <nav className="mt-3 grid grid-cols-2 gap-1.5">
                       {items.map(({ to, label, icon: Icon }) => (
                         <Link
                           key={to}
                           to={to}
                           activeOptions={{ exact: to === "/" }}
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground"
-                          activeProps={{ className: "bg-secondary text-primary" }}
+                          className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-secondary/25 px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                          activeProps={{
+                            className:
+                              "bg-secondary text-primary border-primary/50 glow-primary",
+                          }}
                         >
-                          <Icon className="size-4" />
-                          {label}
+                          <Icon className="size-4 shrink-0" />
+                          <span className="truncate">{label}</span>
                         </Link>
                       ))}
                     </nav>
