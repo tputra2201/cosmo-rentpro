@@ -81,6 +81,14 @@ const defaultState: State = {
     { id: "m5", name: "Nasi Goreng", price: 15000 },
     { id: "m6", name: "Snack Ringan", price: 7000 },
   ],
+  paymentMethods: [
+    { id: "pm-cash", name: "Cash", active: true },
+    { id: "pm-qris", name: "QRIS", active: true },
+    { id: "pm-giftcard", name: "Gift Card", active: true },
+    { id: "pm-transfer", name: "Transfer Bank", active: true },
+    { id: "pm-compliment", name: "Compliment", active: true },
+    { id: "pm-lainnya", name: "Lainnya", active: true },
+  ],
   history: [],
 };
 
