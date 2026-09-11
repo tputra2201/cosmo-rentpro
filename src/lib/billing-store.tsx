@@ -96,6 +96,7 @@ export type Promotion = {
   active: boolean;
 };
 export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
+export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
   id: string;
@@ -109,6 +110,7 @@ export type HistoryRecord = {
   fnbTotal: number;
   total: number;
   payment?: string;
+  payments?: PaymentSplit[];
   customerName?: string;
   customerPhone?: string;
   packageName?: string;
@@ -288,7 +290,7 @@ type Ctx = State & {
     durationMin: number,
     details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "bonusMin" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
   ) => void;
-  stopSession: (stationId: string, payment?: string, amountPaid?: number) => HistoryRecord | null;
+  stopSession: (stationId: string, payment?: string, amountPaid?: number, payments?: PaymentSplit[]) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
@@ -435,7 +437,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   void startSession;
 
   const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId, payment, amountPaid) => {
+    (stationId, payment, amountPaid, payments) => {
       let record: HistoryRecord | null = null;
       setState((prev) => {
         const station = prev.stations.find((s) => s.id === stationId);
@@ -460,7 +462,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           rentalTotal: rental,
           fnbTotal: fnb,
           total,
-          payment: payment || "Cash",
+          payment:
+            payment ||
+            (payments && payments.length
+              ? payments.map((p) => p.method).join(" + ")
+              : "Cash"),
+          ...(payments && payments.length ? { payments } : {}),
           customerName: session.customerName,
           customerPhone: session.customerPhone,
           packageName: session.packageName,
