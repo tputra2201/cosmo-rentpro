@@ -175,14 +175,26 @@ export function StationDialog({
                   className="h-8 w-28"
                 />
               </div>
+              <div className="space-y-1.5 rounded-md border border-border p-3">
+                <Label htmlFor="bonus-min">Waktu ekstra (menit, boleh minus)</Label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setBonus(String(bonusMin - 1))}>-1</Button>
+                  <Input id="bonus-min" type="number" className="h-8 w-24 text-center" value={bonus} onChange={(e) => setBonus(e.target.value)} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => setBonus(String(bonusMin + 1))}>+1</Button>
+                  {[2, 3, 5].map((m) => (
+                    <Button key={m} type="button" size="sm" variant="ghost" onClick={() => setBonus(String(m))}>+{m}</Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Total waktu main: {Math.max(0, duration + bonusMin)} menit — tarif tetap dihitung {duration} menit.</p>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Harga paket: {formatRupiah((rate * duration) / 60)}
               </p>
               <Button
                 className="w-full"
                 onClick={() => {
-                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes });
-                  toast.success(`${station.name} mulai ${duration} menit`);
+                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
+                  toast.success(`${station.name} mulai ${Math.max(0, duration + bonusMin)} menit`, bonusMin !== 0 ? { description: `${duration} menit + ekstra ${bonusMin} menit (tarif tetap)` } : undefined);
                 }}
               >
                 <Play className="size-4" /> Mulai Paket
