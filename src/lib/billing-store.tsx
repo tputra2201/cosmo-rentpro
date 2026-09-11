@@ -380,13 +380,50 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* storage full or blocked: keep running in memory */
+    }
   }, [state, hydrated]);
 
+  // Timer is derived from stored timestamps, so a refresh, a device restart,
+  // or an offline period never changes the elapsed time. We only need to keep
+  // the displayed clock fresh and resync it whenever the tab wakes up.
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 1000);
+    const resync = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", resync);
+    window.addEventListener("focus", tick);
+    window.addEventListener("online", tick);
+    window.addEventListener("pageshow", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", resync);
+      window.removeEventListener("focus", tick);
+      window.removeEventListener("online", tick);
+      window.removeEventListener("pageshow", tick);
+    };
   }, []);
+
+  // Keep sessions consistent when the app is open in more than one tab/window.
+  useEffect(() => {
+    if (!hydrated) return;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try {
+        setState(migrateState(JSON.parse(event.newValue)));
+      } catch {
+        /* ignore corrupt payload from other tab */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [hydrated]);
+
 
   const update = useCallback(
     (fn: (draft: State) => State) => setState((prev) => fn(prev)),
