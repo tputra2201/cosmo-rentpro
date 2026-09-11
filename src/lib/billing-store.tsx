@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type ConsoleType = "PS3" | "PS4" | "PS5";
+export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
 export type StationAvailability = "available" | "booked" | "maintenance" | "offline";
 export type RoundingRule = "minute" | "30-minutes" | "hour";
@@ -120,10 +120,11 @@ export type HistoryRecord = {
   pointsEarned?: number;
 };
 
-export type Rates = Record<ConsoleType, number>;
+export type Rates = Record<string, number>;
 
 type State = {
   stations: Station[];
+  consoleTypes: string[];
   rates: Rates;
   menu: MenuItem[];
   paymentMethods: PaymentMethod[];
@@ -148,6 +149,7 @@ const defaultState: State = {
     { id: "tv-5", name: "TV 05", console: "PS5", booth: "VIP 1", availability: "available", session: null },
     { id: "tv-6", name: "TV 06", console: "PS5", booth: "VIP 2", availability: "available", session: null },
   ],
+  consoleTypes: ["PS3", "PS4", "PS5"],
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   menu: [
     { id: "m1", name: "Air Mineral", price: 4000 },
@@ -253,6 +255,11 @@ function migrateState(raw: unknown): State {
           }
         : null,
     })),
+    rates: parsed.rates ?? defaultState.rates,
+    consoleTypes:
+      parsed.consoleTypes && parsed.consoleTypes.length
+        ? parsed.consoleTypes
+        : Object.keys(parsed.rates ?? defaultState.rates),
     paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
@@ -278,6 +285,10 @@ type Ctx = State & {
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
+  addConsoleType: (name: string, rate: number) => boolean;
+  renameConsoleType: (oldName: string, newName: string) => boolean;
+  setConsoleRate: (name: string, rate: number) => void;
+  removeConsoleType: (name: string) => boolean;
   updateStation: (stationId: string, patch: Partial<Omit<Station, "id" | "session">>) => void;
   addStation: (init?: {
     name?: string;
@@ -382,7 +393,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   mode,
                   startAt: Date.now(),
                   durationMin: mode === "prepaid" ? durationMin : 0,
-                  rate: prev.rates[s.console],
+                  rate: prev.rates[s.console] ?? 0,
                   orders: [],
                     customerName: details?.customerName || "Pelanggan Umum",
                     customerPhone: details?.customerPhone || "",
@@ -541,6 +552,58 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
       setStationConsole: (stationId, consoleType) =>
         mapStation(stationId, (s) => ({ ...s, console: consoleType })),
+      addConsoleType: (name, rate) => {
+        const clean = name.trim();
+        if (!clean) return false;
+        if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
+          return false;
+        update((prev) => ({
+          ...prev,
+          consoleTypes: [...prev.consoleTypes, clean],
+          rates: { ...prev.rates, [clean]: Math.max(0, rate) },
+        }));
+        return true;
+      },
+      renameConsoleType: (oldName, newName) => {
+        const clean = newName.trim();
+        if (!clean || clean === oldName) return false;
+        if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
+          return false;
+        update((prev) => {
+          const rates: Rates = {};
+          for (const key of Object.keys(prev.rates)) {
+            rates[key === oldName ? clean : key] = prev.rates[key] ?? 0;
+          }
+          return {
+            ...prev,
+            consoleTypes: prev.consoleTypes.map((c) => (c === oldName ? clean : c)),
+            rates,
+            stations: prev.stations.map((s) =>
+              s.console === oldName ? { ...s, console: clean } : s,
+            ),
+          };
+        });
+        return true;
+      },
+      setConsoleRate: (name, rate) =>
+        update((prev) => ({
+          ...prev,
+          rates: { ...prev.rates, [name]: Math.max(0, rate) },
+        })),
+      removeConsoleType: (name) => {
+        if (state.consoleTypes.length <= 1) return false;
+        if (state.stations.some((s) => s.console === name)) return false;
+        update((prev) => {
+          const rates = { ...prev.rates };
+          delete rates[name];
+          return {
+            ...prev,
+            consoleTypes: prev.consoleTypes.filter((c) => c !== name),
+            rates,
+          };
+        });
+        return true;
+      },
       addStation: (init) =>
         update((prev) => {
           const n = prev.stations.length + 1;
@@ -551,7 +614,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               {
                 id: `tv-${Date.now()}`,
                 name: init?.name?.trim() || `TV ${String(n).padStart(2, "0")}`,
-                console: init?.console ?? "PS4",
+                console: init?.console ?? prev.consoleTypes[0] ?? "PS4",
                 booth: init?.booth?.trim() || `Booth ${n}`,
                 availability: "available",
                 session: null,

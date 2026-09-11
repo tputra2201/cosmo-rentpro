@@ -47,6 +47,7 @@ export function StationDialog({
   const {
     now,
     rates,
+    consoleTypes,
     menu,
     startSession,
     stopSession,
@@ -73,7 +74,7 @@ export function StationDialog({
 
   if (!station) return null;
   const session = station.session;
-  const rate = rates[station.console];
+  const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
 
@@ -128,9 +129,9 @@ export function StationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["PS3", "PS4", "PS5"] as ConsoleType[]).map((c) => (
+                  {consoleTypes.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c} — {formatRupiah(rates[c])} / jam
+                      {c} — {formatRupiah(rates[c] ?? 0)} / jam
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -39,13 +39,15 @@ export const Route = createFileRoute("/_authenticated/unit")({
   component: UnitPage,
 });
 
-const consoles: ConsoleType[] = ["PS3", "PS4", "PS5"];
 
 function UnitPage() {
-  const { stations, addStation, updateStation, removeStation } = useBilling();
+  const { stations, consoleTypes, addStation, updateStation, removeStation } =
+    useBilling();
   const [name, setName] = useState("");
   const [booth, setBooth] = useState("");
-  const [consoleType, setConsoleType] = useState<ConsoleType>("PS4");
+  const [consoleType, setConsoleType] = useState<ConsoleType>(
+    consoleTypes[0] ?? "PS4",
+  );
 
   return (
     <div className="space-y-8">
@@ -96,7 +98,7 @@ function UnitPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {consoles.map((c) => (
+                {consoleTypes.map((c) => (
                   <SelectItem key={c} value={c}>
                     {c}
                   </SelectItem>
@@ -149,7 +151,7 @@ function UnitPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {consoles.map((c) => (
+                    {consoleTypes.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
                       </SelectItem>
