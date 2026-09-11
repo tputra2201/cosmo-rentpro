@@ -57,6 +57,8 @@ export function StationDialog({
     setStationConsole,
     paymentMethods,
     packages,
+    defaultBonusMin,
+    adjustBonusTime,
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
@@ -67,6 +69,8 @@ export function StationDialog({
   const [packageId, setPackageId] = useState("");
   const [notes, setNotes] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
+  const bonusMin = Math.round(Number(bonus) || 0);
 
   const activePayments = paymentMethods.filter((p) => p.active);
   const selectedPayment =
@@ -171,14 +175,26 @@ export function StationDialog({
                   className="h-8 w-28"
                 />
               </div>
+              <div className="space-y-1.5 rounded-md border border-border p-3">
+                <Label htmlFor="bonus-min">Waktu ekstra (menit, boleh minus)</Label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setBonus(String(bonusMin - 1))}>-1</Button>
+                  <Input id="bonus-min" type="number" className="h-8 w-24 text-center" value={bonus} onChange={(e) => setBonus(e.target.value)} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => setBonus(String(bonusMin + 1))}>+1</Button>
+                  {[2, 3, 5].map((m) => (
+                    <Button key={m} type="button" size="sm" variant="ghost" onClick={() => setBonus(String(m))}>+{m}</Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Total waktu main: {Math.max(0, duration + bonusMin)} menit — tarif tetap dihitung {duration} menit.</p>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Harga paket: {formatRupiah((rate * duration) / 60)}
               </p>
               <Button
                 className="w-full"
                 onClick={() => {
-                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes });
-                  toast.success(`${station.name} mulai ${duration} menit`);
+                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
+                  toast.success(`${station.name} mulai ${Math.max(0, duration + bonusMin)} menit`, bonusMin !== 0 ? { description: `${duration} menit + ekstra ${bonusMin} menit (tarif tetap)` } : undefined);
                 }}
               >
                 <Play className="size-4" /> Mulai Paket
@@ -228,6 +244,31 @@ export function StationDialog({
                 </Button>
               ))}
             </div>
+
+            {session.mode === "prepaid" && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Waktu ekstra (tanpa biaya)</p>
+                  <span className="text-sm text-accent">{(session.bonusMin ?? 0) >= 0 ? "+" : ""}{session.bonusMin ?? 0} mnt</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[-5, -3, -1, 1, 2, 3, 5].map((m) => (
+                    <Button
+                      key={m}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        adjustBonusTime(station.id, m);
+                        toast.success(`Waktu ekstra ${m > 0 ? "+" : ""}${m} menit`, { description: "Tarif tidak berubah" });
+                      }}
+                    >
+                      {m > 0 ? `+${m}` : m}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Paket {session.durationMin} menit — total main {Math.max(0, session.durationMin + (session.bonusMin ?? 0))} menit.</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
