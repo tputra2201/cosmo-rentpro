@@ -287,6 +287,8 @@ function AppShell() {
           <Outlet />
         )}
       </main>
+      {session && !isAuthPage && mustChangePassword && <ForcePasswordChange />}
     </div>
   );
 }
+
