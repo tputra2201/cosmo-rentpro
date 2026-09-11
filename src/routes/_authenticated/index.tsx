@@ -117,6 +117,17 @@ function Dashboard() {
         ))}
       </section>
 
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold">Meja Kafe</h2>
+          <p className="text-sm text-muted-foreground">
+            Untuk pelanggan yang hanya makan atau ngopi. Klik Pesanan untuk mencatat dan
+            membayar.
+          </p>
+        </div>
+        <CafeTables />
+      </section>
+
       <StationDialog
         station={selected}
         open={selected !== null}
