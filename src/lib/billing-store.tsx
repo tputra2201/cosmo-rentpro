@@ -257,6 +257,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           rentalTotal: rental,
           fnbTotal: fnb,
           total: rental + fnb,
+          payment: payment || "Cash",
         };
         return {
           ...prev,
