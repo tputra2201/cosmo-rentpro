@@ -133,25 +133,28 @@
     background-image:
       radial-gradient(
         circle at 15% -10%,
-        color-mix(in oklab, var(--primary) 18%, transparent),
+        color-mix(in oklab, var(--primary) var(--tint-1, 18%), transparent),
         transparent 55%
       ),
       radial-gradient(
         circle at 85% 0%,
-        color-mix(in oklab, var(--accent) 12%, transparent),
+        color-mix(in oklab, var(--accent) var(--tint-2, 12%), transparent),
         transparent 45%
       );
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: 0.02em;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
+
 }
 
 @utility surface-panel {
