@@ -132,7 +132,7 @@ function ControlCenter() {
     }
   };
 
-  const save = async (patch?: Partial<Record<string, string>>) => {
+  const save = async (patch?: Record<string, string>) => {
     setBusy(true);
     try {
       const body: Record<string, string> = patch ?? {
