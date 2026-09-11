@@ -329,7 +329,12 @@ type Ctx = State & {
   updatePromotion: (id: string, patch: Partial<Omit<Promotion, "id">>) => void;
   removePromotion: (id: string) => void;
   clearHistory: () => void;
+  exportSnapshot: () => BillingSnapshot;
+  replaceAll: (data: unknown) => void;
+  resetAll: () => void;
 };
+
+export type BillingSnapshot = State;
 
 const BillingContext = createContext<Ctx | null>(null);
 
