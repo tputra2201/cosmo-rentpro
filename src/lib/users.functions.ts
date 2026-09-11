@@ -80,7 +80,10 @@ export const createUser = createServerFn({ method: "POST" })
 
     await supabaseAdmin
       .from("profiles")
-      .upsert({ id, full_name: data.fullName }, { onConflict: "id" });
+      .upsert(
+        { id, full_name: data.fullName, must_change_password: true } as never,
+        { onConflict: "id" },
+      );
     await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
@@ -88,6 +91,7 @@ export const createUser = createServerFn({ method: "POST" })
     if (roleError) throw new Error(roleError.message);
     return { id };
   });
+
 
 export const updateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
