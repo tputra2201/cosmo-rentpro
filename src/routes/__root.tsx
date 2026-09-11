@@ -182,6 +182,24 @@ function AppShell() {
     setMenuOpen(false);
   }, [pathname]);
 
+  // Tautan undangan / pemulihan sandi kadang mendarat di halaman lain.
+  // Arahkan ke halaman buat kata sandi agar tidak langsung masuk Dashboard.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (pathname === "/atur-sandi") return;
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const type = search.get("type") ?? hash.get("type");
+    const hasCode = Boolean(search.get("code") ?? hash.get("access_token"));
+    if (hasCode || type === "invite" || type === "recovery" || type === "signup") {
+      navigate({
+        to: "/atur-sandi",
+        search: Object.fromEntries(search.entries()),
+        replace: true,
+      });
+    }
+  }, [pathname, navigate]);
+
   const items = navItems.filter(
     ({ to }) => role === "admin" || !adminOnlyPaths.includes(to),
   );

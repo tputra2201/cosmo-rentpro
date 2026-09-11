@@ -88,7 +88,7 @@ export const inviteUser = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("profiles")
       .upsert(
-        { id, full_name: data.fullName, must_change_password: false } as never,
+        { id, full_name: data.fullName, must_change_password: true } as never,
         { onConflict: "id" },
       );
     await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
