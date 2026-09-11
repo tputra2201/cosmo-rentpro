@@ -382,8 +382,24 @@ type Ctx = State & {
     booth?: string;
   }) => void;
   removeStation: (stationId: string) => void;
-  addMenuItem: (name: string, price: number) => void;
+  addMenuItem: (name: string, price: number, category?: string) => void;
+  updateMenuItem: (id: string, patch: Partial<Omit<MenuItem, "id">>) => void;
   removeMenuItem: (id: string) => void;
+  addMenuCategory: (name: string) => boolean;
+  renameMenuCategory: (oldName: string, newName: string) => boolean;
+  removeMenuCategory: (name: string) => boolean;
+  addCafeTable: (init?: { name?: string; area?: string; seats?: number }) => void;
+  updateCafeTable: (tableId: string, patch: Partial<Omit<CafeTable, "id" | "orders">>) => void;
+  removeCafeTable: (tableId: string) => boolean;
+  openCafeTable: (tableId: string, customerName?: string, notes?: string) => void;
+  addCafeOrder: (tableId: string, item: MenuItem, qty: number) => void;
+  removeCafeOrder: (tableId: string, orderId: string) => void;
+  clearCafeTable: (tableId: string) => void;
+  payCafeTable: (
+    tableId: string,
+    input: { payment?: string; payments?: PaymentSplit[]; amountPaid?: number },
+  ) => HistoryRecord | null;
+
   addPaymentMethod: (name: string) => void;
   updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
   removePaymentMethod: (id: string) => void;
