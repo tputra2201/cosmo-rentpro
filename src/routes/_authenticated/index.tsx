@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Activity, Coins, MonitorPlay, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Activity, Coins, MonitorPlay } from "lucide-react";
 import { StationCard } from "@/components/StationCard";
 import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
