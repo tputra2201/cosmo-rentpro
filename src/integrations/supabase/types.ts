@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      developer_stores: {
+        Row: {
+          base_url: string
+          city: string
+          control_secret: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          label: string
+          last_status: string
+          last_synced_at: string | null
+          note: string
+          store_code: string
+          store_name: string
+          updated_at: string
+        }
+        Insert: {
+          base_url?: string
+          city?: string
+          control_secret?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          label?: string
+          last_status?: string
+          last_synced_at?: string | null
+          note?: string
+          store_code?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string
+          city?: string
+          control_secret?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          label?: string
+          last_status?: string
+          last_synced_at?: string | null
+          note?: string
+          store_code?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
