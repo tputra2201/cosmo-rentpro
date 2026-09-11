@@ -5,6 +5,7 @@ import { Activity, Coins, MonitorPlay, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StationCard } from "@/components/StationCard";
 import { StationDialog } from "@/components/StationDialog";
+import { CafeTables } from "@/components/CafeTables";
 import {
   fnbTotal,
   formatRupiah,
@@ -114,6 +115,17 @@ function Dashboard() {
             onClick={() => setSelectedId(station.id)}
           />
         ))}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold">Meja Kafe</h2>
+          <p className="text-sm text-muted-foreground">
+            Untuk pelanggan yang hanya makan atau ngopi. Klik Pesanan untuk mencatat dan
+            membayar.
+          </p>
+        </div>
+        <CafeTables />
       </section>
 
       <StationDialog
