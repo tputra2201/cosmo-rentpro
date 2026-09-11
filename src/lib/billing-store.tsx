@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "./auth";
+import { useStoreSync, type SyncStatus } from "./store-sync";
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
