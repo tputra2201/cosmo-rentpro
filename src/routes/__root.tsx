@@ -13,6 +13,7 @@ import {
   BarChart3,
   Joystick,
   Receipt,
+  Wallet,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
