@@ -202,7 +202,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
           });
         if (memberError) return new Response(memberError.message, { status: 500 });
 
-        return Response.json({ ok: true, invited });
+        return Response.json({ ok: true, invited, emailSent });
       },
     },
   },

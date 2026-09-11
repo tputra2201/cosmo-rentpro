@@ -297,9 +297,9 @@ function ControlCenter() {
     });
     if (json?.ok) {
       toast.success(
-        json.invited
-          ? "Undangan terkirim. Pengelola membuat sandi lewat tautan di email."
-          : "Akun ini sekarang mengelola store tersebut.",
+        json.emailSent === "reset"
+          ? "Akun ini sekarang mengelola store tersebut. Tautan buat sandi baru sudah dikirim ke emailnya."
+          : "Undangan terkirim. Pengelola membuat sandi lewat tautan di email.",
       );
       setInvite({ email: "", full_name: "" });
       void load();
