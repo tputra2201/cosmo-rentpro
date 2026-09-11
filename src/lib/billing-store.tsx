@@ -202,6 +202,11 @@ export function formatRupiah(value: number) {
   return "Rp " + Math.round(value).toLocaleString("id-ID");
 }
 
+export function paidTotal(session: Session | null | undefined) {
+  return (session?.settlements ?? []).reduce((sum, s) => sum + s.amount, 0);
+}
+
+
 export function formatClock(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));
   const h = Math.floor(s / 3600);
