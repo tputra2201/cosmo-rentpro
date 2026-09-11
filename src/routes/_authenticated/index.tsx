@@ -76,7 +76,7 @@ function Dashboard() {
     <div className="space-y-8">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Control Panel</h1>
+          <h1 className="text-3xl font-bold sm:text-4xl">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
             Klik kartu TV untuk mulai sesi, tambah pesanan, atau akhiri billing.
           </p>
