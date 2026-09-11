@@ -7,26 +7,28 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { LayoutGrid, Settings2, BarChart3, Joystick } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { BillingProvider } from "../lib/billing-store";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">
+          Halaman tidak ditemukan
+        </h2>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Kembali ke Dashboard
           </Link>
         </div>
       </div>
@@ -45,10 +47,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Halaman gagal dimuat
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Terjadi kesalahan. Coba muat ulang halaman.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -58,14 +60,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Coba lagi
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
         </div>
       </div>
     </div>
@@ -77,19 +73,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Billing Rental PS" },
+      {
+        name: "description",
+        content:
+          "Aplikasi kasir dan timer rental PlayStation: monitor TV, tarif, dan laporan.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -102,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="id" className="dark">
       <head>
         <HeadContent />
       </head>
@@ -114,13 +117,53 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const navItems = [
+  { to: "/", label: "Dashboard", icon: LayoutGrid },
+  { to: "/tarif", label: "Tarif", icon: Settings2 },
+  { to: "/laporan", label: "Laporan", icon: BarChart3 },
+] as const;
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <BillingProvider>
+        <div className="min-h-screen">
+          <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
+            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <Link to="/" className="flex items-center gap-2.5">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
+                  <Joystick className="size-5" />
+                </span>
+                <span className="font-display text-lg font-bold tracking-wide text-neon">
+                  BILLING RENTAL PS
+                </span>
+              </Link>
+              <nav className="flex items-center gap-1 overflow-x-auto">
+                {navItems.map(({ to, label, icon: Icon }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    activeOptions={{ exact: to === "/" }}
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    activeProps={{
+                      className: "bg-secondary text-primary",
+                    }}
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </header>
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+            <Outlet />
+          </main>
+        </div>
+        <Toaster position="top-right" richColors />
+      </BillingProvider>
     </QueryClientProvider>
   );
 }
