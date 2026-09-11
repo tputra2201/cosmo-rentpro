@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedBookingRouteImport } from './routes/_authenticated/booking'
 import { Route as AuthenticatedKasirRouteImport } from './routes/_authenticated/kasir'
@@ -18,48 +19,53 @@ import { Route as AuthenticatedPembayaranRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/promo'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
 
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBookingRoute = AuthenticatedBookingRouteImport.update({
-  id: '/_authenticated/booking',
+  id: '/booking',
   path: '/booking',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedKasirRoute = AuthenticatedKasirRouteImport.update({
-  id: '/_authenticated/kasir',
+  id: '/kasir',
   path: '/kasir',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLaporanRoute = AuthenticatedLaporanRouteImport.update({
-  id: '/_authenticated/laporan',
+  id: '/laporan',
   path: '/laporan',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPelangganRoute = AuthenticatedPelangganRouteImport.update({
-  id: '/_authenticated/pelanggan',
+  id: '/pelanggan',
   path: '/pelanggan',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPembayaranRoute = AuthenticatedPembayaranRouteImport.update({
-  id: '/_authenticated/pembayaran',
+  id: '/pembayaran',
   path: '/pembayaran',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPromoRoute = AuthenticatedPromoRouteImport.update({
-  id: '/_authenticated/promo',
+  id: '/promo',
   path: '/promo',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTarifRoute = AuthenticatedTarifRouteImport.update({
-  id: '/_authenticated/tarif',
+  id: '/tarif',
   path: '/tarif',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
   '/booking': typeof AuthenticatedBookingRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
@@ -67,7 +73,6 @@ export interface FileRoutesByFullPath {
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/promo': typeof AuthenticatedPromoRoute
   '/tarif': typeof AuthenticatedTarifRoute
-  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
   '/booking': typeof AuthenticatedBookingRoute
@@ -81,6 +86,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
   '/_authenticated/kasir': typeof AuthenticatedKasirRoute
   '/_authenticated/laporan': typeof AuthenticatedLaporanRoute
@@ -93,6 +99,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/booking'
     | '/kasir'
     | '/laporan'
@@ -100,7 +107,6 @@ export interface FileRouteTypes {
     | '/pembayaran'
     | '/promo'
     | '/tarif'
-    | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/booking'
@@ -113,6 +119,7 @@ export interface FileRouteTypes {
     | '/'
   id:
     | '__root__'
+    | '/_authenticated'
     | '/_authenticated/booking'
     | '/_authenticated/kasir'
     | '/_authenticated/laporan'
@@ -124,6 +131,78 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/booking': {
+      id: '/_authenticated/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof AuthenticatedBookingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/kasir': {
+      id: '/_authenticated/kasir'
+      path: '/kasir'
+      fullPath: '/kasir'
+      preLoaderRoute: typeof AuthenticatedKasirRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/laporan': {
+      id: '/_authenticated/laporan'
+      path: '/laporan'
+      fullPath: '/laporan'
+      preLoaderRoute: typeof AuthenticatedLaporanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pelanggan': {
+      id: '/_authenticated/pelanggan'
+      path: '/pelanggan'
+      fullPath: '/pelanggan'
+      preLoaderRoute: typeof AuthenticatedPelangganRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pembayaran': {
+      id: '/_authenticated/pembayaran'
+      path: '/pembayaran'
+      fullPath: '/pembayaran'
+      preLoaderRoute: typeof AuthenticatedPembayaranRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/promo': {
+      id: '/_authenticated/promo'
+      path: '/promo'
+      fullPath: '/promo'
+      preLoaderRoute: typeof AuthenticatedPromoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tarif': {
+      id: '/_authenticated/tarif'
+      path: '/tarif'
+      fullPath: '/tarif'
+      preLoaderRoute: typeof AuthenticatedTarifRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+  }
+}
+
+interface AuthenticatedRouteRouteChildren {
   AuthenticatedBookingRoute: typeof AuthenticatedBookingRoute
   AuthenticatedKasirRoute: typeof AuthenticatedKasirRoute
   AuthenticatedLaporanRoute: typeof AuthenticatedLaporanRoute
@@ -134,68 +213,7 @@ export interface RootRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/booking': {
-      id: '/_authenticated/booking'
-      path: '/booking'
-      fullPath: '/booking'
-      preLoaderRoute: typeof AuthenticatedBookingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/kasir': {
-      id: '/_authenticated/kasir'
-      path: '/kasir'
-      fullPath: '/kasir'
-      preLoaderRoute: typeof AuthenticatedKasirRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/laporan': {
-      id: '/_authenticated/laporan'
-      path: '/laporan'
-      fullPath: '/laporan'
-      preLoaderRoute: typeof AuthenticatedLaporanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/pelanggan': {
-      id: '/_authenticated/pelanggan'
-      path: '/pelanggan'
-      fullPath: '/pelanggan'
-      preLoaderRoute: typeof AuthenticatedPelangganRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/pembayaran': {
-      id: '/_authenticated/pembayaran'
-      path: '/pembayaran'
-      fullPath: '/pembayaran'
-      preLoaderRoute: typeof AuthenticatedPembayaranRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/promo': {
-      id: '/_authenticated/promo'
-      path: '/promo'
-      fullPath: '/promo'
-      preLoaderRoute: typeof AuthenticatedPromoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/tarif': {
-      id: '/_authenticated/tarif'
-      path: '/tarif'
-      fullPath: '/tarif'
-      preLoaderRoute: typeof AuthenticatedTarifRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
-}
-
-const rootRouteChildren: RootRouteChildren = {
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBookingRoute: AuthenticatedBookingRoute,
   AuthenticatedKasirRoute: AuthenticatedKasirRoute,
   AuthenticatedLaporanRoute: AuthenticatedLaporanRoute,
@@ -204,6 +222,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedPromoRoute: AuthenticatedPromoRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
