@@ -147,6 +147,8 @@ export type HistoryRecord = {
   promoName?: string;
   discount?: number;
   pointsEarned?: number;
+  kind?: "rental" | "cafe";
+  tableName?: string;
 };
 
 export type Rates = Record<string, number>;
@@ -156,6 +158,8 @@ type State = {
   consoleTypes: string[];
   rates: Rates;
   menu: MenuItem[];
+  menuCategories: string[];
+  cafeTables: CafeTable[];
   paymentMethods: PaymentMethod[];
   packages: RentalPackage[];
   roundingRule: RoundingRule;
@@ -167,6 +171,7 @@ type State = {
   pointEntries: PointEntry[];
   pointsPerRupiah: number;
 };
+
 
 const STORAGE_KEY = "billing-ps-state-v1";
 
