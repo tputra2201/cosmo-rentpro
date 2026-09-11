@@ -132,15 +132,16 @@ function PenggunaPage() {
           Pengaturan Pengguna
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Hanya Admin yang bisa mendaftarkan staf baru dan menentukan levelnya.
+          Admin mengundang staf lewat email. Staf membuat kata sandinya sendiri
+          dari tautan undangan — tidak ada sandi awal yang dikirim.
         </p>
       </div>
 
       <form
-        className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5"
+        className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={(e) => {
           e.preventDefault();
-          add.mutate({ email, password, fullName, role });
+          add.mutate({ email, fullName, role });
         }}
       >
         <div className="grid gap-2">
@@ -165,18 +166,6 @@ function PenggunaPage() {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="sandi">Kata sandi awal</Label>
-          <Input
-            id="sandi"
-            type="text"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minimal 6 karakter"
-            required
-          />
-        </div>
-        <div className="grid gap-2">
           <Label>Level</Label>
           <Select value={role} onValueChange={(v) => setRole(v as "admin" | "kasir")}>
             <SelectTrigger>
@@ -190,7 +179,7 @@ function PenggunaPage() {
         </div>
         <div className="flex items-end">
           <Button type="submit" className="w-full" disabled={add.isPending}>
-            <UserPlus className="size-4" /> Tambah
+            <UserPlus className="size-4" /> Kirim undangan
           </Button>
         </div>
       </form>
@@ -208,10 +197,14 @@ function PenggunaPage() {
               key={u.id}
               user={u}
               isSelf={u.id === user?.id}
+              busy={resend.isPending || reset.isPending}
               onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
+              onResend={() => resend.mutate(u.email)}
+              onReset={() => reset.mutate(u.email)}
               onDelete={() => remove.mutate(u.id)}
             />
           ))}
+
           {!isLoading && users.length === 0 && (
             <p className="text-sm text-muted-foreground">Belum ada pengguna.</p>
           )}
