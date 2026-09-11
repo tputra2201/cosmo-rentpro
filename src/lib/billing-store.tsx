@@ -437,7 +437,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   void startSession;
 
   const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId, payment, amountPaid) => {
+    (stationId, payment, amountPaid, payments) => {
       let record: HistoryRecord | null = null;
       setState((prev) => {
         const station = prev.stations.find((s) => s.id === stationId);
