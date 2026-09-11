@@ -108,10 +108,11 @@ function AuthPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Tidak ada pendaftaran mandiri. Hubungi Admin untuk membuat akun,
-          mengatur level, atau mereset kata sandi. Kata sandi bisa kamu ubah
-          sendiri di menu Akun setelah masuk.
+          Tidak ada pendaftaran mandiri. Admin mengirim undangan ke email kamu,
+          lalu kamu membuat kata sandi sendiri lewat tautan di email itu. Lupa
+          sandi? Minta Admin mengirim tautan atur ulang.
         </p>
+
       </div>
     </div>
   );
