@@ -15,6 +15,9 @@ import {
   Receipt,
   Wallet,
   Menu,
+  CalendarDays,
+  Users,
+  Percent,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
@@ -130,6 +133,9 @@ function RootShell({ children }: { children: ReactNode }) {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
+  { to: "/booking", label: "Booking", icon: CalendarDays },
+  { to: "/pelanggan", label: "Pelanggan", icon: Users },
+  { to: "/promo", label: "Promo", icon: Percent },
   { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
@@ -152,7 +158,7 @@ function RootComponent() {
                   BILLING RENTAL PS
                 </span>
               </Link>
-              <nav className="hidden items-center gap-1 lg:flex">
+              <nav className="hidden items-center gap-1 xl:flex">
                 {navItems.map(({ to, label, icon: Icon }) => (
                   <Link
                     key={to}
@@ -169,7 +175,7 @@ function RootComponent() {
                 ))}
               </nav>
               <Sheet>
-                <SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka menu"><Menu className="size-5" /></Button></SheetTrigger>
+                <SheetTrigger asChild><Button variant="outline" size="icon" className="xl:hidden" aria-label="Buka menu"><Menu className="size-5" /></Button></SheetTrigger>
                 <SheetContent side="right" className="w-72"><SheetTitle>Menu Operasional</SheetTitle><nav className="mt-6 grid gap-2">{navItems.map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground" activeProps={{ className: "bg-secondary text-primary" }}><Icon className="size-4" />{label}</Link>)}</nav></SheetContent>
               </Sheet>
             </div>
