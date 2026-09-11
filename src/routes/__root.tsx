@@ -35,6 +35,8 @@ import { AuthProvider, useAuth, roleLabel, adminOnlyPaths } from "@/lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
+import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+
 
 function NotFoundComponent() {
   return (
