@@ -690,7 +690,7 @@ export function StationDialog({
                 }}
               >
                 <Wallet className="size-4" />
-                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(dueAmount)}`}
+                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(payTarget)}`}
               </Button>
               <Button
                 variant="destructive"
