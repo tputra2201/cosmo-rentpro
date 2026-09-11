@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AturSandiRouteImport } from './routes/atur-sandi'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as KontrolRouteImport } from './routes/kontrol'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAkunRouteImport } from './routes/_authenticated/akun'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
@@ -39,6 +40,11 @@ const AturSandiRoute = AturSandiRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KontrolRoute = KontrolRouteImport.update({
+  id: '/kontrol',
+  path: '/kontrol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/atur-sandi': typeof AturSandiRoute
   '/auth': typeof AuthRoute
+  '/kontrol': typeof KontrolRoute
   '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/atur-sandi': typeof AturSandiRoute
   '/auth': typeof AuthRoute
+  '/kontrol': typeof KontrolRoute
   '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/atur-sandi': typeof AturSandiRoute
   '/auth': typeof AuthRoute
+  '/kontrol': typeof KontrolRoute
   '/_authenticated/akun': typeof AuthenticatedAkunRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/atur-sandi'
     | '/auth'
+    | '/kontrol'
     | '/akun'
     | '/backup'
     | '/booking'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
   to:
     | '/atur-sandi'
     | '/auth'
+    | '/kontrol'
     | '/akun'
     | '/backup'
     | '/booking'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/atur-sandi'
     | '/auth'
+    | '/kontrol'
     | '/_authenticated/akun'
     | '/_authenticated/backup'
     | '/_authenticated/booking'
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AturSandiRoute: typeof AturSandiRoute
   AuthRoute: typeof AuthRoute
+  KontrolRoute: typeof KontrolRoute
   ApiPublicStoreControlRoute: typeof ApiPublicStoreControlRoute
 }
 
@@ -254,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kontrol': {
+      id: '/kontrol'
+      path: '/kontrol'
+      fullPath: '/kontrol'
+      preLoaderRoute: typeof KontrolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -396,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AturSandiRoute: AturSandiRoute,
   AuthRoute: AuthRoute,
+  KontrolRoute: KontrolRoute,
   ApiPublicStoreControlRoute: ApiPublicStoreControlRoute,
 }
 export const routeTree = rootRouteImport
