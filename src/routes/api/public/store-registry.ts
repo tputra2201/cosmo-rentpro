@@ -148,8 +148,10 @@ export const Route = createFileRoute("/api/public/store-registry")({
         });
         if (listError) return new Response(listError.message, { status: 500 });
         const email = body.email.toLowerCase();
-        let userId = list.users.find((u) => (u.email ?? "").toLowerCase() === email)?.id;
+        const existing = list.users.find((u) => (u.email ?? "").toLowerCase() === email);
+        let userId = existing?.id;
         let invited = false;
+        let emailSent: "invite" | "reset" | null = null;
 
         if (!userId) {
           const { data: created, error: inviteError } =
@@ -160,6 +162,24 @@ export const Route = createFileRoute("/api/public/store-registry")({
           if (inviteError) return new Response(inviteError.message, { status: 500 });
           userId = created.user!.id;
           invited = true;
+          emailSent = "invite";
+        } else if (!existing?.last_sign_in_at) {
+          // Akun sudah ada tapi belum pernah masuk: kirim ulang undangan.
+          const { error: reinviteError } =
+            await supabaseAdmin.auth.admin.inviteUserByEmail(body.email, {
+              data: { full_name: body.full_name },
+              redirectTo: body.redirect_to,
+            });
+          if (reinviteError) return new Response(reinviteError.message, { status: 500 });
+          emailSent = "invite";
+        } else {
+          // Akun aktif: kirim tautan buat sandi baru agar bisa langsung masuk.
+          const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(
+            body.email,
+            { redirectTo: body.redirect_to },
+          );
+          if (resetError) return new Response(resetError.message, { status: 500 });
+          emailSent = "reset";
         }
 
         await supabaseAdmin.from("profiles").upsert(
@@ -182,7 +202,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
           });
         if (memberError) return new Response(memberError.message, { status: 500 });
 
-        return Response.json({ ok: true, invited });
+        return Response.json({ ok: true, invited, emailSent });
       },
     },
   },
