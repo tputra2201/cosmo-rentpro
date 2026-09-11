@@ -150,7 +150,7 @@ function StorePage() {
           <p className="text-sm text-muted-foreground sm:col-span-2">Memuat data store…</p>
         )}
         {!loading &&
-          fields.map(({ key, label, type, wide }) => (
+          fields.map(({ key, label, type, wide, hint }) => (
             <div key={key} className={`grid gap-2 ${wide ? "sm:col-span-2" : ""}`}>
               <Label htmlFor={key}>{label}</Label>
               <Input
@@ -161,6 +161,7 @@ function StorePage() {
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                 placeholder={label}
               />
+              {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
             </div>
           ))}
         {!loading && (
