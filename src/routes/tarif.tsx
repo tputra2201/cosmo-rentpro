@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,8 @@ import {
   formatRupiah,
   useBilling,
   type ConsoleType,
+  type RoundingRule,
+  type StationAvailability,
 } from "@/lib/billing-store";
 
 export const Route = createFileRoute("/tarif")({
@@ -47,9 +50,19 @@ function TarifPage() {
     stations,
     setStationConsole,
     removeStation,
+    updateStation,
+    packages,
+    addPackage,
+    updatePackage,
+    removePackage,
+    roundingRule,
+    setRoundingRule,
   } = useBilling();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [packageName, setPackageName] = useState("");
+  const [packageDuration, setPackageDuration] = useState("");
+  const [packagePrice, setPackagePrice] = useState("");
 
   return (
     <div className="space-y-10">
@@ -85,14 +98,25 @@ function TarifPage() {
       </section>
 
       <section className="surface-panel p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 className="text-xl font-semibold">Paket Rental</h2><p className="text-sm text-muted-foreground">Paket aktif muncul saat memulai sesi.</p></div>
+          <Select value={roundingRule} onValueChange={(value) => setRoundingRule(value as RoundingRule)}><SelectTrigger className="w-52"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="minute">Hitung per menit</SelectItem><SelectItem value="30-minutes">Bulatkan 30 menit</SelectItem><SelectItem value="hour">Bulatkan per jam</SelectItem></SelectContent></Select>
+        </div>
+        <ul className="mt-4 space-y-2">
+          {packages.map((item) => <li key={item.id} className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_120px_140px_auto_auto]"><Input value={item.name} onChange={(e) => updatePackage(item.id, { name: e.target.value })} aria-label={`Nama paket ${item.name}`} /><Input type="number" min={1} value={item.durationMin} onChange={(e) => updatePackage(item.id, { durationMin: Number(e.target.value) })} aria-label={`Durasi ${item.name}`} /><Input type="number" min={0} value={item.price} onChange={(e) => updatePackage(item.id, { price: Number(e.target.value) })} aria-label={`Harga khusus ${item.name}`} /><Switch checked={item.active} onCheckedChange={(active) => updatePackage(item.id, { active })} aria-label={`Aktifkan ${item.name}`} /><Button size="icon" variant="ghost" onClick={() => removePackage(item.id)} aria-label={`Hapus ${item.name}`}><Trash2 className="size-4" /></Button></li>)}
+        </ul>
+        <form className="mt-4 grid gap-2 sm:grid-cols-[1fr_120px_140px_auto]" onSubmit={(e) => { e.preventDefault(); const minutes = Number(packageDuration); const packageCost = Number(packagePrice); if (!packageName.trim() || minutes <= 0) { toast.error("Lengkapi nama dan durasi paket"); return; } addPackage(packageName.trim(), minutes, packageCost); setPackageName(""); setPackageDuration(""); setPackagePrice(""); }}><Input placeholder="Nama paket" value={packageName} onChange={(e) => setPackageName(e.target.value)} /><Input type="number" min={1} placeholder="Menit" value={packageDuration} onChange={(e) => setPackageDuration(e.target.value)} /><Input type="number" min={0} placeholder="Harga khusus" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} /><Button type="submit"><Plus className="size-4" /> Tambah</Button></form>
+      </section>
+
+      <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Konsol per TV</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stations.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-2 rounded-lg bg-secondary/60 p-3"
+               className="grid gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
             >
-              <span className="w-16 font-display font-semibold">{s.name}</span>
+               <div className="grid grid-cols-2 gap-2 sm:block"><Input value={s.name} onChange={(e) => updateStation(s.id, { name: e.target.value })} aria-label={`Nama ${s.name}`} /><Input value={s.booth} onChange={(e) => updateStation(s.id, { booth: e.target.value })} aria-label={`Booth ${s.name}`} className="sm:mt-2" /></div>
               <Select
                 value={s.console}
                 onValueChange={(v) => setStationConsole(s.id, v as ConsoleType)}
@@ -108,6 +132,7 @@ function TarifPage() {
                   ))}
                 </SelectContent>
               </Select>
+               <Select value={s.availability} onValueChange={(value) => updateStation(s.id, { availability: value as StationAvailability })} disabled={Boolean(s.session)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="available">Tersedia</SelectItem><SelectItem value="booked">Booking</SelectItem><SelectItem value="maintenance">Maintenance</SelectItem><SelectItem value="offline">Offline</SelectItem></SelectContent></Select>
               <Button
                 size="icon"
                 variant="ghost"

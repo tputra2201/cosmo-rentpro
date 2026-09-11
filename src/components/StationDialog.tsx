@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   elapsedSeconds,
   fnbTotal,
@@ -53,10 +55,17 @@ export function StationDialog({
     removeOrder,
     setStationConsole,
     paymentMethods,
+    packages,
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
   const [payment, setPayment] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [member, setMember] = useState(false);
+  const [packageId, setPackageId] = useState("");
+  const [notes, setNotes] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
 
   const activePayments = paymentMethods.filter((p) => p.active);
   const selectedPayment =
@@ -65,11 +74,19 @@ export function StationDialog({
   if (!station) return null;
   const session = station.session;
   const rate = rates[station.console];
+  const chosenPackage = packages.find((item) => item.id === packageId);
+  const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
 
   const handleStop = () => {
-    const record = stopSession(station.id, selectedPayment);
+    const cashReceived = selectedPayment === "Cash" ? Number(amountPaid) : undefined;
+    if (selectedPayment === "Cash" && cashReceived !== undefined && cashReceived < sessionTotal) {
+      toast.error("Uang diterima masih kurang");
+      return;
+    }
+    const record = stopSession(station.id, selectedPayment, cashReceived);
     onOpenChange(false);
     setPayment("");
+    setAmountPaid("");
     if (record) {
       toast.success(`${record.stationName} selesai`, {
         description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
@@ -91,6 +108,14 @@ export function StationDialog({
 
         {!session ? (
           <div className="space-y-5">
+            {station.availability !== "available" && (
+              <Badge variant="outline" className="w-full justify-center py-2 text-warning">Unit berstatus {station.availability}. Ubah status di Pengaturan terlebih dahulu.</Badge>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5"><Label htmlFor="customer-name">Nama pelanggan</Label><Input id="customer-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Pelanggan umum" /></div>
+              <div className="space-y-1.5"><Label htmlFor="customer-phone">Nomor HP</Label><Input id="customer-phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="08..." inputMode="tel" /></div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border p-3"><div><p className="text-sm font-medium">Harga member</p><p className="text-xs text-muted-foreground">Tandai pelanggan sebagai member</p></div><Switch checked={member} onCheckedChange={setMember} aria-label="Status member" /></div>
             <div className="space-y-2">
               <p className="text-sm font-medium">Jenis konsol</p>
               <Select
@@ -114,6 +139,10 @@ export function StationDialog({
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Bermain per Jam (bayar di muka)</p>
+              <Select value={packageId} onValueChange={(value) => { setPackageId(value); const item = packages.find((entry) => entry.id === value); if (item) setDuration(item.durationMin); }}>
+                <SelectTrigger><SelectValue placeholder="Pilih paket rental" /></SelectTrigger>
+                <SelectContent>{packages.filter((item) => item.active).map((item) => <SelectItem key={item.id} value={item.id}>{item.name} — {item.durationMin} menit</SelectItem>)}</SelectContent>
+              </Select>
               <div className="flex flex-wrap gap-2">
                 {DURATIONS.map((d) => (
                   <Button
@@ -147,7 +176,7 @@ export function StationDialog({
               <Button
                 className="w-full"
                 onClick={() => {
-                  startSession(station.id, "prepaid", duration);
+                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes });
                   toast.success(`${station.name} mulai ${duration} menit`);
                 }}
               >
@@ -161,12 +190,13 @@ export function StationDialog({
               variant="secondary"
               className="w-full"
               onClick={() => {
-                startSession(station.id, "open", 0);
+                startSession(station.id, "open", 0, { customerName, customerPhone, member, packageName: "Open Time", notes });
                 toast.success(`${station.name} mulai Main Sepuasnya`);
               }}
             >
               <InfinityIcon className="size-4" /> Mulai Main Sepuasnya
             </Button>
+            <div className="space-y-1.5"><Label htmlFor="rental-notes">Catatan</Label><Input id="rental-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Permintaan pelanggan (opsional)" /></div>
           </div>
         ) : (
           <div className="space-y-5">
@@ -179,6 +209,7 @@ export function StationDialog({
                   ? formatClock(elapsedSeconds(session, now))
                   : formatClock(Math.max(0, remainingSeconds(session, now)))}
               </p>
+              <p className="mt-2 text-sm text-muted-foreground">{session.customerName || "Pelanggan Umum"} · {session.packageName}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -242,6 +273,10 @@ export function StationDialog({
                 </ul>
               )}
             </div>
+
+            {selectedPayment === "Cash" && (
+              <div className="space-y-2"><Label htmlFor="amount-paid">Uang diterima</Label><div className="relative"><Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id="amount-paid" className="pl-9" type="number" min={0} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder={String(Math.ceil(sessionTotal / 1000) * 1000)} /></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">Kembalian</span><span className="font-semibold text-accent">{formatRupiah(Math.max(0, Number(amountPaid) - sessionTotal))}</span></div></div>
+            )}
 
             <Separator />
 

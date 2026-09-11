@@ -10,6 +10,8 @@ import {
 
 export type ConsoleType = "PS3" | "PS4" | "PS5";
 export type PlayMode = "prepaid" | "open";
+export type StationAvailability = "available" | "booked" | "maintenance" | "offline";
+export type RoundingRule = "minute" | "30-minutes" | "hour";
 
 export type OrderItem = {
   id: string;
@@ -24,18 +26,32 @@ export type Session = {
   durationMin: number; // 0 for open time
   rate: number; // rupiah per hour, snapshot at start
   orders: OrderItem[];
+  customerName: string;
+  customerPhone: string;
+  member: boolean;
+  packageName: string;
+  notes: string;
 };
 
 export type Station = {
   id: string;
   name: string;
   console: ConsoleType;
+  booth: string;
+  availability: StationAvailability;
   session: Session | null;
 };
 
 export type MenuItem = { id: string; name: string; price: number };
 
 export type PaymentMethod = { id: string; name: string; active: boolean };
+export type RentalPackage = {
+  id: string;
+  name: string;
+  durationMin: number;
+  price: number;
+  active: boolean;
+};
 
 export type HistoryRecord = {
   id: string;
@@ -49,6 +65,12 @@ export type HistoryRecord = {
   fnbTotal: number;
   total: number;
   payment?: string;
+  customerName?: string;
+  customerPhone?: string;
+  packageName?: string;
+  amountPaid?: number;
+  change?: number;
+  orders?: OrderItem[];
 };
 
 export type Rates = Record<ConsoleType, number>;
@@ -58,6 +80,8 @@ type State = {
   rates: Rates;
   menu: MenuItem[];
   paymentMethods: PaymentMethod[];
+  packages: RentalPackage[];
+  roundingRule: RoundingRule;
   history: HistoryRecord[];
 };
 
@@ -65,12 +89,12 @@ const STORAGE_KEY = "billing-ps-state-v1";
 
 const defaultState: State = {
   stations: [
-    { id: "tv-1", name: "TV 01", console: "PS3", session: null },
-    { id: "tv-2", name: "TV 02", console: "PS3", session: null },
-    { id: "tv-3", name: "TV 03", console: "PS4", session: null },
-    { id: "tv-4", name: "TV 04", console: "PS4", session: null },
-    { id: "tv-5", name: "TV 05", console: "PS5", session: null },
-    { id: "tv-6", name: "TV 06", console: "PS5", session: null },
+    { id: "tv-1", name: "TV 01", console: "PS3", booth: "Booth 1", availability: "available", session: null },
+    { id: "tv-2", name: "TV 02", console: "PS3", booth: "Booth 2", availability: "available", session: null },
+    { id: "tv-3", name: "TV 03", console: "PS4", booth: "Booth 3", availability: "available", session: null },
+    { id: "tv-4", name: "TV 04", console: "PS4", booth: "Booth 4", availability: "available", session: null },
+    { id: "tv-5", name: "TV 05", console: "PS5", booth: "VIP 1", availability: "available", session: null },
+    { id: "tv-6", name: "TV 06", console: "PS5", booth: "VIP 2", availability: "available", session: null },
   ],
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   menu: [
@@ -89,6 +113,12 @@ const defaultState: State = {
     { id: "pm-compliment", name: "Compliment", active: true },
     { id: "pm-lainnya", name: "Lainnya", active: true },
   ],
+  packages: [
+    { id: "pkg-1", name: "1 Jam", durationMin: 60, price: 0, active: true },
+    { id: "pkg-2", name: "2 Jam", durationMin: 120, price: 0, active: true },
+    { id: "pkg-3", name: "3 Jam", durationMin: 180, price: 0, active: true },
+  ],
+  roundingRule: "minute",
   history: [],
 };
 
@@ -117,7 +147,8 @@ export function rentalTotal(session: Session, now: number) {
   if (session.mode === "prepaid") {
     return (session.rate * session.durationMin) / 60;
   }
-  const mins = Math.ceil(elapsedSeconds(session, now) / 60);
+  const rawMinutes = Math.max(1, Math.ceil(elapsedSeconds(session, now) / 60));
+  const mins = rawMinutes;
   return (session.rate * mins) / 60;
 }
 
@@ -125,12 +156,39 @@ export function fnbTotal(session: Session) {
   return session.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
 }
 
-export type StationStatus = "idle" | "playing" | "timeup";
+export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
 export function stationStatus(station: Station, now: number): StationStatus {
+  if (!station.session && station.availability !== "available") return station.availability;
   if (!station.session) return "idle";
   if (station.session.mode === "open") return "playing";
   return remainingSeconds(station.session, now) <= 0 ? "timeup" : "playing";
+}
+
+function migrateState(raw: unknown): State {
+  const parsed = typeof raw === "object" && raw ? (raw as Partial<State>) : {};
+  return {
+    ...defaultState,
+    ...parsed,
+    stations: (parsed.stations ?? defaultState.stations).map((station, index) => ({
+      ...station,
+      booth: station.booth ?? `Booth ${index + 1}`,
+      availability: station.availability ?? "available",
+      session: station.session
+        ? {
+            ...station.session,
+            customerName: station.session.customerName ?? "Pelanggan Umum",
+            customerPhone: station.session.customerPhone ?? "",
+            member: station.session.member ?? false,
+            packageName: station.session.packageName ?? (station.session.mode === "open" ? "Open Time" : `${station.session.durationMin} Menit`),
+            notes: station.session.notes ?? "",
+          }
+        : null,
+    })),
+    paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
+    packages: parsed.packages ?? defaultState.packages,
+    roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
+  };
 }
 
 type Ctx = State & {
@@ -139,13 +197,15 @@ type Ctx = State & {
     stationId: string,
     mode: PlayMode,
     durationMin: number,
+    details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes">>,
   ) => void;
-  stopSession: (stationId: string, payment?: string) => HistoryRecord | null;
+  stopSession: (stationId: string, payment?: string, amountPaid?: number) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
+  updateStation: (stationId: string, patch: Partial<Omit<Station, "id" | "session">>) => void;
   addStation: () => void;
   removeStation: (stationId: string) => void;
   addMenuItem: (name: string, price: number) => void;
@@ -153,6 +213,10 @@ type Ctx = State & {
   addPaymentMethod: (name: string) => void;
   updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
   removePaymentMethod: (id: string) => void;
+  addPackage: (name: string, durationMin: number, price: number) => void;
+  updatePackage: (id: string, patch: Partial<Omit<RentalPackage, "id">>) => void;
+  removePackage: (id: string) => void;
+  setRoundingRule: (rule: RoundingRule) => void;
   clearHistory: () => void;
 };
 
@@ -166,7 +230,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...defaultState, ...JSON.parse(raw) });
+      if (raw) setState(migrateState(JSON.parse(raw)));
     } catch {
       /* ignore corrupt storage */
     }
@@ -198,7 +262,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const startSession = useCallback<Ctx["startSession"]>(
-    (stationId, mode, durationMin) =>
+    (stationId, mode, durationMin, details) =>
       mapStation(stationId, (s) => ({
         ...s,
         session: {
@@ -207,6 +271,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           durationMin: mode === "prepaid" ? durationMin : 0,
           rate: 0,
           orders: [],
+          customerName: details?.customerName || "Pelanggan Umum",
+          customerPhone: details?.customerPhone || "",
+          member: details?.member || false,
+          packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
+          notes: details?.notes || "",
         },
       })),
     [mapStation],
@@ -214,7 +283,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   // rate snapshot needs access to rates; wrap it
   const startSessionWithRate = useCallback<Ctx["startSession"]>(
-    (stationId, mode, durationMin) =>
+    (stationId, mode, durationMin, details) =>
       update((prev) => ({
         ...prev,
         stations: prev.stations.map((s) =>
@@ -227,6 +296,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   durationMin: mode === "prepaid" ? durationMin : 0,
                   rate: prev.rates[s.console],
                   orders: [],
+                    customerName: details?.customerName || "Pelanggan Umum",
+                    customerPhone: details?.customerPhone || "",
+                    member: details?.member || false,
+                    packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
+                    notes: details?.notes || "",
                 },
               }
             : s,
@@ -237,7 +311,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   void startSession;
 
   const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId, payment) => {
+    (stationId, payment, amountPaid) => {
       let record: HistoryRecord | null = null;
       setState((prev) => {
         const station = prev.stations.find((s) => s.id === stationId);
@@ -246,7 +320,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const session = station.session;
         const rental = rentalTotal(session, endAt);
         const fnb = fnbTotal(session);
-        record = {
+        const completedRecord: HistoryRecord = {
           id: `${stationId}-${endAt}`,
           stationName: station.name,
           console: station.console,
@@ -258,10 +332,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           fnbTotal: fnb,
           total: rental + fnb,
           payment: payment || "Cash",
+          customerName: session.customerName,
+          customerPhone: session.customerPhone,
+          packageName: session.packageName,
+          ...(amountPaid === undefined
+            ? {}
+            : {
+                amountPaid,
+                change: Math.max(0, amountPaid - rental - fnb),
+              }),
+          orders: session.orders,
         };
+        record = completedRecord;
         return {
           ...prev,
-          history: [record, ...prev.history],
+          history: [completedRecord, ...prev.history],
           stations: prev.stations.map((s) =>
             s.id === stationId ? { ...s, session: null } : s,
           ),
@@ -356,6 +441,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 id: `tv-${Date.now()}`,
                 name: `TV ${String(n).padStart(2, "0")}`,
                 console: "PS4",
+                booth: `Booth ${n}`,
+                availability: "available",
                 session: null,
               },
             ],
@@ -366,6 +453,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           stations: prev.stations.filter((s) => s.id !== stationId),
         })),
+      updateStation: (stationId, patch) =>
+        mapStation(stationId, (station) => ({ ...station, ...patch })),
       addMenuItem: (name, price) =>
         update((prev) => ({
           ...prev,
@@ -396,6 +485,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           paymentMethods: prev.paymentMethods.filter((p) => p.id !== id),
         })),
+      addPackage: (name, durationMin, price) =>
+        update((prev) => ({
+          ...prev,
+          packages: [...prev.packages, { id: `pkg-${Date.now()}`, name, durationMin, price, active: true }],
+        })),
+      updatePackage: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          packages: prev.packages.map((item) => item.id === id ? { ...item, ...patch } : item),
+        })),
+      removePackage: (id) =>
+        update((prev) => ({ ...prev, packages: prev.packages.filter((item) => item.id !== id) })),
+      setRoundingRule: (roundingRule) => update((prev) => ({ ...prev, roundingRule })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
     }),
     [

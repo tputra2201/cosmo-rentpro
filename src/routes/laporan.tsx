@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { Download, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,6 +61,18 @@ function LaporanPage() {
     return acc;
   }, {});
 
+  const exportCsv = () => {
+    const header = ["Tanggal", "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "F&B", "Total"];
+    const rows = history.map((h) => [new Date(h.endAt).toLocaleString("id-ID"), h.stationName, h.customerName ?? "Pelanggan Umum", h.packageName ?? h.mode, h.payment ?? "Cash", h.minutes, h.rentalTotal, h.fnbTotal, h.total]);
+    const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `laporan-ps-rental-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -70,11 +82,7 @@ function LaporanPage() {
             Rekap pendapatan dari sesi rental dan penjualan kasir.
           </p>
         </div>
-        {history.length > 0 && (
-          <Button variant="outline" onClick={clearHistory}>
-            <Trash2 className="size-4" /> Hapus riwayat
-          </Button>
-        )}
+        {history.length > 0 && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Cetak</Button><Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Ekspor CSV</Button><Button variant="outline" onClick={clearHistory}><Trash2 className="size-4" /> Hapus riwayat</Button></div>}
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">
@@ -106,6 +114,7 @@ function LaporanPage() {
                 <TableRow>
                   <TableHead>Jam</TableHead>
                   <TableHead>TV</TableHead>
+                  <TableHead>Pelanggan</TableHead>
                   <TableHead>Mode</TableHead>
                   <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Durasi</TableHead>
@@ -124,6 +133,7 @@ function LaporanPage() {
                       {h.stationName}{" "}
                       <span className="text-muted-foreground">({h.console})</span>
                     </TableCell>
+                    <TableCell className="whitespace-nowrap">{h.customerName ?? "Pelanggan Umum"}<span className="block text-xs text-muted-foreground">{h.packageName ?? "-"}</span></TableCell>
                     <TableCell>
                       {h.mode === "open" ? "Sepuasnya" : "Per Jam"}
                     </TableCell>

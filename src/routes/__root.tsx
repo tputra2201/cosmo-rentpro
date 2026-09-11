@@ -14,6 +14,7 @@ import {
   Joystick,
   Receipt,
   Wallet,
+  Menu,
 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
@@ -21,6 +22,8 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BillingProvider } from "../lib/billing-store";
 import { Toaster } from "../components/ui/sonner";
+import { Button } from "../components/ui/button";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 
 function NotFoundComponent() {
   return (
@@ -149,7 +152,7 @@ function RootComponent() {
                   BILLING RENTAL PS
                 </span>
               </Link>
-              <nav className="flex items-center gap-1 overflow-x-auto">
+              <nav className="hidden items-center gap-1 lg:flex">
                 {navItems.map(({ to, label, icon: Icon }) => (
                   <Link
                     key={to}
@@ -165,6 +168,10 @@ function RootComponent() {
                   </Link>
                 ))}
               </nav>
+              <Sheet>
+                <SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka menu"><Menu className="size-5" /></Button></SheetTrigger>
+                <SheetContent side="right" className="w-72"><SheetTitle>Menu Operasional</SheetTitle><nav className="mt-6 grid gap-2">{navItems.map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="flex items-center gap-3 rounded-md px-3 py-3 text-muted-foreground" activeProps={{ className: "bg-secondary text-primary" }}><Icon className="size-4" />{label}</Link>)}</nav></SheetContent>
+              </Sheet>
             </div>
           </header>
           <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
