@@ -376,6 +376,26 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           menu: prev.menu.filter((m) => m.id !== id),
         })),
+      addPaymentMethod: (name) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: [
+            ...prev.paymentMethods,
+            { id: `pm-${Date.now()}`, name, active: true },
+          ],
+        })),
+      updatePaymentMethod: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: prev.paymentMethods.map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          ),
+        })),
+      removePaymentMethod: (id) =>
+        update((prev) => ({
+          ...prev,
+          paymentMethods: prev.paymentMethods.filter((p) => p.id !== id),
+        })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
     }),
     [
