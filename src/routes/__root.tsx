@@ -7,7 +7,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { LayoutGrid, Settings2, BarChart3, Joystick } from "lucide-react";
+import {
+  LayoutGrid,
+  Settings2,
+  BarChart3,
+  Joystick,
+  Receipt,
+} from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
