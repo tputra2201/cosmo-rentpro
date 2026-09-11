@@ -38,8 +38,10 @@ export type Database = {
       store_settings: {
         Row: {
           address: string
+          app_version: string
           city: string
           created_at: string
+          dev_contact: string
           id: string
           owner_name: string
           phone: string
@@ -51,8 +53,10 @@ export type Database = {
         }
         Insert: {
           address?: string
+          app_version?: string
           city?: string
           created_at?: string
+          dev_contact?: string
           id?: string
           owner_name?: string
           phone?: string
@@ -64,8 +68,10 @@ export type Database = {
         }
         Update: {
           address?: string
+          app_version?: string
           city?: string
           created_at?: string
+          dev_contact?: string
           id?: string
           owner_name?: string
           phone?: string
