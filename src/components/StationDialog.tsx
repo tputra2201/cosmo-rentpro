@@ -269,8 +269,33 @@ export function StationDialog({
                 </Badge>
               )}
 
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Tipe pembayaran</p>
+              {activePayments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Belum ada tipe pembayaran aktif. Atur di menu Pembayaran.
+                </p>
+              ) : (
+                <Select
+                  value={selectedPayment}
+                  onValueChange={(v) => setPayment(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activePayments.map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <Button variant="destructive" className="w-full" onClick={handleStop}>
-              <Square className="size-4" /> Akhiri &amp; Bayar
+              <Square className="size-4" /> Akhiri &amp; Bayar ({selectedPayment})
             </Button>
           </div>
         )}
