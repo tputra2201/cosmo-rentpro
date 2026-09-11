@@ -53,6 +53,8 @@ export const listUsers = createServerFn({ method: "GET" })
       fullName: nameById.get(u.id) ?? "",
       role: roleById.get(u.id) ?? "kasir",
       createdAt: u.created_at,
+      pending: !u.last_sign_in_at,
+
     }));
   });
 
