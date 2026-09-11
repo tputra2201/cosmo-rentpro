@@ -5,6 +5,7 @@ import { Activity, Coins, MonitorPlay, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StationCard } from "@/components/StationCard";
 import { StationDialog } from "@/components/StationDialog";
+import { CafeTables } from "@/components/CafeTables";
 import {
   fnbTotal,
   formatRupiah,
