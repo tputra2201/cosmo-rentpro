@@ -49,6 +49,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
+import { ThemeProvider } from "@/lib/theme";
+
 
 
 function NotFoundComponent() {
@@ -128,8 +130,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
       },
+
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -141,7 +144,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="id" className="dark">
+    <html lang="id" className="dark theme-gelap">
       <head>
         <HeadContent />
       </head>
@@ -174,13 +177,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BillingProvider>
-          <AppShell />
-          <Toaster position="top-right" richColors />
-        </BillingProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BillingProvider>
+            <AppShell />
+            <Toaster position="top-right" richColors />
+          </BillingProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
+
   );
 }
 

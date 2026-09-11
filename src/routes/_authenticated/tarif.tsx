@@ -20,6 +20,8 @@ import {
   type RoundingRule,
   type StationAvailability,
 } from "@/lib/billing-store";
+import { ThemePicker } from "@/components/ThemePicker";
+
 
 export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
@@ -80,6 +82,10 @@ function TarifPage() {
           Tarif tersimpan otomatis dan dipakai saat sesi baru dimulai.
         </p>
       </header>
+
+      <ThemePicker />
+
+
 
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Jenis Konsol & Tarif per Jam</h2>
