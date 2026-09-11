@@ -364,22 +364,50 @@ function AppShell() {
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-        {blocked ? (
-          <div className="surface-panel mx-auto max-w-md p-8 text-center">
-            <h1 className="text-xl font-semibold">Akses terbatas</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {installerOnlyPaths.includes(pathname)
-                ? "Halaman ini hanya untuk Installer."
-                : "Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu membutuhkan aksesnya."}
+        {session && !isAuthPage && expired ? (
+          <div className="surface-panel mx-auto max-w-lg border-destructive/60 p-8 text-center">
+            <h1 className="blink-warning font-display text-2xl font-bold text-destructive">
+              Masa aktif aplikasi telah berakhir
+            </h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Aplikasi berakhir pada {expiryLabel} dan tidak dapat digunakan
+              untuk sementara. Silakan hubungi Developer untuk memperpanjang
+              masa aktif.
             </p>
-            <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
-              Kembali ke Dashboard
+            <p className="mt-4 font-mono text-xs text-muted-foreground">
+              {signature}
+            </p>
+            <Button variant="outline" className="mt-6" onClick={handleSignOut}>
+              Keluar
             </Button>
           </div>
         ) : (
-          <Outlet />
+          <>
+            {session && !isAuthPage && daysLeft !== null && daysLeft <= 10 && (
+              <div className="blink-warning mb-6 rounded-lg border border-destructive/60 bg-destructive/10 px-4 py-3 text-center text-sm font-semibold text-destructive">
+                Masa aktif aplikasi berakhir dalam {daysLeft} hari ({expiryLabel}
+                ). Segera hubungi Developer untuk perpanjangan.
+              </div>
+            )}
+            {blocked ? (
+              <div className="surface-panel mx-auto max-w-md p-8 text-center">
+                <h1 className="text-xl font-semibold">Akses terbatas</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {installerOnlyPaths.includes(pathname)
+                    ? "Halaman ini hanya untuk Installer."
+                    : "Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu membutuhkan aksesnya."}
+                </p>
+                <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
+                  Kembali ke Dashboard
+                </Button>
+              </div>
+            ) : (
+              <Outlet />
+            )}
+          </>
         )}
       </main>
+
       {session && !isAuthPage && mustChangePassword && <ForcePasswordChange />}
     </div>
   );
