@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -79,12 +77,9 @@ const fields: {
 ];
 
 function StorePage() {
-  const { role } = useAuth();
-  const isInstaller = role === "installer";
   const [form, setForm] = useState<StoreForm>(empty);
-  const [id, setId] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,8 +92,8 @@ function StorePage() {
       if (cancelled) return;
       if (error) toast.error(error.message);
       if (data) {
-        const row = data as StoreForm & { id: string };
-        setId(row.id);
+        const row = data as StoreForm & { id: string; expires_at: string | null };
+        setExpiresAt(row.expires_at ?? null);
         setForm({
           store_code: row.store_code ?? "",
           store_name: row.store_name ?? "",
@@ -118,30 +113,35 @@ function StorePage() {
     };
   }, []);
 
-  const save = async () => {
-    setSaving(true);
-    const query = id
-      ? supabase.from("store_settings").update(form).eq("id", id)
-      : supabase.from("store_settings").insert(form as never);
-    const { error } = await query;
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Data store disimpan");
-  };
+  const expiryLabel = expiresAt
+    ? new Date(expiresAt).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "-";
 
   return (
     <div className="grid gap-6">
       <div>
         <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-neon">
-          <Store className="size-6" /> Pengaturan Store
+          <Store className="size-6" /> Data Store
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Identitas outlet ini. Hanya akun Installer yang bisa mengisi dan
-          mengubahnya. Email store dipakai sebagai alamat pengirim undangan staf
-          dan tautan atur ulang sandi.
+          Identitas outlet ini beserta masa aktif aplikasi. Semua data hanya
+          bisa diubah oleh Developer dari pusat kontrol jarak jauh.
+        </p>
+      </div>
+
+      <div className="surface-panel flex flex-wrap items-center justify-between gap-3 p-5">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Masa aktif aplikasi sampai
+          </p>
+          <p className="font-display text-xl font-bold">{expiryLabel}</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Perpanjangan dilakukan oleh Developer.
         </p>
       </div>
 
@@ -157,20 +157,13 @@ function StorePage() {
                 id={key}
                 type={type ?? "text"}
                 value={form[key]}
-                disabled={!isInstaller}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                readOnly
+                disabled
                 placeholder={label}
               />
               {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
             </div>
           ))}
-        {!loading && (
-          <div className="sm:col-span-2">
-            <Button onClick={save} disabled={!isInstaller || saving}>
-              Simpan data store
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
