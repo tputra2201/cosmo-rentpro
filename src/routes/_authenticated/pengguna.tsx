@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { KeyRound, Trash2, UserPlus } from "lucide-react";
+import { MailCheck, Send, Trash2, UserPlus } from "lucide-react";
 import {
   listUsers,
-  createUser,
+  inviteUser,
+  resendInvite,
+  sendPasswordReset,
   updateUser,
   deleteUser,
   type ManagedUser,
@@ -22,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
@@ -46,7 +49,9 @@ function PenggunaPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listUsers);
-  const addFn = useServerFn(createUser);
+  const addFn = useServerFn(inviteUser);
+  const resendFn = useServerFn(resendInvite);
+  const resetFn = useServerFn(sendPasswordReset);
   const editFn = useServerFn(updateUser);
   const delFn = useServerFn(deleteUser);
 
@@ -59,28 +64,43 @@ function PenggunaPage() {
   const onError = (err: unknown) =>
     toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
 
+  const redirectTo = () =>
+    typeof window === "undefined" ? "" : `${window.location.origin}/atur-sandi`;
+
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"admin" | "kasir">("kasir");
 
   const add = useMutation({
     mutationFn: (data: {
       email: string;
-      password: string;
       fullName: string;
       role: "admin" | "kasir";
-    }) => addFn({ data }),
+    }) => addFn({ data: { ...data, redirectTo: redirectTo() } }),
     onSuccess: () => {
-      toast.success("Pengguna baru dibuat");
+      toast.success("Undangan terkirim ke email staf");
       setEmail("");
-      setPassword("");
       setFullName("");
       setRole("kasir");
       invalidate();
     },
     onError,
   });
+
+  const resend = useMutation({
+    mutationFn: (mail: string) =>
+      resendFn({ data: { email: mail, redirectTo: redirectTo() } }),
+    onSuccess: () => toast.success("Undangan dikirim ulang"),
+    onError,
+  });
+
+  const reset = useMutation({
+    mutationFn: (mail: string) =>
+      resetFn({ data: { email: mail, redirectTo: redirectTo() } }),
+    onSuccess: () => toast.success("Tautan atur ulang sandi dikirim"),
+    onError,
+  });
+
 
   const edit = useMutation({
     mutationFn: (data: {
@@ -112,15 +132,16 @@ function PenggunaPage() {
           Pengaturan Pengguna
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Hanya Admin yang bisa mendaftarkan staf baru dan menentukan levelnya.
+          Admin mengundang staf lewat email. Staf membuat kata sandinya sendiri
+          dari tautan undangan — tidak ada sandi awal yang dikirim.
         </p>
       </div>
 
       <form
-        className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5"
+        className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={(e) => {
           e.preventDefault();
-          add.mutate({ email, password, fullName, role });
+          add.mutate({ email, fullName, role });
         }}
       >
         <div className="grid gap-2">
@@ -145,18 +166,6 @@ function PenggunaPage() {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="sandi">Kata sandi awal</Label>
-          <Input
-            id="sandi"
-            type="text"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minimal 6 karakter"
-            required
-          />
-        </div>
-        <div className="grid gap-2">
           <Label>Level</Label>
           <Select value={role} onValueChange={(v) => setRole(v as "admin" | "kasir")}>
             <SelectTrigger>
@@ -170,7 +179,7 @@ function PenggunaPage() {
         </div>
         <div className="flex items-end">
           <Button type="submit" className="w-full" disabled={add.isPending}>
-            <UserPlus className="size-4" /> Tambah
+            <UserPlus className="size-4" /> Kirim undangan
           </Button>
         </div>
       </form>
@@ -188,10 +197,14 @@ function PenggunaPage() {
               key={u.id}
               user={u}
               isSelf={u.id === user?.id}
+              busy={resend.isPending || reset.isPending}
               onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
+              onResend={() => resend.mutate(u.email)}
+              onReset={() => reset.mutate(u.email)}
               onDelete={() => remove.mutate(u.id)}
             />
           ))}
+
           {!isLoading && users.length === 0 && (
             <p className="text-sm text-muted-foreground">Belum ada pengguna.</p>
           )}
@@ -204,23 +217,31 @@ function PenggunaPage() {
 function UserRow({
   user,
   isSelf,
+  busy,
   onSave,
+  onResend,
+  onReset,
   onDelete,
 }: {
   user: ManagedUser;
   isSelf: boolean;
-  onSave: (p: { fullName?: string; role?: "admin" | "kasir"; password?: string }) => void;
+  busy: boolean;
+  onSave: (p: { fullName?: string; role?: "admin" | "kasir" }) => void;
+  onResend: () => void;
+  onReset: () => void;
   onDelete: () => void;
 }) {
   const [name, setName] = useState(user.fullName);
   const [role, setRole] = useState<"admin" | "kasir">(user.role);
-  const [newPass, setNewPass] = useState("");
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_0.8fr_1fr_auto] lg:items-end">
+    <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_auto_auto_auto] lg:items-end">
       <div className="grid gap-1">
         <Label className="text-xs text-muted-foreground">
-          {user.email} {isSelf && "· akun kamu"}
+          {user.email} {isSelf && "· akun kamu"}{" "}
+          {user.pending && (
+            <span className="text-primary">· menunggu buat sandi</span>
+          )}
         </Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} />
       </div>
@@ -240,31 +261,32 @@ function UserRow({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-1">
-        <Label className="text-xs text-muted-foreground">Sandi baru</Label>
-        <Input
-          value={newPass}
-          onChange={(e) => setNewPass(e.target.value)}
-          placeholder="opsional"
-        />
-      </div>
       <Button
         variant="outline"
         onClick={() => {
-          const payload: {
-            fullName?: string;
-            role?: "admin" | "kasir";
-            password?: string;
-          } = {};
+          const payload: { fullName?: string; role?: "admin" | "kasir" } = {};
           if (name && name !== user.fullName) payload.fullName = name;
           if (role !== user.role) payload.role = role;
-          if (newPass.length >= 6) payload.password = newPass;
           if (Object.keys(payload).length === 0) return;
           onSave(payload);
-          setNewPass("");
         }}
       >
-        <KeyRound className="size-4" /> Simpan
+        Simpan
+      </Button>
+      <Button
+        variant="outline"
+        disabled={busy}
+        onClick={user.pending ? onResend : onReset}
+      >
+        {user.pending ? (
+          <>
+            <Send className="size-4" /> Kirim ulang undangan
+          </>
+        ) : (
+          <>
+            <MailCheck className="size-4" /> Tautan atur sandi
+          </>
+        )}
       </Button>
       <Button
         variant="destructive"
@@ -275,6 +297,7 @@ function UserRow({
       >
         <Trash2 className="size-4" />
       </Button>
+
     </div>
   );
 }
