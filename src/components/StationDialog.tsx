@@ -82,8 +82,43 @@ export function StationDialog({
   const chosenPackage = packages.find((item) => item.id === packageId);
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
 
+  const splitRows = splits.map((s) => ({
+    method: s.method || activePayments[0]?.name || "Cash",
+    amount: Math.max(0, Number(s.amount) || 0),
+  }));
+  const splitPaid = splitRows.reduce((sum, s) => sum + s.amount, 0);
+  const splitRemaining = Math.max(0, sessionTotal - splitPaid);
+
   const handleStop = () => {
-    const cashReceived = selectedPayment === "Cash" ? Number(amountPaid) : undefined;
+    if (splitMode) {
+      const rows = splitRows.filter((s) => s.amount > 0);
+      if (rows.length === 0) {
+        toast.error("Isi jumlah tiap metode pembayaran");
+        return;
+      }
+      if (splitPaid < sessionTotal) {
+        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+        return;
+      }
+      const rec = stopSession(station.id, undefined, splitPaid, rows);
+      onOpenChange(false);
+      setSplitMode(false);
+      setSplits([]);
+      setPayment("");
+      setAmountPaid("");
+      if (rec) {
+        toast.success(`${rec.stationName} selesai`, {
+          description: `Total ${formatRupiah(rec.total)} — ${rec.payment}`,
+        });
+      }
+      return;
+    }
+    const cashReceived =
+      selectedPayment === "Cash"
+        ? amountPaid === ""
+          ? sessionTotal
+          : Number(amountPaid)
+        : undefined;
     if (selectedPayment === "Cash" && cashReceived !== undefined && cashReceived < sessionTotal) {
       toast.error("Uang diterima masih kurang");
       return;
