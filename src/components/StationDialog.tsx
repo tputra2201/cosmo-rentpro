@@ -57,6 +57,8 @@ export function StationDialog({
     setStationConsole,
     paymentMethods,
     packages,
+    defaultBonusMin,
+    adjustBonusTime,
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
@@ -67,6 +69,8 @@ export function StationDialog({
   const [packageId, setPackageId] = useState("");
   const [notes, setNotes] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
+  const bonusMin = Math.round(Number(bonus) || 0);
 
   const activePayments = paymentMethods.filter((p) => p.active);
   const selectedPayment =
