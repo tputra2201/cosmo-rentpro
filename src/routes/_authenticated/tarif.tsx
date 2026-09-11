@@ -63,10 +63,6 @@ function TarifPage() {
     defaultBonusMin,
     setDefaultBonusMin,
   } = useBilling();
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [itemCategory, setItemCategory] = useState("");
-  const [newCategory, setNewCategory] = useState("");
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
