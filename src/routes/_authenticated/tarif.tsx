@@ -74,11 +74,14 @@ function TarifPage() {
   } = useBilling();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [itemCategory, setItemCategory] = useState("");
+  const [newCategory, setNewCategory] = useState("");
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
   const [newConsole, setNewConsole] = useState("");
   const [newConsoleRate, setNewConsoleRate] = useState("");
+
 
   return (
     <div className="space-y-10">
