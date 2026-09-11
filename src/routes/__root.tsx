@@ -142,7 +142,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="id" className="dark">
+    <html lang="id" className="dark theme-gelap">
       <head>
         <HeadContent />
       </head>
