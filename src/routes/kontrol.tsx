@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { passwordSetupUrl } from "@/lib/app-url";
 import {
   ShieldCheck,
   RefreshCw,
@@ -292,7 +293,7 @@ function ControlCenter() {
       email: invite.email.trim(),
       full_name: invite.full_name.trim(),
       role: "installer",
-      redirect_to: `${window.location.origin}/atur-sandi`,
+      redirect_to: passwordSetupUrl(),
     });
     if (json?.ok) {
       toast.success(

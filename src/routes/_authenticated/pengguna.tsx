@@ -14,6 +14,7 @@ import {
   type ManagedUser,
 } from "@/lib/users.functions";
 import { useAuth, roleLabel } from "@/lib/auth";
+import { passwordSetupUrl } from "@/lib/app-url";
 import type { AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,23 +67,7 @@ function PenggunaPage() {
   const onError = (err: unknown) =>
     toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
 
-  // Domain editor/preview Lovable butuh izin pemilik proyek, jadi tautan email
-  // selalu diarahkan ke alamat publik aplikasi. Jika aplikasi sudah dipindahkan
-  // ke domain sendiri, isi VITE_PUBLIC_APP_URL agar tautan memakai domain itu.
-  const PUBLIC_APP_URL =
-    (import.meta.env["VITE_PUBLIC_APP_URL"] as string | undefined)?.replace(/\/+$/, "") ||
-    "https://cosmo-rentpro.lovable.app";
-  const redirectTo = () => {
-    if (typeof window === "undefined") return `${PUBLIC_APP_URL}/atur-sandi`;
-    const host = window.location.hostname;
-    const isEditorPreview =
-      host.includes("lovableproject.com") ||
-      host.includes("lovable.dev") ||
-      host.startsWith("id-preview--") ||
-      host === "localhost";
-    const base = isEditorPreview ? PUBLIC_APP_URL : window.location.origin;
-    return `${base}/atur-sandi`;
-  };
+  const redirectTo = passwordSetupUrl;
 
 
   const [email, setEmail] = useState("");
