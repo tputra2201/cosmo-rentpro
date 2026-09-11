@@ -279,7 +279,11 @@ type Ctx = State & {
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
   updateStation: (stationId: string, patch: Partial<Omit<Station, "id" | "session">>) => void;
-  addStation: () => void;
+  addStation: (init?: {
+    name?: string;
+    console?: ConsoleType;
+    booth?: string;
+  }) => void;
   removeStation: (stationId: string) => void;
   addMenuItem: (name: string, price: number) => void;
   removeMenuItem: (id: string) => void;
@@ -537,7 +541,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
       setStationConsole: (stationId, consoleType) =>
         mapStation(stationId, (s) => ({ ...s, console: consoleType })),
-      addStation: () =>
+      addStation: (init) =>
         update((prev) => {
           const n = prev.stations.length + 1;
           return {
@@ -546,9 +550,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ...prev.stations,
               {
                 id: `tv-${Date.now()}`,
-                name: `TV ${String(n).padStart(2, "0")}`,
-                console: "PS4",
-                booth: `Booth ${n}`,
+                name: init?.name?.trim() || `TV ${String(n).padStart(2, "0")}`,
+                console: init?.console ?? "PS4",
+                booth: init?.booth?.trim() || `Booth ${n}`,
                 availability: "available",
                 session: null,
               },

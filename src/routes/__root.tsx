@@ -12,6 +12,7 @@ import {
 import {
   LayoutGrid,
   Settings2,
+  Tv,
   BarChart3,
   Joystick,
   Receipt,
@@ -142,6 +143,7 @@ const navItems = [
   { to: "/promo", label: "Promo", icon: Percent },
   { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
   { to: "/tarif", label: "Tarif", icon: Settings2 },
+  { to: "/unit", label: "Unit TV", icon: Tv },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
 ] as const;
 
