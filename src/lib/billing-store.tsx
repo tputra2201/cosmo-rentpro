@@ -140,7 +140,7 @@ type Ctx = State & {
     mode: PlayMode,
     durationMin: number,
   ) => void;
-  stopSession: (stationId: string) => HistoryRecord | null;
+  stopSession: (stationId: string, payment?: string) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
