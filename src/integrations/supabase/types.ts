@@ -35,6 +35,48 @@ export type Database = {
         }
         Relationships: []
       }
+      store_settings: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          owner_name: string
+          phone: string
+          singleton: boolean
+          store_code: string
+          store_email: string
+          store_name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          owner_name?: string
+          phone?: string
+          singleton?: boolean
+          store_code?: string
+          store_email?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          owner_name?: string
+          phone?: string
+          singleton?: boolean
+          store_code?: string
+          store_email?: string
+          store_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -64,7 +106,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "kasir"
+      app_role: "admin" | "kasir" | "installer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -192,7 +234,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "kasir"],
+      app_role: ["admin", "kasir", "installer"],
     },
   },
 } as const

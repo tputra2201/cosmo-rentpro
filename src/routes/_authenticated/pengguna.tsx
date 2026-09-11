@@ -14,6 +14,7 @@ import {
   type ManagedUser,
 } from "@/lib/users.functions";
 import { useAuth, roleLabel } from "@/lib/auth";
+import type { AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,7 +47,8 @@ export const Route = createFileRoute("/_authenticated/pengguna")({
 });
 
 function PenggunaPage() {
-  const { user } = useAuth();
+  const { user, role: myRole } = useAuth();
+  const canInstaller = myRole === "installer";
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listUsers);
   const addFn = useServerFn(inviteUser);
@@ -81,13 +83,13 @@ function PenggunaPage() {
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"admin" | "kasir">("kasir");
+  const [role, setRole] = useState<AppRole>("kasir");
 
   const add = useMutation({
     mutationFn: (data: {
       email: string;
       fullName: string;
-      role: "admin" | "kasir";
+      role: AppRole;
     }) => addFn({ data: { ...data, redirectTo: redirectTo() } }),
     onSuccess: () => {
       toast.success("Undangan terkirim ke email staf");
@@ -118,7 +120,7 @@ function PenggunaPage() {
     mutationFn: (data: {
       id: string;
       fullName?: string;
-      role?: "admin" | "kasir";
+      role?: AppRole;
       password?: string;
     }) => editFn({ data }),
     onSuccess: () => {
@@ -179,13 +181,14 @@ function PenggunaPage() {
         </div>
         <div className="grid gap-2">
           <Label>Level</Label>
-          <Select value={role} onValueChange={(v) => setRole(v as "admin" | "kasir")}>
+          <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="kasir">Kasir</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
+              {canInstaller && <SelectItem value="installer">Installer</SelectItem>}
             </SelectContent>
           </Select>
         </div>
@@ -209,6 +212,7 @@ function PenggunaPage() {
               key={u.id}
               user={u}
               isSelf={u.id === user?.id}
+              canInstaller={canInstaller}
               busy={resend.isPending || reset.isPending}
               onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
               onResend={() => resend.mutate(u.email)}
@@ -229,6 +233,7 @@ function PenggunaPage() {
 function UserRow({
   user,
   isSelf,
+  canInstaller,
   busy,
   onSave,
   onResend,
@@ -237,14 +242,15 @@ function UserRow({
 }: {
   user: ManagedUser;
   isSelf: boolean;
+  canInstaller: boolean;
   busy: boolean;
-  onSave: (p: { fullName?: string; role?: "admin" | "kasir" }) => void;
+  onSave: (p: { fullName?: string; role?: AppRole }) => void;
   onResend: () => void;
   onReset: () => void;
   onDelete: () => void;
 }) {
   const [name, setName] = useState(user.fullName);
-  const [role, setRole] = useState<"admin" | "kasir">(user.role);
+  const [role, setRole] = useState<AppRole>(user.role);
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_auto_auto_auto] lg:items-end">
@@ -261,8 +267,8 @@ function UserRow({
         <Label className="text-xs text-muted-foreground">Level saat ini: {roleLabel[user.role]}</Label>
         <Select
           value={role}
-          onValueChange={(v) => setRole(v as "admin" | "kasir")}
-          disabled={isSelf}
+          onValueChange={(v) => setRole(v as AppRole)}
+          disabled={isSelf || (user.role === "installer" && !canInstaller)}
         >
           <SelectTrigger>
             <SelectValue />
@@ -270,13 +276,14 @@ function UserRow({
           <SelectContent>
             <SelectItem value="kasir">Kasir</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
+            {canInstaller && <SelectItem value="installer">Installer</SelectItem>}
           </SelectContent>
         </Select>
       </div>
       <Button
         variant="outline"
         onClick={() => {
-          const payload: { fullName?: string; role?: "admin" | "kasir" } = {};
+          const payload: { fullName?: string; role?: AppRole } = {};
           if (name && name !== user.fullName) payload.fullName = name;
           if (role !== user.role) payload.role = role;
           if (Object.keys(payload).length === 0) return;

@@ -22,6 +22,7 @@ import { Route as AuthenticatedPelangganRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPembayaranRouteImport } from './routes/_authenticated/pembayaran'
 import { Route as AuthenticatedPenggunaRouteImport } from './routes/_authenticated/pengguna'
 import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/promo'
+import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
 import { Route as AuthenticatedUnitRouteImport } from './routes/_authenticated/unit'
 
@@ -89,6 +90,11 @@ const AuthenticatedPromoRoute = AuthenticatedPromoRouteImport.update({
   path: '/promo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStoreRoute = AuthenticatedStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTarifRoute = AuthenticatedTarifRouteImport.update({
   id: '/tarif',
   path: '/tarif',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
   '/promo': typeof AuthenticatedPromoRoute
+  '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
   '/unit': typeof AuthenticatedUnitRoute
 }
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
   '/promo': typeof AuthenticatedPromoRoute
+  '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
   '/unit': typeof AuthenticatedUnitRoute
   '/': typeof AuthenticatedIndexRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/pembayaran': typeof AuthenticatedPembayaranRoute
   '/_authenticated/pengguna': typeof AuthenticatedPenggunaRoute
   '/_authenticated/promo': typeof AuthenticatedPromoRoute
+  '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/tarif': typeof AuthenticatedTarifRoute
   '/_authenticated/unit': typeof AuthenticatedUnitRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/pembayaran'
     | '/pengguna'
     | '/promo'
+    | '/store'
     | '/tarif'
     | '/unit'
   fileRoutesByTo: FileRoutesByTo
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/pembayaran'
     | '/pengguna'
     | '/promo'
+    | '/store'
     | '/tarif'
     | '/unit'
     | '/'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pembayaran'
     | '/_authenticated/pengguna'
     | '/_authenticated/promo'
+    | '/_authenticated/store'
     | '/_authenticated/tarif'
     | '/_authenticated/unit'
     | '/_authenticated/'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPromoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/store': {
+      id: '/_authenticated/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof AuthenticatedStoreRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tarif': {
       id: '/_authenticated/tarif'
       path: '/tarif'
@@ -328,6 +347,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPembayaranRoute: typeof AuthenticatedPembayaranRoute
   AuthenticatedPenggunaRoute: typeof AuthenticatedPenggunaRoute
   AuthenticatedPromoRoute: typeof AuthenticatedPromoRoute
+  AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedTarifRoute: typeof AuthenticatedTarifRoute
   AuthenticatedUnitRoute: typeof AuthenticatedUnitRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -343,6 +363,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPembayaranRoute: AuthenticatedPembayaranRoute,
   AuthenticatedPenggunaRoute: AuthenticatedPenggunaRoute,
   AuthenticatedPromoRoute: AuthenticatedPromoRoute,
+  AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
   AuthenticatedUnitRoute: AuthenticatedUnitRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
