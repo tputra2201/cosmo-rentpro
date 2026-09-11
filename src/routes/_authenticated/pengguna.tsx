@@ -14,6 +14,7 @@ import {
   type ManagedUser,
 } from "@/lib/users.functions";
 import { useAuth, roleLabel } from "@/lib/auth";
+import { passwordSetupUrl } from "@/lib/app-url";
 import type { AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
