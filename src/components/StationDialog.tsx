@@ -83,6 +83,7 @@ export function StationDialog({
   const [packageId, setPackageId] = useState("");
   const [notes, setNotes] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  const [payAmount, setPayAmount] = useState("");
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
@@ -103,20 +104,26 @@ export function StationDialog({
   const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
   const isSettled = dueAmount <= 0;
 
+  const payTarget =
+    payAmount === ""
+      ? dueAmount
+      : Math.min(dueAmount, Math.max(0, Number(payAmount) || 0));
+
   const splitRows = splits.map((s) => ({
     method: s.method || activePayments[0]?.name || "Cash",
     amount: Math.max(0, Number(s.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, s) => sum + s.amount, 0);
-  const splitRemaining = Math.max(0, dueAmount - splitPaid);
+  const splitRemaining = Math.max(0, payTarget - splitPaid);
   const cashReceived =
-    amountPaid === "" ? dueAmount : Math.max(0, Number(amountPaid) || 0);
+    amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
   const resetPaymentForm = () => {
     setSplitMode(false);
     setSplits([]);
     setPayment("");
     setAmountPaid("");
+    setPayAmount("");
   };
 
   const validatePayment = () => {
@@ -124,18 +131,22 @@ export function StationDialog({
       toast.error("Tagihan sudah lunas");
       return false;
     }
+    if (payTarget <= 0) {
+      toast.error("Jumlah pembayaran harus lebih dari 0");
+      return false;
+    }
     if (splitMode) {
       if (splitRows.filter((s) => s.amount > 0).length === 0) {
         toast.error("Isi jumlah tiap metode pembayaran");
         return false;
       }
-      if (splitPaid < dueAmount) {
+      if (splitPaid < payTarget) {
         toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
         return false;
       }
       return true;
     }
-    if (selectedPayment === "Cash" && cashReceived < dueAmount) {
+    if (selectedPayment === "Cash" && cashReceived < payTarget) {
       toast.error("Uang diterima masih kurang");
       return false;
     }
@@ -147,22 +158,23 @@ export function StationDialog({
       const rows = splitRows.filter((s) => s.amount > 0);
       settleSession(station.id, {
         payments: rows,
-        amount: dueAmount,
+        amount: payTarget,
         amountPaid: splitPaid,
       });
     } else {
       settleSession(station.id, {
         payment: selectedPayment,
-        amount: dueAmount,
-        amountPaid: selectedPayment === "Cash" ? cashReceived : dueAmount,
+        amount: payTarget,
+        amountPaid: selectedPayment === "Cash" ? cashReceived : payTarget,
       });
     }
-    toast.success("Pembayaran diterima", {
-      description: `${formatRupiah(dueAmount)} — ${
+    const sisa = Math.max(0, dueAmount - payTarget);
+    toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
+      description: `${formatRupiah(payTarget)} — ${
         splitMode
           ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ")
           : selectedPayment
-      }`,
+      }${sisa > 0 ? ` · Sisa tagihan ${formatRupiah(sisa)}` : ""}`,
     });
     resetPaymentForm();
   };
@@ -400,6 +412,37 @@ export function StationDialog({
               )}
             </div>
 
+            {!isSettled && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pay-amount">Jumlah dibayar</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline-offset-2 hover:underline"
+                    onClick={() => setPayAmount("")}
+                  >
+                    Bayar lunas
+                  </button>
+                </div>
+                <div className="relative">
+                  <Wallet className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="pay-amount"
+                    className="pl-9"
+                    type="number"
+                    min={0}
+                    max={dueAmount}
+                    value={payAmount === "" ? String(dueAmount) : payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Bisa bayar sebagian di depan. Sisa {formatRupiah(Math.max(0, dueAmount - payTarget))}{" "}
+                  tetap jadi tagihan berjalan.
+                </p>
+              </div>
+            )}
+
             {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -419,14 +462,14 @@ export function StationDialog({
                     className="pl-9"
                     type="number"
                     min={0}
-                    value={amountPaid === "" ? String(dueAmount) : amountPaid}
+                    value={amountPaid === "" ? String(payTarget) : amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Kembalian</span>
                   <span className="font-semibold text-accent">
-                    {formatRupiah(Math.max(0, cashReceived - dueAmount))}
+                    {formatRupiah(Math.max(0, cashReceived - payTarget))}
                   </span>
                 </div>
               </div>
@@ -522,7 +565,7 @@ export function StationDialog({
                       } else {
                         setSplitMode(true);
                         setSplits([
-                          { method: activePayments[0]?.name ?? "Cash", amount: String(dueAmount) },
+                          { method: activePayments[0]?.name ?? "Cash", amount: String(payTarget) },
                           { method: activePayments[1]?.name ?? "QRIS", amount: "0" },
                         ]);
                       }
@@ -613,7 +656,7 @@ export function StationDialog({
                     >
                       {splitRemaining > 0
                         ? `Kurang ${formatRupiah(splitRemaining)}`
-                        : `Kembalian ${formatRupiah(splitPaid - dueAmount)}`}
+                        : `Kembalian ${formatRupiah(splitPaid - payTarget)}`}
                     </span>
                   </div>
                 </div>
@@ -647,7 +690,7 @@ export function StationDialog({
                 }}
               >
                 <Wallet className="size-4" />
-                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(dueAmount)}`}
+                {isSettled ? "Sudah Lunas" : `Bayar ${formatRupiah(payTarget)}`}
               </Button>
               <Button
                 variant="destructive"
@@ -669,12 +712,15 @@ export function StationDialog({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Selesaikan pembayaran?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {station.name} — {formatRupiah(dueAmount)} melalui{" "}
+                    {station.name} — {formatRupiah(payTarget)} melalui{" "}
                     {splitMode
                       ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
                         "gabungan"
                       : selectedPayment}
-                    . Sesi rental tetap berjalan setelah pembayaran.
+                    .{" "}
+                    {dueAmount - payTarget > 0
+                      ? `Sisa ${formatRupiah(dueAmount - payTarget)} tetap jadi tagihan berjalan.`
+                      : "Sesi rental tetap berjalan setelah pembayaran."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

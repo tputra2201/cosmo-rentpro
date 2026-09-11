@@ -8,6 +8,7 @@ import { StationDialog } from "@/components/StationDialog";
 import {
   fnbTotal,
   formatRupiah,
+  paidTotal,
   playAlarm,
   rentalTotal,
   stationStatus,
@@ -58,7 +59,15 @@ function Dashboard() {
   const available = stations.filter((s) => stationStatus(s, now) === "idle");
   const openBill = active.reduce(
     (sum, s) =>
-      sum + (s.session ? rentalTotal(s.session, now) + fnbTotal(s.session) : 0),
+      sum +
+      (s.session
+        ? Math.max(
+            0,
+            rentalTotal(s.session, now) +
+              fnbTotal(s.session) -
+              paidTotal(s.session),
+          )
+        : 0),
     0,
   );
   const selected = stations.find((s) => s.id === selectedId) ?? null;
