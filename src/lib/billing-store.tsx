@@ -911,10 +911,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
+      sync,
     }),
     [
       state,
       now,
+      sync,
       startSessionWithRate,
       stopSession,
       settleSession,
