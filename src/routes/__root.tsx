@@ -12,6 +12,7 @@ import {
 import {
   LayoutGrid,
   Settings2,
+  Tv,
   BarChart3,
   Joystick,
   Receipt,
