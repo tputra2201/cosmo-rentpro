@@ -251,6 +251,13 @@ export function useStoreSync(options: {
     }
   }, [storeId, applyRemote, noteShadow]);
 
+  // Segera kirim begitu ada perubahan yang menunggu.
+  useEffect(() => {
+    if (!storeId || !enabled || pending === 0) return;
+    const timer = setTimeout(() => void sync(), 1200);
+    return () => clearTimeout(timer);
+  }, [pending, storeId, enabled, sync]);
+
   // Jalankan sinkronisasi saat daring, saat layar aktif, dan berkala.
   useEffect(() => {
     if (!storeId || !enabled) return;
