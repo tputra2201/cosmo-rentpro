@@ -63,6 +63,8 @@ export function StationDialog({
     menu,
     startSession,
     stopSession,
+    settleSession,
+    removeSettlement,
     addTime,
     addOrder,
     removeOrder,
@@ -84,6 +86,8 @@ export function StationDialog({
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
+  const [confirmPay, setConfirmPay] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
 
   const activePayments = paymentMethods.filter((p) => p.active);
@@ -95,58 +99,89 @@ export function StationDialog({
   const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
+  const alreadyPaid = paidTotal(session);
+  const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
+  const isSettled = dueAmount <= 0;
 
   const splitRows = splits.map((s) => ({
     method: s.method || activePayments[0]?.name || "Cash",
     amount: Math.max(0, Number(s.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, s) => sum + s.amount, 0);
-  const splitRemaining = Math.max(0, sessionTotal - splitPaid);
+  const splitRemaining = Math.max(0, dueAmount - splitPaid);
+  const cashReceived =
+    amountPaid === "" ? dueAmount : Math.max(0, Number(amountPaid) || 0);
 
-  const handleStop = () => {
-    if (splitMode) {
-      const rows = splitRows.filter((s) => s.amount > 0);
-      if (rows.length === 0) {
-        toast.error("Isi jumlah tiap metode pembayaran");
-        return;
-      }
-      if (splitPaid < sessionTotal) {
-        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
-        return;
-      }
-      const rec = stopSession(station.id, undefined, splitPaid, rows);
-      onOpenChange(false);
-      setSplitMode(false);
-      setSplits([]);
-      setPayment("");
-      setAmountPaid("");
-      if (rec) {
-        toast.success(`${rec.stationName} selesai`, {
-          description: `Total ${formatRupiah(rec.total)} — ${rec.payment}`,
-        });
-      }
-      return;
-    }
-    const cashReceived =
-      selectedPayment === "Cash"
-        ? amountPaid === ""
-          ? sessionTotal
-          : Number(amountPaid)
-        : undefined;
-    if (selectedPayment === "Cash" && cashReceived !== undefined && cashReceived < sessionTotal) {
-      toast.error("Uang diterima masih kurang");
-      return;
-    }
-    const record = stopSession(station.id, selectedPayment, cashReceived);
-    onOpenChange(false);
+  const resetPaymentForm = () => {
+    setSplitMode(false);
+    setSplits([]);
     setPayment("");
     setAmountPaid("");
-    if (record) {
-      toast.success(`${record.stationName} selesai`, {
-        description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+  };
+
+  const validatePayment = () => {
+    if (dueAmount <= 0) {
+      toast.error("Tagihan sudah lunas");
+      return false;
+    }
+    if (splitMode) {
+      if (splitRows.filter((s) => s.amount > 0).length === 0) {
+        toast.error("Isi jumlah tiap metode pembayaran");
+        return false;
+      }
+      if (splitPaid < dueAmount) {
+        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+        return false;
+      }
+      return true;
+    }
+    if (selectedPayment === "Cash" && cashReceived < dueAmount) {
+      toast.error("Uang diterima masih kurang");
+      return false;
+    }
+    return true;
+  };
+
+  const handlePay = () => {
+    if (splitMode) {
+      const rows = splitRows.filter((s) => s.amount > 0);
+      settleSession(station.id, {
+        payments: rows,
+        amount: dueAmount,
+        amountPaid: splitPaid,
+      });
+    } else {
+      settleSession(station.id, {
+        payment: selectedPayment,
+        amount: dueAmount,
+        amountPaid: selectedPayment === "Cash" ? cashReceived : dueAmount,
       });
     }
+    toast.success("Pembayaran diterima", {
+      description: `${formatRupiah(dueAmount)} — ${
+        splitMode
+          ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ")
+          : selectedPayment
+      }`,
+    });
+    resetPaymentForm();
   };
+
+  const handleEnd = () => {
+    const record = stopSession(station.id);
+    if (!record) {
+      toast.error("Sesi belum bisa diakhiri", {
+        description: `Sisa tagihan ${formatRupiah(dueAmount)} harus dibayar dulu`,
+      });
+      return;
+    }
+    onOpenChange(false);
+    resetPaymentForm();
+    toast.success(`${record.stationName} selesai`, {
+      description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+    });
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
