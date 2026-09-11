@@ -717,6 +717,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [mapStation],
   );
 
+  const { session: authSession } = useAuth();
+  const sync = useStoreSync({
+    state,
+    hydrated,
+    enabled: Boolean(authSession),
+    applyRemote: setState,
+  });
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
