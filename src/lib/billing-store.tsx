@@ -359,6 +359,7 @@ type Ctx = State & {
   exportSnapshot: () => BillingSnapshot;
   replaceAll: (data: unknown) => void;
   resetAll: () => void;
+  sync: SyncStatus;
 };
 
 export type BillingSnapshot = State;
