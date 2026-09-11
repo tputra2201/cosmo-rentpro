@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAkunRouteImport } from './routes/_authenticated/akun'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedBookingRouteImport } from './routes/_authenticated/booking'
 import { Route as AuthenticatedKasirRouteImport } from './routes/_authenticated/kasir'
@@ -34,6 +35,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAkunRoute = AuthenticatedAkunRouteImport.update({
+  id: '/akun',
+  path: '/akun',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
@@ -85,6 +91,7 @@ const AuthenticatedUnitRoute = AuthenticatedUnitRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
   '/kasir': typeof AuthenticatedKasirRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/akun': typeof AuthenticatedAkunRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/booking': typeof AuthenticatedBookingRoute
   '/kasir': typeof AuthenticatedKasirRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/akun': typeof AuthenticatedAkunRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
   '/_authenticated/kasir': typeof AuthenticatedKasirRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/akun'
     | '/backup'
     | '/booking'
     | '/kasir'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/akun'
     | '/backup'
     | '/booking'
     | '/kasir'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/akun'
     | '/_authenticated/backup'
     | '/_authenticated/booking'
     | '/_authenticated/kasir'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/akun': {
+      id: '/_authenticated/akun'
+      path: '/akun'
+      fullPath: '/akun'
+      preLoaderRoute: typeof AuthenticatedAkunRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/backup': {
@@ -261,6 +280,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAkunRoute: typeof AuthenticatedAkunRoute
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
   AuthenticatedBookingRoute: typeof AuthenticatedBookingRoute
   AuthenticatedKasirRoute: typeof AuthenticatedKasirRoute
@@ -274,6 +294,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAkunRoute: AuthenticatedAkunRoute,
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
   AuthenticatedBookingRoute: AuthenticatedBookingRoute,
   AuthenticatedKasirRoute: AuthenticatedKasirRoute,
