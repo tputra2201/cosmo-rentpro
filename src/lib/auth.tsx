@@ -98,4 +98,5 @@ export const adminOnlyPaths = [
   "/laporan",
   "/promo",
   "/backup",
+  "/pengguna",
 ];

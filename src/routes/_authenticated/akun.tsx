@@ -1,0 +1,109 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import { KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth, roleLabel } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export const Route = createFileRoute("/_authenticated/akun")({
+  head: () => ({
+    meta: [
+      { title: "Akun Saya — Billing Rental PS" },
+      {
+        name: "description",
+        content: "Ubah kata sandi akun staf pada aplikasi billing rental PlayStation.",
+      },
+      { property: "og:title", content: "Akun Saya — Billing Rental PS" },
+      {
+        property: "og:description",
+        content: "Halaman ganti kata sandi untuk staf rental PlayStation.",
+      },
+    ],
+  }),
+  component: AkunPage,
+});
+
+function AkunPage() {
+  const { user, fullName, role } = useAuth();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next !== confirm) {
+      toast.error("Konfirmasi kata sandi tidak sama");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: next,
+        current_password: current,
+      } as { password: string; current_password: string });
+      if (error) throw error;
+      toast.success("Kata sandi berhasil diubah");
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengubah kata sandi");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-md">
+      <h1 className="font-display text-2xl font-bold text-neon">Akun Saya</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {fullName || user?.email} · {role ? roleLabel[role] : "—"}
+      </p>
+
+      <form className="surface-panel mt-6 grid gap-4 p-6" onSubmit={submit}>
+        <div className="grid gap-2">
+          <Label htmlFor="current">Kata sandi saat ini</Label>
+          <Input
+            id="current"
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="next">Kata sandi baru</Label>
+          <Input
+            id="next"
+            type="password"
+            autoComplete="new-password"
+            minLength={6}
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="confirm">Ulangi kata sandi baru</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            minLength={6}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+          />
+        </div>
+        <Button type="submit" disabled={busy}>
+          <KeyRound className="size-4" /> Simpan kata sandi
+        </Button>
+      </form>
+    </div>
+  );
+}
