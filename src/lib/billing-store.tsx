@@ -35,6 +35,8 @@ export type Station = {
 
 export type MenuItem = { id: string; name: string; price: number };
 
+export type PaymentMethod = { id: string; name: string; active: boolean };
+
 export type HistoryRecord = {
   id: string;
   stationName: string;
@@ -46,6 +48,7 @@ export type HistoryRecord = {
   rentalTotal: number;
   fnbTotal: number;
   total: number;
+  payment?: string;
 };
 
 export type Rates = Record<ConsoleType, number>;
@@ -54,6 +57,7 @@ type State = {
   stations: Station[];
   rates: Rates;
   menu: MenuItem[];
+  paymentMethods: PaymentMethod[];
   history: HistoryRecord[];
 };
 
