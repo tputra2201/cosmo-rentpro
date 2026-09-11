@@ -316,6 +316,25 @@ function migrateState(raw: unknown): State {
       parsed.consoleTypes && parsed.consoleTypes.length
         ? parsed.consoleTypes
         : Object.keys(parsed.rates ?? defaultState.rates),
+    menu: (parsed.menu ?? defaultState.menu).map((item) => ({
+      ...item,
+      category: item.category?.trim() ? item.category : "Lainnya",
+    })),
+    menuCategories: (() => {
+      const fromItems = (parsed.menu ?? []).map((m) => m.category).filter(Boolean) as string[];
+      const base = parsed.menuCategories?.length ? parsed.menuCategories : defaultState.menuCategories;
+      return Array.from(new Set([...base, ...fromItems]));
+    })(),
+    cafeTables: (parsed.cafeTables ?? defaultState.cafeTables).map((table, index) => ({
+      ...table,
+      name: table.name ?? `Meja ${String(index + 1).padStart(2, "0")}`,
+      area: table.area ?? "Indoor",
+      seats: table.seats ?? 2,
+      customerName: table.customerName ?? "",
+      notes: table.notes ?? "",
+      openedAt: table.openedAt ?? null,
+      orders: table.orders ?? [],
+    })),
     paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
@@ -325,6 +344,7 @@ function migrateState(raw: unknown): State {
     promotions: parsed.promotions ?? defaultState.promotions,
     pointEntries: parsed.pointEntries ?? defaultState.pointEntries,
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
+
   };
 }
 
