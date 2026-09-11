@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 /**
- * Daftar pusat semua aplikasi store yang dipantau Developer.
+ * Pusat kontrol Developer untuk seluruh store dalam satu aplikasi bersama.
  * Hanya bisa diakses dengan header `x-control-secret` = DEVELOPER_CONTROL_SECRET.
  */
 
-const storePatch = z.object({
+const storeFields = {
   store_code: z.string().max(64).optional(),
   store_name: z.string().max(200).optional(),
   store_email: z.string().max(200).optional(),
@@ -16,28 +16,28 @@ const storePatch = z.object({
   phone: z.string().max(40).optional(),
   app_version: z.string().max(40).optional(),
   dev_contact: z.string().max(40).optional(),
+  note: z.string().max(500).optional(),
+  active: z.boolean().optional(),
   expires_at: z.string().datetime({ offset: true }).optional(),
-});
+};
 
 const bodySchema = z.discriminatedUnion("action", [
-  z.object({
-    action: z.literal("create"),
-    label: z.string().max(200).default(""),
-    base_url: z.string().max(300).default(""),
-    control_secret: z.string().max(300).default(""),
-    note: z.string().max(500).default(""),
-  }),
-  z.object({
-    action: z.literal("update"),
-    id: z.string().uuid(),
-    label: z.string().max(200).optional(),
-    base_url: z.string().max(300).optional(),
-    control_secret: z.string().max(300).optional(),
-    note: z.string().max(500).optional(),
-  }),
+  z.object({ action: z.literal("create"), ...storeFields }),
+  z.object({ action: z.literal("update"), id: z.string().uuid(), ...storeFields }),
   z.object({ action: z.literal("delete"), id: z.string().uuid() }),
-  z.object({ action: z.literal("sync"), id: z.string().uuid() }),
-  z.object({ action: z.literal("push"), id: z.string().uuid(), patch: storePatch }),
+  z.object({
+    action: z.literal("extend"),
+    id: z.string().uuid(),
+    days: z.number().int().min(1).max(3650),
+  }),
+  z.object({
+    action: z.literal("assign"),
+    id: z.string().uuid(),
+    email: z.string().email(),
+    full_name: z.string().max(200).default(""),
+    role: z.enum(["installer", "admin", "kasir"]).default("installer"),
+    redirect_to: z.string().url(),
+  }),
 ]);
 
 function timingSafeEqual(a: string, b: string) {
@@ -55,35 +55,8 @@ function authorize(request: Request) {
   return secret.length > 0 && timingSafeEqual(secret, provided);
 }
 
-type StoreRow = Record<string, unknown> & {
-  store_code?: string;
-  store_name?: string;
-  city?: string;
-  expires_at?: string;
-};
-
-const publicColumns =
-  "id,label,base_url,note,store_code,store_name,city,expires_at,last_synced_at,last_status,created_at";
-
-async function remoteCall(
-  row: { base_url: string; control_secret: string },
-  init?: { method: "POST"; body: unknown },
-) {
-  const base = row.base_url.replace(/\/+$/, "");
-  if (!base) throw new Error("Alamat aplikasi store belum diisi.");
-  const url = `${base}/api/public/store-control`;
-  const res = await fetch(url, {
-    method: init?.method ?? "GET",
-    headers: {
-      "x-control-secret": row.control_secret,
-      ...(init ? { "content-type": "application/json" } : {}),
-    },
-    ...(init ? { body: JSON.stringify(init.body) } : {}),
-  });
-  if (!res.ok) throw new Error(`Store menolak (${res.status}).`);
-  const json = (await res.json()) as { store: StoreRow | null };
-  return json.store;
-}
+const columns =
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at";
 
 export const Route = createFileRoute("/api/public/store-registry")({
   server: {
@@ -91,12 +64,20 @@ export const Route = createFileRoute("/api/public/store-registry")({
       GET: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data, error } = await supabaseAdmin
-          .from("developer_stores")
-          .select(publicColumns)
-          .order("created_at", { ascending: true });
+        const [{ data, error }, { data: members }] = await Promise.all([
+          supabaseAdmin.from("stores").select(columns).order("created_at"),
+          supabaseAdmin.from("store_members").select("store_id"),
+        ]);
         if (error) return new Response(error.message, { status: 500 });
-        return Response.json({ stores: data ?? [] });
+        const counts = new Map<string, number>();
+        for (const row of (members ?? []) as { store_id: string }[]) {
+          counts.set(row.store_id, (counts.get(row.store_id) ?? 0) + 1);
+        }
+        const stores = ((data ?? []) as { id: string }[]).map((row) => ({
+          ...row,
+          members: counts.get(row.id) ?? 0,
+        }));
+        return Response.json({ stores });
       },
       POST: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
@@ -116,77 +97,92 @@ export const Route = createFileRoute("/api/public/store-registry")({
         if (body.action === "create") {
           const { action: _a, ...values } = body;
           const { data, error } = await supabaseAdmin
-            .from("developer_stores")
+            .from("stores")
             .insert(values as never)
-            .select(publicColumns)
+            .select(columns)
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
-          return Response.json({ store: data });
+          return Response.json({ store: { ...(data as object), members: 0 } });
         }
 
-        if (body.action === "update") {
-          const { action: _a, id, ...values } = body;
+        if (body.action === "update" || body.action === "extend") {
+          let values: Record<string, unknown>;
+          if (body.action === "extend") {
+            const { data: current } = await supabaseAdmin
+              .from("stores")
+              .select("expires_at")
+              .eq("id", body.id)
+              .maybeSingle();
+            const currentIso = (current as { expires_at: string } | null)?.expires_at;
+            const base = currentIso ? new Date(currentIso) : new Date();
+            const start = base.getTime() > Date.now() ? base : new Date();
+            values = {
+              expires_at: new Date(
+                start.getTime() + body.days * 24 * 60 * 60 * 1000,
+              ).toISOString(),
+            };
+          } else {
+            const { action: _a, id: _id, ...rest } = body;
+            values = rest;
+          }
           const { data, error } = await supabaseAdmin
-            .from("developer_stores")
+            .from("stores")
             .update(values as never)
-            .eq("id", id)
-            .select(publicColumns)
+            .eq("id", body.id)
+            .select(columns)
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ store: data });
         }
 
         if (body.action === "delete") {
-          const { error } = await supabaseAdmin
-            .from("developer_stores")
-            .delete()
-            .eq("id", body.id);
+          const { error } = await supabaseAdmin.from("stores").delete().eq("id", body.id);
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ ok: true });
         }
 
-        // sync / push
-        const { data: row, error: rowError } = await supabaseAdmin
-          .from("developer_stores")
-          .select("id,base_url,control_secret")
-          .eq("id", body.id)
-          .maybeSingle();
-        if (rowError) return new Response(rowError.message, { status: 500 });
-        if (!row) return new Response("Store tidak ditemukan", { status: 404 });
+        // assign: tautkan / undang akun sebagai pengelola store ini
+        const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
+        if (listError) return new Response(listError.message, { status: 500 });
+        const email = body.email.toLowerCase();
+        let userId = list.users.find((u) => (u.email ?? "").toLowerCase() === email)?.id;
+        let invited = false;
 
-        const target = row as { id: string; base_url: string; control_secret: string };
-        let remote: StoreRow | null = null;
-        let status = "ok";
-        try {
-          remote =
-            body.action === "push"
-              ? await remoteCall(target, { method: "POST", body: body.patch })
-              : await remoteCall(target);
-        } catch (err) {
-          status = err instanceof Error ? err.message : "Gagal terhubung";
+        if (!userId) {
+          const { data: created, error: inviteError } =
+            await supabaseAdmin.auth.admin.inviteUserByEmail(body.email, {
+              data: { full_name: body.full_name },
+              redirectTo: body.redirect_to,
+            });
+          if (inviteError) return new Response(inviteError.message, { status: 500 });
+          userId = created.user!.id;
+          invited = true;
         }
 
-        const cache = {
-          last_synced_at: new Date().toISOString(),
-          last_status: status,
-          ...(remote
-            ? {
-                store_code: remote.store_code ?? "",
-                store_name: remote.store_name ?? "",
-                city: remote.city ?? "",
-                expires_at: remote.expires_at ?? null,
-              }
-            : {}),
-        };
+        await supabaseAdmin.from("profiles").upsert(
+          {
+            id: userId,
+            ...(body.full_name ? { full_name: body.full_name } : {}),
+            ...(invited ? { must_change_password: true } : {}),
+          } as never,
+          { onConflict: "id" },
+        );
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+        const { error: roleError } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role: body.role } as never);
+        if (roleError) return new Response(roleError.message, { status: 500 });
+        const { error: memberError } = await supabaseAdmin
+          .from("store_members")
+          .upsert({ user_id: userId, store_id: body.id } as never, {
+            onConflict: "user_id",
+          });
+        if (memberError) return new Response(memberError.message, { status: 500 });
 
-        const { data: updated, error: updateError } = await supabaseAdmin
-          .from("developer_stores")
-          .update(cache as never)
-          .eq("id", target.id)
-          .select(publicColumns)
-          .maybeSingle();
-        if (updateError) return new Response(updateError.message, { status: 500 });
-        return Response.json({ store: updated, remote, status });
+        return Response.json({ ok: true, invited });
       },
     },
   },

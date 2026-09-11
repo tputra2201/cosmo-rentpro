@@ -28,6 +28,18 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+/** JSON dengan urutan kunci tetap, supaya perbandingan tidak terpengaruh urutan. */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
 function writeJson(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -131,7 +143,7 @@ export function useStoreSync(options: {
       let changed = false;
 
       for (const [key, record] of current) {
-        const json = JSON.stringify(record.payload);
+        const json = stableStringify(record.payload);
         if (shadow[key] !== json) {
           outbox[key] = record;
           changed = true;
@@ -161,7 +173,7 @@ export function useStoreSync(options: {
     for (const record of records) {
       const key = recordKey(record.kind, record.entity_id);
       if (record.deleted) delete shadowRef.current[key];
-      else shadowRef.current[key] = JSON.stringify(record.payload);
+      else shadowRef.current[key] = stableStringify(record.payload);
     }
     writeJson(SHADOW_KEY, shadowRef.current);
   }, []);
@@ -238,6 +250,13 @@ export function useStoreSync(options: {
       setSyncing(false);
     }
   }, [storeId, applyRemote, noteShadow]);
+
+  // Segera kirim begitu ada perubahan yang menunggu.
+  useEffect(() => {
+    if (!storeId || !enabled || pending === 0) return;
+    const timer = setTimeout(() => void sync(), 1200);
+    return () => clearTimeout(timer);
+  }, [pending, storeId, enabled, sync]);
 
   // Jalankan sinkronisasi saat daring, saat layar aktif, dan berkala.
   useEffect(() => {

@@ -10,6 +10,8 @@ import {
   Trash2,
   Settings2,
   X,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +24,12 @@ export const Route = createFileRoute("/kontrol")({
       {
         name: "description",
         content:
-          "Halaman Developer untuk memantau masa aktif seluruh aplikasi store dan mengubah data store dari jarak jauh.",
+          "Halaman Developer untuk membuat store baru, memantau masa aktif, dan mengubah data seluruh store dari satu tempat.",
       },
       { property: "og:title", content: "Pusat Kontrol Developer — RentalPro" },
       {
         property: "og:description",
-        content: "Pantau masa aktif dan kelola seluruh store RentalPro dari jarak jauh.",
+        content: "Kelola seluruh store RentalPro dan masa aktifnya dari satu halaman.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -35,20 +37,8 @@ export const Route = createFileRoute("/kontrol")({
   component: ControlCenter,
 });
 
-type RegistryRow = {
-  id: string;
-  label: string;
-  base_url: string;
-  note: string;
-  store_code: string;
-  store_name: string;
-  city: string;
-  expires_at: string | null;
-  last_synced_at: string | null;
-  last_status: string;
-};
-
 type StoreRow = {
+  id: string;
   store_code: string;
   store_name: string;
   store_email: string;
@@ -58,10 +48,25 @@ type StoreRow = {
   phone: string;
   app_version: string;
   dev_contact: string;
-  expires_at: string;
+  note: string;
+  active: boolean;
+  expires_at: string | null;
+  members?: number;
 };
 
-type Form = Omit<StoreRow, "expires_at"> & { expires_date: string };
+type Form = {
+  store_code: string;
+  store_name: string;
+  store_email: string;
+  address: string;
+  city: string;
+  owner_name: string;
+  phone: string;
+  app_version: string;
+  dev_contact: string;
+  note: string;
+  expires_date: string;
+};
 
 const emptyForm: Form = {
   store_code: "",
@@ -73,6 +78,7 @@ const emptyForm: Form = {
   phone: "",
   app_version: "v1.0",
   dev_contact: "",
+  note: "",
   expires_date: "",
 };
 
@@ -86,6 +92,7 @@ const fields: { key: keyof Form; label: string; type?: string; wide?: boolean }[
   { key: "phone", label: "Nomor HP", type: "tel" },
   { key: "app_version", label: "Versi aplikasi" },
   { key: "dev_contact", label: "Nomor kontak developer", type: "tel" },
+  { key: "note", label: "Catatan", wide: true },
 ];
 
 const toDateInput = (iso: string) => {
@@ -106,42 +113,35 @@ const statusOf = (iso: string | null) => {
   return { text: `Aktif (${days} hari lagi)`, tone: "text-success" };
 };
 
+const SECRET_KEY = "rentalpro-control-secret";
+
 function ControlCenter() {
   const [secret, setSecret] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [stores, setStores] = useState<RegistryRow[]>([]);
-  const [selected, setSelected] = useState<RegistryRow | null>(null);
+  const [stores, setStores] = useState<StoreRow[]>([]);
+  const [selected, setSelected] = useState<StoreRow | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
   const [newStore, setNewStore] = useState({
-    label: "",
-    base_url: "",
-    control_secret: "",
-    note: "",
+    store_name: "",
+    store_code: "",
+    city: "",
+    expires_date: "",
   });
+  const [invite, setInvite] = useState({ email: "", full_name: "" });
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("rentalpro-control-secret");
+    const saved = sessionStorage.getItem(SECRET_KEY);
     if (saved) setSecret(saved);
   }, []);
 
-  const request = async (init?: RequestInit) => {
-    const res = await fetch("/api/public/store-registry", {
-      ...init,
-      headers: {
-        "x-control-secret": secret || sessionStorage.getItem("rentalpro-control-secret") || "",
-        ...(init?.body ? { "content-type": "application/json" } : {}),
-        ...(init?.headers ?? {}),
-      },
-    });
-    return res;
-  };
+  const key = () => secret || sessionStorage.getItem(SECRET_KEY) || "";
 
-  const load = async (key?: string) => {
+  const load = async (provided?: string) => {
     setBusy(true);
     try {
       const res = await fetch("/api/public/store-registry", {
-        headers: { "x-control-secret": key ?? secret },
+        headers: { "x-control-secret": provided ?? key() },
       });
       if (res.status === 401) {
         toast.error("Kunci Developer salah.");
@@ -152,10 +152,10 @@ function ControlCenter() {
         toast.error("Gagal memuat daftar store.");
         return;
       }
-      const json = (await res.json()) as { stores: RegistryRow[] };
+      const json = (await res.json()) as { stores: StoreRow[] };
       setStores(json.stores);
       setUnlocked(true);
-      sessionStorage.setItem("rentalpro-control-secret", key ?? secret);
+      sessionStorage.setItem(SECRET_KEY, provided ?? key());
     } catch {
       toast.error("Tidak bisa terhubung ke pusat kontrol.");
     } finally {
@@ -166,28 +166,35 @@ function ControlCenter() {
   const post = async (body: unknown, okMessage?: string) => {
     setBusy(true);
     try {
-      const res = await request({ method: "POST", body: JSON.stringify(body) });
+      const res = await fetch("/api/public/store-registry", {
+        method: "POST",
+        headers: { "x-control-secret": key(), "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!res.ok) {
-        toast.error(res.status === 401 ? "Kunci Developer salah." : "Perintah gagal dijalankan.");
+        const text = await res.text();
+        toast.error(
+          res.status === 401 ? "Kunci Developer salah." : text || "Perintah gagal.",
+        );
         return null;
       }
       const json = (await res.json()) as {
-        store?: RegistryRow;
-        remote?: StoreRow | null;
-        status?: string;
+        store?: StoreRow;
         ok?: boolean;
+        invited?: boolean;
       };
       if (json.store) {
         setStores((prev) => {
           const exists = prev.some((s) => s.id === json.store!.id);
           return exists
-            ? prev.map((s) => (s.id === json.store!.id ? json.store! : s))
+            ? prev.map((s) => (s.id === json.store!.id ? { ...s, ...json.store! } : s))
             : [...prev, json.store!];
         });
-        setSelected((prev) => (prev && prev.id === json.store!.id ? json.store! : prev));
+        setSelected((prev) =>
+          prev && prev.id === json.store!.id ? { ...prev, ...json.store! } : prev,
+        );
       }
-      if (json.status && json.status !== "ok") toast.error(json.status);
-      else if (okMessage) toast.success(okMessage);
+      if (okMessage) toast.success(okMessage);
       return json;
     } catch {
       toast.error("Tidak bisa terhubung ke pusat kontrol.");
@@ -198,40 +205,50 @@ function ControlCenter() {
   };
 
   const addStore = async () => {
-    if (!newStore.base_url.trim() || !newStore.control_secret.trim()) {
-      toast.error("Alamat aplikasi dan kunci kontrol store wajib diisi.");
+    if (!newStore.store_name.trim()) {
+      toast.error("Nama store wajib diisi.");
       return;
     }
-    const json = await post({ action: "create", ...newStore }, "Store ditambahkan.");
+    const payload: Record<string, unknown> = {
+      action: "create",
+      store_name: newStore.store_name,
+      store_code: newStore.store_code,
+      city: newStore.city,
+    };
+    if (newStore.expires_date) {
+      const d = new Date(`${newStore.expires_date}T23:59:59`);
+      if (!Number.isNaN(d.getTime())) payload["expires_at"] = d.toISOString();
+    }
+    const json = await post(payload, "Store baru dibuat.");
     if (json?.store) {
-      setNewStore({ label: "", base_url: "", control_secret: "", note: "" });
-      void post({ action: "sync", id: json.store.id });
+      setNewStore({ store_name: "", store_code: "", city: "", expires_date: "" });
+      openStore(json.store);
     }
   };
 
-  const openStore = async (row: RegistryRow) => {
+  const openStore = (row: StoreRow) => {
     setSelected(row);
-    setForm(emptyForm);
-    const json = await post({ action: "sync", id: row.id });
-    const remote = json?.remote;
-    if (!remote) return;
     setForm({
-      store_code: remote.store_code ?? "",
-      store_name: remote.store_name ?? "",
-      store_email: remote.store_email ?? "",
-      address: remote.address ?? "",
-      city: remote.city ?? "",
-      owner_name: remote.owner_name ?? "",
-      phone: remote.phone ?? "",
-      app_version: remote.app_version || "v1.0",
-      dev_contact: remote.dev_contact ?? "",
-      expires_date: remote.expires_at ? toDateInput(remote.expires_at) : "",
+      store_code: row.store_code ?? "",
+      store_name: row.store_name ?? "",
+      store_email: row.store_email ?? "",
+      address: row.address ?? "",
+      city: row.city ?? "",
+      owner_name: row.owner_name ?? "",
+      phone: row.phone ?? "",
+      app_version: row.app_version || "v1.0",
+      dev_contact: row.dev_contact ?? "",
+      note: row.note ?? "",
+      expires_date: row.expires_at ? toDateInput(row.expires_at) : "",
     });
+    setInvite({ email: "", full_name: "" });
   };
 
   const saveStore = async () => {
     if (!selected) return;
-    const patch: Record<string, string> = {
+    const payload: Record<string, unknown> = {
+      action: "update",
+      id: selected.id,
       store_code: form.store_code,
       store_name: form.store_name,
       store_email: form.store_email,
@@ -241,29 +258,50 @@ function ControlCenter() {
       phone: form.phone,
       app_version: form.app_version,
       dev_contact: form.dev_contact,
+      note: form.note,
     };
     if (form.expires_date) {
       const d = new Date(`${form.expires_date}T23:59:59`);
-      if (!Number.isNaN(d.getTime())) patch["expires_at"] = d.toISOString();
+      if (!Number.isNaN(d.getTime())) payload["expires_at"] = d.toISOString();
     }
-    await post({ action: "push", id: selected.id, patch }, "Data store tersimpan.");
+    await post(payload, "Data store tersimpan.");
   };
 
-  const extend = (row: RegistryRow, days: number) => {
-    const base = row.expires_at ? new Date(row.expires_at) : new Date();
-    const start = base.getTime() > Date.now() ? base : new Date();
-    const next = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+  const extend = (row: StoreRow, days: number) =>
     void post(
-      { action: "push", id: row.id, patch: { expires_at: next.toISOString() } },
+      { action: "extend", id: row.id, days },
       `Masa aktif diperpanjang ${days} hari.`,
     );
-  };
 
-  const removeStore = async (row: RegistryRow) => {
-    const json = await post({ action: "delete", id: row.id }, "Store dihapus dari daftar.");
+  const removeStore = async (row: StoreRow) => {
+    const json = await post({ action: "delete", id: row.id }, "Store dihapus.");
     if (json) {
       setStores((prev) => prev.filter((s) => s.id !== row.id));
       setSelected((prev) => (prev?.id === row.id ? null : prev));
+    }
+  };
+
+  const assignAdmin = async () => {
+    if (!selected || !invite.email.trim()) {
+      toast.error("Email pengelola wajib diisi.");
+      return;
+    }
+    const json = await post({
+      action: "assign",
+      id: selected.id,
+      email: invite.email.trim(),
+      full_name: invite.full_name.trim(),
+      role: "installer",
+      redirect_to: `${window.location.origin}/atur-sandi`,
+    });
+    if (json?.ok) {
+      toast.success(
+        json.invited
+          ? "Undangan terkirim. Pengelola membuat sandi lewat tautan di email."
+          : "Akun ini sekarang mengelola store tersebut.",
+      );
+      setInvite({ email: "", full_name: "" });
+      void load();
     }
   };
 
@@ -275,7 +313,7 @@ function ControlCenter() {
             <LockKeyhole className="size-5" /> Pusat Kontrol Developer
           </h1>
           <p className="text-sm text-muted-foreground">
-            Masukkan kunci Developer untuk memantau dan mengatur seluruh store.
+            Masukkan kunci Developer untuk membuat dan mengatur seluruh store.
           </p>
           <div className="grid gap-2">
             <Label htmlFor="secret">Kunci Developer</Label>
@@ -304,7 +342,8 @@ function ControlCenter() {
             <ShieldCheck className="size-6" /> Pusat Kontrol Developer
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pantau masa aktif seluruh aplikasi store dan ubah datanya dari jarak jauh.
+            Satu aplikasi untuk semua store. Buat store baru, atur datanya, dan pantau
+            masa aktifnya dari sini.
           </p>
         </div>
         <Button variant="outline" disabled={busy} onClick={() => void load()}>
@@ -313,49 +352,50 @@ function ControlCenter() {
       </div>
 
       <div className="surface-panel grid gap-4 p-5">
-        <h2 className="font-display text-lg font-bold">Tambah store</h2>
+        <h2 className="font-display text-lg font-bold">Buat store baru</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
-            <Label htmlFor="label">Nama panggilan store</Label>
+            <Label htmlFor="new_name">Nama store</Label>
             <Input
-              id="label"
-              value={newStore.label}
-              onChange={(e) => setNewStore((s) => ({ ...s, label: e.target.value }))}
+              id="new_name"
+              value={newStore.store_name}
+              onChange={(e) => setNewStore((s) => ({ ...s, store_name: e.target.value }))}
               placeholder="Cosmo Gaming Makassar"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="base_url">Alamat aplikasi store</Label>
+            <Label htmlFor="new_code">Kode store</Label>
             <Input
-              id="base_url"
-              value={newStore.base_url}
-              onChange={(e) => setNewStore((s) => ({ ...s, base_url: e.target.value }))}
-              placeholder="https://nama-store.lovable.app"
+              id="new_code"
+              value={newStore.store_code}
+              onChange={(e) => setNewStore((s) => ({ ...s, store_code: e.target.value }))}
+              placeholder="CGM-01"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="control_secret">Kunci kontrol store</Label>
+            <Label htmlFor="new_city">Kota</Label>
             <Input
-              id="control_secret"
-              type="password"
-              value={newStore.control_secret}
-              onChange={(e) => setNewStore((s) => ({ ...s, control_secret: e.target.value }))}
-              placeholder="kunci milik aplikasi store itu"
+              id="new_city"
+              value={newStore.city}
+              onChange={(e) => setNewStore((s) => ({ ...s, city: e.target.value }))}
+              placeholder="Makassar"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="note">Catatan</Label>
+            <Label htmlFor="new_exp">Masa aktif sampai</Label>
             <Input
-              id="note"
-              value={newStore.note}
-              onChange={(e) => setNewStore((s) => ({ ...s, note: e.target.value }))}
-              placeholder="opsional"
+              id="new_exp"
+              type="date"
+              value={newStore.expires_date}
+              onChange={(e) =>
+                setNewStore((s) => ({ ...s, expires_date: e.target.value }))
+              }
             />
           </div>
         </div>
         <div>
           <Button disabled={busy} onClick={() => void addStore()}>
-            <Plus className="size-4" /> Tambah store
+            <Plus className="size-4" /> Buat store
           </Button>
         </div>
       </div>
@@ -363,7 +403,7 @@ function ControlCenter() {
       <div className="grid gap-3">
         {stores.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Belum ada store terdaftar. Tambahkan store di atas.
+            Belum ada store. Buat store pertama di atas.
           </p>
         )}
         {stores.map((row) => {
@@ -375,11 +415,14 @@ function ControlCenter() {
             >
               <div className="min-w-0">
                 <p className="font-display text-lg font-bold">
-                  {row.store_name?.trim() || row.label?.trim() || "Store baru"}
+                  {row.store_name?.trim() || "Store baru"}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {row.store_code?.trim() || "tanpa kode"} · {row.city?.trim() || "-"} ·{" "}
-                  {row.base_url || "alamat belum diisi"}
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="size-3" />
+                    {row.members ?? 0} akun
+                  </span>
                 </p>
                 <p className={`text-xs font-semibold ${status.tone}`}>
                   {status.text}
@@ -390,7 +433,6 @@ function ControlCenter() {
                         year: "numeric",
                       })}`
                     : ""}
-                  {row.last_status && row.last_status !== "ok" ? ` · ${row.last_status}` : ""}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -405,7 +447,7 @@ function ControlCenter() {
                     +{d} hari
                   </Button>
                 ))}
-                <Button size="sm" disabled={busy} onClick={() => void openStore(row)}>
+                <Button size="sm" disabled={busy} onClick={() => openStore(row)}>
                   <Settings2 className="size-4" /> Kelola
                 </Button>
                 <Button
@@ -426,20 +468,20 @@ function ControlCenter() {
         <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
           <div className="flex items-center justify-between sm:col-span-2">
             <h2 className="font-display text-lg font-bold">
-              Data store: {selected.store_name?.trim() || selected.label?.trim() || "-"}
+              Data store: {selected.store_name?.trim() || "-"}
             </h2>
             <Button size="sm" variant="ghost" onClick={() => setSelected(null)}>
               <X className="size-4" />
             </Button>
           </div>
-          {fields.map(({ key, label, type, wide }) => (
-            <div key={key} className={`grid gap-2 ${wide ? "sm:col-span-2" : ""}`}>
-              <Label htmlFor={key}>{label}</Label>
+          {fields.map(({ key: field, label, type, wide }) => (
+            <div key={field} className={`grid gap-2 ${wide ? "sm:col-span-2" : ""}`}>
+              <Label htmlFor={field}>{label}</Label>
               <Input
-                id={key}
+                id={field}
                 type={type ?? "text"}
-                value={form[key]}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                value={form[field]}
+                onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
                 placeholder={label}
               />
             </div>
@@ -457,6 +499,42 @@ function ControlCenter() {
             <Button disabled={busy} onClick={() => void saveStore()}>
               <Save className="size-4" /> Simpan perubahan
             </Button>
+          </div>
+
+          <div className="grid gap-4 border-t border-border pt-4 sm:col-span-2 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <h3 className="font-display text-base font-bold">
+                Pengelola pertama store ini
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Undangan dikirim ke email tersebut; dia membuat sandinya sendiri lalu
+                menjadi Installer store ini.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="inv_email">Email pengelola</Label>
+              <Input
+                id="inv_email"
+                type="email"
+                value={invite.email}
+                onChange={(e) => setInvite((s) => ({ ...s, email: e.target.value }))}
+                placeholder="pemilik@contoh.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="inv_name">Nama pengelola</Label>
+              <Input
+                id="inv_name"
+                value={invite.full_name}
+                onChange={(e) => setInvite((s) => ({ ...s, full_name: e.target.value }))}
+                placeholder="Nama lengkap"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Button variant="outline" disabled={busy} onClick={() => void assignAdmin()}>
+                <UserPlus className="size-4" /> Kirim undangan pengelola
+              </Button>
+            </div>
           </div>
         </div>
       )}
