@@ -245,6 +245,31 @@ export function StationDialog({
               ))}
             </div>
 
+            {session.mode === "prepaid" && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Waktu ekstra (tanpa biaya)</p>
+                  <span className="text-sm text-accent">{(session.bonusMin ?? 0) >= 0 ? "+" : ""}{session.bonusMin ?? 0} mnt</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[-5, -3, -1, 1, 2, 3, 5].map((m) => (
+                    <Button
+                      key={m}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        adjustBonusTime(station.id, m);
+                        toast.success(`Waktu ekstra ${m > 0 ? "+" : ""}${m} menit`, { description: "Tarif tidak berubah" });
+                      }}
+                    >
+                      {m > 0 ? `+${m}` : m}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Paket {session.durationMin} menit — total main {Math.max(0, session.durationMin + (session.bonusMin ?? 0))} menit.</p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
               <div className="grid grid-cols-2 gap-2">
