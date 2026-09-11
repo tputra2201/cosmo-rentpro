@@ -58,7 +58,7 @@ function Dashboard() {
   const available = stations.filter((s) => stationStatus(s, now) === "idle");
   const openBill = active.reduce(
     (sum, s) =>
-      sum + rentalTotal(s.session!, now) + fnbTotal(s.session!),
+      sum + (s.session ? rentalTotal(s.session, now) + fnbTotal(s.session) : 0),
     0,
   );
   const selected = stations.find((s) => s.id === selectedId) ?? null;

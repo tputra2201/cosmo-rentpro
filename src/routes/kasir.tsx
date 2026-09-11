@@ -49,7 +49,7 @@ function KasirPage() {
   const active = stations.filter((s) => s.session);
   const grandTotal = active.reduce(
     (sum, s) =>
-      sum + rentalTotal(s.session!, now) + fnbTotal(s.session!),
+      sum + (s.session ? rentalTotal(s.session, now) + fnbTotal(s.session) : 0),
     0,
   );
 
@@ -105,7 +105,8 @@ function KasirPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {active.map((station) => {
-              const session = station.session!;
+              const session = station.session;
+              if (!session) return null;
               const status = stationStatus(station, now);
               const rental = rentalTotal(session, now);
               const fnb = fnbTotal(session);
