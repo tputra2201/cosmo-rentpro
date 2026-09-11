@@ -33,6 +33,9 @@ export function StationCard({
 }) {
   const status = stationStatus(station, now);
   const session = station.session;
+  const total = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
+  const paid = paidTotal(session);
+  const due = Math.max(0, total - paid);
 
   return (
     <button
