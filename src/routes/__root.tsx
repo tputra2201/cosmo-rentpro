@@ -25,13 +25,21 @@ import {
   LogOut,
   UserCog,
   KeyRound,
+  Store,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BillingProvider } from "@/lib/billing-store";
-import { AuthProvider, useAuth, roleLabel, adminOnlyPaths } from "@/lib/auth";
+import {
+  AuthProvider,
+  useAuth,
+  roleLabel,
+  adminOnlyPaths,
+  installerOnlyPaths,
+  isAdminLevel,
+} from "@/lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
@@ -152,6 +160,7 @@ const navItems = [
   { to: "/laporan", label: "Laporan", icon: BarChart3 },
   { to: "/pengguna", label: "Pengguna", icon: UserCog },
   { to: "/backup", label: "Backup", icon: DatabaseBackup },
+  { to: "/store", label: "Store", icon: Store },
   { to: "/akun", label: "Akun", icon: KeyRound },
 ] as const;
 
@@ -200,11 +209,14 @@ function AppShell() {
     }
   }, [pathname, navigate]);
 
-  const items = navItems.filter(
-    ({ to }) => role === "admin" || !adminOnlyPaths.includes(to),
-  );
+  const items = navItems.filter(({ to }) => {
+    if (installerOnlyPaths.includes(to)) return role === "installer";
+    return isAdminLevel(role) || !adminOnlyPaths.includes(to);
+  });
   const blocked =
-    session !== null && role === "kasir" && adminOnlyPaths.includes(pathname);
+    session !== null &&
+    ((installerOnlyPaths.includes(pathname) && role !== "installer") ||
+      (!isAdminLevel(role) && adminOnlyPaths.includes(pathname)));
 
   const handleSignOut = async () => {
     await signOut();
@@ -296,8 +308,9 @@ function AppShell() {
           <div className="surface-panel mx-auto max-w-md p-8 text-center">
             <h1 className="text-xl font-semibold">Akses terbatas</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu
-              membutuhkan aksesnya.
+              {installerOnlyPaths.includes(pathname)
+                ? "Halaman ini hanya untuk Installer."
+                : "Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu membutuhkan aksesnya."}
             </p>
             <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
               Kembali ke Dashboard

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "kasir";
+export type AppRole = "installer" | "admin" | "kasir";
 
 type AuthCtx = {
   session: Session | null;
@@ -61,7 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         | { full_name: string | null; must_change_password: boolean | null }
         | null;
       const list = (roles ?? []).map((r) => r.role as AppRole);
-      setRole(list.includes("admin") ? "admin" : (list[0] ?? "kasir"));
+      const priority: AppRole[] = ["installer", "admin", "kasir"];
+      setRole(priority.find((r) => list.includes(r)) ?? "kasir");
       setFullName(profile?.full_name ?? "");
       setMustChangePassword(profile?.must_change_password === true);
     })();
@@ -103,6 +104,7 @@ export function useAuth() {
 }
 
 export const roleLabel: Record<AppRole, string> = {
+  installer: "Installer",
   admin: "Admin",
   kasir: "Kasir",
 };
@@ -116,4 +118,12 @@ export const adminOnlyPaths = [
   "/promo",
   "/backup",
   "/pengguna",
+  "/store",
 ];
+
+/** Menu yang hanya boleh diakses Installer */
+export const installerOnlyPaths = ["/store"];
+
+/** Installer punya semua akses Admin */
+export const isAdminLevel = (role: AppRole | null) =>
+  role === "admin" || role === "installer";
