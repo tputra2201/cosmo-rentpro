@@ -31,6 +31,7 @@ export type Session = {
   member: boolean;
   packageName: string;
   notes: string;
+  bonusMin: number; // waktu ekstra/pengurangan tanpa mengubah tarif
   customerId?: string;
   bookingId?: string;
   promoName?: string;
@@ -130,6 +131,7 @@ type State = {
   paymentMethods: PaymentMethod[];
   packages: RentalPackage[];
   roundingRule: RoundingRule;
+  defaultBonusMin: number;
   history: HistoryRecord[];
   customers: Customer[];
   bookings: Booking[];
@@ -173,6 +175,7 @@ const defaultState: State = {
     { id: "pkg-3", name: "3 Jam", durationMin: 180, price: 0, active: true },
   ],
   roundingRule: "minute",
+  defaultBonusMin: 0,
   history: [],
   customers: [],
   bookings: [],
@@ -197,9 +200,13 @@ export function elapsedSeconds(session: Session, now: number) {
   return Math.max(0, Math.floor((now - session.startAt) / 1000));
 }
 
+export function effectiveMinutes(session: Session) {
+  return Math.max(0, session.durationMin + (session.bonusMin ?? 0));
+}
+
 export function remainingSeconds(session: Session, now: number) {
   if (session.mode === "open") return Infinity;
-  return session.durationMin * 60 - elapsedSeconds(session, now);
+  return effectiveMinutes(session) * 60 - elapsedSeconds(session, now);
 }
 
 export function rentalTotal(session: Session, now: number) {
@@ -252,6 +259,7 @@ function migrateState(raw: unknown): State {
             member: station.session.member ?? false,
             packageName: station.session.packageName ?? (station.session.mode === "open" ? "Open Time" : `${station.session.durationMin} Menit`),
             notes: station.session.notes ?? "",
+            bonusMin: station.session.bonusMin ?? 0,
           }
         : null,
     })),
@@ -263,6 +271,7 @@ function migrateState(raw: unknown): State {
     paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
+    defaultBonusMin: parsed.defaultBonusMin ?? defaultState.defaultBonusMin,
     customers: parsed.customers ?? defaultState.customers,
     bookings: parsed.bookings ?? defaultState.bookings,
     promotions: parsed.promotions ?? defaultState.promotions,
@@ -277,10 +286,13 @@ type Ctx = State & {
     stationId: string,
     mode: PlayMode,
     durationMin: number,
-    details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
+    details?: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "packageName" | "notes" | "bonusMin" | "customerId" | "bookingId" | "promoName" | "discountType" | "discountValue" | "discountMax">>,
   ) => void;
   stopSession: (stationId: string, payment?: string, amountPaid?: number) => HistoryRecord | null;
   addTime: (stationId: string, extraMin: number) => void;
+  adjustBonusTime: (stationId: string, deltaMin: number) => void;
+  setSessionBonus: (stationId: string, bonusMin: number) => void;
+  setDefaultBonusMin: (minutes: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
