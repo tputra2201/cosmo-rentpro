@@ -169,11 +169,12 @@ function RootComponent() {
 }
 
 function AppShell() {
-  const { session, role, fullName, user, signOut } = useAuth();
+  const { session, role, fullName, user, signOut, mustChangePassword } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
+
 
   useEffect(() => {
     setMenuOpen(false);
