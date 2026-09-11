@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { markPasswordChanged as markPasswordChangedFn } from "@/lib/users.functions";
 import { useAuth } from "@/lib/auth";
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label";
 export function ForcePasswordChange() {
   const { markPasswordChanged, signOut } = useAuth();
   const markDone = useServerFn(markPasswordChangedFn);
+  const navigate = useNavigate();
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
@@ -37,6 +39,7 @@ export function ForcePasswordChange() {
       markPasswordChanged();
       toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
       await signOut();
+      navigate({ to: "/auth", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mengubah kata sandi");
     } finally {
@@ -112,7 +115,7 @@ export function ForcePasswordChange() {
           <button
             type="button"
             className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => void signOut()}
+            onClick={() => void signOut().then(() => navigate({ to: "/auth", replace: true }))}
           >
             Keluar dulu
           </button>
