@@ -49,6 +49,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
+import { ThemeProvider } from "@/lib/theme";
+
 
 
 function NotFoundComponent() {
