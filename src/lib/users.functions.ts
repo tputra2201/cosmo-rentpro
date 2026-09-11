@@ -27,6 +27,31 @@ async function assertInstaller(context: Ctx) {
   }
 }
 
+/** Store tempat akun ini terdaftar. */
+async function myStoreId(context: Ctx): Promise<string | null> {
+  const { data } = await context.supabase
+    .from("store_members")
+    .select("store_id")
+    .limit(1)
+    .maybeSingle();
+  return (data as { store_id: string } | null)?.store_id ?? null;
+}
+
+async function assertSameStore(context: Ctx, targetId: string) {
+  const storeId = await myStoreId(context);
+  if (!storeId) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("store_members")
+    .select("store_id")
+    .eq("user_id", targetId)
+    .maybeSingle();
+  const target = (data as { store_id: string } | null)?.store_id ?? null;
+  if (target && target !== storeId) {
+    throw new Error("Pengguna ini bukan bagian dari store kamu.");
+  }
+}
+
 export type AppRole = "installer" | "admin" | "kasir";
 
 export type ManagedUser = {
@@ -50,6 +75,17 @@ export const listUsers = createServerFn({ method: "GET" })
     });
     if (error) throw new Error(error.message);
 
+    const storeId = await myStoreId(context as unknown as Ctx);
+    const { data: members } = await supabaseAdmin
+      .from("store_members")
+      .select("user_id, store_id");
+    const memberStore = new Map(
+      ((members ?? []) as { user_id: string; store_id: string }[]).map((m) => [
+        m.user_id,
+        m.store_id,
+      ]),
+    );
+
     const [{ data: profiles }, { data: roles }] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, full_name"),
       supabaseAdmin.from("user_roles").select("user_id, role"),
@@ -64,7 +100,9 @@ export const listUsers = createServerFn({ method: "GET" })
       roleById.set(r.user_id, r.role as AppRole);
     }
 
-    return list.users.map((u) => ({
+    return list.users
+      .filter((u) => !storeId || (memberStore.get(u.id) ?? storeId) === storeId)
+      .map((u) => ({
       id: u.id,
       email: u.email ?? "",
       fullName: nameById.get(u.id) ?? "",
@@ -112,6 +150,14 @@ export const inviteUser = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: id, role: data.role });
     if (roleError) throw new Error(roleError.message);
+
+    // Staf baru otomatis terikat ke store milik pengundang.
+    const storeId = await myStoreId(context as unknown as Ctx);
+    if (storeId) {
+      await supabaseAdmin
+        .from("store_members")
+        .upsert({ user_id: id, store_id: storeId } as never, { onConflict: "user_id" });
+    }
     return { id };
   });
 
@@ -161,6 +207,7 @@ export const updateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
+    await assertSameStore(context as unknown as Ctx, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.fullName) {
@@ -205,6 +252,7 @@ export const deleteUser = createServerFn({ method: "POST" })
     const ctx = context as unknown as Ctx;
     await assertAdmin(ctx);
     if (data.id === ctx.userId) throw new Error("Kamu tidak bisa menghapus akunmu sendiri.");
+    await assertSameStore(ctx, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
