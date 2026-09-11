@@ -279,7 +279,11 @@ type Ctx = State & {
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
   updateStation: (stationId: string, patch: Partial<Omit<Station, "id" | "session">>) => void;
-  addStation: () => void;
+  addStation: (init?: {
+    name?: string;
+    console?: ConsoleType;
+    booth?: string;
+  }) => void;
   removeStation: (stationId: string) => void;
   addMenuItem: (name: string, price: number) => void;
   removeMenuItem: (id: string) => void;
