@@ -109,6 +109,7 @@ export type HistoryRecord = {
   fnbTotal: number;
   total: number;
   payment?: string;
+  payments?: PaymentSplit[];
   customerName?: string;
   customerPhone?: string;
   packageName?: string;
