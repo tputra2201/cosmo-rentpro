@@ -412,6 +412,37 @@ export function StationDialog({
               )}
             </div>
 
+            {!isSettled && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pay-amount">Jumlah dibayar</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline-offset-2 hover:underline"
+                    onClick={() => setPayAmount("")}
+                  >
+                    Bayar lunas
+                  </button>
+                </div>
+                <div className="relative">
+                  <Wallet className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="pay-amount"
+                    className="pl-9"
+                    type="number"
+                    min={0}
+                    max={dueAmount}
+                    value={payAmount === "" ? String(dueAmount) : payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Bisa bayar sebagian di depan. Sisa {formatRupiah(Math.max(0, dueAmount - payTarget))}{" "}
+                  tetap jadi tagihan berjalan.
+                </p>
+              </div>
+            )}
+
             {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -431,14 +462,14 @@ export function StationDialog({
                     className="pl-9"
                     type="number"
                     min={0}
-                    value={amountPaid === "" ? String(dueAmount) : amountPaid}
+                    value={amountPaid === "" ? String(payTarget) : amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
                   />
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Kembalian</span>
                   <span className="font-semibold text-accent">
-                    {formatRupiah(Math.max(0, cashReceived - dueAmount))}
+                    {formatRupiah(Math.max(0, cashReceived - payTarget))}
                   </span>
                 </div>
               </div>
