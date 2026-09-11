@@ -104,20 +104,26 @@ export function StationDialog({
   const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
   const isSettled = dueAmount <= 0;
 
+  const payTarget =
+    payAmount === ""
+      ? dueAmount
+      : Math.min(dueAmount, Math.max(0, Number(payAmount) || 0));
+
   const splitRows = splits.map((s) => ({
     method: s.method || activePayments[0]?.name || "Cash",
     amount: Math.max(0, Number(s.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, s) => sum + s.amount, 0);
-  const splitRemaining = Math.max(0, dueAmount - splitPaid);
+  const splitRemaining = Math.max(0, payTarget - splitPaid);
   const cashReceived =
-    amountPaid === "" ? dueAmount : Math.max(0, Number(amountPaid) || 0);
+    amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
   const resetPaymentForm = () => {
     setSplitMode(false);
     setSplits([]);
     setPayment("");
     setAmountPaid("");
+    setPayAmount("");
   };
 
   const validatePayment = () => {
@@ -125,18 +131,22 @@ export function StationDialog({
       toast.error("Tagihan sudah lunas");
       return false;
     }
+    if (payTarget <= 0) {
+      toast.error("Jumlah pembayaran harus lebih dari 0");
+      return false;
+    }
     if (splitMode) {
       if (splitRows.filter((s) => s.amount > 0).length === 0) {
         toast.error("Isi jumlah tiap metode pembayaran");
         return false;
       }
-      if (splitPaid < dueAmount) {
+      if (splitPaid < payTarget) {
         toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
         return false;
       }
       return true;
     }
-    if (selectedPayment === "Cash" && cashReceived < dueAmount) {
+    if (selectedPayment === "Cash" && cashReceived < payTarget) {
       toast.error("Uang diterima masih kurang");
       return false;
     }
@@ -148,22 +158,23 @@ export function StationDialog({
       const rows = splitRows.filter((s) => s.amount > 0);
       settleSession(station.id, {
         payments: rows,
-        amount: dueAmount,
+        amount: payTarget,
         amountPaid: splitPaid,
       });
     } else {
       settleSession(station.id, {
         payment: selectedPayment,
-        amount: dueAmount,
-        amountPaid: selectedPayment === "Cash" ? cashReceived : dueAmount,
+        amount: payTarget,
+        amountPaid: selectedPayment === "Cash" ? cashReceived : payTarget,
       });
     }
-    toast.success("Pembayaran diterima", {
-      description: `${formatRupiah(dueAmount)} — ${
+    const sisa = Math.max(0, dueAmount - payTarget);
+    toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
+      description: `${formatRupiah(payTarget)} — ${
         splitMode
           ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ")
           : selectedPayment
-      }`,
+      }${sisa > 0 ? ` · Sisa tagihan ${formatRupiah(sisa)}` : ""}`,
     });
     resetPaymentForm();
   };
