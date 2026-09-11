@@ -462,7 +462,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           rentalTotal: rental,
           fnbTotal: fnb,
           total,
-          payment: payment || "Cash",
+          payment:
+            payment ||
+            (payments && payments.length
+              ? payments.map((p) => p.method).join(" + ")
+              : "Cash"),
+          ...(payments && payments.length ? { payments } : {}),
           customerName: session.customerName,
           customerPhone: session.customerPhone,
           packageName: session.packageName,
