@@ -36,11 +36,28 @@ export const Route = createFileRoute("/_authenticated/kafe")({
 });
 
 function KafePage() {
-  const { cafeTables, addCafeTable, updateCafeTable, removeCafeTable } = useBilling();
+  const {
+    cafeTables,
+    addCafeTable,
+    updateCafeTable,
+    removeCafeTable,
+    menu,
+    menuCategories,
+    addMenuItem,
+    updateMenuItem,
+    removeMenuItem,
+    addMenuCategory,
+    renameMenuCategory,
+    removeMenuCategory,
+  } = useBilling();
 
   const [newName, setNewName] = useState("");
   const [newArea, setNewArea] = useState("");
   const [newSeats, setNewSeats] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [itemPrice, setItemPrice] = useState("");
+  const [itemCategory, setItemCategory] = useState("");
+  const [newCategory, setNewCategory] = useState("");
 
   const openTables = cafeTables.filter((t) => t.orders.length > 0 || t.openedAt);
   const grandTotal = openTables.reduce((sum, t) => sum + tableTotal(t), 0);
