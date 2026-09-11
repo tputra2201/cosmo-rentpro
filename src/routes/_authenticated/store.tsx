@@ -35,6 +35,8 @@ type StoreForm = {
   city: string;
   owner_name: string;
   phone: string;
+  app_version: string;
+  dev_contact: string;
 };
 
 const empty: StoreForm = {
@@ -45,9 +47,17 @@ const empty: StoreForm = {
   city: "",
   owner_name: "",
   phone: "",
+  app_version: "v1.0",
+  dev_contact: "",
 };
 
-const fields: { key: keyof StoreForm; label: string; type?: string; wide?: boolean }[] = [
+const fields: {
+  key: keyof StoreForm;
+  label: string;
+  type?: string;
+  wide?: boolean;
+  hint?: string;
+}[] = [
   { key: "store_code", label: "Kode Store" },
   { key: "store_name", label: "Nama Store" },
   { key: "store_email", label: "Email Store", type: "email" },
@@ -55,6 +65,17 @@ const fields: { key: keyof StoreForm; label: string; type?: string; wide?: boole
   { key: "city", label: "Kota" },
   { key: "owner_name", label: "Nama pemilik" },
   { key: "phone", label: "Nomor HP", type: "tel" },
+  {
+    key: "app_version",
+    label: "Versi aplikasi",
+    hint: "Tampil di pojok kiri atas, contoh: v1.0",
+  },
+  {
+    key: "dev_contact",
+    label: "Nomor kontak developer",
+    type: "tel",
+    hint: "Contoh: 081282284411",
+  },
 ];
 
 function StorePage() {
