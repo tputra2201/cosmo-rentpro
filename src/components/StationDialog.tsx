@@ -418,11 +418,114 @@ export function StationDialog({
               )}
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Tipe pembayaran</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Tipe pembayaran</p>
+                {activePayments.length > 1 && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline-offset-2 hover:underline"
+                    onClick={() => {
+                      if (splitMode) {
+                        setSplitMode(false);
+                        setSplits([]);
+                      } else {
+                        setSplitMode(true);
+                        setSplits([
+                          { method: activePayments[0]?.name ?? "Cash", amount: String(sessionTotal) },
+                          { method: activePayments[1]?.name ?? "QRIS", amount: "0" },
+                        ]);
+                      }
+                    }}
+                  >
+                    {splitMode ? "Satu metode saja" : "Bagi beberapa metode"}
+                  </button>
+                )}
+              </div>
               {activePayments.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Belum ada tipe pembayaran aktif. Atur di menu Pembayaran.
                 </p>
+              ) : splitMode ? (
+                <div className="space-y-2">
+                  {splits.map((row, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Select
+                        value={row.method || activePayments[0]?.name}
+                        onValueChange={(v) =>
+                          setSplits((prev) =>
+                            prev.map((r, idx) => (idx === i ? { ...r, method: v } : r)),
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activePayments.map((p) => (
+                            <SelectItem key={p.id} value={p.name}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="flex-1"
+                        value={row.amount}
+                        aria-label={`Jumlah ${row.method}`}
+                        onChange={(e) =>
+                          setSplits((prev) =>
+                            prev.map((r, idx) =>
+                              idx === i ? { ...r, amount: e.target.value } : r,
+                            ),
+                          )
+                        }
+                      />
+                      {splits.length > 2 && (
+                        <button
+                          type="button"
+                          aria-label="Hapus metode"
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          onClick={() =>
+                            setSplits((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setSplits((prev) => [
+                          ...prev,
+                          {
+                            method: activePayments[0]?.name ?? "Cash",
+                            amount: String(splitRemaining),
+                          },
+                        ])
+                      }
+                    >
+                      <Plus className="size-4" /> Metode lain
+                    </Button>
+                    <span
+                      className={
+                        splitRemaining > 0
+                          ? "font-semibold text-destructive"
+                          : "font-semibold text-accent"
+                      }
+                    >
+                      {splitRemaining > 0
+                        ? `Kurang ${formatRupiah(splitRemaining)}`
+                        : `Kembalian ${formatRupiah(splitPaid - sessionTotal)}`}
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <Select
                   value={selectedPayment}
@@ -443,7 +546,12 @@ export function StationDialog({
             </div>
 
             <Button variant="destructive" className="w-full" onClick={handleStop}>
-              <Square className="size-4" /> Akhiri &amp; Bayar ({selectedPayment})
+              <Square className="size-4" /> Akhiri &amp; Bayar (
+              {splitMode
+                ? splitRows.filter((s) => s.amount > 0).map((s) => s.method).join(" + ") ||
+                  "gabungan"
+                : selectedPayment}
+              )
             </Button>
           </div>
         )}
