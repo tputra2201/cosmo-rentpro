@@ -38,7 +38,19 @@ export type Session = {
   discountType?: "percent" | "fixed";
   discountValue?: number;
   discountMax?: number;
+  settlements?: Settlement[];
 };
+
+export type Settlement = {
+  id: string;
+  at: number;
+  payment: string;
+  payments?: { method: string; amount: number }[];
+  amount: number; // jumlah yang dibayarkan ke tagihan
+  amountPaid: number; // uang diterima
+  change: number;
+};
+
 
 export type Station = {
   id: string;
