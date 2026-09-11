@@ -34,7 +34,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { BillingProvider } from "@/lib/billing-store";
+import { BillingProvider, useBilling } from "@/lib/billing-store";
 import {
   AuthProvider,
   useAuth,
@@ -49,7 +49,6 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
-import { useBilling } from "@/lib/billing-store";
 
 
 function NotFoundComponent() {
