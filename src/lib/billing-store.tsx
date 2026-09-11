@@ -393,7 +393,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   mode,
                   startAt: Date.now(),
                   durationMin: mode === "prepaid" ? durationMin : 0,
-                  rate: prev.rates[s.console],
+                  rate: prev.rates[s.console] ?? 0,
                   orders: [],
                     customerName: details?.customerName || "Pelanggan Umum",
                     customerPhone: details?.customerPhone || "",
