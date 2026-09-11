@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Store } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useStoreInfo } from "@/lib/store-info";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -77,41 +75,21 @@ const fields: {
 ];
 
 function StorePage() {
-  const [form, setForm] = useState<StoreForm>(empty);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("store_settings")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) toast.error(error.message);
-      if (data) {
-        const row = data as StoreForm & { id: string; expires_at: string | null };
-        setExpiresAt(row.expires_at ?? null);
-        setForm({
-          store_code: row.store_code ?? "",
-          store_name: row.store_name ?? "",
-          store_email: row.store_email ?? "",
-          address: row.address ?? "",
-          city: row.city ?? "",
-          owner_name: row.owner_name ?? "",
-          phone: row.phone ?? "",
-          app_version: row.app_version || "v1.0",
-          dev_contact: row.dev_contact ?? "",
-        });
+  const { store, loading } = useStoreInfo(true);
+  const form: StoreForm = store
+    ? {
+        store_code: store.store_code ?? "",
+        store_name: store.store_name ?? "",
+        store_email: store.store_email ?? "",
+        address: store.address ?? "",
+        city: store.city ?? "",
+        owner_name: store.owner_name ?? "",
+        phone: store.phone ?? "",
+        app_version: store.app_version || "v1.0",
+        dev_contact: store.dev_contact ?? "",
       }
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    : empty;
+  const expiresAt = store?.expires_at ?? null;
 
   const expiryLabel = expiresAt
     ? new Date(expiresAt).toLocaleDateString("id-ID", {
