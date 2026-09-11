@@ -67,19 +67,23 @@ function PenggunaPage() {
     toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
 
   // Domain editor/preview Lovable butuh izin pemilik proyek, jadi tautan email
-  // selalu diarahkan ke alamat publik aplikasi.
+  // selalu diarahkan ke alamat publik aplikasi. Jika aplikasi sudah dipindahkan
+  // ke domain sendiri, isi VITE_PUBLIC_APP_URL agar tautan memakai domain itu.
   const PUBLIC_APP_URL =
-    "https://project--f7796085-bc67-492a-9669-7e31cdf0ef88.lovable.app";
+    (import.meta.env["VITE_PUBLIC_APP_URL"] as string | undefined)?.replace(/\/+$/, "") ||
+    "https://cosmo-rentpro.lovable.app";
   const redirectTo = () => {
     if (typeof window === "undefined") return `${PUBLIC_APP_URL}/atur-sandi`;
     const host = window.location.hostname;
     const isEditorPreview =
       host.includes("lovableproject.com") ||
+      host.includes("lovable.dev") ||
       host.startsWith("id-preview--") ||
       host === "localhost";
     const base = isEditorPreview ? PUBLIC_APP_URL : window.location.origin;
     return `${base}/atur-sandi`;
   };
+
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
