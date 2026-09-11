@@ -1,0 +1,153 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Store } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export const Route = createFileRoute("/_authenticated/store")({
+  head: () => ({
+    meta: [
+      { title: "Pengaturan Store — Billing Rental PS" },
+      {
+        name: "description",
+        content:
+          "Installer mengisi identitas store: kode, nama, email, alamat, kota, pemilik, dan nomor HP.",
+      },
+      { property: "og:title", content: "Pengaturan Store — Billing Rental PS" },
+      {
+        property: "og:description",
+        content: "Data identitas outlet rental PlayStation yang diatur oleh Installer.",
+      },
+    ],
+  }),
+  component: StorePage,
+});
+
+type StoreForm = {
+  store_code: string;
+  store_name: string;
+  store_email: string;
+  address: string;
+  city: string;
+  owner_name: string;
+  phone: string;
+};
+
+const empty: StoreForm = {
+  store_code: "",
+  store_name: "",
+  store_email: "",
+  address: "",
+  city: "",
+  owner_name: "",
+  phone: "",
+};
+
+const fields: { key: keyof StoreForm; label: string; type?: string; wide?: boolean }[] = [
+  { key: "store_code", label: "Kode Store" },
+  { key: "store_name", label: "Nama Store" },
+  { key: "store_email", label: "Email Store", type: "email" },
+  { key: "address", label: "Alamat lengkap", wide: true },
+  { key: "city", label: "Kota" },
+  { key: "owner_name", label: "Nama pemilik" },
+  { key: "phone", label: "Nomor HP", type: "tel" },
+];
+
+function StorePage() {
+  const { role } = useAuth();
+  const isInstaller = role === "installer";
+  const [form, setForm] = useState<StoreForm>(empty);
+  const [id, setId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("store_settings")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) toast.error(error.message);
+      if (data) {
+        const row = data as StoreForm & { id: string };
+        setId(row.id);
+        setForm({
+          store_code: row.store_code ?? "",
+          store_name: row.store_name ?? "",
+          store_email: row.store_email ?? "",
+          address: row.address ?? "",
+          city: row.city ?? "",
+          owner_name: row.owner_name ?? "",
+          phone: row.phone ?? "",
+        });
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    const query = id
+      ? supabase.from("store_settings").update(form).eq("id", id)
+      : supabase.from("store_settings").insert(form as never);
+    const { error } = await query;
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Data store disimpan");
+  };
+
+  return (
+    <div className="grid gap-6">
+      <div>
+        <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-neon">
+          <Store className="size-6" /> Pengaturan Store
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Identitas outlet ini. Hanya akun Installer yang bisa mengisi dan
+          mengubahnya. Email store dipakai sebagai alamat pengirim undangan staf
+          dan tautan atur ulang sandi.
+        </p>
+      </div>
+
+      <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
+        {loading && (
+          <p className="text-sm text-muted-foreground sm:col-span-2">Memuat data store…</p>
+        )}
+        {!loading &&
+          fields.map(({ key, label, type, wide }) => (
+            <div key={key} className={`grid gap-2 ${wide ? "sm:col-span-2" : ""}`}>
+              <Label htmlFor={key}>{label}</Label>
+              <Input
+                id={key}
+                type={type ?? "text"}
+                value={form[key]}
+                disabled={!isInstaller}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                placeholder={label}
+              />
+            </div>
+          ))}
+        {!loading && (
+          <div className="sm:col-span-2">
+            <Button onClick={save} disabled={!isInstaller || saving}>
+              Simpan data store
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
