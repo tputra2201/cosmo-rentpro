@@ -74,7 +74,7 @@ export function StationDialog({
 
   if (!station) return null;
   const session = station.session;
-  const rate = rates[station.console];
+  const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
 
