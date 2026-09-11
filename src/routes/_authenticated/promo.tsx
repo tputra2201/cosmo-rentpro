@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { formatRupiah, useBilling } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/promo")({ head: () => ({ meta: [
+export const Route = createFileRoute("/_authenticated/promo")({ head: () => ({ meta: [
   { title: "Promo — Billing Rental PS" }, { name: "description", content: "Kelola promo rental PlayStation berdasarkan periode dan minimal transaksi." },
   { property: "og:title", content: "Promo — Billing Rental PS" }, { property: "og:description", content: "Atur diskon nominal atau persentase untuk transaksi rental." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
 ] }), component: PromoPage });

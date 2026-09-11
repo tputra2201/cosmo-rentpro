@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBilling, type BookingStatus } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/booking")({
+export const Route = createFileRoute("/_authenticated/booking")({
   head: () => ({ meta: [
     { title: "Booking Rental — Billing Rental PS" },
     { name: "description", content: "Kelola jadwal booking unit PlayStation dan cegah bentrok pemakaian." },

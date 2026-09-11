@@ -19,7 +19,7 @@ import {
   type ConsoleType,
 } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/kasir")({
+export const Route = createFileRoute("/_authenticated/kasir")({
   head: () => ({
     meta: [
       { title: "Layar Kasir — Billing Rental PS" },

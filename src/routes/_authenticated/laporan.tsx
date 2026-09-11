@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { formatRupiah, useBilling } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/laporan")({
+export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
     meta: [
       { title: "Riwayat & Laporan — Billing Rental PS" },
