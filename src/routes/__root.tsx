@@ -189,10 +189,12 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeName, setStoreName] = useState("");
   const [signature, setSignature] = useState(() => appSignature());
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
       setStoreName("");
+      setExpiresAt(null);
       setSignature(appSignature());
       return;
     }
@@ -200,7 +202,7 @@ function AppShell() {
     (async () => {
       const { data } = await supabase
         .from("store_settings")
-        .select("store_name, app_version, dev_contact")
+        .select("store_name, app_version, dev_contact, expires_at")
         .limit(1)
         .maybeSingle();
       if (cancelled) return;
@@ -208,14 +210,30 @@ function AppShell() {
         store_name: string | null;
         app_version: string | null;
         dev_contact: string | null;
+        expires_at: string | null;
       } | null;
       setStoreName(row?.store_name?.trim() ?? "");
+      setExpiresAt(row?.expires_at ?? null);
       setSignature(appSignature(row?.app_version, row?.dev_contact));
     })();
     return () => {
       cancelled = true;
     };
   }, [session]);
+
+  const expiryDate = expiresAt ? new Date(expiresAt) : null;
+  const msLeft = expiryDate ? expiryDate.getTime() - Date.now() : null;
+  const daysLeft =
+    msLeft === null ? null : Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+  const expired = msLeft !== null && msLeft <= 0;
+  const expiryLabel = expiryDate
+    ? expiryDate.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
 
 
   useEffect(() => {
