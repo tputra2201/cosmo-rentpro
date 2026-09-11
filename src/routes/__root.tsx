@@ -188,22 +188,29 @@ function AppShell() {
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeName, setStoreName] = useState("");
+  const [signature, setSignature] = useState(() => appSignature());
 
   useEffect(() => {
     if (!session) {
       setStoreName("");
+      setSignature(appSignature());
       return;
     }
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("store_settings")
-        .select("store_name")
+        .select("store_name, app_version, dev_contact")
         .limit(1)
         .maybeSingle();
       if (cancelled) return;
-      const row = data as { store_name: string | null } | null;
+      const row = data as {
+        store_name: string | null;
+        app_version: string | null;
+        dev_contact: string | null;
+      } | null;
       setStoreName(row?.store_name?.trim() ?? "");
+      setSignature(appSignature(row?.app_version, row?.dev_contact));
     })();
     return () => {
       cancelled = true;
@@ -260,7 +267,7 @@ function AppShell() {
                 {storeName || "BILLING RENTAL PS"}
               </span>
               <span className="truncate font-mono text-[11px] tracking-wide text-muted-foreground">
-                {APP_SIGNATURE}
+                {signature}
               </span>
             </span>
           </Link>
