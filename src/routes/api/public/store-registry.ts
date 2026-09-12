@@ -95,7 +95,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
           ...row,
           members: counts.get(row.id) ?? 0,
         }));
-        return Response.json({ stores });
+        return Response.json({ stores, developers: developers ?? [] });
       },
       POST: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
