@@ -193,255 +193,258 @@ function KasPage() {
       </Tabs>
     </div>
   );
+}
 
-  function EntryForm({ direction }: { direction: CashDirection }) {
-    const options = cashCategories.filter((c) => c.direction === direction && c.active);
-    const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
-    const [amount, setAmount] = useState("");
-    const [payment, setPayment] = useState("Cash");
-    const [note, setNote] = useState("");
-    const active = options.find((c) => c.id === categoryId);
+function EntryForm({ direction }: { direction: CashDirection }) {
+  const { cashCategories, paymentMethods, addCashEntry } = useBilling();
+  const options = cashCategories.filter((c) => c.direction === direction && c.active);
+  const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
+  const [amount, setAmount] = useState("");
+  const [payment, setPayment] = useState("Cash");
+  const [note, setNote] = useState("");
+  const active = options.find((c) => c.id === categoryId);
 
-    const submit = () => {
-      const value = Number(amount);
-      if (!categoryId || !Number.isFinite(value) || value <= 0) {
-        toast.error("Pilih item dan isi jumlah uang");
-        return;
-      }
-      const row = addCashEntry({ categoryId, amount: value, payment, note });
-      if (!row) {
-        toast.error("Catatan gagal disimpan");
-        return;
-      }
-      setAmount("");
-      setNote("");
-      toast.success(
-        `${row.categoryName} ${formatRupiah(row.amount)} dicatat`,
-      );
-    };
+  const submit = () => {
+    const value = Number(amount);
+    if (!categoryId || !Number.isFinite(value) || value <= 0) {
+      toast.error("Pilih item dan isi jumlah uang");
+      return;
+    }
+    const row = addCashEntry({ categoryId, amount: value, payment, note });
+    if (!row) {
+      toast.error("Catatan gagal disimpan");
+      return;
+    }
+    setAmount("");
+    setNote("");
+    toast.success(
+      `${row.categoryName} ${formatRupiah(row.amount)} dicatat`,
+    );
+  };
 
-    return (
-      <section className="surface-panel space-y-4 p-4 sm:p-6">
-        <div className="flex items-center gap-2">
-          {direction === "in" ? (
-            <ArrowDownCircle className="size-5 text-accent" />
-          ) : (
-            <ArrowUpCircle className="size-5 text-destructive" />
-          )}
-          <h2 className="text-lg font-semibold">
-            {direction === "in" ? "Catat uang masuk" : "Catat uang keluar"}
-          </h2>
-        </div>
-
-        {options.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Belum ada item. Tambahkan dulu di tab Item &amp; kelompok.
-          </p>
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <div className="flex items-center gap-2">
+        {direction === "in" ? (
+          <ArrowDownCircle className="size-5 text-accent" />
         ) : (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Item</label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {options.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} · {c.group}
+          <ArrowUpCircle className="size-5 text-destructive" />
+        )}
+        <h2 className="text-lg font-semibold">
+          {direction === "in" ? "Catat uang masuk" : "Catat uang keluar"}
+        </h2>
+      </div>
+
+      {options.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Belum ada item. Tambahkan dulu di tab Item &amp; kelompok.
+        </p>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Item</label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} · {c.group}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor={`kas-amount-${direction}`}>
+                Jumlah uang
+              </label>
+              <Input
+                id={`kas-amount-${direction}`}
+                type="number"
+                min={0}
+                value={amount}
+                placeholder="0"
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Metode</label>
+              <Select value={payment} onValueChange={setPayment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih metode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods
+                    .filter((p) => p.active)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium" htmlFor={`kas-amount-${direction}`}>
-                  Jumlah uang
-                </label>
-                <Input
-                  id={`kas-amount-${direction}`}
-                  type="number"
-                  min={0}
-                  value={amount}
-                  placeholder="0"
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Metode</label>
-                <Select value={payment} onValueChange={setPayment}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih metode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods
-                      .filter((p) => p.active)
-                      .map((p) => (
-                        <SelectItem key={p.id} value={p.name}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium" htmlFor={`kas-note-${direction}`}>
-                  Catatan
-                </label>
-                <Input
-                  id={`kas-note-${direction}`}
-                  value={note}
-                  placeholder="Misal: tagihan listrik bulan ini"
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
-
-            {active?.payout && (
-              <p className="text-sm text-warning">
-                Item ini ditandai perpindahan uang kas, jadi tidak dihitung sebagai
-                {direction === "in" ? " pendapatan" : " biaya"} di laporan.
-              </p>
-            )}
-
-            <Button onClick={submit}>
-              <Plus className="size-4" /> Simpan catatan
-            </Button>
-          </>
-        )}
-      </section>
-    );
-  }
-
-  function CategoryEditor({ direction }: { direction: CashDirection }) {
-    const rows = cashCategories.filter((c) => c.direction === direction);
-    const groups = useMemo(
-      () => Array.from(new Set(rows.map((c) => c.group))).filter(Boolean),
-      [rows],
-    );
-    const [name, setName] = useState("");
-    const [group, setGroup] = useState("");
-    const [payout, setPayout] = useState(false);
-
-    const add = () => {
-      const row = addCashCategory({ name, direction, payout, group });
-      if (!row) {
-        toast.error("Nama item kosong atau sudah ada");
-        return;
-      }
-      setName("");
-      setGroup("");
-      setPayout(false);
-      toast.success(`${row.name} ditambahkan`);
-    };
-
-    return (
-      <section className="surface-panel space-y-4 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold">
-          {direction === "in" ? "Item uang masuk" : "Item uang keluar"}
-        </h2>
-
-        <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
-          <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-sm font-medium" htmlFor={`cat-name-${direction}`}>
-              Nama item
-            </label>
-            <Input
-              id={`cat-name-${direction}`}
-              value={name}
-              placeholder={direction === "in" ? "Misal: Sewa Stik" : "Misal: Pembelian Gas"}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor={`kas-note-${direction}`}>
+                Catatan
+              </label>
+              <Input
+                id={`kas-note-${direction}`}
+                value={note}
+                placeholder="Misal: tagihan listrik bulan ini"
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor={`cat-group-${direction}`}>
-              Kelompok
-            </label>
-            <Input
-              id={`cat-group-${direction}`}
-              value={group}
-              placeholder={groups[0] ?? "Operasional"}
-              onChange={(e) => setGroup(e.target.value)}
-              list={`cat-groups-${direction}`}
-            />
-            <datalist id={`cat-groups-${direction}`}>
-              {groups.map((g) => (
-                <option key={g} value={g} />
-              ))}
-            </datalist>
-          </div>
-          <Button onClick={add}>
-            <Plus className="size-4" /> Tambah
-          </Button>
-        </div>
 
-        <label className="flex items-center gap-2 text-sm">
-          <Switch checked={payout} onCheckedChange={setPayout} />
-          Perpindahan uang kas saja (tidak dihitung{" "}
-          {direction === "in" ? "pendapatan" : "biaya"})
-        </label>
-
-        <ul className="space-y-2">
-          {rows.length === 0 && (
-            <li className="rounded-md bg-secondary px-3 py-6 text-center text-sm text-muted-foreground">
-              Belum ada item.
-            </li>
+          {active?.payout && (
+            <p className="text-sm text-warning">
+              Item ini ditandai perpindahan uang kas, jadi tidak dihitung sebagai
+              {direction === "in" ? " pendapatan" : " biaya"} di laporan.
+            </p>
           )}
-          {rows.map((c) => (
-            <li
-              key={c.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/50 px-3 py-2.5"
+
+          <Button onClick={submit}>
+            <Plus className="size-4" /> Simpan catatan
+          </Button>
+        </>
+      )}
+    </section>
+  );
+}
+
+function CategoryEditor({ direction }: { direction: CashDirection }) {
+  const { cashCategories, cashEntries, addCashCategory, updateCashCategory, removeCashCategory } =
+    useBilling();
+  const rows = cashCategories.filter((c) => c.direction === direction);
+  const groups = useMemo(
+    () => Array.from(new Set(rows.map((c) => c.group))).filter(Boolean),
+    [rows],
+  );
+  const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
+  const [payout, setPayout] = useState(false);
+
+  const add = () => {
+    const row = addCashCategory({ name, direction, payout, group });
+    if (!row) {
+      toast.error("Nama item kosong atau sudah ada");
+      return;
+    }
+    setName("");
+    setGroup("");
+    setPayout(false);
+    toast.success(`${row.name} ditambahkan`);
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <h2 className="text-lg font-semibold">
+        {direction === "in" ? "Item uang masuk" : "Item uang keluar"}
+      </h2>
+
+      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor={`cat-name-${direction}`}>
+            Nama item
+          </label>
+          <Input
+            id={`cat-name-${direction}`}
+            value={name}
+            placeholder={direction === "in" ? "Misal: Sewa Stik" : "Misal: Pembelian Gas"}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium" htmlFor={`cat-group-${direction}`}>
+            Kelompok
+          </label>
+          <Input
+            id={`cat-group-${direction}`}
+            value={group}
+            placeholder={groups[0] ?? "Operasional"}
+            onChange={(e) => setGroup(e.target.value)}
+            list={`cat-groups-${direction}`}
+          />
+          <datalist id={`cat-groups-${direction}`}>
+            {groups.map((g) => (
+              <option key={g} value={g} />
+            ))}
+          </datalist>
+        </div>
+        <Button onClick={add}>
+          <Plus className="size-4" /> Tambah
+        </Button>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <Switch checked={payout} onCheckedChange={setPayout} />
+        Perpindahan uang kas saja (tidak dihitung{" "}
+        {direction === "in" ? "pendapatan" : "biaya"})
+      </label>
+
+      <ul className="space-y-2">
+        {rows.length === 0 && (
+          <li className="rounded-md bg-secondary px-3 py-6 text-center text-sm text-muted-foreground">
+            Belum ada item.
+          </li>
+        )}
+        {rows.map((c) => (
+          <li
+            key={c.id}
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/50 px-3 py-2.5"
+          >
+            <Input
+              value={c.name}
+              className="h-9 min-w-40 flex-1"
+              aria-label={`Nama item ${c.name}`}
+              onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
+            />
+            <Input
+              value={c.group}
+              className="h-9 w-40"
+              aria-label={`Kelompok ${c.name}`}
+              onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
+            />
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Switch
+                checked={c.payout}
+                onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
+                aria-label={`Perpindahan kas ${c.name}`}
+              />
+              Perpindahan kas
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Switch
+                checked={c.active}
+                onCheckedChange={(v) => updateCashCategory(c.id, { active: v })}
+                aria-label={`Aktifkan ${c.name}`}
+              />
+              {c.active ? "Aktif" : "Nonaktif"}
+            </label>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label={`Hapus ${c.name}`}
+              onClick={() => {
+                if (cashEntries.some((e) => e.categoryId === c.id)) {
+                  toast.error("Item ini sudah dipakai, nonaktifkan saja");
+                  return;
+                }
+                removeCashCategory(c.id);
+                toast.success(`${c.name} dihapus`);
+              }}
             >
-              <Input
-                value={c.name}
-                className="h-9 min-w-40 flex-1"
-                aria-label={`Nama item ${c.name}`}
-                onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
-              />
-              <Input
-                value={c.group}
-                className="h-9 w-40"
-                aria-label={`Kelompok ${c.name}`}
-                onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
-              />
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Switch
-                  checked={c.payout}
-                  onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
-                  aria-label={`Perpindahan kas ${c.name}`}
-                />
-                Perpindahan kas
-              </label>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Switch
-                  checked={c.active}
-                  onCheckedChange={(v) => updateCashCategory(c.id, { active: v })}
-                  aria-label={`Aktifkan ${c.name}`}
-                />
-                {c.active ? "Aktif" : "Nonaktif"}
-              </label>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Hapus ${c.name}`}
-                onClick={() => {
-                  if (cashEntries.some((e) => e.categoryId === c.id)) {
-                    toast.error("Item ini sudah dipakai, nonaktifkan saja");
-                    return;
-                  }
-                  removeCashCategory(c.id);
-                  toast.success(`${c.name} dihapus`);
-                }}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    );
-  }
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function Stat({
