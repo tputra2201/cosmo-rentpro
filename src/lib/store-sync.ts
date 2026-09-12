@@ -70,6 +70,7 @@ export function useStoreSync(options: {
   const [syncing, setSyncing] = useState(false);
   const [pending, setPending] = useState(0);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [readyStoreId, setReadyStoreId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +78,9 @@ export function useStoreSync(options: {
   const outboxRef = useRef<Outbox>({});
   const busyRef = useRef(false);
   const loadedRef = useRef(false);
+  const stateRef = useRef(state);
+
+  stateRef.current = state;
 
   // Muat antrean & bayangan dari perangkat.
   useEffect(() => {
@@ -102,6 +106,7 @@ export function useStoreSync(options: {
   useEffect(() => {
     if (!enabled) {
       setStoreId(null);
+      setReadyStoreId(null);
       return;
     }
     const cached = typeof window === "undefined" ? null : localStorage.getItem(STORE_KEY);
@@ -124,6 +129,7 @@ export function useStoreSync(options: {
         shadowRef.current = {};
         outboxRef.current = {};
         setPending(0);
+        setReadyStoreId(null);
       }
       localStorage.setItem(STORE_KEY, id);
       setStoreId(id);
@@ -133,41 +139,43 @@ export function useStoreSync(options: {
     };
   }, [enabled]);
 
-  // Catat setiap perubahan lokal ke antrean kirim.
-  useEffect(() => {
-    if (!hydrated || !loadedRef.current) return;
-    const timer = setTimeout(() => {
-      const current = flattenSnapshot(state);
-      const shadow = shadowRef.current;
-      const outbox = outboxRef.current;
-      let changed = false;
+  const queueLocalChanges = useCallback((snapshot: BillingSnapshot) => {
+    const current = flattenSnapshot(snapshot);
+    const shadow = shadowRef.current;
+    const outbox = outboxRef.current;
+    let changed = false;
 
-      for (const [key, record] of current) {
-        const json = stableStringify(record.payload);
-        if (shadow[key] !== json) {
-          outbox[key] = record;
-          changed = true;
-        }
-      }
-      for (const key of Object.keys(shadow)) {
-        if (current.has(key)) continue;
-        const [kind, ...rest] = key.split(":");
-        outbox[key] = {
-          kind: kind ?? "",
-          entity_id: rest.join(":"),
-          payload: {},
-          deleted: true,
-        };
+    for (const [key, record] of current) {
+      const json = stableStringify(record.payload);
+      if (shadow[key] !== json) {
+        outbox[key] = record;
         changed = true;
       }
+    }
+    for (const key of Object.keys(shadow)) {
+      if (current.has(key)) continue;
+      const [kind, ...rest] = key.split(":");
+      outbox[key] = {
+        kind: kind ?? "",
+        entity_id: rest.join(":"),
+        payload: {},
+        deleted: true,
+      };
+      changed = true;
+    }
 
-      if (changed) {
-        writeJson(OUTBOX_KEY, outbox);
-        setPending(Object.keys(outbox).length);
-      }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [state, hydrated]);
+    if (changed) {
+      writeJson(OUTBOX_KEY, outbox);
+      setPending(Object.keys(outbox).length);
+    }
+  }, []);
+
+  // Catat perubahan lokal langsung. Jangan beri kesempatan tarikan berkala
+  // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
+  useEffect(() => {
+    if (!hydrated || !loadedRef.current || !storeId || readyStoreId !== storeId) return;
+    queueLocalChanges(state);
+  }, [state, hydrated, storeId, readyStoreId, queueLocalChanges]);
 
   const noteShadow = useCallback((records: SyncRecord[]) => {
     for (const record of records) {
@@ -178,17 +186,80 @@ export function useStoreSync(options: {
     writeJson(SHADOW_KEY, shadowRef.current);
   }, []);
 
+  // Perangkat baru wajib mengambil data pusat lebih dulu. Tanpa tahap ini,
+  // data bawaan (PS3/PS4/PS5) dapat terkirim dan menimpa pengaturan store.
+  useEffect(() => {
+    if (!storeId || !enabled || !hydrated || readyStoreId === storeId) return;
+
+    const hasSyncHistory =
+      Object.keys(shadowRef.current).length > 0 ||
+      Object.keys(outboxRef.current).length > 0 ||
+      Boolean(localStorage.getItem(SINCE_KEY));
+    if (hasSyncHistory) {
+      setReadyStoreId(storeId);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error: bootstrapError } = await supabase
+        .from("store_data")
+        .select("kind, entity_id, payload, deleted, updated_at")
+        .order("updated_at", { ascending: true });
+      if (cancelled) return;
+      if (bootstrapError) {
+        setError(bootstrapError.message);
+        return;
+      }
+
+      const remote = (data ?? []) as {
+        kind: string;
+        entity_id: string;
+        payload: Record<string, unknown>;
+        deleted: boolean;
+        updated_at: string;
+      }[];
+      if (remote.length > 0) {
+        const records: SyncRecord[] = remote.map((row) => ({
+          kind: row.kind,
+          entity_id: row.entity_id,
+          payload: row.payload ?? {},
+          deleted: row.deleted,
+        }));
+        applyRemote((prev) => applyRecords(prev, records));
+        noteShadow(records);
+        const newest = remote.at(-1)?.updated_at;
+        if (newest) localStorage.setItem(SINCE_KEY, newest);
+      }
+      setError(null);
+      setReadyStoreId(storeId);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId, enabled, hydrated, readyStoreId, applyRemote, noteShadow]);
+
   const sync = useCallback(async () => {
-    if (!storeId || busyRef.current || !navigator.onLine) return;
+    if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
     busyRef.current = true;
     setSyncing(true);
     try {
+      // Tangkap perubahan terbaru sekali lagi tepat sebelum kirim. Ini menutup
+      // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
+      queueLocalChanges(stateRef.current);
+
       // 1. Kirim perubahan lokal.
       const outbox = outboxRef.current;
       const keys = Object.keys(outbox);
       if (keys.length) {
-        const rows = keys.map((key) => {
-          const record = outbox[key]!;
+        const sentByKey = new Map(
+          keys.flatMap((key) => {
+            const record = outbox[key];
+            return record ? [[key, record] as const] : [];
+          }),
+        );
+        const rows = Array.from(sentByKey.values()).map((record) => {
           return {
             store_id: storeId,
             kind: record.kind,
@@ -202,8 +273,13 @@ export function useStoreSync(options: {
           .from("store_data")
           .upsert(rows as never, { onConflict: "store_id,kind,entity_id" });
         if (pushError) throw new Error(pushError.message);
-        const sent = keys.map((key) => outbox[key]!);
-        for (const key of keys) delete outbox[key];
+        const sent = Array.from(sentByKey.values());
+        for (const [key, sentRecord] of sentByKey) {
+          const currentRecord = outbox[key];
+          if (currentRecord && stableStringify(currentRecord) === stableStringify(sentRecord)) {
+            delete outbox[key];
+          }
+        }
         writeJson(OUTBOX_KEY, outbox);
         setPending(Object.keys(outbox).length);
         noteShadow(sent);
@@ -249,32 +325,34 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, applyRemote, noteShadow]);
+  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges]);
 
   // Segera kirim begitu ada perubahan yang menunggu.
   useEffect(() => {
-    if (!storeId || !enabled || pending === 0) return;
+    if (!storeId || readyStoreId !== storeId || !enabled || pending === 0) return;
     const timer = setTimeout(() => void sync(), 1200);
     return () => clearTimeout(timer);
-  }, [pending, storeId, enabled, sync]);
+  }, [pending, storeId, readyStoreId, enabled, sync]);
 
   // Jalankan sinkronisasi saat daring, saat layar aktif, dan berkala.
   useEffect(() => {
-    if (!storeId || !enabled) return;
+    if (!storeId || readyStoreId !== storeId || !enabled) return;
     void sync();
     const id = setInterval(() => void sync(), 20000);
     const wake = () => {
       if (document.visibilityState === "visible") void sync();
     };
     document.addEventListener("visibilitychange", wake);
-    window.addEventListener("online", () => void sync());
+    const reconnect = () => void sync();
+    window.addEventListener("online", reconnect);
     window.addEventListener("focus", wake);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("online", reconnect);
       window.removeEventListener("focus", wake);
     };
-  }, [storeId, enabled, sync]);
+  }, [storeId, readyStoreId, enabled, sync]);
 
   return {
     online,
