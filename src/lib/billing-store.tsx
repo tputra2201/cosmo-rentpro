@@ -1321,13 +1321,44 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
         const topup = Math.max(0, Math.round(input.topup ?? 0));
         const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
+        const holderName = input.customerName?.trim() || "";
+        const holderPhone = input.customerPhone?.trim() || "";
+        const member = input.member ?? false;
+
+        // Pemegang kartu ikut tercatat di database pelanggan.
+        let customerId = input.customerId;
+        let newCustomer: Customer | null = null;
+        if (!customerId && holderName && holderName.toLowerCase() !== "umum") {
+          const existing = state.customers.find(
+            (c) =>
+              (holderPhone && c.phone.trim() === holderPhone) ||
+              c.name.trim().toLowerCase() === holderName.toLowerCase(),
+          );
+          if (existing) {
+            customerId = existing.id;
+          } else {
+            newCustomer = {
+              id: `customer-${now}`,
+              name: holderName,
+              phone: holderPhone,
+              member,
+              level: "Bronze",
+              points: 0,
+              visits: 0,
+              totalSpent: 0,
+              createdAt: now,
+            };
+            customerId = newCustomer.id;
+          }
+        }
+
         const card: PlayingCard = {
           id: `card-${now}`,
           cardNumber,
-          ...(input.customerId ? { customerId: input.customerId } : {}),
-          customerName: input.customerName?.trim() || "Umum",
-          customerPhone: input.customerPhone?.trim() || "",
-          member: input.member ?? false,
+          ...(customerId ? { customerId } : {}),
+          customerName: holderName || "Umum",
+          customerPhone: holderPhone,
+          member,
           balance: topup,
           active: true,
           cardPrice: price,
@@ -1361,14 +1392,49 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           playingCards: [card, ...prev.playingCards],
           cardEntries: [...entries, ...prev.cardEntries],
+          customers: newCustomer
+            ? [newCustomer, ...prev.customers]
+            : customerId
+              ? prev.customers.map((c) =>
+                  c.id === customerId
+                    ? {
+                        ...c,
+                        ...(holderName ? { name: holderName } : {}),
+                        ...(holderPhone ? { phone: holderPhone } : {}),
+                        member: c.member || member,
+                      }
+                    : c,
+                )
+              : prev.customers,
         }));
         return card;
       },
       updatePlayingCard: (id, patch) =>
-        update((prev) => ({
-          ...prev,
-          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-        })),
+        update((prev) => {
+          const card = prev.playingCards.find((c) => c.id === id);
+          const linkedId = patch.customerId ?? card?.customerId;
+          return {
+            ...prev,
+            playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+            customers: linkedId
+              ? prev.customers.map((c) =>
+                  c.id === linkedId
+                    ? {
+                        ...c,
+                        ...(patch.customerName?.trim()
+                          ? { name: patch.customerName.trim() }
+                          : {}),
+                        ...(patch.customerPhone !== undefined
+                          ? { phone: patch.customerPhone.trim() }
+                          : {}),
+                        ...(patch.member !== undefined ? { member: patch.member } : {}),
+                      }
+                    : c,
+                )
+              : prev.customers,
+          };
+        }),
+
       removePlayingCard: (id) =>
         update((prev) => ({
           ...prev,
