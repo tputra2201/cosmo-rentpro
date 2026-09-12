@@ -792,15 +792,8 @@ export function StationDialog({
               </div>
             )}
 
-            {!isSettled && usesCard && (
-              <CardPaymentPanel
-                cardNumber={cardNumber}
-                onCardNumberChange={setCardNumber}
-                need={cardCharge}
-                discount={bill?.discount ?? 0}
-                inputId="pay-card-number"
-              />
-            )}
+
+
 
 
             {!isSettled && !splitMode && selectedPayment === "Cash" && (
