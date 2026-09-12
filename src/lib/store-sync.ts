@@ -153,18 +153,25 @@ export function useStoreSync(options: {
         changed = true;
       }
     }
-    for (const key of Object.keys(shadow)) {
-      if (current.has(key)) continue;
-      const [kind, ...rest] = key.split(":");
-      if (!kind || !isKnownKind(kind)) continue;
-      outbox[key] = {
-        kind: kind ?? "",
-        entity_id: rest.join(":"),
-        payload: {},
-        deleted: true,
-      };
-      changed = true;
+    // Hanya baris yang benar-benar dihapus di perangkat ini yang boleh
+    // dihapus di pusat: baris itu harus ada di snapshot sebelumnya.
+    const prevKeys = prevKeysRef.current;
+    if (prevKeys) {
+      for (const key of Object.keys(shadow)) {
+        if (current.has(key) || !prevKeys.has(key)) continue;
+        const [kind, ...rest] = key.split(":");
+        if (!kind || !isKnownKind(kind)) continue;
+        outbox[key] = {
+          kind,
+          entity_id: rest.join(":"),
+          payload: {},
+          deleted: true,
+        };
+        changed = true;
+      }
     }
+    prevKeysRef.current = new Set(current.keys());
+
 
     if (changed) {
       writeJson(OUTBOX_KEY, outbox);
