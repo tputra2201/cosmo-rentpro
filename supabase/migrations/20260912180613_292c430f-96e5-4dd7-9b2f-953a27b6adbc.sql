@@ -1,0 +1,1 @@
+DELETE FROM public.store_data WHERE kind IN ('cash_category','cash_entry') AND deleted = true;
