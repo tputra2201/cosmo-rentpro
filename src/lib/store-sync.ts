@@ -80,6 +80,7 @@ export function useStoreSync(options: {
   const busyRef = useRef(false);
   const loadedRef = useRef(false);
   const stateRef = useRef(state);
+  const prevKeysRef = useRef<Set<string> | null>(null);
 
   stateRef.current = state;
 
