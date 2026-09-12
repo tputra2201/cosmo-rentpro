@@ -41,8 +41,9 @@ function BookingPage() {
 
   const ordered = [...bookings].sort((a, b) => a.startAt - b.startAt);
   const now = Date.now();
-  const upcoming = ordered.filter((item) => item.endAt >= now && item.status !== "cancelled" && item.status !== "completed");
-  const past = ordered.filter((item) => !upcoming.includes(item));
+  const checkedIn = ordered.filter((item) => item.status === "checked-in");
+  const upcoming = ordered.filter((item) => item.endAt >= now && item.status === "confirmed");
+  const past = ordered.filter((item) => !upcoming.includes(item) && !checkedIn.includes(item));
 
   const chooseCustomer = (id: string) => {
     setCustomerId(id);
@@ -74,18 +75,20 @@ function BookingPage() {
         <Button className="w-full" type="submit"><CalendarDays className="size-4"/> Simpan Booking</Button>
       </form>
       <div className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Agenda mendatang</h2><Badge variant="secondary">{upcoming.length} booking</Badge></div>{upcoming.length === 0 ? <div className="surface-panel p-10 text-center text-muted-foreground">Belum ada booking mendatang.</div> : <div className="space-y-3">{upcoming.map((item) => <BookingRow key={item.id} item={item} stationName={stations.find((station) => station.id === item.stationId)?.name ?? "Unit"} onStatus={(status) => updateBooking(item.id, { status })} onDelete={() => removeBooking(item.id)}/>)}</div>}
-      {past.length > 0 && <div className="pt-3"><h2 className="mb-3 text-lg font-semibold">Riwayat booking</h2><div className="space-y-3 opacity-75">{past.slice(-8).reverse().map((item) => <BookingRow key={item.id} item={item} stationName={stations.find((station) => station.id === item.stationId)?.name ?? "Unit"} onStatus={(status) => updateBooking(item.id, { status })} onDelete={() => removeBooking(item.id)}/>)}</div></div>}</div>
+      {checkedIn.length > 0 && <div className="pt-3"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Already Check-In</h2><Badge variant="secondary">{checkedIn.length} booking</Badge></div><div className="space-y-3">{checkedIn.map((item) => <BookingRow key={item.id} item={item} locked stationName={stations.find((station) => station.id === item.stationId)?.name ?? "Unit"} onStatus={(status) => updateBooking(item.id, { status })} onDelete={() => removeBooking(item.id)}/>)}</div></div>}
+      {past.length > 0 &&  <div className="pt-3"><h2 className="mb-3 text-lg font-semibold">Riwayat booking</h2><div className="space-y-3 opacity-75">{past.slice(-8).reverse().map((item) => <BookingRow key={item.id} item={item} stationName={stations.find((station) => station.id === item.stationId)?.name ?? "Unit"} onStatus={(status) => updateBooking(item.id, { status })} onDelete={() => removeBooking(item.id)}/>)}</div></div>}</div>
     </section>
   </div>;
 }
 
 type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
 
-function BookingRow({ item, stationName, onStatus, onDelete }: { item: BookingItem; stationName: string; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
+function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: BookingItem; stationName: string; locked?: boolean; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
   const { now, stations, startSession, updateBooking } = useBilling();
   const minutes = bookingMinutes(item);
   const ready = canCheckIn(item, now);
   const opensAt = new Date(item.startAt - CHECKIN_LEAD_MS).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  const readOnly = locked || item.status === "checked-in";
 
   const checkIn = () => {
     if (!ready) { toast.error(`Check-in baru bisa dilakukan mulai ${opensAt} (1 jam sebelum jadwal)`); return; }
@@ -104,7 +107,7 @@ function BookingRow({ item, stationName, onStatus, onDelete }: { item: BookingIt
     toast.success(`${item.customerName} check-in di ${station.name} · ${minutes} menit`);
   };
 
-  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>{item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>}<EditBookingDialog item={item}/>{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan booking"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus booking"><Trash2 className="size-4"/></Button></div></article>;
+  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>{item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>}{!readOnly && <><EditBookingDialog item={item}/>{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan booking"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus booking"><Trash2 className="size-4"/></Button></>}</div></article>;
 }
 
 function EditBookingDialog({ item }: { item: BookingItem }) {
