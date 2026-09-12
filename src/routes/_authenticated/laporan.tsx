@@ -1,7 +1,32 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Printer, Trash2 } from "lucide-react";
+import { Download, Printer, Receipt, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -10,7 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling } from "@/lib/billing-store";
+import { ReceiptView } from "@/components/CustomerDetail";
+import { isAdminLevel, useAuth } from "@/lib/auth";
+import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 
 export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
