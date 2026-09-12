@@ -422,6 +422,10 @@ type Ctx = State & {
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
+  updateSessionCustomer: (
+    stationId: string,
+    patch: { customerName?: string; customerPhone?: string; member?: boolean; customerId?: string | undefined },
+  ) => void;
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
@@ -1187,6 +1191,16 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         mapStation(stationId, (s) =>
           s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
         ),
+      updateSessionCustomer: (stationId, patch) =>
+        mapStation(stationId, (s) => {
+          if (!s.session) return s;
+          const { customerId, ...rest } = patch;
+          const { customerId: _old, ...session } = s.session;
+          return {
+            ...s,
+            session: { ...session, ...rest, ...(customerId ? { customerId } : {}) },
+          };
+        }),
       pauseSession: (stationId) =>
         mapStation(stationId, (s) =>
           s.session && !s.session.pausedAt
