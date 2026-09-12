@@ -34,7 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { CardScanInput } from "@/components/CardScanInput";
 import {
   CARD_PAYMENT_NAME,
-  cardDiscountPercentFor,
+  sessionBill,
   findCardByNumber,
   elapsedSeconds,
   fnbTotal,
@@ -89,6 +89,9 @@ export function StationDialog({
     playingCards,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    consoleDiscounts,
+    promotions,
+    setSessionDiscount,
     chargeCard,
   } = useBilling();
   const [cardNumber, setCardNumber] = useState("");
@@ -136,7 +139,22 @@ export function StationDialog({
             item.startAt - 6 * 60 * 60 * 1000 <= now,
         )
         .sort((a, b) => a.startAt - b.startAt)[0];
-  const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
+  const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
+  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
+  const priceCfg = {
+    consoleDiscounts,
+    menu,
+    promotions,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+  };
+  const bill = session
+    ? sessionBill(session, now, station.console, priceCfg, {
+        member: Boolean(session.member),
+        card: Boolean(isCardPayment && card),
+      })
+    : null;
+  const sessionTotal = bill ? bill.total : 0;
   const alreadyPaid = paidTotal(session);
   const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
   const isSettled = dueAmount <= 0;
@@ -155,13 +173,7 @@ export function StationDialog({
   const cashReceived =
     amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
-  const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
-  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
-  const cardPercent = card
-    ? cardDiscountPercentFor(card, { cardDiscountPercent, cardMemberDiscountPercent })
-    : 0;
-  const cardDiscount = card ? Math.round((payTarget * cardPercent) / 100) : 0;
-  const cardCharge = Math.max(0, payTarget - cardDiscount);
+  const cardCharge = payTarget;
 
   const resetPaymentForm = () => {
     setSplitMode(false);
@@ -233,7 +245,7 @@ export function StationDialog({
       const remaining = Math.max(0, dueAmount - payTarget);
       toast.success("Pembayaran Playing Card diterima", {
         description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
-          cardDiscount > 0 ? ` · potongan ${cardPercent}% (${formatRupiah(cardDiscount)})` : ""
+          (bill?.discount ?? 0) > 0 ? ` · potongan ${formatRupiah(bill?.discount ?? 0)}` : ""
         }${remaining > 0 ? ` · Sisa tagihan ${formatRupiah(remaining)}` : ""}`,
       });
       resetPaymentForm();
@@ -659,6 +671,72 @@ export function StationDialog({
               )}
             </div>
 
+            {session && bill && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatRupiah(bill.subtotal)}</span>
+                  </div>
+                  {bill.itemDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Potongan tarif &amp; menu</span>
+                      <span className="text-accent">-{formatRupiah(bill.itemDiscount)}</span>
+                    </div>
+                  )}
+                  {bill.promoDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{bill.promoName}</span>
+                      <span className="text-accent">-{formatRupiah(bill.promoDiscount)}</span>
+                    </div>
+                  )}
+                  {bill.manualDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Diskon transaksi</span>
+                      <span className="text-accent">-{formatRupiah(bill.manualDiscount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold">
+                    <span>Total tagihan</span>
+                    <span className="text-neon">{formatRupiah(bill.total)}</span>
+                  </div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Diskon transaksi</Label>
+                    <Select
+                      value={session.discountType ?? "fixed"}
+                      onValueChange={(v) =>
+                        setSessionDiscount(station.id, { type: v as DiscountType })
+                      }
+                    >
+                      <SelectTrigger aria-label="Jenis diskon transaksi">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Rupiah</SelectItem>
+                        <SelectItem value="percent">Persen</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="session-disc">Nilai diskon</Label>
+                    <Input
+                      id="session-disc"
+                      type="number"
+                      min={0}
+                      value={session.discountValue ?? 0}
+                      onChange={(e) =>
+                        setSessionDiscount(station.id, {
+                          value: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!isSettled && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -715,8 +793,8 @@ export function StationDialog({
                       <span>Saldo {formatRupiah(card.balance)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Potongan {cardPercent}%</span>
-                      <span className="text-accent">-{formatRupiah(cardDiscount)}</span>
+                      <span className="text-muted-foreground">Total potongan</span>
+                      <span className="text-accent">-{formatRupiah(bill?.discount ?? 0)}</span>
                     </div>
                     <div className="flex justify-between font-semibold">
                       <span>Dipotong dari saldo</span>
