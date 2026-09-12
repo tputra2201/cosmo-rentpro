@@ -269,6 +269,8 @@ function StorePage() {
         </p>
       </div>
 
+      <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
+
       <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
         {loading && (
           <p className="text-sm text-muted-foreground sm:col-span-2">Memuat data store…</p>
