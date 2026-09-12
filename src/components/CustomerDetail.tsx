@@ -249,7 +249,7 @@ function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack: () => 
       <Separator />
       <div className="space-y-1">
         <Row label="Rental" value={formatRupiah(record.rentalTotal)} />
-        <Row label="Makanan &amp; minuman" value={formatRupiah(record.fnbTotal)} />
+        <Row label="Makanan & minuman" value={formatRupiah(record.fnbTotal)} />
         {record.discount ? (
           <Row
             label={`Potongan${record.promoName ? ` (${record.promoName})` : ""}`}
