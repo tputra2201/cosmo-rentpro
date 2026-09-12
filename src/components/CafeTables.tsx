@@ -372,56 +372,61 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   )}
 
                   {isCardPayment && (
-                    <div className="space-y-2 rounded-md border border-border p-3">
-                      <CardScanInput
-                        value={cardNumber}
-                        onChange={setCardNumber}
-                        label="Kartu Playing Card"
-                        id="cafe-card-number"
+                    <div className="space-y-3">
+                      <CardPaymentPanel
+                        cardNumber={cardNumber}
+                        onCardNumberChange={setCardNumber}
+                        need={cardCharge}
+                        discount={bill.discount}
+                        inputId="cafe-card-number"
                       />
-                      {cardNumber.trim() === "" ? (
-                        <p className="text-xs text-muted-foreground">
-                          Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
-                        </p>
-                      ) : !card ? (
-                        <p className="text-sm font-semibold text-destructive">
-                          Kartu tidak ditemukan.
-                        </p>
-                      ) : (
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              {card.customerName || "Umum"} {card.member ? "· Member" : ""}
-                            </span>
-                            <span>Saldo {formatRupiah(card.balance)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total potongan</span>
-                            <span className="text-neon">-{formatRupiah(bill.discount)}</span>
-                          </div>
-                          <div className="flex justify-between font-semibold">
-                            <span>Dipotong dari saldo</span>
-                            <span>{formatRupiah(cardCharge)}</span>
-                          </div>
-                          {card.balance + 0.5 < cardCharge && (
-                            <p className="font-semibold text-destructive">
-                              Saldo kartu tidak mencukupi.
-                            </p>
-                          )}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="cafe-card-part">Dibayar dengan kartu</Label>
+                          <Input
+                            id="cafe-card-part"
+                            type="number"
+                            min={0}
+                            max={total}
+                            value={cardPart === "" ? String(total) : cardPart}
+                            onChange={(e) => setCardPart(e.target.value)}
+                          />
                         </div>
-                      )}
+                        {restAmount > 0 && (
+                          <div className="space-y-1.5">
+                            <Label>Sisa {formatRupiah(restAmount)} dibayar dengan</Label>
+                            <Select value={restMethod} onValueChange={setRestMethod}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih metode" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {otherMethods.map((m) => (
+                                  <SelectItem key={m.id} value={m.name}>
+                                    {m.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
                   <p className="text-xs text-muted-foreground">
                     {isCardPayment
                       ? card
-                        ? `Dipotong dari saldo kartu: ${formatRupiah(cardCharge)}`
-                        : "Scan atau ketik nomor kartu untuk melanjutkan."
+                        ? `Kartu ${formatRupiah(cardCharge)}${
+                            restAmount > 0
+                              ? ` + ${restMethod} ${formatRupiah(restAmount)}`
+                              : ""
+                          }`
+                        : "Scan atau ketik nomor kartu yang sudah terdaftar."
                       : received === "" || shortage === 0
                       ? `Kembalian: ${formatRupiah(received === "" ? 0 : change)}`
                       : `Kurang: ${formatRupiah(shortage)}`}
                   </p>
+
                 </div>
               </div>
 
