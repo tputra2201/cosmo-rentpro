@@ -218,8 +218,11 @@ export function itemDiscountAmount(
   const value = values.length ? Math.max(...values) : 0;
   const type = discount?.type ?? "fixed";
   const own = value <= 0 ? 0 : type === "percent" ? (base * value) / 100 : value * Math.max(0, units);
+  // Potongan yang sudah ditetapkan per item selalu menang. Potongan umum kartu
+  // hanya dipakai kalau item itu belum punya angka sendiri.
+  if (own > 0) return Math.min(base, Math.round(own));
   const fallback = ctx.card && fallbackPercent > 0 ? (base * fallbackPercent) / 100 : 0;
-  return Math.min(base, Math.round(Math.max(own, fallback)));
+  return Math.min(base, Math.round(fallback));
 }
 
 /** Total potongan per item untuk daftar pesanan makanan/minuman. */
