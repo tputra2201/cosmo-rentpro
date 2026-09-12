@@ -378,6 +378,7 @@ function AppShell() {
           )}
         </div>
       </header>
+      )}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         {session && !isAuthPage && expired ? (
           <div className="surface-panel mx-auto max-w-lg border-destructive/60 p-8 text-center">
