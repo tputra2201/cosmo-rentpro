@@ -16,6 +16,7 @@ import {
   Joystick,
   Receipt,
   Coffee,
+  CreditCard,
 
   Wallet,
   DatabaseBackup,
@@ -167,6 +168,7 @@ const navItems = [
   { to: "/booking", label: "Booking", icon: CalendarDays },
   { to: "/pelanggan", label: "Pelanggan", icon: Users },
   { to: "/promo", label: "Promo", icon: Percent },
+  { to: "/kartu", label: "Playing Card", icon: CreditCard },
   { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
   { to: "/tarif", label: "Tarif", icon: Settings2 },
   { to: "/laporan", label: "Laporan", icon: BarChart3 },

@@ -127,6 +127,51 @@ export type Promotion = {
   active: boolean;
 };
 export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
+
+/** Kartu bermain (Playing Card) berchip RFID Mifare Classic 13,56 MHz. */
+export type PlayingCard = {
+  id: string;
+  cardNumber: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  member: boolean;
+  balance: number;
+  active: boolean;
+  cardPrice: number;
+  createdAt: number;
+  sort?: number;
+};
+
+export type CardEntryType = "purchase" | "topup" | "payment" | "adjust";
+export type CardEntry = {
+  id: string;
+  cardId: string;
+  cardNumber: string;
+  type: CardEntryType;
+  amount: number;
+  balanceAfter: number;
+  note: string;
+  createdAt: number;
+};
+
+export const CARD_PAYMENT_NAME = "Playing Card";
+
+/** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
+export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
+  const key = cardNumber.trim().toLowerCase();
+  if (!key) return undefined;
+  return cards.find((c) => c.cardNumber.trim().toLowerCase() === key);
+}
+
+/** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
+export function cardDiscountPercentFor(
+  card: PlayingCard,
+  settings: { cardDiscountPercent: number; cardMemberDiscountPercent: number },
+) {
+  const pct = card.member ? settings.cardMemberDiscountPercent : settings.cardDiscountPercent;
+  return Math.min(100, Math.max(0, pct ?? 0));
+}
 export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
@@ -175,6 +220,11 @@ type State = {
   promotions: Promotion[];
   pointEntries: PointEntry[];
   pointsPerRupiah: number;
+  playingCards: PlayingCard[];
+  cardEntries: CardEntry[];
+  cardPrice: number;
+  cardDiscountPercent: number;
+  cardMemberDiscountPercent: number;
 };
 
 
@@ -223,6 +273,7 @@ const defaultState: State = {
     { id: "pm-giftcard", name: "Gift Card", active: true },
     { id: "pm-transfer", name: "Transfer Bank", active: true },
     { id: "pm-compliment", name: "Compliment", active: true },
+    { id: "pm-card", name: CARD_PAYMENT_NAME, active: true },
     { id: "pm-lainnya", name: "Lainnya", active: true },
   ],
   packages: [
@@ -238,6 +289,11 @@ const defaultState: State = {
   promotions: [],
   pointEntries: [],
   pointsPerRupiah: 10000,
+  playingCards: [],
+  cardEntries: [],
+  cardPrice: 10000,
+  cardDiscountPercent: 10,
+  cardMemberDiscountPercent: 15,
 };
 
 export function formatRupiah(value: number) {
@@ -391,7 +447,12 @@ function migrateState(raw: unknown): State {
       openedAt: table.openedAt ?? null,
       orders: table.orders ?? [],
     })),
-    paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
+    paymentMethods: (() => {
+      const list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      return list.some((p) => p.name === CARD_PAYMENT_NAME)
+        ? list
+        : [...list, { id: "pm-card", name: CARD_PAYMENT_NAME, active: true }];
+    })(),
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
     defaultBonusMin: parsed.defaultBonusMin ?? defaultState.defaultBonusMin,
@@ -400,6 +461,13 @@ function migrateState(raw: unknown): State {
     promotions: parsed.promotions ?? defaultState.promotions,
     pointEntries: parsed.pointEntries ?? defaultState.pointEntries,
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
+    playingCards: parsed.playingCards ?? defaultState.playingCards,
+    cardEntries: parsed.cardEntries ?? defaultState.cardEntries,
+    cardPrice: parsed.cardPrice ?? defaultState.cardPrice,
+    cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
+    cardMemberDiscountPercent:
+      parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
+
 
   };
 }
@@ -481,6 +549,26 @@ type Ctx = State & {
   removeCustomer: (id: string) => void;
   adjustPoints: (customerId: string, points: number, reason: string) => void;
   setPointsPerRupiah: (value: number) => void;
+  buyPlayingCard: (input: {
+    cardNumber: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerId?: string;
+    member?: boolean;
+    topup?: number;
+    price?: number;
+  }) => PlayingCard | null;
+  updatePlayingCard: (
+    id: string,
+    patch: Partial<Omit<PlayingCard, "id" | "createdAt" | "balance">>,
+  ) => void;
+  removePlayingCard: (id: string) => void;
+  topupCard: (id: string, amount: number, note?: string) => boolean;
+  adjustCardBalance: (id: string, amount: number, note: string) => boolean;
+  chargeCard: (id: string, amount: number, note: string) => boolean;
+  setCardPrice: (value: number) => void;
+  setCardDiscountPercent: (value: number) => void;
+  setCardMemberDiscountPercent: (value: number) => void;
   addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
   updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
   removeBooking: (id: string) => void;
@@ -1226,6 +1314,150 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeCustomer: (id) => update((prev) => ({ ...prev, customers: prev.customers.filter((item) => item.id !== id) })),
       adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
       setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
+      buyPlayingCard: (input) => {
+        const cardNumber = input.cardNumber.trim();
+        if (!cardNumber) return null;
+        if (findCardByNumber(state.playingCards, cardNumber)) return null;
+        const now = Date.now();
+        const topup = Math.max(0, Math.round(input.topup ?? 0));
+        const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
+        const card: PlayingCard = {
+          id: `card-${now}`,
+          cardNumber,
+          ...(input.customerId ? { customerId: input.customerId } : {}),
+          customerName: input.customerName?.trim() || "Umum",
+          customerPhone: input.customerPhone?.trim() || "",
+          member: input.member ?? false,
+          balance: topup,
+          active: true,
+          cardPrice: price,
+          createdAt: now,
+        };
+        const entries: CardEntry[] = [
+          {
+            id: `ce-${now}`,
+            cardId: card.id,
+            cardNumber: card.cardNumber,
+            type: "purchase",
+            amount: price,
+            balanceAfter: 0,
+            note: "Pembelian kartu baru",
+            createdAt: now,
+          },
+        ];
+        if (topup > 0) {
+          entries.unshift({
+            id: `ce-${now}-topup`,
+            cardId: card.id,
+            cardNumber: card.cardNumber,
+            type: "topup",
+            amount: topup,
+            balanceAfter: topup,
+            note: "Top-up awal",
+            createdAt: now + 1,
+          });
+        }
+        update((prev) => ({
+          ...prev,
+          playingCards: [card, ...prev.playingCards],
+          cardEntries: [...entries, ...prev.cardEntries],
+        }));
+        return card;
+      },
+      updatePlayingCard: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        })),
+      removePlayingCard: (id) =>
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.filter((c) => c.id !== id),
+          cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
+        })),
+      topupCard: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || value <= 0) return false;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) =>
+            c.id === id ? { ...c, balance: c.balance + value } : c,
+          ),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "topup",
+              amount: value,
+              balanceAfter: card.balance + value,
+              note: note?.trim() || "Top-up saldo",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      adjustCardBalance: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || value === 0) return false;
+        const next = card.balance + value;
+        if (next < 0) return false;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, balance: next } : c)),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "adjust",
+              amount: value,
+              balanceAfter: next,
+              note: note.trim() || "Penyesuaian saldo",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      chargeCard: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || !card.active || value <= 0) return false;
+        if (card.balance + 0.5 < value) return false;
+        const next = card.balance - value;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, balance: next } : c)),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "payment",
+              amount: -value,
+              balanceAfter: next,
+              note: note.trim() || "Pembayaran",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      setCardPrice: (value) => update((prev) => ({ ...prev, cardPrice: Math.max(0, Math.round(value)) })),
+      setCardDiscountPercent: (value) =>
+        update((prev) => ({ ...prev, cardDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
+      setCardMemberDiscountPercent: (value) =>
+        update((prev) => ({ ...prev, cardMemberDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
       addBooking: (input) => {
         const conflict = state.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
         if (conflict) return false;

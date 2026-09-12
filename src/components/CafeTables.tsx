@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatRupiah, useBilling, type CafeTable } from "@/lib/billing-store";
+import { CardScanInput } from "@/components/CardScanInput";
+import { CARD_PAYMENT_NAME, cardDiscountPercentFor, findCardByNumber, formatRupiah, useBilling, type CafeTable } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 
 export function tableTotal(table: CafeTable) {
@@ -40,12 +41,17 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     clearCafeTable,
     payCafeTable,
     reorderList,
+    playingCards,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+    chargeCard,
   } = useBilling();
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
 
   const activeMethods = paymentMethods.filter((p) => p.active);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
@@ -54,6 +60,14 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     () => (category === "semua" ? menu : menu.filter((m) => m.category === category)),
     [menu, category],
   );
+
+  const isCardPayment = payMethod === CARD_PAYMENT_NAME;
+  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
+  const cardPercent = card
+    ? cardDiscountPercentFor(card, { cardDiscountPercent, cardMemberDiscountPercent })
+    : 0;
+  const cardDiscount = card ? Math.round((total * cardPercent) / 100) : 0;
+  const cardCharge = Math.max(0, total - cardDiscount);
 
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
@@ -273,7 +287,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="cafe-received">Uang diterima</Label>
+                        <Label htmlFor="cafe-received">
+                          {isCardPayment ? "Nominal tercatat" : "Uang diterima"}
+                        </Label>
                         <Input
                           id="cafe-received"
                           type="number"
@@ -285,8 +301,54 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </div>
                   )}
 
+                  {isCardPayment && (
+                    <div className="space-y-2 rounded-md border border-border p-3">
+                      <CardScanInput
+                        value={cardNumber}
+                        onChange={setCardNumber}
+                        label="Kartu Playing Card"
+                        id="cafe-card-number"
+                      />
+                      {cardNumber.trim() === "" ? (
+                        <p className="text-xs text-muted-foreground">
+                          Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
+                        </p>
+                      ) : !card ? (
+                        <p className="text-sm font-semibold text-destructive">
+                          Kartu tidak ditemukan.
+                        </p>
+                      ) : (
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              {card.customerName || "Umum"} {card.member ? "· Member" : ""}
+                            </span>
+                            <span>Saldo {formatRupiah(card.balance)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Potongan {cardPercent}%</span>
+                            <span className="text-neon">-{formatRupiah(cardDiscount)}</span>
+                          </div>
+                          <div className="flex justify-between font-semibold">
+                            <span>Dipotong dari saldo</span>
+                            <span>{formatRupiah(cardCharge)}</span>
+                          </div>
+                          {card.balance + 0.5 < cardCharge && (
+                            <p className="font-semibold text-destructive">
+                              Saldo kartu tidak mencukupi.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
-                    {received === "" || shortage === 0
+                    {isCardPayment
+                      ? card
+                        ? `Dipotong dari saldo kartu: ${formatRupiah(cardCharge)}`
+                        : "Scan atau ketik nomor kartu untuk melanjutkan."
+                      : received === "" || shortage === 0
                       ? `Kembalian: ${formatRupiah(received === "" ? 0 : change)}`
                       : `Kurang: ${formatRupiah(shortage)}`}
                   </p>
@@ -307,6 +369,45 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 <Button
                   disabled={table.orders.length === 0 || activeMethods.length === 0}
                   onClick={() => {
+                    if (isCardPayment) {
+                      if (!card) {
+                        toast.error("Kartu tidak ditemukan", {
+                          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
+                        });
+                        return;
+                      }
+                      if (!card.active) {
+                        toast.error("Kartu ini sedang diblokir");
+                        return;
+                      }
+                      if (card.balance + 0.5 < cardCharge) {
+                        toast.error("Saldo Playing Card tidak mencukupi", {
+                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
+                        });
+                        return;
+                      }
+                      if (!chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
+                        toast.error("Saldo Playing Card tidak mencukupi");
+                        return;
+                      }
+                      const cardRecord = payCafeTable(table.id, {
+                        payment: CARD_PAYMENT_NAME,
+                        amountPaid: total,
+                      });
+                      if (!cardRecord) {
+                        toast.error("Pembayaran gagal diproses");
+                        return;
+                      }
+                      toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
+                        description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
+                          cardDiscount > 0 ? ` · potongan ${cardPercent}%` : ""
+                        }`,
+                      });
+                      setReceived("");
+                      setCardNumber("");
+                      setOpenId(null);
+                      return;
+                    }
                     const paid = received === "" ? total : receivedValue;
                     if (paid + 0.5 < total) {
                       toast.error("Uang diterima kurang dari total tagihan");
