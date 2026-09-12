@@ -83,7 +83,7 @@ function BookingPage() {
 
 type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
 
-function BookingRow({ item, stationName, onStatus, onDelete }: { item: BookingItem; stationName: string; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
+function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: BookingItem; stationName: string; locked?: boolean; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
   const { now, stations, startSession, updateBooking } = useBilling();
   const minutes = bookingMinutes(item);
   const ready = canCheckIn(item, now);
