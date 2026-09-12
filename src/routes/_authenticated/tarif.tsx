@@ -51,6 +51,7 @@ function TarifPage() {
     setConsoleRate,
     removeConsoleType,
     stations,
+    addStation,
     setStationConsole,
     removeStation,
     updateStation,
@@ -68,6 +69,11 @@ function TarifPage() {
   const [packagePrice, setPackagePrice] = useState("");
   const [newConsole, setNewConsole] = useState("");
   const [newConsoleRate, setNewConsoleRate] = useState("");
+  const [name, setName] = useState("");
+  const [booth, setBooth] = useState("");
+  const [consoleType, setConsoleType] = useState<ConsoleType>(
+    consoleTypes[0] ?? "PS4",
+  );
 
 
   return (
