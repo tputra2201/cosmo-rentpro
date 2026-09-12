@@ -148,6 +148,17 @@ export const Route = createFileRoute("/api/public/store-registry")({
           return Response.json({ ok: true });
         }
 
+        if (body.action === "branding") {
+          const { action: _a, ...values } = body;
+          const { data, error } = await supabaseAdmin
+            .from("app_branding")
+            .upsert({ id: "default", ...values } as never, { onConflict: "id" })
+            .select("logo_url, login_title, login_note")
+            .maybeSingle();
+          if (error) return new Response(error.message, { status: 500 });
+          return Response.json({ branding: data });
+        }
+
         // assign: tautkan / undang akun sebagai pengelola store ini
         const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
           page: 1,
