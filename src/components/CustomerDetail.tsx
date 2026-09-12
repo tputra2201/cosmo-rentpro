@@ -207,7 +207,7 @@ export function CustomerDetailDialog({
   );
 }
 
-function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack: () => void }) {
+export function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack?: () => void }) {
   return (
     <div className="space-y-3 rounded-lg border border-border p-4 text-sm">
       <div className="flex items-center justify-between gap-2">
