@@ -511,6 +511,13 @@ function migrateState(raw: unknown): State {
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
+    cashCategories: (parsed.cashCategories ?? defaultState.cashCategories).map((item) => ({
+      ...item,
+      group: item.group?.trim() ? item.group : "Lainnya",
+      payout: Boolean(item.payout),
+      active: item.active ?? true,
+    })),
+    cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
 
 
   };
