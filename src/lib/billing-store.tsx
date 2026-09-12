@@ -41,6 +41,8 @@ export type Session = {
   discountValue?: number;
   discountMax?: number;
   settlements?: Settlement[];
+  pausedAt?: number; // jika terisi, timer sedang dijeda
+  pausedMs?: number; // akumulasi total waktu jeda
 };
 
 export type Settlement = {
@@ -244,8 +246,20 @@ export function formatClock(totalSeconds: number) {
   return [h, m, sec].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+export function pausedMsTotal(session: Session, now: number) {
+  const base = session.pausedMs ?? 0;
+  return session.pausedAt ? base + Math.max(0, now - session.pausedAt) : base;
+}
+
+export function isPaused(session: Session) {
+  return Boolean(session.pausedAt);
+}
+
 export function elapsedSeconds(session: Session, now: number) {
-  return Math.max(0, Math.floor((now - session.startAt) / 1000));
+  return Math.max(
+    0,
+    Math.floor((now - session.startAt - pausedMsTotal(session, now)) / 1000),
+  );
 }
 
 export function effectiveMinutes(session: Session) {
