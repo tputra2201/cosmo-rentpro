@@ -80,7 +80,14 @@ export function StationDialog({
     adjustBonusTime,
     pauseSession,
     resumeSession,
+    customers,
+    updateSessionCustomer,
   } = useBilling();
+  const [editCustomer, setEditCustomer] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editMember, setEditMember] = useState(false);
+  const [editCustomerId, setEditCustomerId] = useState("");
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
   const [menuCategory, setMenuCategory] = useState("semua");
