@@ -211,6 +211,11 @@ type State = {
   promotions: Promotion[];
   pointEntries: PointEntry[];
   pointsPerRupiah: number;
+  playingCards: PlayingCard[];
+  cardEntries: CardEntry[];
+  cardPrice: number;
+  cardDiscountPercent: number;
+  cardMemberDiscountPercent: number;
 };
 
 
