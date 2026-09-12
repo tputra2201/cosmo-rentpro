@@ -87,7 +87,9 @@ export function StationCard({
         >
           {statusLabel[status]}
         </Badge>
+        </div>
       </div>
+
 
       <div className="mt-3">
         {!session ? (
