@@ -6,18 +6,245 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { formatRupiah, useBilling } from "@/lib/billing-store";
+import { activeGlobalPromo, formatRupiah, useBilling } from "@/lib/billing-store";
 
-export const Route = createFileRoute("/_authenticated/promo")({ head: () => ({ meta: [
-  { title: "Promo — RentalPro" }, { name: "description", content: "Kelola promo rental PlayStation berdasarkan periode dan minimal transaksi." },
-  { property: "og:title", content: "Promo — RentalPro" }, { property: "og:description", content: "Atur diskon nominal atau persentase untuk transaksi rental." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
-] }), component: PromoPage });
+export const Route = createFileRoute("/_authenticated/promo")({
+  head: () => ({
+    meta: [
+      { title: "Promo — RentalPro" },
+      {
+        name: "description",
+        content:
+          "Kelola promo dan happy hour rental PlayStation berdasarkan tanggal, jam, dan minimal transaksi.",
+      },
+      { property: "og:title", content: "Promo — RentalPro" },
+      {
+        property: "og:description",
+        content: "Atur diskon nominal atau persentase untuk transaksi rental dan kafe.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: PromoPage,
+});
 
-function dateValue(date: Date) { return date.toISOString().slice(0, 10); }
+function dateValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
 function PromoPage() {
-  const { promotions, addPromotion, updatePromotion, removePromotion } = useBilling(); const [name, setName] = useState(""); const [type, setType] = useState<"percent"|"fixed">("percent"); const [value, setValue] = useState(""); const [minSpend, setMinSpend] = useState("0"); const [maxDiscount, setMaxDiscount] = useState("0"); const [startsAt, setStartsAt] = useState(dateValue(new Date())); const [endsAt, setEndsAt] = useState(dateValue(new Date(Date.now() + 30 * 86400000)));
-  const now = Date.now();
-  return <div className="space-y-8"><header><h1 className="text-3xl font-bold sm:text-4xl">Promo</h1><p className="mt-1 text-muted-foreground">Siapkan diskon yang dapat dipilih saat memulai sesi.</p></header><section className="grid gap-6 lg:grid-cols-[360px_1fr]"><form className="surface-panel space-y-4 p-5" onSubmit={(e) => { e.preventDefault(); const amount = Number(value); if (!name.trim() || amount <= 0) { toast.error("Lengkapi nama dan nilai promo"); return; } addPromotion({ name: name.trim(), type, value: amount, minSpend: Number(minSpend) || 0, maxDiscount: Number(maxDiscount) || 0, startsAt: new Date(`${startsAt}T00:00`).getTime(), endsAt: new Date(`${endsAt}T23:59`).getTime(), active: true }); setName(""); setValue(""); toast.success("Promo ditambahkan"); }}><div className="flex items-center gap-2"><Plus className="size-5 text-primary"/><h2 className="text-lg font-semibold">Promo baru</h2></div><div className="space-y-1.5"><Label htmlFor="promo-name">Nama promo</Label><Input id="promo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Happy Hour"/></div><div className="grid grid-cols-2 gap-3"><Select value={type} onValueChange={(item) => setType(item as "percent"|"fixed")}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="percent">Persentase</SelectItem><SelectItem value="fixed">Nominal</SelectItem></SelectContent></Select><Input type="number" min={1} value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === "percent" ? "10%" : "Rp"}/></div><div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label>Minimal transaksi</Label><Input type="number" min={0} value={minSpend} onChange={(e) => setMinSpend(e.target.value)}/></div><div className="space-y-1.5"><Label>Maks. diskon</Label><Input type="number" min={0} value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)}/></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label>Mulai</Label><Input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)}/></div><div className="space-y-1.5"><Label>Berakhir</Label><Input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)}/></div></div><Button type="submit" className="w-full"><Percent className="size-4"/> Simpan Promo</Button></form><div className="space-y-3">{promotions.length === 0 ? <div className="surface-panel p-10 text-center text-muted-foreground">Belum ada promo.</div> : promotions.map((promo) => { const current = promo.active && promo.startsAt <= now && promo.endsAt >= now; return <article key={promo.id} className="surface-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">{promo.name}</h2><Badge variant={current ? "default" : "secondary"}>{current ? "Berlaku" : promo.active ? "Di luar periode" : "Nonaktif"}</Badge></div><p className="mt-1 font-display text-xl text-accent">{promo.type === "percent" ? `${promo.value}%` : formatRupiah(promo.value)}</p><p className="text-sm text-muted-foreground">Min. {formatRupiah(promo.minSpend)}{promo.maxDiscount > 0 ? ` · Maks. ${formatRupiah(promo.maxDiscount)}` : ""}</p><p className="text-xs text-muted-foreground">{new Date(promo.startsAt).toLocaleDateString("id-ID")} – {new Date(promo.endsAt).toLocaleDateString("id-ID")}</p></div><div className="flex items-center gap-2"><Switch checked={promo.active} onCheckedChange={(active) => updatePromotion(promo.id, { active })} aria-label={`Aktifkan ${promo.name}`}/><Button size="icon" variant="ghost" onClick={() => removePromotion(promo.id)} aria-label={`Hapus ${promo.name}`}><Trash2 className="size-4"/></Button></div></article>; })}</div></section></div>;
+  const { promotions, addPromotion, updatePromotion, removePromotion, now } = useBilling();
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"percent" | "fixed">("percent");
+  const [value, setValue] = useState("");
+  const [minSpend, setMinSpend] = useState("0");
+  const [maxDiscount, setMaxDiscount] = useState("0");
+  const [startsAt, setStartsAt] = useState(dateValue(new Date()));
+  const [endsAt, setEndsAt] = useState(dateValue(new Date(Date.now() + 30 * 86400000)));
+  const [auto, setAuto] = useState(true);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const running = activeGlobalPromo(promotions, now);
+
+  return (
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-3xl font-bold sm:text-4xl">Promo &amp; Happy Hour</h1>
+        <p className="mt-1 text-muted-foreground">
+          Diskon global berlaku otomatis untuk rental dan kafe selama tanggal dan jam yang
+          diatur di sini.
+        </p>
+        {running && (
+          <p className="mt-2 text-sm font-semibold text-accent">
+            Sedang berjalan: {running.name}
+          </p>
+        )}
+      </header>
+
+      <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
+        <form
+          className="surface-panel space-y-4 p-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const amount = Number(value);
+            if (!name.trim() || amount <= 0) {
+              toast.error("Lengkapi nama dan nilai promo");
+              return;
+            }
+            addPromotion({
+              name: name.trim(),
+              type,
+              value: amount,
+              minSpend: Number(minSpend) || 0,
+              maxDiscount: Number(maxDiscount) || 0,
+              startsAt: new Date(`${startsAt}T00:00`).getTime(),
+              endsAt: new Date(`${endsAt}T23:59`).getTime(),
+              active: true,
+              auto,
+              ...(startTime ? { startTime } : {}),
+              ...(endTime ? { endTime } : {}),
+            });
+            setName("");
+            setValue("");
+            toast.success("Promo ditambahkan");
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Plus className="size-5 text-primary" />
+            <h2 className="text-lg font-semibold">Promo baru</h2>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="promo-name">Nama promo</Label>
+            <Input
+              id="promo-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Contoh: Happy Hour"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Select value={type} onValueChange={(item) => setType(item as "percent" | "fixed")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percent">Persentase</SelectItem>
+                <SelectItem value="fixed">Nominal</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              min={1}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={type === "percent" ? "10%" : "Rp"}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Minimal transaksi</Label>
+              <Input
+                type="number"
+                min={0}
+                value={minSpend}
+                onChange={(e) => setMinSpend(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Maks. diskon</Label>
+              <Input
+                type="number"
+                min={0}
+                value={maxDiscount}
+                onChange={(e) => setMaxDiscount(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Mulai tanggal</Label>
+              <Input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sampai tanggal</Label>
+              <Input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Mulai jam</Label>
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sampai jam</Label>
+              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Jam dikosongkan berarti berlaku sepanjang hari.
+          </p>
+          <div className="flex items-center justify-between rounded-lg bg-secondary/60 p-3">
+            <div>
+              <p className="text-sm font-medium">Berlaku otomatis</p>
+              <p className="text-xs text-muted-foreground">
+                Langsung memotong tagihan tanpa dipilih kasir.
+              </p>
+            </div>
+            <Switch checked={auto} onCheckedChange={setAuto} aria-label="Berlaku otomatis" />
+          </div>
+          <Button type="submit" className="w-full">
+            <Percent className="size-4" /> Simpan Promo
+          </Button>
+        </form>
+
+        <div className="space-y-3">
+          {promotions.length === 0 ? (
+            <div className="surface-panel p-10 text-center text-muted-foreground">
+              Belum ada promo.
+            </div>
+          ) : (
+            promotions.map((promo) => {
+              const current =
+                promo.active && promo.startsAt <= now && promo.endsAt >= now;
+              return (
+                <article
+                  key={promo.id}
+                  className="surface-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-semibold">{promo.name}</h2>
+                      <Badge variant={current ? "default" : "secondary"}>
+                        {current ? "Berlaku" : promo.active ? "Di luar periode" : "Nonaktif"}
+                      </Badge>
+                      {promo.auto && <Badge variant="outline">Otomatis</Badge>}
+                    </div>
+                    <p className="mt-1 font-display text-xl text-accent">
+                      {promo.type === "percent" ? `${promo.value}%` : formatRupiah(promo.value)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Min. {formatRupiah(promo.minSpend)}
+                      {promo.maxDiscount > 0 ? ` · Maks. ${formatRupiah(promo.maxDiscount)}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(promo.startsAt).toLocaleDateString("id-ID")} –{" "}
+                      {new Date(promo.endsAt).toLocaleDateString("id-ID")}
+                      {promo.startTime || promo.endTime
+                        ? ` · ${promo.startTime || "00:00"} – ${promo.endTime || "23:59"}`
+                        : " · sepanjang hari"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={promo.active}
+                      onCheckedChange={(active) => updatePromotion(promo.id, { active })}
+                      aria-label={`Aktifkan ${promo.name}`}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removePromotion(promo.id)}
+                      aria-label={`Hapus ${promo.name}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </section>
+    </div>
+  );
 }
