@@ -68,8 +68,6 @@ export function CustomerDetailDialog({
 
   const cards = useMemo(() => cardsOfCustomer(playingCards, customer), [playingCards, customer]);
   const receipts = useMemo(() => receiptsOfCustomer(history, customer), [history, customer]);
-  const cardIds = cards.map((c) => c.id);
-  const entries = cardEntries.filter((e) => cardIds.includes(e.cardId));
   const spent = receipts.reduce((sum, item) => sum + item.total, 0);
 
   return (
