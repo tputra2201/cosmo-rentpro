@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CardScanInput } from "@/components/CardScanInput";
+import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import {
   CARD_PAYMENT_NAME,
   cafeBill,
@@ -65,8 +65,11 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [cardNumber, setCardNumber] = useState("");
   const [discType, setDiscType] = useState<DiscountType>("fixed");
   const [discValue, setDiscValue] = useState("");
+  const [cardPart, setCardPart] = useState("");
+  const [restPay, setRestPay] = useState("");
 
   const activeMethods = paymentMethods.filter((p) => p.active);
+  const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
   const visibleMenu = useMemo(
     () => (category === "semua" ? menu : menu.filter((m) => m.category === category)),
@@ -84,7 +87,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     manualDisc,
   );
   const total = bill.total;
-  const cardCharge = total;
+  const cardCharge = isCardPayment
+    ? Math.min(total, Math.max(0, cardPart === "" ? total : Number(cardPart) || 0))
+    : total;
+  const restAmount = isCardPayment ? Math.max(0, total - cardCharge) : 0;
+  const restMethod = restPay || otherMethods[0]?.name || "Cash";
+
 
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
@@ -372,56 +380,61 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   )}
 
                   {isCardPayment && (
-                    <div className="space-y-2 rounded-md border border-border p-3">
-                      <CardScanInput
-                        value={cardNumber}
-                        onChange={setCardNumber}
-                        label="Kartu Playing Card"
-                        id="cafe-card-number"
+                    <div className="space-y-3">
+                      <CardPaymentPanel
+                        cardNumber={cardNumber}
+                        onCardNumberChange={setCardNumber}
+                        need={cardCharge}
+                        discount={bill.discount}
+                        inputId="cafe-card-number"
                       />
-                      {cardNumber.trim() === "" ? (
-                        <p className="text-xs text-muted-foreground">
-                          Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
-                        </p>
-                      ) : !card ? (
-                        <p className="text-sm font-semibold text-destructive">
-                          Kartu tidak ditemukan.
-                        </p>
-                      ) : (
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              {card.customerName || "Umum"} {card.member ? "· Member" : ""}
-                            </span>
-                            <span>Saldo {formatRupiah(card.balance)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total potongan</span>
-                            <span className="text-neon">-{formatRupiah(bill.discount)}</span>
-                          </div>
-                          <div className="flex justify-between font-semibold">
-                            <span>Dipotong dari saldo</span>
-                            <span>{formatRupiah(cardCharge)}</span>
-                          </div>
-                          {card.balance + 0.5 < cardCharge && (
-                            <p className="font-semibold text-destructive">
-                              Saldo kartu tidak mencukupi.
-                            </p>
-                          )}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="cafe-card-part">Dibayar dengan kartu</Label>
+                          <Input
+                            id="cafe-card-part"
+                            type="number"
+                            min={0}
+                            max={total}
+                            value={cardPart === "" ? String(total) : cardPart}
+                            onChange={(e) => setCardPart(e.target.value)}
+                          />
                         </div>
-                      )}
+                        {restAmount > 0 && (
+                          <div className="space-y-1.5">
+                            <Label>Sisa {formatRupiah(restAmount)} dibayar dengan</Label>
+                            <Select value={restMethod} onValueChange={setRestPay}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih metode" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {otherMethods.map((m) => (
+                                  <SelectItem key={m.id} value={m.name}>
+                                    {m.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
                   <p className="text-xs text-muted-foreground">
                     {isCardPayment
                       ? card
-                        ? `Dipotong dari saldo kartu: ${formatRupiah(cardCharge)}`
-                        : "Scan atau ketik nomor kartu untuk melanjutkan."
+                        ? `Kartu ${formatRupiah(cardCharge)}${
+                            restAmount > 0
+                              ? ` + ${restMethod} ${formatRupiah(restAmount)}`
+                              : ""
+                          }`
+                        : "Scan atau ketik nomor kartu yang sudah terdaftar."
                       : received === "" || shortage === 0
                       ? `Kembalian: ${formatRupiah(received === "" ? 0 : change)}`
                       : `Kurang: ${formatRupiah(shortage)}`}
                   </p>
+
                 </div>
               </div>
 
@@ -441,8 +454,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   onClick={() => {
                     if (isCardPayment) {
                       if (!card) {
-                        toast.error("Kartu tidak ditemukan", {
-                          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
+                        toast.error("Kartu belum terdaftar!", {
+                          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
                         });
                         return;
                       }
@@ -451,17 +464,28 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         return;
                       }
                       if (card.balance + 0.5 < cardCharge) {
-                        toast.error("Saldo Playing Card tidak mencukupi", {
-                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
+                        toast.error("Saldo kartu tidak mencukupi!", {
+                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
                         });
                         return;
                       }
-                      if (!chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
-                        toast.error("Saldo Playing Card tidak mencukupi");
+                      if (restAmount > 0 && otherMethods.length === 0) {
+                        toast.error("Belum ada metode lain untuk sisa tagihan");
+                        return;
+                      }
+                      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
+                        toast.error("Saldo kartu tidak mencukupi!");
                         return;
                       }
                       const cardRecord = payCafeTable(table.id, {
-                        payment: CARD_PAYMENT_NAME,
+                        ...(restAmount > 0
+                          ? {
+                              payments: [
+                                { method: CARD_PAYMENT_NAME, amount: cardCharge },
+                                { method: restMethod, amount: restAmount },
+                              ],
+                            }
+                          : { payment: CARD_PAYMENT_NAME }),
                         amountPaid: total,
                         member: Boolean(card.member),
                         discount: manualDisc,
@@ -472,15 +496,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       }
                       toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
                         description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
-                          bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""
-                        }`,
+                          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
+                        }${bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""}`,
                       });
                       setReceived("");
                       setCardNumber("");
                       setDiscValue("");
+                      setCardPart("");
+                      setRestPay("");
                       setOpenId(null);
                       return;
                     }
+
                     const paid = received === "" ? total : receivedValue;
                     if (paid + 0.5 < total) {
                       toast.error("Uang diterima kurang dari total tagihan");

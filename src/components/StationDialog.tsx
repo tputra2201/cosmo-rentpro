@@ -31,7 +31,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CardScanInput } from "@/components/CardScanInput";
+import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
@@ -141,7 +141,9 @@ export function StationDialog({
         )
         .sort((a, b) => a.startAt - b.startAt)[0];
   const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
-  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
+  const cardFound = findCardByNumber(playingCards, cardNumber);
+  const card = isCardPayment ? cardFound : undefined;
+
   const priceCfg = {
     consoleDiscounts,
     menu,
@@ -174,7 +176,14 @@ export function StationDialog({
   const cashReceived =
     amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
-  const cardCharge = payTarget;
+  const cardSplit = splitMode
+    ? splitRows
+        .filter((s) => s.method === CARD_PAYMENT_NAME)
+        .reduce((sum, s) => sum + s.amount, 0)
+    : 0;
+  const usesCard = isCardPayment || cardSplit > 0;
+  const cardCharge = isCardPayment ? payTarget : cardSplit;
+
 
   const resetPaymentForm = () => {
     setSplitMode(false);
@@ -194,6 +203,24 @@ export function StationDialog({
       toast.error("Jumlah pembayaran harus lebih dari 0");
       return false;
     }
+    if (usesCard) {
+      if (!cardFound) {
+        toast.error("Kartu belum terdaftar!", {
+          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+        });
+        return false;
+      }
+      if (!cardFound.active) {
+        toast.error("Kartu ini sedang diblokir");
+        return false;
+      }
+      if (cardFound.balance + 0.5 < cardCharge) {
+        toast.error("Saldo kartu tidak mencukupi!", {
+          description: `Saldo ${formatRupiah(cardFound.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
+        });
+        return false;
+      }
+    }
     if (splitMode) {
       if (splitRows.filter((s) => s.amount > 0).length === 0) {
         toast.error("Isi jumlah tiap metode pembayaran");
@@ -205,25 +232,8 @@ export function StationDialog({
       }
       return true;
     }
-    if (isCardPayment) {
-      if (!card) {
-        toast.error("Kartu tidak ditemukan", {
-          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
-        });
-        return false;
-      }
-      if (!card.active) {
-        toast.error("Kartu ini sedang diblokir");
-        return false;
-      }
-      if (card.balance + 0.5 < cardCharge) {
-        toast.error("Saldo Playing Card tidak mencukupi", {
-          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
-        });
-        return false;
-      }
-      return true;
-    }
+    if (isCardPayment) return true;
+
     if (selectedPayment === "Cash" && cashReceived < payTarget) {
       toast.error("Uang diterima masih kurang");
       return false;
@@ -254,11 +264,19 @@ export function StationDialog({
     }
     if (splitMode) {
       const rows = splitRows.filter((s) => s.amount > 0);
+      if (cardSplit > 0) {
+        if (!cardFound) return;
+        if (!chargeCard(cardFound.id, cardSplit, `Pembayaran ${station.name}`)) {
+          toast.error("Saldo kartu tidak mencukupi!");
+          return;
+        }
+      }
       settleSession(station.id, {
         payments: rows,
         amount: payTarget,
         amountPaid: splitPaid,
       });
+
     } else {
       settleSession(station.id, {
         payment: selectedPayment,
@@ -769,47 +787,16 @@ export function StationDialog({
               </div>
             )}
 
-            {!isSettled && isCardPayment && (
-              <div className="space-y-2 rounded-md border border-border p-3">
-                <CardScanInput
-                  value={cardNumber}
-                  onChange={setCardNumber}
-                  label="Kartu Playing Card"
-                  id="pay-card-number"
-                />
-                {cardNumber.trim() === "" ? (
-                  <p className="text-xs text-muted-foreground">
-                    Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
-                  </p>
-                ) : !card ? (
-                  <p className="text-sm font-semibold text-destructive">
-                    Kartu tidak ditemukan.
-                  </p>
-                ) : (
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        {card.customerName || "Umum"} {card.member ? "· Member" : ""}
-                      </span>
-                      <span>Saldo {formatRupiah(card.balance)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total potongan</span>
-                      <span className="text-accent">-{formatRupiah(bill?.discount ?? 0)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold">
-                      <span>Dipotong dari saldo</span>
-                      <span>{formatRupiah(cardCharge)}</span>
-                    </div>
-                    {card.balance + 0.5 < cardCharge && (
-                      <p className="font-semibold text-destructive">
-                        Saldo kartu tidak mencukupi.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
+            {!isSettled && usesCard && (
+              <CardPaymentPanel
+                cardNumber={cardNumber}
+                onCardNumberChange={setCardNumber}
+                need={cardCharge}
+                discount={bill?.discount ?? 0}
+                inputId="pay-card-number"
+              />
             )}
+
 
             {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
