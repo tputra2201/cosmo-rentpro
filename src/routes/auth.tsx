@@ -33,6 +33,35 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
+  const [devSecret, setDevSecret] = useState("");
+  const [devBusy, setDevBusy] = useState(false);
+
+  const openControlCenter = async () => {
+    if (!devSecret) return;
+    setDevBusy(true);
+    try {
+      const res = await fetch("/api/public/store-registry", {
+        headers: { "x-control-secret": devSecret },
+      });
+      if (res.status === 401) {
+        toast.error("Kunci Developer salah.");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Gagal membuka pusat kontrol.");
+        return;
+      }
+      sessionStorage.setItem("rentalpro-control-secret", devSecret);
+      setDevOpen(false);
+      setDevSecret("");
+      navigate({ to: "/kontrol" });
+    } catch {
+      toast.error("Tidak bisa terhubung ke pusat kontrol.");
+    } finally {
+      setDevBusy(false);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
