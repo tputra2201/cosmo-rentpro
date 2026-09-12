@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useBilling, type BookingStatus } from "@/lib/billing-store";
+import { useBilling, canCheckIn, bookingMinutes, CHECKIN_LEAD_MS, type BookingStatus } from "@/lib/billing-store";
 
 export const Route = createFileRoute("/_authenticated/booking")({
   head: () => ({ meta: [
