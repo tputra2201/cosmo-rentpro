@@ -75,14 +75,22 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
-  const { history, clearHistory } = useBilling();
+  const { history, cashEntries, clearHistory } = useBilling();
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
   const today = history.filter((h) => dayKey(h.endAt) === todayKey);
+  const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
+  const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
+    cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
+  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
+  const expense = cashSum((e) => e.direction === "out" && !e.payout);
+  const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
+  const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
 
   const sum = (arr: typeof history, key: "rentalTotal" | "fnbTotal" | "total") =>
     arr.reduce((s, h) => s + h[key], 0);
+
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
     const k = dayKey(h.endAt);
