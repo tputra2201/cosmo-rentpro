@@ -21,6 +21,8 @@ export const LIST_KINDS = {
   cafe_table: "cafeTables",
   playing_card: "playingCards",
   card_entry: "cardEntries",
+  cash_category: "cashCategories",
+  cash_entry: "cashEntries",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
