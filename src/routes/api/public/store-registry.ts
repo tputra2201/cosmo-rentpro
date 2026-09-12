@@ -38,6 +38,16 @@ const bodySchema = z.discriminatedUnion("action", [
     login_note: z.string().max(1000).optional(),
   }),
   z.object({
+    action: z.literal("developer-account"),
+    email: z.string().email(),
+    full_name: z.string().max(200).default("Developer"),
+    redirect_to: z.string().url(),
+  }),
+  z.object({
+    action: z.literal("developer-remove"),
+    user_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("assign"),
     id: z.string().uuid(),
     email: z.string().email(),
@@ -71,9 +81,10 @@ export const Route = createFileRoute("/api/public/store-registry")({
       GET: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const [{ data, error }, { data: members }] = await Promise.all([
+        const [{ data, error }, { data: members }, { data: developers }] = await Promise.all([
           supabaseAdmin.from("stores").select(columns).order("created_at"),
           supabaseAdmin.from("store_members").select("store_id"),
+          supabaseAdmin.from("developer_accounts").select("user_id, email, created_at"),
         ]);
         if (error) return new Response(error.message, { status: 500 });
         const counts = new Map<string, number>();
@@ -84,7 +95,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
           ...row,
           members: counts.get(row.id) ?? 0,
         }));
-        return Response.json({ stores });
+        return Response.json({ stores, developers: developers ?? [] });
       },
       POST: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
@@ -157,6 +168,66 @@ export const Route = createFileRoute("/api/public/store-registry")({
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ branding: data });
+        }
+
+        if (body.action === "developer-remove") {
+          const { error } = await supabaseAdmin
+            .from("developer_accounts")
+            .delete()
+            .eq("user_id", body.user_id);
+          if (error) return new Response(error.message, { status: 500 });
+          return Response.json({ ok: true });
+        }
+
+        if (body.action === "developer-account") {
+          const { data: all, error: allError } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+          if (allError) return new Response(allError.message, { status: 500 });
+          const wanted = body.email.toLowerCase();
+          const found = all.users.find((u) => (u.email ?? "").toLowerCase() === wanted);
+          let devId = found?.id;
+          let emailSent: "invite" | "reset" = "invite";
+          if (!devId) {
+            const { data: created, error: inviteError } =
+              await supabaseAdmin.auth.admin.inviteUserByEmail(body.email, {
+                data: { full_name: body.full_name },
+                redirectTo: body.redirect_to,
+              });
+            if (inviteError) return new Response(inviteError.message, { status: 500 });
+            devId = created.user!.id;
+          } else if (!found?.last_sign_in_at) {
+            const { error: reinviteError } =
+              await supabaseAdmin.auth.admin.inviteUserByEmail(body.email, {
+                data: { full_name: body.full_name },
+                redirectTo: body.redirect_to,
+              });
+            if (reinviteError) return new Response(reinviteError.message, { status: 500 });
+          } else {
+            const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(
+              body.email,
+              { redirectTo: body.redirect_to },
+            );
+            if (resetError) return new Response(resetError.message, { status: 500 });
+            emailSent = "reset";
+          }
+
+          await supabaseAdmin
+            .from("profiles")
+            .upsert({ id: devId, full_name: body.full_name } as never, { onConflict: "id" });
+          await supabaseAdmin.from("user_roles").delete().eq("user_id", devId);
+          const { error: roleError } = await supabaseAdmin
+            .from("user_roles")
+            .insert({ user_id: devId, role: "installer" } as never);
+          if (roleError) return new Response(roleError.message, { status: 500 });
+          const { error: devError } = await supabaseAdmin
+            .from("developer_accounts")
+            .upsert({ user_id: devId, email: body.email } as never, {
+              onConflict: "user_id",
+            });
+          if (devError) return new Response(devError.message, { status: 500 });
+          return Response.json({ ok: true, emailSent, user_id: devId });
         }
 
         // assign: tautkan / undang akun sebagai pengelola store ini

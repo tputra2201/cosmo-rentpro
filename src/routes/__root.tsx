@@ -50,6 +50,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
+import { useDeveloper } from "@/lib/developer";
+import { DeveloperStoreSwitcher } from "@/components/DeveloperStoreSwitcher";
 import { ThemeProvider } from "@/lib/theme";
 
 
@@ -199,6 +201,7 @@ function AppShell() {
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
+  const developer = useDeveloper(Boolean(session));
   const { sync } = useBilling();
   const storeName = store?.store_name?.trim() ?? "";
   const signature = appSignature(store?.app_version, store?.dev_contact);
@@ -208,7 +211,7 @@ function AppShell() {
   const msLeft = expiryDate ? expiryDate.getTime() - Date.now() : null;
   const daysLeft =
     msLeft === null ? null : Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-  const expired = msLeft !== null && msLeft <= 0;
+  const expired = msLeft !== null && msLeft <= 0 && !developer.isDeveloper;
   const expiryLabel = expiryDate
     ? expiryDate.toLocaleDateString("id-ID", {
         day: "numeric",
@@ -286,6 +289,7 @@ function AppShell() {
           {session && !isAuthPage && (
             <>
               <div className="flex items-center gap-2">
+                <DeveloperStoreSwitcher enabled={Boolean(session)} />
                 <span
                   title={
                     sync.online

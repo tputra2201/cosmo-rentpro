@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          note: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          note?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          note?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       developer_stores: {
         Row: {
           base_url: string

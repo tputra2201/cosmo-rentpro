@@ -246,8 +246,95 @@ function BrandingPanel({
   );
 }
 
+type DeveloperRow = { user_id: string; email: string; created_at: string };
+
+function DeveloperPanel({
+  busy,
+  post,
+  developers,
+  reload,
+}: {
+  busy: boolean;
+  post: (body: unknown, okMessage?: string) => Promise<unknown>;
+  developers: DeveloperRow[];
+  reload: () => void;
+}) {
+  const [email, setEmail] = useState("");
+
+  const create = async () => {
+    const ok = await post(
+      {
+        action: "developer-account",
+        email: email.trim(),
+        full_name: "Developer",
+        redirect_to: passwordSetupUrl(),
+      },
+      "Email untuk akun Developer sudah dikirim.",
+    );
+    if (ok) {
+      setEmail("");
+      reload();
+    }
+  };
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="font-display text-lg font-bold">Akun Developer</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Akun ini masuk seperti staf biasa, tapi bisa membuka seluruh store dan mengubah
+          semua pengaturan, menu, dan tarif. Store yang dibuka dipilih dari daftar di
+          bagian atas aplikasi.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="grid min-w-[16rem] flex-1 gap-2">
+          <Label htmlFor="dev_email">Email akun Developer</Label>
+          <Input
+            id="dev_email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="developer@email.com"
+          />
+        </div>
+        <Button disabled={busy || !email.trim()} onClick={() => void create()}>
+          <ShieldCheck className="size-4" /> Buat / kirim ulang
+        </Button>
+      </div>
+      {developers.length > 0 && (
+        <ul className="grid gap-2">
+          {developers.map((d) => (
+            <li
+              key={d.user_id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-secondary/20 px-3 py-2 text-sm"
+            >
+              <span className="truncate">{d.email}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={async () => {
+                  const ok = await post(
+                    { action: "developer-remove", user_id: d.user_id },
+                    "Akses Developer dicabut.",
+                  );
+                  if (ok) reload();
+                }}
+              >
+                Cabut akses
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ControlCenter() {
   const [secret, setSecret] = useState("");
+  const [developers, setDevelopers] = useState<DeveloperRow[]>([]);
   const [unlocked, setUnlocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stores, setStores] = useState<StoreRow[]>([]);
@@ -287,8 +374,12 @@ function ControlCenter() {
         toast.error("Gagal memuat daftar store.");
         return;
       }
-      const json = (await res.json()) as { stores: StoreRow[] };
+      const json = (await res.json()) as {
+        stores: StoreRow[];
+        developers?: DeveloperRow[];
+      };
       setStores(json.stores);
+      setDevelopers(json.developers ?? []);
       setUnlocked(true);
       sessionStorage.setItem(SECRET_KEY, provided ?? key());
     } catch {
@@ -488,6 +579,13 @@ function ControlCenter() {
       </div>
 
       <BrandingPanel busy={busy} post={post} />
+
+      <DeveloperPanel
+        busy={busy}
+        post={post}
+        developers={developers}
+        reload={() => void load()}
+      />
 
       <div className="surface-panel grid gap-4 p-5">
         <h2 className="font-display text-lg font-bold">Buat store baru</h2>
