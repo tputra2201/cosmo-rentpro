@@ -19,6 +19,8 @@ export const LIST_KINDS = {
   point: "pointEntries",
   history: "history",
   cafe_table: "cafeTables",
+  playing_card: "playingCards",
+  card_entry: "cardEntries",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
@@ -33,6 +35,9 @@ const SETTINGS_KEYS = [
   "defaultBonusMin",
   "pointsPerRupiah",
   "menuCategories",
+  "cardPrice",
+  "cardDiscountPercent",
+  "cardMemberDiscountPercent",
 ] as const;
 
 
