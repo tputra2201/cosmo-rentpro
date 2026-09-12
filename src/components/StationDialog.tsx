@@ -361,7 +361,101 @@ export function StationDialog({
                   ? formatClock(elapsedSeconds(session, now))
                   : formatClock(Math.max(0, remainingSeconds(session, now)))}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">{session.customerName || "Umum"} · {session.packageName}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {session.customerName || "Umum"} · {session.member ? "Member" : "Umum"} · {session.packageName}
+              </p>
+              {!editCustomer ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="mt-1"
+                  onClick={() => {
+                    setEditName(session.customerName ?? "");
+                    setEditPhone(session.customerPhone ?? "");
+                    setEditMember(Boolean(session.member));
+                    setEditCustomerId(session.customerId ?? "");
+                    setEditCustomer(true);
+                  }}
+                >
+                  Ubah data pelanggan
+                </Button>
+              ) : (
+                <div className="mt-3 space-y-3 rounded-md border p-3 text-left">
+                  <div className="space-y-1.5">
+                    <Label>Pelanggan tersimpan</Label>
+                    <Select
+                      value={editCustomerId || "guest"}
+                      onValueChange={(value) => {
+                        if (value === "guest") {
+                          setEditCustomerId("");
+                          return;
+                        }
+                        const found = customers.find((item) => item.id === value);
+                        setEditCustomerId(value);
+                        if (found) {
+                          setEditName(found.name);
+                          setEditPhone(found.phone);
+                          setEditMember(found.member);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="guest">Pelanggan umum</SelectItem>
+                        {customers.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name} · {item.phone || "tanpa nomor"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-session-name">Nama pelanggan</Label>
+                    <Input
+                      id="edit-session-name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Umum"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-session-phone">Nomor HP</Label>
+                    <Input
+                      id="edit-session-phone"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="08..."
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label htmlFor="edit-session-member">Member</Label>
+                    <Switch id="edit-session-member" checked={editMember} onCheckedChange={setEditMember} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setEditCustomer(false)}>
+                      Batal
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        updateSessionCustomer(station.id, {
+                          customerName: editName.trim(),
+                          customerPhone: editPhone.trim(),
+                          member: editMember,
+                          ...(editCustomerId ? { customerId: editCustomerId } : { customerId: undefined }),
+                        });
+                        setEditCustomer(false);
+                        toast.success("Data pelanggan diperbarui");
+                      }}
+                    >
+                      Simpan
+                    </Button>
+                  </div>
+                </div>
+              )}
               {isPaused(session) && (
                 <p className="mt-1 text-sm font-semibold text-warning">Timer dijeda</p>
               )}
