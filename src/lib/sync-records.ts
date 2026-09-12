@@ -92,6 +92,8 @@ export function applyRecords(
     cafeTables: [...state.cafeTables],
     playingCards: [...state.playingCards],
     cardEntries: [...state.cardEntries],
+    cashCategories: [...state.cashCategories],
+    cashEntries: [...state.cashEntries],
   };
 
 
