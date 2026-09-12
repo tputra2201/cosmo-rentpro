@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Upload, RotateCcw } from "lucide-react";
+import { Download, Upload, RotateCcw, Eraser } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
