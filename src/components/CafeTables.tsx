@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatRupiah, useBilling, type CafeTable } from "@/lib/billing-store";
+import { SortableArea, SortableItem } from "@/components/Sortable";
 
 export function tableTotal(table: CafeTable) {
   return table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
@@ -38,6 +39,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     removeCafeOrder,
     clearCafeTable,
     payCafeTable,
+    reorderList,
   } = useBilling();
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -59,12 +61,19 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   return (
     <>
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <SortableArea
+        ids={cafeTables.map((t) => t.id)}
+        onReorder={(activeId, overId) => reorderList("cafeTables", activeId, overId)}
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+      >
         {cafeTables.map((t) => {
           const filled = t.orders.length > 0 || Boolean(t.openedAt);
           return (
-            <div
+            <SortableItem
               key={t.id}
+              id={t.id}
+              handle={false}
+              label={t.name}
               className={`surface-panel p-3 ${filled ? "border-primary/50" : ""}`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -117,10 +126,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </Button>
                 )}
               </div>
-            </div>
+            </SortableItem>
           );
         })}
-      </section>
+      </SortableArea>
 
       <Dialog open={Boolean(table)} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
