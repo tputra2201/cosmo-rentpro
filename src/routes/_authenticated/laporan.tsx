@@ -204,6 +204,102 @@ function LaporanPage() {
   );
 }
 
+function ReceiptDialog({
+  record,
+  open,
+  onOpenChange,
+}: {
+  record: HistoryRecord;
+  open: boolean;
+  onOpenChange: (value: boolean) => void;
+}) {
+  const { paymentMethods, updateHistoryPayment, removeHistory } = useBilling();
+  const { role } = useAuth();
+  const canDelete = isAdminLevel(role);
+  const [method, setMethod] = useState(record.payment ?? "Cash");
+  const [confirm, setConfirm] = useState(false);
+  const options = paymentMethods.filter((p) => p.active);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Nota transaksi</DialogTitle>
+        </DialogHeader>
+
+        <ReceiptView record={record} />
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Ubah metode pembayaran</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Pilih metode" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((item) => (
+                  <SelectItem key={item.id} value={item.name}>
+                    {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => {
+                updateHistoryPayment(record.id, { payment: method, payments: [] });
+                toast.success("Metode pembayaran diperbarui");
+              }}
+            >
+              Simpan
+            </Button>
+            {canDelete && (
+              <Button variant="destructive" onClick={() => setConfirm(true)}>
+                <Trash2 className="size-4" /> Hapus nota
+              </Button>
+            )}
+          </div>
+          {record.payments && record.payments.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Nota ini dibayar dengan beberapa metode. Menyimpan metode tunggal akan
+              menggantikan rincian tersebut.
+            </p>
+          )}
+          {!canDelete && (
+            <p className="text-xs text-muted-foreground">
+              Hanya admin yang dapat menghapus nota.
+            </p>
+          )}
+        </div>
+
+        <AlertDialog open={confirm} onOpenChange={setConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus nota ini?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Nota akan dihapus dari riwayat dan laporan. Tindakan ini tidak bisa
+                dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  removeHistory(record.id);
+                  setConfirm(false);
+                  onOpenChange(false);
+                  toast.success("Nota dihapus");
+                }}
+              >
+                Ya, hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Stat({
   label,
   value,
