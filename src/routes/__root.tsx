@@ -285,20 +285,6 @@ function AppShell() {
           </Link>
           {session && !isAuthPage && (
             <>
-              <nav className="hidden items-center gap-1 xl:flex">
-                {items.map(({ to, label, icon: Icon }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    activeOptions={{ exact: to === "/" }}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    activeProps={{ className: "bg-secondary text-primary" }}
-                  >
-                    <Icon className="size-4" />
-                    {label}
-                  </Link>
-                ))}
-              </nav>
               <div className="flex items-center gap-2">
                 <span
                   title={
