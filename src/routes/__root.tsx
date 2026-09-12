@@ -260,9 +260,17 @@ function AppShell() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
-              <Joystick className="size-5" />
-            </span>
+            {store?.logo_url ? (
+              <img
+                src={store.logo_url}
+                alt={storeName ? `Logo ${storeName}` : "Logo store"}
+                className="size-9 shrink-0 rounded-lg object-contain"
+              />
+            ) : (
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary glow-primary">
+                <Joystick className="size-5" />
+              </span>
+            )}
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="truncate font-display text-lg font-bold tracking-wide text-neon">
                 {storeName || "BILLING RENTAL PS"}
