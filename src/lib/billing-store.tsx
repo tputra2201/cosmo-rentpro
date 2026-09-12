@@ -1631,7 +1631,86 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeHistory: (id) =>
         update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
-      resetTransactions: () => update((prev) => ({ ...prev, history: [], pointEntries: [] })),
+      resetTransactions: () =>
+        update((prev) => ({ ...prev, history: [], pointEntries: [], cashEntries: [] })),
+      addCashCategory: (input) => {
+        const name = input.name.trim();
+        if (!name) return null;
+        const exists = state.cashCategories.some(
+          (item) =>
+            item.direction === input.direction &&
+            item.name.trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (exists) return null;
+        const row: CashCategory = {
+          id: `cash-cat-${Date.now()}`,
+          name,
+          direction: input.direction,
+          payout: Boolean(input.payout),
+          group: input.group?.trim() ? input.group.trim() : "Lainnya",
+          active: true,
+        };
+        update((prev) => ({ ...prev, cashCategories: [...prev.cashCategories, row] }));
+        return row;
+      },
+      updateCashCategory: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          cashCategories: prev.cashCategories.map((item) =>
+            item.id === id ? { ...item, ...patch } : item,
+          ),
+        })),
+      removeCashCategory: (id) =>
+        update((prev) => ({
+          ...prev,
+          cashCategories: prev.cashCategories.filter((item) => item.id !== id),
+        })),
+      addCashEntry: (input) => {
+        const category = state.cashCategories.find((item) => item.id === input.categoryId);
+        const amount = Math.max(0, Math.round(input.amount));
+        if (!category || amount <= 0) return null;
+        const row: CashEntry = {
+          id: `cash-${Date.now()}`,
+          categoryId: category.id,
+          categoryName: category.name,
+          group: category.group,
+          direction: category.direction,
+          payout: category.payout,
+          amount,
+          payment: input.payment?.trim() ? input.payment.trim() : "Cash",
+          note: input.note?.trim() ?? "",
+          createdAt: input.createdAt ?? Date.now(),
+        };
+        update((prev) => ({ ...prev, cashEntries: [row, ...prev.cashEntries] }));
+        return row;
+      },
+      updateCashEntry: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          cashEntries: prev.cashEntries.map((item) => {
+            if (item.id !== id) return item;
+            const category = patch.categoryId
+              ? prev.cashCategories.find((c) => c.id === patch.categoryId)
+              : undefined;
+            return {
+              ...item,
+              ...(patch.amount !== undefined ? { amount: Math.max(0, Math.round(patch.amount)) } : {}),
+              ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
+              ...(patch.note !== undefined ? { note: patch.note } : {}),
+              ...(category
+                ? {
+                    categoryId: category.id,
+                    categoryName: category.name,
+                    group: category.group,
+                    direction: category.direction,
+                    payout: category.payout,
+                  }
+                : {}),
+            };
+          }),
+        })),
+      removeCashEntry: (id) =>
+        update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
