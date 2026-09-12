@@ -259,7 +259,9 @@ function AppShell() {
     <div className="min-h-screen">
       {!isAuthPage && (
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
             {store?.logo_url ? (
               <img
@@ -283,20 +285,6 @@ function AppShell() {
           </Link>
           {session && !isAuthPage && (
             <>
-              <nav className="hidden items-center gap-1 xl:flex">
-                {items.map(({ to, label, icon: Icon }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    activeOptions={{ exact: to === "/" }}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    activeProps={{ className: "bg-secondary text-primary" }}
-                  >
-                    <Icon className="size-4" />
-                    {label}
-                  </Link>
-                ))}
-              </nav>
               <div className="flex items-center gap-2">
                 <span
                   title={
@@ -342,7 +330,7 @@ function AppShell() {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="xl:hidden"
+                      className="md:hidden"
                       aria-label="Buka menu"
                     >
                       <Menu className="size-5" />
@@ -376,7 +364,25 @@ function AppShell() {
               </div>
             </>
           )}
+          </div>
+          {session && !isAuthPage && (
+            <nav className="hidden flex-wrap items-center justify-center gap-x-1 gap-y-1.5 border-t border-border/60 pt-2 md:flex">
+              {items.map(({ to, label, icon: Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  activeOptions={{ exact: to === "/" }}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:px-3 lg:py-2 lg:text-sm"
+                  activeProps={{ className: "bg-secondary text-primary" }}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
+
       </header>
       )}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
