@@ -32,6 +32,12 @@ const bodySchema = z.discriminatedUnion("action", [
     days: z.number().int().min(1).max(3650),
   }),
   z.object({
+    action: z.literal("branding"),
+    logo_url: z.string().max(400000).optional(),
+    login_title: z.string().max(200).optional(),
+    login_note: z.string().max(1000).optional(),
+  }),
+  z.object({
     action: z.literal("assign"),
     id: z.string().uuid(),
     email: z.string().email(),
@@ -140,6 +146,17 @@ export const Route = createFileRoute("/api/public/store-registry")({
           const { error } = await supabaseAdmin.from("stores").delete().eq("id", body.id);
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ ok: true });
+        }
+
+        if (body.action === "branding") {
+          const { action: _a, ...values } = body;
+          const { data, error } = await supabaseAdmin
+            .from("app_branding")
+            .upsert({ id: "default", ...values } as never, { onConflict: "id" })
+            .select("logo_url, login_title, login_note")
+            .maybeSingle();
+          if (error) return new Response(error.message, { status: 500 });
+          return Response.json({ branding: data });
         }
 
         // assign: tautkan / undang akun sebagai pengelola store ini

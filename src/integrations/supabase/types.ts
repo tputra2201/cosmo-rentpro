@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_branding: {
+        Row: {
+          created_at: string
+          id: string
+          login_note: string
+          login_title: string
+          logo_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          login_note?: string
+          login_title?: string
+          logo_url?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          login_note?: string
+          login_title?: string
+          logo_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       developer_stores: {
         Row: {
           base_url: string

@@ -257,6 +257,7 @@ function AppShell() {
 
   return (
     <div className="min-h-screen">
+      {!isAuthPage && (
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
@@ -377,6 +378,7 @@ function AppShell() {
           )}
         </div>
       </header>
+      )}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         {session && !isAuthPage && expired ? (
           <div className="surface-panel mx-auto max-w-lg border-destructive/60 p-8 text-center">

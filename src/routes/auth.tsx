@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Joystick, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranding } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const branding = useBranding();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,18 +64,25 @@ function AuthPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center">
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center">
       <div className="surface-panel p-6 sm:p-8">
         <div className="flex flex-col items-center text-center">
-          <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary glow-primary">
-            <Joystick className="size-6" />
-          </span>
-          <h1 className="mt-4 font-display text-2xl font-bold text-neon">
-            BILLING RENTAL PS
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Masuk memakai akun staf yang sudah didaftarkan Admin.
-          </p>
+          {branding.logo_url ? (
+            <img
+              src={branding.logo_url}
+              alt={branding.login_title || "Logo aplikasi"}
+              className="size-20 rounded-xl object-contain"
+            />
+          ) : (
+            <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary glow-primary">
+              <Joystick className="size-6" />
+            </span>
+          )}
+          {branding.login_title.trim() && (
+            <h1 className="mt-4 font-display text-2xl font-bold text-neon">
+              {branding.login_title}
+            </h1>
+          )}
         </div>
 
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
@@ -107,11 +116,11 @@ function AuthPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Tidak ada pendaftaran mandiri. Admin mengirim undangan ke email kamu,
-          lalu kamu membuat kata sandi sendiri lewat tautan di email itu. Lupa
-          sandi? Minta Admin mengirim tautan atur ulang.
-        </p>
+        {branding.login_note.trim() && (
+          <p className="mt-6 whitespace-pre-line text-center text-xs text-muted-foreground">
+            {branding.login_note}
+          </p>
+        )}
 
       </div>
     </div>
