@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, Plus, Trash2, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Pencil, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,6 +79,55 @@ function BookingPage() {
   </div>;
 }
 
-function BookingRow({ item, stationName, onStatus, onDelete }: { item: ReturnType<typeof useBilling>["bookings"][number]; stationName: string; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
-  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName}</p>{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={() => onStatus("checked-in")}><CheckCircle2 className="size-4"/> Check-in</Button>}{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan booking"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus booking"><Trash2 className="size-4"/></Button></div></article>;
+type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
+
+function BookingRow({ item, stationName, onStatus, onDelete }: { item: BookingItem; stationName: string; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
+  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName}</p>{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={() => onStatus("checked-in")}><CheckCircle2 className="size-4"/> Check-in</Button>}<EditBookingDialog item={item}/>{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan booking"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus booking"><Trash2 className="size-4"/></Button></div></article>;
+}
+
+function EditBookingDialog({ item }: { item: BookingItem }) {
+  const { stations, updateBooking } = useBilling();
+  const [open, setOpen] = useState(false);
+  const [stationId, setStationId] = useState(item.stationId);
+  const [name, setName] = useState(item.customerName);
+  const [phone, setPhone] = useState(item.customerPhone ?? "");
+  const [start, setStart] = useState(localInputValue(new Date(item.startAt)));
+  const [duration, setDuration] = useState(String(Math.max(15, Math.round((item.endAt - item.startAt) / 60000))));
+  const [notes, setNotes] = useState(item.notes ?? "");
+  const [status, setStatus] = useState<BookingStatus>(item.status);
+
+  const openChange = (value: boolean) => {
+    setOpen(value);
+    if (value) {
+      setStationId(item.stationId); setName(item.customerName); setPhone(item.customerPhone ?? "");
+      setStart(localInputValue(new Date(item.startAt)));
+      setDuration(String(Math.max(15, Math.round((item.endAt - item.startAt) / 60000))));
+      setNotes(item.notes ?? ""); setStatus(item.status);
+    }
+  };
+
+  const save = () => {
+    const startAt = new Date(start).getTime();
+    const minutes = Number(duration);
+    if (!stationId || !name.trim() || !Number.isFinite(startAt) || !Number.isFinite(minutes) || minutes <= 0) { toast.error("Lengkapi data booking"); return; }
+    const ok = updateBooking(item.id, { stationId, customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes, status });
+    if (!ok) { toast.error("Jadwal bentrok dengan booking lain pada unit tersebut"); return; }
+    toast.success("Booking diperbarui"); setOpen(false);
+  };
+
+  return <Dialog open={open} onOpenChange={openChange}>
+    <DialogTrigger asChild><Button size="icon" variant="outline" aria-label="Ubah booking"><Pencil className="size-4"/></Button></DialogTrigger>
+    <DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>Ubah booking</DialogTitle></DialogHeader>
+      <div className="space-y-4">
+        <div className="space-y-1.5"><Label>Unit</Label><Select value={stationId} onValueChange={setStationId}><SelectTrigger><SelectValue placeholder="Pilih unit"/></SelectTrigger><SelectContent>{stations.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} · {s.console}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1.5"><Label htmlFor={`edit-name-${item.id}`}>Nama</Label><Input id={`edit-name-${item.id}`} value={name} onChange={(e) => setName(e.target.value)}/></div><div className="space-y-1.5"><Label htmlFor={`edit-phone-${item.id}`}>Nomor HP</Label><Input id={`edit-phone-${item.id}`} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08..."/></div></div>
+        <div className="space-y-1.5"><Label htmlFor={`edit-start-${item.id}`}>Mulai</Label><Input id={`edit-start-${item.id}`} type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)}/></div>
+        <div className="space-y-1.5"><Label htmlFor={`edit-duration-${item.id}`}>Durasi (menit)</Label><Input id={`edit-duration-${item.id}`} type="number" min={15} step={15} value={duration} onChange={(e) => setDuration(e.target.value)}/></div>
+        <div className="space-y-1.5"><Label>Status</Label><Select value={status} onValueChange={(value) => setStatus(value as BookingStatus)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{(Object.keys(statusLabel) as BookingStatus[]).map((key) => <SelectItem key={key} value={key}>{statusLabel[key]}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-1.5"><Label htmlFor={`edit-notes-${item.id}`}>Catatan</Label><Input id={`edit-notes-${item.id}`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan opsional"/></div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Batal</Button><Button onClick={save}>Simpan perubahan</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }
