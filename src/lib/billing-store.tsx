@@ -63,9 +63,10 @@ export type Station = {
   booth: string;
   availability: StationAvailability;
   session: Session | null;
+  sort?: number;
 };
 
-export type MenuItem = { id: string; name: string; price: number; category: string };
+export type MenuItem = { id: string; name: string; price: number; category: string; sort?: number };
 
 export type CafeTable = {
   id: string;
@@ -76,16 +77,18 @@ export type CafeTable = {
   notes: string;
   openedAt: number | null;
   orders: OrderItem[];
+  sort?: number;
 };
 
 
-export type PaymentMethod = { id: string; name: string; active: boolean };
+export type PaymentMethod = { id: string; name: string; active: boolean; sort?: number };
 export type RentalPackage = {
   id: string;
   name: string;
   durationMin: number;
   price: number;
   active: boolean;
+  sort?: number;
 };
 
 export type CustomerLevel = "Bronze" | "Silver" | "Gold";
@@ -176,6 +179,14 @@ type State = {
 
 
 const STORAGE_KEY = "billing-ps-state-v1";
+
+/** Pindahkan satu elemen array dari posisi `from` ke posisi `to`. */
+export function moveItem<T>(items: T[], from: number, to: number): T[] {
+  const next = [...items];
+  const [row] = next.splice(from, 1);
+  if (row !== undefined) next.splice(to, 0, row);
+  return next;
+}
 
 const defaultState: State = {
   stations: [
@@ -429,6 +440,13 @@ type Ctx = State & {
     booth?: string;
   }) => void;
   removeStation: (stationId: string) => void;
+  reorderList: (
+    list: "stations" | "cafeTables" | "menu" | "packages" | "paymentMethods",
+    activeId: string,
+    overId: string,
+  ) => void;
+  reorderConsoleTypes: (activeName: string, overName: string) => void;
+  reorderMenuCategories: (activeName: string, overName: string) => void;
   addMenuItem: (name: string, price: number, category?: string) => void;
   updateMenuItem: (id: string, patch: Partial<Omit<MenuItem, "id">>) => void;
   removeMenuItem: (id: string) => void;
@@ -920,6 +938,29 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               },
             ],
           };
+        }),
+      reorderList: (list, activeId, overId) =>
+        update((prev) => {
+          const rows = prev[list] as { id: string; sort?: number }[];
+          const from = rows.findIndex((r) => r.id === activeId);
+          const to = rows.findIndex((r) => r.id === overId);
+          if (from < 0 || to < 0 || from === to) return prev;
+          const next = moveItem(rows, from, to).map((row, index) => ({ ...row, sort: index }));
+          return { ...prev, [list]: next } as State;
+        }),
+      reorderConsoleTypes: (activeName, overName) =>
+        update((prev) => {
+          const from = prev.consoleTypes.indexOf(activeName);
+          const to = prev.consoleTypes.indexOf(overName);
+          if (from < 0 || to < 0 || from === to) return prev;
+          return { ...prev, consoleTypes: moveItem(prev.consoleTypes, from, to) };
+        }),
+      reorderMenuCategories: (activeName, overName) =>
+        update((prev) => {
+          const from = prev.menuCategories.indexOf(activeName);
+          const to = prev.menuCategories.indexOf(overName);
+          if (from < 0 || to < 0 || from === to) return prev;
+          return { ...prev, menuCategories: moveItem(prev.menuCategories, from, to) };
         }),
       removeStation: (stationId) =>
         update((prev) => ({

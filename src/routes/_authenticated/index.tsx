@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Activity, Coins, MonitorPlay } from "lucide-react";
 import { StationCard } from "@/components/StationCard";
+import { SortableArea, SortableItem } from "@/components/Sortable";
 import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
 import {
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
-  const { stations, now, bookings } = useBilling();
+  const { stations, now, bookings, reorderList } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const alerted = useRef<Set<string>>(new Set());
 
@@ -78,7 +79,8 @@ function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold sm:text-4xl">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
-            Klik kartu TV untuk mulai sesi, tambah pesanan, atau akhiri billing.
+            Klik kartu TV untuk mulai sesi, tambah pesanan, atau akhiri billing. Geser
+            kartu untuk mengatur posisinya.
           </p>
         </div>
       </section>
@@ -102,23 +104,28 @@ function Dashboard() {
         
       </section>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <SortableArea
+        ids={stations.map((s) => s.id)}
+        onReorder={(activeId, overId) => reorderList("stations", activeId, overId)}
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+      >
         {stations.map((station) => (
-          <StationCard
-            key={station.id}
-            station={station}
-            now={now}
-            onClick={() => setSelectedId(station.id)}
-          />
+          <SortableItem key={station.id} id={station.id} handle={false} label={station.name}>
+            <StationCard
+              station={station}
+              now={now}
+              onClick={() => setSelectedId(station.id)}
+            />
+          </SortableItem>
         ))}
-      </section>
+      </SortableArea>
 
       <section className="space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Meja Kafe</h2>
           <p className="text-sm text-muted-foreground">
             Untuk pelanggan yang hanya makan atau ngopi. Klik Pesanan untuk mencatat dan
-            membayar.
+            membayar. Kartu bisa digeser untuk mengatur posisinya.
           </p>
         </div>
         <CafeTables />
