@@ -57,7 +57,7 @@ function authorize(request: Request) {
 }
 
 const columns =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url";
 
 export const Route = createFileRoute("/api/public/store-registry")({
   server: {
