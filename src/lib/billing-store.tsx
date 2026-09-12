@@ -1305,6 +1305,150 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeCustomer: (id) => update((prev) => ({ ...prev, customers: prev.customers.filter((item) => item.id !== id) })),
       adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
       setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
+      buyPlayingCard: (input) => {
+        const cardNumber = input.cardNumber.trim();
+        if (!cardNumber) return null;
+        if (findCardByNumber(state.playingCards, cardNumber)) return null;
+        const now = Date.now();
+        const topup = Math.max(0, Math.round(input.topup ?? 0));
+        const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
+        const card: PlayingCard = {
+          id: `card-${now}`,
+          cardNumber,
+          ...(input.customerId ? { customerId: input.customerId } : {}),
+          customerName: input.customerName?.trim() || "Umum",
+          customerPhone: input.customerPhone?.trim() || "",
+          member: input.member ?? false,
+          balance: topup,
+          active: true,
+          cardPrice: price,
+          createdAt: now,
+        };
+        const entries: CardEntry[] = [
+          {
+            id: `ce-${now}`,
+            cardId: card.id,
+            cardNumber: card.cardNumber,
+            type: "purchase",
+            amount: price,
+            balanceAfter: 0,
+            note: "Pembelian kartu baru",
+            createdAt: now,
+          },
+        ];
+        if (topup > 0) {
+          entries.unshift({
+            id: `ce-${now}-topup`,
+            cardId: card.id,
+            cardNumber: card.cardNumber,
+            type: "topup",
+            amount: topup,
+            balanceAfter: topup,
+            note: "Top-up awal",
+            createdAt: now + 1,
+          });
+        }
+        update((prev) => ({
+          ...prev,
+          playingCards: [card, ...prev.playingCards],
+          cardEntries: [...entries, ...prev.cardEntries],
+        }));
+        return card;
+      },
+      updatePlayingCard: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        })),
+      removePlayingCard: (id) =>
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.filter((c) => c.id !== id),
+          cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
+        })),
+      topupCard: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || value <= 0) return false;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) =>
+            c.id === id ? { ...c, balance: c.balance + value } : c,
+          ),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "topup",
+              amount: value,
+              balanceAfter: card.balance + value,
+              note: note?.trim() || "Top-up saldo",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      adjustCardBalance: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || value === 0) return false;
+        const next = card.balance + value;
+        if (next < 0) return false;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, balance: next } : c)),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "adjust",
+              amount: value,
+              balanceAfter: next,
+              note: note.trim() || "Penyesuaian saldo",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      chargeCard: (id, amount, note) => {
+        const value = Math.round(amount);
+        const card = state.playingCards.find((c) => c.id === id);
+        if (!card || !card.active || value <= 0) return false;
+        if (card.balance + 0.5 < value) return false;
+        const next = card.balance - value;
+        const stamp = Date.now();
+        update((prev) => ({
+          ...prev,
+          playingCards: prev.playingCards.map((c) => (c.id === id ? { ...c, balance: next } : c)),
+          cardEntries: [
+            {
+              id: `ce-${stamp}`,
+              cardId: id,
+              cardNumber: card.cardNumber,
+              type: "payment",
+              amount: -value,
+              balanceAfter: next,
+              note: note.trim() || "Pembayaran",
+              createdAt: stamp,
+            },
+            ...prev.cardEntries,
+          ],
+        }));
+        return true;
+      },
+      setCardPrice: (value) => update((prev) => ({ ...prev, cardPrice: Math.max(0, Math.round(value)) })),
+      setCardDiscountPercent: (value) =>
+        update((prev) => ({ ...prev, cardDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
+      setCardMemberDiscountPercent: (value) =>
+        update((prev) => ({ ...prev, cardMemberDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
       addBooking: (input) => {
         const conflict = state.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
         if (conflict) return false;
