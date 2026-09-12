@@ -32,6 +32,12 @@ const bodySchema = z.discriminatedUnion("action", [
     days: z.number().int().min(1).max(3650),
   }),
   z.object({
+    action: z.literal("branding"),
+    logo_url: z.string().max(400000).optional(),
+    login_title: z.string().max(200).optional(),
+    login_note: z.string().max(1000).optional(),
+  }),
+  z.object({
     action: z.literal("assign"),
     id: z.string().uuid(),
     email: z.string().email(),
