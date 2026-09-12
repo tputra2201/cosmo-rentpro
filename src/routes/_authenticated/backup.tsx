@@ -272,6 +272,29 @@ function BackupPage() {
         </Button>
       </section>
 
+      <AlertDialog open={confirmTrx} onOpenChange={setConfirmTrx}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus seluruh transaksi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Riwayat transaksi dan catatan poin akan dihapus. Pengaturan dan
+              data lain tidak berubah.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetTransactions();
+                toast.success("Seluruh transaksi sudah dihapus");
+              }}
+            >
+              Ya, hapus transaksi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
         <AlertDialogContent>
           <AlertDialogHeader>
