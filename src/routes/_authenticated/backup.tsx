@@ -89,9 +89,10 @@ function fromRows(rows: Row[]): Row[] {
 
 function BackupPage() {
   const billing = useBilling();
-  const { exportSnapshot, replaceAll, resetAll } = billing;
+  const { exportSnapshot, replaceAll, resetAll, resetTransactions } = billing;
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmTrx, setConfirmTrx] = useState(false);
 
   const handleExport = () => {
     const snap = exportSnapshot();
