@@ -203,6 +203,24 @@ export function StationDialog({
       toast.error("Jumlah pembayaran harus lebih dari 0");
       return false;
     }
+    if (usesCard) {
+      if (!cardFound) {
+        toast.error("Kartu belum terdaftar!", {
+          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+        });
+        return false;
+      }
+      if (!cardFound.active) {
+        toast.error("Kartu ini sedang diblokir");
+        return false;
+      }
+      if (cardFound.balance + 0.5 < cardCharge) {
+        toast.error("Saldo kartu tidak mencukupi!", {
+          description: `Saldo ${formatRupiah(cardFound.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
+        });
+        return false;
+      }
+    }
     if (splitMode) {
       if (splitRows.filter((s) => s.amount > 0).length === 0) {
         toast.error("Isi jumlah tiap metode pembayaran");
@@ -214,25 +232,8 @@ export function StationDialog({
       }
       return true;
     }
-    if (isCardPayment) {
-      if (!card) {
-        toast.error("Kartu tidak ditemukan", {
-          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
-        });
-        return false;
-      }
-      if (!card.active) {
-        toast.error("Kartu ini sedang diblokir");
-        return false;
-      }
-      if (card.balance + 0.5 < cardCharge) {
-        toast.error("Saldo Playing Card tidak mencukupi", {
-          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
-        });
-        return false;
-      }
-      return true;
-    }
+    if (isCardPayment) return true;
+
     if (selectedPayment === "Cash" && cashReceived < payTarget) {
       toast.error("Uang diterima masih kurang");
       return false;
