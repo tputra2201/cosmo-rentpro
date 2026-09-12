@@ -110,5 +110,11 @@ export function applyRecords(
     else list.push(row);
   }
 
+  const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables"] as const;
+  for (const listName of SORTED) {
+    const list = next[listName] as unknown as ({ sort?: number } & AnyRow)[];
+    list.sort((a, b) => (a.sort ?? Number.MAX_SAFE_INTEGER) - (b.sort ?? Number.MAX_SAFE_INTEGER));
+  }
+
   return next;
 }
