@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { formatRupiah, useBilling } from "@/lib/billing-store";
 import { tableTotal } from "@/components/CafeTables";
+import { SortableArea, SortableItem } from "@/components/Sortable";
 
 export const Route = createFileRoute("/_authenticated/kafe")({
   head: () => ({
@@ -49,6 +50,8 @@ function KafePage() {
     addMenuCategory,
     renameMenuCategory,
     removeMenuCategory,
+    reorderList,
+    reorderMenuCategories,
   } = useBilling();
 
   const [newName, setNewName] = useState("");
@@ -69,7 +72,7 @@ function KafePage() {
           <h1 className="text-3xl font-bold sm:text-4xl">Pengaturan Meja Kafe</h1>
           <p className="mt-1 text-muted-foreground">
             Kartu meja dan pesanan kini ada di Dashboard. Di sini Anda mengatur daftar
-            mejanya.
+            mejanya. Geser ikon pegangan untuk mengatur urutan meja, kategori, dan menu.
           </p>
         </div>
         <div className="text-right">
@@ -120,11 +123,18 @@ function KafePage() {
           </Button>
         </form>
 
-        <ul className="mt-4 space-y-2">
+        <SortableArea
+          ids={cafeTables.map((t) => t.id)}
+          onReorder={(activeId, overId) => reorderList("cafeTables", activeId, overId)}
+          className="mt-4 space-y-2"
+        >
           {cafeTables.map((t) => (
-            <li
+            <SortableItem
               key={t.id}
-              className="grid gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_1fr_120px_auto]"
+              id={t.id}
+              label={t.name}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid gap-2 sm:grid-cols-[1fr_1fr_120px_auto]"
             >
               <Input
                 value={t.name}
@@ -157,9 +167,9 @@ function KafePage() {
               >
                 Hapus
               </Button>
-            </li>
+            </SortableItem>
           ))}
-        </ul>
+        </SortableArea>
       </section>
 
       <section className="surface-panel p-6">
@@ -168,11 +178,18 @@ function KafePage() {
           Kategori bebas ditambah, diganti nama, atau dihapus (jika tidak ada menu di
           dalamnya).
         </p>
-        <ul className="mt-4 space-y-2">
+        <SortableArea
+          ids={menuCategories}
+          onReorder={reorderMenuCategories}
+          className="mt-4 space-y-2"
+        >
           {menuCategories.map((c) => (
-            <li
+            <SortableItem
               key={c}
-              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_auto_auto]"
+              id={c}
+              label={`kategori ${c}`}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_auto_auto]"
             >
               <Input
                 defaultValue={c}
@@ -208,9 +225,9 @@ function KafePage() {
               >
                 <Trash2 className="size-4" />
               </Button>
-            </li>
+            </SortableItem>
           ))}
-        </ul>
+        </SortableArea>
         <form
           className="mt-4 flex flex-wrap gap-2"
           onSubmit={(e) => {
@@ -237,11 +254,18 @@ function KafePage() {
 
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Menu Makanan &amp; Minuman</h2>
-        <ul className="mt-4 space-y-2">
+        <SortableArea
+          ids={menu.map((m) => m.id)}
+          onReorder={(activeId, overId) => reorderList("menu", activeId, overId)}
+          className="mt-4 space-y-2"
+        >
           {menu.map((m) => (
-            <li
+            <SortableItem
               key={m.id}
-              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_180px_140px_auto]"
+              id={m.id}
+              label={`menu ${m.name}`}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_180px_140px_auto]"
             >
               <Input
                 value={m.name}
@@ -280,9 +304,9 @@ function KafePage() {
               >
                 <Trash2 className="size-4" />
               </Button>
-            </li>
+            </SortableItem>
           ))}
-        </ul>
+        </SortableArea>
 
         <form
           className="mt-4 grid gap-2 sm:grid-cols-[1fr_180px_140px_auto]"
