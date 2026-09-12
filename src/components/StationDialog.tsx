@@ -146,8 +146,13 @@ export function StationDialog({
   const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
   const cardFound = findCardByNumber(playingCards, cardNumber);
   const card = cardMethodSelected ? cardFound : undefined;
-
-
+  const hasCardSettlement = Boolean(
+    session?.settlements?.some(
+      (settlement) =>
+        settlement.payment === CARD_PAYMENT_NAME ||
+        settlement.payments?.some((row) => row.method === CARD_PAYMENT_NAME),
+    ),
+  );
   const priceCfg = {
     consoleDiscounts,
     menu,
@@ -155,14 +160,25 @@ export function StationDialog({
     cardDiscountPercent,
     cardMemberDiscountPercent,
   };
-  const bill = session
+  const alreadyPaid = paidTotal(session);
+  const billWithoutPendingCard = session
     ? sessionBill(session, now, station.console, priceCfg, {
         member: Boolean(session.member),
-        card: Boolean(cardMethodSelected && cardFound),
+        card: hasCardSettlement,
       })
     : null;
+  const pendingCardBill = session && cardMethodSelected && cardFound && !hasCardSettlement
+    ? sessionBill(session, now, station.console, priceCfg, {
+        member: Boolean(session.member),
+        card: true,
+      })
+    : null;
+  // Pemilihan kartu hanya menjadi pratinjau potongan. Jangan biarkan potongan
+  // yang belum dibayar membuat pembayaran lama terlihat melunasi tagihan.
+  const bill = pendingCardBill && pendingCardBill.total > alreadyPaid
+    ? pendingCardBill
+    : billWithoutPendingCard;
   const sessionTotal = bill ? bill.total : 0;
-  const alreadyPaid = paidTotal(session);
   const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
   const isSettled = dueAmount <= 0;
 
