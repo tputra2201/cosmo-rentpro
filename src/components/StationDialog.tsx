@@ -31,7 +31,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { CardScanInput } from "@/components/CardScanInput";
 import {
+  CARD_PAYMENT_NAME,
+  cardDiscountPercentFor,
+  findCardByNumber,
   elapsedSeconds,
   fnbTotal,
   formatClock,
@@ -82,7 +86,12 @@ export function StationDialog({
     resumeSession,
     customers,
     updateSessionCustomer,
+    playingCards,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+    chargeCard,
   } = useBilling();
+  const [cardNumber, setCardNumber] = useState("");
   const [editCustomer, setEditCustomer] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -146,12 +155,21 @@ export function StationDialog({
   const cashReceived =
     amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
+  const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
+  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
+  const cardPercent = card
+    ? cardDiscountPercentFor(card, { cardDiscountPercent, cardMemberDiscountPercent })
+    : 0;
+  const cardDiscount = card ? Math.round((payTarget * cardPercent) / 100) : 0;
+  const cardCharge = Math.max(0, payTarget - cardDiscount);
+
   const resetPaymentForm = () => {
     setSplitMode(false);
     setSplits([]);
     setPayment("");
     setAmountPaid("");
     setPayAmount("");
+    setCardNumber("");
   };
 
   const validatePayment = () => {
@@ -174,6 +192,25 @@ export function StationDialog({
       }
       return true;
     }
+    if (isCardPayment) {
+      if (!card) {
+        toast.error("Kartu tidak ditemukan", {
+          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
+        });
+        return false;
+      }
+      if (!card.active) {
+        toast.error("Kartu ini sedang diblokir");
+        return false;
+      }
+      if (card.balance + 0.5 < cardCharge) {
+        toast.error("Saldo Playing Card tidak mencukupi", {
+          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
+        });
+        return false;
+      }
+      return true;
+    }
     if (selectedPayment === "Cash" && cashReceived < payTarget) {
       toast.error("Uang diterima masih kurang");
       return false;
@@ -182,6 +219,26 @@ export function StationDialog({
   };
 
   const handlePay = () => {
+    if (isCardPayment) {
+      if (!card) return;
+      if (!chargeCard(card.id, cardCharge, `Pembayaran ${station.name}`)) {
+        toast.error("Saldo Playing Card tidak mencukupi");
+        return;
+      }
+      settleSession(station.id, {
+        payment: CARD_PAYMENT_NAME,
+        amount: payTarget,
+        amountPaid: cardCharge,
+      });
+      const remaining = Math.max(0, dueAmount - payTarget);
+      toast.success("Pembayaran Playing Card diterima", {
+        description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
+          cardDiscount > 0 ? ` · potongan ${cardPercent}% (${formatRupiah(cardDiscount)})` : ""
+        }${remaining > 0 ? ` · Sisa tagihan ${formatRupiah(remaining)}` : ""}`,
+      });
+      resetPaymentForm();
+      return;
+    }
     if (splitMode) {
       const rows = splitRows.filter((s) => s.amount > 0);
       settleSession(station.id, {
@@ -630,6 +687,48 @@ export function StationDialog({
                   Bisa bayar sebagian di depan. Sisa {formatRupiah(Math.max(0, dueAmount - payTarget))}{" "}
                   tetap jadi tagihan berjalan.
                 </p>
+              </div>
+            )}
+
+            {!isSettled && isCardPayment && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <CardScanInput
+                  value={cardNumber}
+                  onChange={setCardNumber}
+                  label="Kartu Playing Card"
+                  id="pay-card-number"
+                />
+                {cardNumber.trim() === "" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
+                  </p>
+                ) : !card ? (
+                  <p className="text-sm font-semibold text-destructive">
+                    Kartu tidak ditemukan.
+                  </p>
+                ) : (
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {card.customerName || "Umum"} {card.member ? "· Member" : ""}
+                      </span>
+                      <span>Saldo {formatRupiah(card.balance)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Potongan {cardPercent}%</span>
+                      <span className="text-accent">-{formatRupiah(cardDiscount)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Dipotong dari saldo</span>
+                      <span>{formatRupiah(cardCharge)}</span>
+                    </div>
+                    {card.balance + 0.5 < cardCharge && (
+                      <p className="font-semibold text-destructive">
+                        Saldo kartu tidak mencukupi.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
