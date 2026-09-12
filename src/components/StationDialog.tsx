@@ -104,6 +104,18 @@ export function StationDialog({
   const session = station.session;
   const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
+  const upcomingBooking = session
+    ? undefined
+    : bookings
+        .filter(
+          (item) =>
+            item.stationId === station.id &&
+            item.status !== "cancelled" &&
+            item.status !== "completed" &&
+            item.endAt >= now &&
+            item.startAt - 6 * 60 * 60 * 1000 <= now,
+        )
+        .sort((a, b) => a.startAt - b.startAt)[0];
   const sessionTotal = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
   const alreadyPaid = paidTotal(session);
   const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
