@@ -82,7 +82,9 @@ export function applyRecords(
     promotions: [...state.promotions],
     pointEntries: [...state.pointEntries],
     history: [...state.history],
+    cafeTables: [...state.cafeTables],
   };
+
 
   for (const record of records) {
     if (record.kind === SETTINGS_KIND) {
