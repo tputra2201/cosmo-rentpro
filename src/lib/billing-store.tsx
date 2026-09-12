@@ -284,6 +284,16 @@ export function billingTotal(session: Session, now: number) {
 export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
 export const BOOKING_LEAD_MS = 2 * 60 * 60 * 1000;
+/** Toleransi check-in: paling cepat 1 jam sebelum jam booking. */
+export const CHECKIN_LEAD_MS = 60 * 60 * 1000;
+
+export function canCheckIn(booking: { startAt: number; endAt: number }, now: number) {
+  return now >= booking.startAt - CHECKIN_LEAD_MS && now <= booking.endAt;
+}
+
+export function bookingMinutes(booking: { startAt: number; endAt: number }) {
+  return Math.max(15, Math.round((booking.endAt - booking.startAt) / 60000));
+}
 
 export function activeBooking(bookings: Booking[], stationId: string, now: number) {
   return bookings
