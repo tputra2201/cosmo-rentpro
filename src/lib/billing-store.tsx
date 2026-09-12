@@ -1580,6 +1580,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             },
             ...prev.cardEntries,
           ],
+          cashEntries: (() => {
+            const row = cardTopupCashEntry(
+              prev.cashCategories,
+              value,
+              card.cardNumber,
+              stamp,
+            );
+            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+          })(),
         }));
         return true;
       },
