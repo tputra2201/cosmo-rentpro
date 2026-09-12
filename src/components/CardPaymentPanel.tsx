@@ -63,7 +63,12 @@ export function CardPaymentPanel({
       ) : !card ? (
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
           Kartu belum terdaftar!
+          <span className="mt-1 block break-all text-xs font-normal">
+            Nomor terbaca: {cardNumber.trim()} — daftarkan nomor ini di menu Playing Card, atau
+            pilih metode pembayaran lain.
+          </span>
         </p>
+
       ) : (
         <div className="space-y-2 text-sm">
           <div className="flex items-start justify-between gap-3">
