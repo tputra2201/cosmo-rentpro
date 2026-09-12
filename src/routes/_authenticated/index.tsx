@@ -110,7 +110,13 @@ function Dashboard() {
         className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
       >
         {stations.map((station) => (
-          <SortableItem key={station.id} id={station.id} handle={false} label={station.name}>
+          <SortableItem
+            key={station.id}
+            id={station.id}
+            handle={false}
+            label={station.name}
+            className="min-w-0"
+          >
             <StationCard
               station={station}
               now={now}
