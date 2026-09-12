@@ -81,7 +81,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
       GET: async ({ request }) => {
         if (!authorize(request)) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const [{ data, error }, { data: members }] = await Promise.all([
+        const [{ data, error }, { data: members }, { data: developers }] = await Promise.all([
           supabaseAdmin.from("stores").select(columns).order("created_at"),
           supabaseAdmin.from("store_members").select("store_id"),
         ]);
