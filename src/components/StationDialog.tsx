@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -355,7 +355,42 @@ export function StationDialog({
                   : formatClock(Math.max(0, remainingSeconds(session, now)))}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{session.customerName || "Pelanggan Umum"} · {session.packageName}</p>
+              {isPaused(session) && (
+                <p className="mt-1 text-sm font-semibold text-warning">Timer dijeda</p>
+              )}
+              <div className="mt-3 flex flex-col items-center gap-1">
+                {isPaused(session) ? (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      resumeSession(station.id);
+                      toast.success(`Timer ${station.name} dilanjutkan`);
+                    }}
+                  >
+                    <PlayCircle className="size-4" /> Lanjutkan Timer
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      pauseSession(station.id);
+                      toast.info(`Timer ${station.name} dijeda`, {
+                        description: "Waktu jeda tidak dihitung sebagai waktu main.",
+                      });
+                    }}
+                  >
+                    <Pause className="size-4" /> Jeda Timer
+                  </Button>
+                )}
+                {pausedMsTotal(session, now) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total jeda {formatClock(Math.floor(pausedMsTotal(session, now) / 1000))}
+                  </p>
+                )}
+              </div>
             </div>
+
 
             <div className="flex flex-wrap gap-2">
               {[15, 30, 60].map((m) => (
