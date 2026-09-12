@@ -358,7 +358,7 @@ function migrateState(raw: unknown): State {
       session: station.session
         ? {
             ...station.session,
-            customerName: station.session.customerName ?? "Pelanggan Umum",
+            customerName: station.session.customerName ?? "Umum",
             customerPhone: station.session.customerPhone ?? "",
             member: station.session.member ?? false,
             packageName: station.session.packageName ?? (station.session.mode === "open" ? "Open Time" : `${station.session.durationMin} Menit`),
@@ -581,7 +581,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           durationMin: mode === "prepaid" ? durationMin : 0,
           rate: 0,
           orders: [],
-          customerName: details?.customerName || "Pelanggan Umum",
+          customerName: details?.customerName || "Umum",
           customerPhone: details?.customerPhone || "",
           member: details?.member || false,
           packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
@@ -607,7 +607,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   durationMin: mode === "prepaid" ? durationMin : 0,
                   rate: prev.rates[s.console] ?? 0,
                   orders: [],
-                    customerName: details?.customerName || "Pelanggan Umum",
+                    customerName: details?.customerName || "Umum",
                     customerPhone: details?.customerPhone || "",
                     member: details?.member || false,
                     packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
