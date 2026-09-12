@@ -140,9 +140,13 @@ export function StationDialog({
             item.startAt - 6 * 60 * 60 * 1000 <= now,
         )
         .sort((a, b) => a.startAt - b.startAt)[0];
+  const cardMethodSelected = splitMode
+    ? splits.some((s) => (s.method || activePayments[0]?.name || "Cash") === CARD_PAYMENT_NAME)
+    : selectedPayment === CARD_PAYMENT_NAME;
   const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
   const cardFound = findCardByNumber(playingCards, cardNumber);
-  const card = isCardPayment ? cardFound : undefined;
+  const card = cardMethodSelected ? cardFound : undefined;
+
 
   const priceCfg = {
     consoleDiscounts,
@@ -154,7 +158,7 @@ export function StationDialog({
   const bill = session
     ? sessionBill(session, now, station.console, priceCfg, {
         member: Boolean(session.member),
-        card: Boolean(isCardPayment && card),
+        card: Boolean(cardMethodSelected && cardFound),
       })
     : null;
   const sessionTotal = bill ? bill.total : 0;
@@ -181,8 +185,9 @@ export function StationDialog({
         .filter((s) => s.method === CARD_PAYMENT_NAME)
         .reduce((sum, s) => sum + s.amount, 0)
     : 0;
-  const usesCard = isCardPayment || cardSplit > 0;
+  const usesCard = cardMethodSelected;
   const cardCharge = isCardPayment ? payTarget : cardSplit;
+
 
 
   const resetPaymentForm = () => {
