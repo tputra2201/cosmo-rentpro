@@ -264,11 +264,19 @@ export function StationDialog({
     }
     if (splitMode) {
       const rows = splitRows.filter((s) => s.amount > 0);
+      if (cardSplit > 0) {
+        if (!cardFound) return;
+        if (!chargeCard(cardFound.id, cardSplit, `Pembayaran ${station.name}`)) {
+          toast.error("Saldo kartu tidak mencukupi!");
+          return;
+        }
+      }
       settleSession(station.id, {
         payments: rows,
         amount: payTarget,
         amountPaid: splitPaid,
       });
+
     } else {
       settleSession(station.id, {
         payment: selectedPayment,
