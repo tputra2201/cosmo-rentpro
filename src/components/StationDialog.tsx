@@ -354,7 +354,7 @@ export function StationDialog({
                   ? formatClock(elapsedSeconds(session, now))
                   : formatClock(Math.max(0, remainingSeconds(session, now)))}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">{session.customerName || "Pelanggan Umum"} · {session.packageName}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{session.customerName || "Umum"} · {session.packageName}</p>
               {isPaused(session) && (
                 <p className="mt-1 text-sm font-semibold text-warning">Timer dijeda</p>
               )}
