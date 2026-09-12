@@ -514,15 +514,24 @@ function migrateState(raw: unknown): State {
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
-    cashCategories: (parsed.cashCategories?.length
-      ? parsed.cashCategories
-      : defaultState.cashCategories
-    ).map((item) => ({
-      ...item,
-      group: item.group?.trim() ? item.group : "Lainnya",
-      payout: Boolean(item.payout),
-      active: item.active ?? true,
-    })),
+    cashCategories: (() => {
+      const list = (parsed.cashCategories?.length
+        ? parsed.cashCategories
+        : defaultState.cashCategories
+      ).map((item) => ({
+        ...item,
+        group: item.group?.trim() ? item.group : "Lainnya",
+        payout: Boolean(item.payout),
+        active: item.active ?? true,
+      }));
+      if (!list.some((item) => item.id === CARD_TOPUP_CATEGORY_ID)) {
+        const preset = defaultState.cashCategories.find(
+          (item) => item.id === CARD_TOPUP_CATEGORY_ID,
+        );
+        if (preset) list.push(preset);
+      }
+      return list;
+    })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
 
 
