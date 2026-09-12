@@ -4,6 +4,7 @@ import type { BillingSnapshot } from "./billing-store";
 import {
   applyRecords,
   flattenSnapshot,
+  isKnownKind,
   recordKey,
   type SyncRecord,
 } from "./sync-records";
