@@ -160,6 +160,32 @@ function AuthPage() {
         )}
 
       </div>
+
+      <Dialog open={devOpen} onOpenChange={setDevOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LockKeyhole className="size-4" /> Akses Developer
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="dev-secret">Kunci Developer</Label>
+            <Input
+              id="dev-secret"
+              type="password"
+              value={devSecret}
+              onChange={(e) => setDevSecret(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void openControlCenter();
+              }}
+              placeholder="••••••••"
+            />
+          </div>
+          <Button disabled={!devSecret || devBusy} onClick={() => void openControlCenter()}>
+            <LockKeyhole className="size-4" /> Buka pusat kontrol
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
