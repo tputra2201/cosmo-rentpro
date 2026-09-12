@@ -1155,13 +1155,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         mapStation(stationId, (s) => {
           if (!s.session?.pausedAt) return s;
           const extra = Math.max(0, Date.now() - s.session.pausedAt);
+          const { pausedAt: _pausedAt, ...rest } = s.session;
           return {
             ...s,
-            session: {
-              ...s.session,
-              pausedAt: undefined,
-              pausedMs: (s.session.pausedMs ?? 0) + extra,
-            },
+            session: { ...rest, pausedMs: (s.session.pausedMs ?? 0) + extra },
           };
         }),
       addCustomer: (input) => {
