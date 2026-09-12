@@ -26,7 +26,6 @@ import { Route as AuthenticatedPenggunaRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/promo'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
-import { Route as AuthenticatedUnitRouteImport } from './routes/_authenticated/unit'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -113,11 +112,6 @@ const AuthenticatedTarifRoute = AuthenticatedTarifRouteImport.update({
   path: '/tarif',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUnitRoute = AuthenticatedUnitRouteImport.update({
-  id: '/unit',
-  path: '/unit',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const ApiPublicStoreRegistryRoute = ApiPublicStoreRegistryRouteImport.update({
   id: '/api/public/store-registry',
   path: '/api/public/store-registry',
@@ -141,7 +135,6 @@ export interface FileRoutesByFullPath {
   '/promo': typeof AuthenticatedPromoRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
-  '/unit': typeof AuthenticatedUnitRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
 export interface FileRoutesByTo {
@@ -160,7 +153,6 @@ export interface FileRoutesByTo {
   '/promo': typeof AuthenticatedPromoRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
-  '/unit': typeof AuthenticatedUnitRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -182,7 +174,6 @@ export interface FileRoutesById {
   '/_authenticated/promo': typeof AuthenticatedPromoRoute
   '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/tarif': typeof AuthenticatedTarifRoute
-  '/_authenticated/unit': typeof AuthenticatedUnitRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -205,7 +196,6 @@ export interface FileRouteTypes {
     | '/promo'
     | '/store'
     | '/tarif'
-    | '/unit'
     | '/api/public/store-registry'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -224,7 +214,6 @@ export interface FileRouteTypes {
     | '/promo'
     | '/store'
     | '/tarif'
-    | '/unit'
     | '/'
     | '/api/public/store-registry'
   id:
@@ -245,7 +234,6 @@ export interface FileRouteTypes {
     | '/_authenticated/promo'
     | '/_authenticated/store'
     | '/_authenticated/tarif'
-    | '/_authenticated/unit'
     | '/_authenticated/'
     | '/api/public/store-registry'
   fileRoutesById: FileRoutesById
@@ -379,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTarifRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/unit': {
-      id: '/_authenticated/unit'
-      path: '/unit'
-      fullPath: '/unit'
-      preLoaderRoute: typeof AuthenticatedUnitRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/api/public/store-registry': {
       id: '/api/public/store-registry'
       path: '/api/public/store-registry'
@@ -409,7 +390,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPromoRoute: typeof AuthenticatedPromoRoute
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedTarifRoute: typeof AuthenticatedTarifRoute
-  AuthenticatedUnitRoute: typeof AuthenticatedUnitRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -426,7 +406,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPromoRoute: AuthenticatedPromoRoute,
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
-  AuthenticatedUnitRoute: AuthenticatedUnitRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
