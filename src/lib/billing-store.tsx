@@ -172,6 +172,37 @@ export function cardDiscountPercentFor(
   const pct = card.member ? settings.cardMemberDiscountPercent : settings.cardDiscountPercent;
   return Math.min(100, Math.max(0, pct ?? 0));
 }
+/** Arah uang kas: masuk (penerimaan) atau keluar (pengeluaran). */
+export type CashDirection = "in" | "out";
+
+/**
+ * Kelompok/item kas buatan pengguna.
+ * `payout: true` berarti tidak dihitung sebagai pendapatan / biaya,
+ * hanya perpindahan uang (misal setoran atau pengambilan uang owner).
+ */
+export type CashCategory = {
+  id: string;
+  name: string;
+  direction: CashDirection;
+  payout: boolean;
+  group: string;
+  active: boolean;
+  sort?: number;
+};
+
+export type CashEntry = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  group: string;
+  direction: CashDirection;
+  payout: boolean;
+  amount: number;
+  payment: string;
+  note: string;
+  createdAt: number;
+};
+
 export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
@@ -225,6 +256,8 @@ type State = {
   cardPrice: number;
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
+  cashCategories: CashCategory[];
+  cashEntries: CashEntry[];
 };
 
 
@@ -294,6 +327,17 @@ const defaultState: State = {
   cardPrice: 10000,
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
+  cashCategories: [
+    { id: "cc-lain", name: "Pendapatan Lain", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
+    { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
+    { id: "cc-modal-owner", name: "Tambah Kas dari Owner", direction: "in", payout: true, group: "Kas Owner", active: true },
+    { id: "cc-listrik", name: "Pembayaran Listrik", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-gas", name: "Pembelian Gas", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-gaji", name: "Gaji Karyawan", direction: "out", payout: false, group: "Gaji", active: true },
+    { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
+  ],
+  cashEntries: [],
 };
 
 export function formatRupiah(value: number) {
@@ -467,6 +511,13 @@ function migrateState(raw: unknown): State {
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
+    cashCategories: (parsed.cashCategories ?? defaultState.cashCategories).map((item) => ({
+      ...item,
+      group: item.group?.trim() ? item.group : "Lainnya",
+      payout: Boolean(item.payout),
+      active: item.active ?? true,
+    })),
+    cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
 
 
   };
@@ -579,6 +630,26 @@ type Ctx = State & {
   removeHistory: (id: string) => void;
   clearHistory: () => void;
   resetTransactions: () => void;
+  addCashCategory: (input: {
+    name: string;
+    direction: CashDirection;
+    payout?: boolean;
+    group?: string;
+  }) => CashCategory | null;
+  updateCashCategory: (id: string, patch: Partial<Omit<CashCategory, "id">>) => void;
+  removeCashCategory: (id: string) => void;
+  addCashEntry: (input: {
+    categoryId: string;
+    amount: number;
+    payment?: string;
+    note?: string;
+    createdAt?: number;
+  }) => CashEntry | null;
+  updateCashEntry: (
+    id: string,
+    patch: { amount?: number; payment?: string; note?: string; categoryId?: string },
+  ) => void;
+  removeCashEntry: (id: string) => void;
   exportSnapshot: () => BillingSnapshot;
   replaceAll: (data: unknown) => void;
   resetAll: () => void;
@@ -1560,7 +1631,86 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeHistory: (id) =>
         update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
-      resetTransactions: () => update((prev) => ({ ...prev, history: [], pointEntries: [] })),
+      resetTransactions: () =>
+        update((prev) => ({ ...prev, history: [], pointEntries: [], cashEntries: [] })),
+      addCashCategory: (input) => {
+        const name = input.name.trim();
+        if (!name) return null;
+        const exists = state.cashCategories.some(
+          (item) =>
+            item.direction === input.direction &&
+            item.name.trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (exists) return null;
+        const row: CashCategory = {
+          id: `cash-cat-${Date.now()}`,
+          name,
+          direction: input.direction,
+          payout: Boolean(input.payout),
+          group: input.group?.trim() ? input.group.trim() : "Lainnya",
+          active: true,
+        };
+        update((prev) => ({ ...prev, cashCategories: [...prev.cashCategories, row] }));
+        return row;
+      },
+      updateCashCategory: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          cashCategories: prev.cashCategories.map((item) =>
+            item.id === id ? { ...item, ...patch } : item,
+          ),
+        })),
+      removeCashCategory: (id) =>
+        update((prev) => ({
+          ...prev,
+          cashCategories: prev.cashCategories.filter((item) => item.id !== id),
+        })),
+      addCashEntry: (input) => {
+        const category = state.cashCategories.find((item) => item.id === input.categoryId);
+        const amount = Math.max(0, Math.round(input.amount));
+        if (!category || amount <= 0) return null;
+        const row: CashEntry = {
+          id: `cash-${Date.now()}`,
+          categoryId: category.id,
+          categoryName: category.name,
+          group: category.group,
+          direction: category.direction,
+          payout: category.payout,
+          amount,
+          payment: input.payment?.trim() ? input.payment.trim() : "Cash",
+          note: input.note?.trim() ?? "",
+          createdAt: input.createdAt ?? Date.now(),
+        };
+        update((prev) => ({ ...prev, cashEntries: [row, ...prev.cashEntries] }));
+        return row;
+      },
+      updateCashEntry: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          cashEntries: prev.cashEntries.map((item) => {
+            if (item.id !== id) return item;
+            const category = patch.categoryId
+              ? prev.cashCategories.find((c) => c.id === patch.categoryId)
+              : undefined;
+            return {
+              ...item,
+              ...(patch.amount !== undefined ? { amount: Math.max(0, Math.round(patch.amount)) } : {}),
+              ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
+              ...(patch.note !== undefined ? { note: patch.note } : {}),
+              ...(category
+                ? {
+                    categoryId: category.id,
+                    categoryName: category.name,
+                    group: category.group,
+                    direction: category.direction,
+                    payout: category.payout,
+                  }
+                : {}),
+            };
+          }),
+        })),
+      removeCashEntry: (id) =>
+        update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),

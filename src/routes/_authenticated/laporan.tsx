@@ -75,14 +75,22 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
-  const { history, clearHistory } = useBilling();
+  const { history, cashEntries, clearHistory } = useBilling();
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
   const today = history.filter((h) => dayKey(h.endAt) === todayKey);
+  const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
+  const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
+    cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
+  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
+  const expense = cashSum((e) => e.direction === "out" && !e.payout);
+  const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
+  const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
 
   const sum = (arr: typeof history, key: "rentalTotal" | "fnbTotal" | "total") =>
     arr.reduce((s, h) => s + h[key], 0);
+
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
     const k = dayKey(h.endAt);
@@ -117,12 +125,72 @@ function LaporanPage() {
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
         <Stat label="Makanan & minuman" value={formatRupiah(sum(today, "fnbTotal"))} />
+        <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
+        <Stat label="Pengeluaran" value={formatRupiah(expense)} />
         <Stat
-          label="Total hari ini"
-          value={formatRupiah(sum(today, "total"))}
+          label="Total pendapatan hari ini"
+          value={formatRupiah(sum(today, "total") + otherIncome)}
+        />
+        <Stat
+          label="Sisa bersih hari ini"
+          value={formatRupiah(sum(today, "total") + otherIncome - expense)}
           highlight
         />
       </section>
+
+      {(payoutIn > 0 || payoutOut > 0) && (
+        <p className="text-sm text-muted-foreground">
+          Perpindahan uang kas hari ini (tidak dihitung pendapatan/biaya): masuk{" "}
+          {formatRupiah(payoutIn)} · keluar {formatRupiah(payoutOut)}.
+        </p>
+      )}
+
+      {cashToday.length > 0 && (
+        <section className="surface-panel overflow-x-auto p-4 sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran hari ini</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Kelompok</TableHead>
+                <TableHead>Jenis</TableHead>
+                <TableHead>Metode</TableHead>
+                <TableHead>Catatan</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cashToday.map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell>{e.categoryName}</TableCell>
+                  <TableCell>{e.group}</TableCell>
+                  <TableCell>
+                    {e.payout
+                      ? e.direction === "in"
+                        ? "Kas masuk"
+                        : "Kas keluar"
+                      : e.direction === "in"
+                        ? "Pendapatan"
+                        : "Pengeluaran"}
+                  </TableCell>
+                  <TableCell>{e.payment}</TableCell>
+                  <TableCell>{e.note || "-"}</TableCell>
+                  <TableCell
+                    className={
+                      e.direction === "in"
+                        ? "text-right font-semibold text-accent"
+                        : "text-right font-semibold text-destructive"
+                    }
+                  >
+                    {e.direction === "in" ? "+" : "-"}
+                    {formatRupiah(e.amount)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       {history.length === 0 ? (
         <p className="surface-panel p-10 text-center text-muted-foreground">
