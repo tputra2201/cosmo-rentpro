@@ -540,6 +540,26 @@ type Ctx = State & {
   removeCustomer: (id: string) => void;
   adjustPoints: (customerId: string, points: number, reason: string) => void;
   setPointsPerRupiah: (value: number) => void;
+  buyPlayingCard: (input: {
+    cardNumber: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerId?: string;
+    member?: boolean;
+    topup?: number;
+    price?: number;
+  }) => PlayingCard | null;
+  updatePlayingCard: (
+    id: string,
+    patch: Partial<Omit<PlayingCard, "id" | "createdAt" | "balance">>,
+  ) => void;
+  removePlayingCard: (id: string) => void;
+  topupCard: (id: string, amount: number, note?: string) => boolean;
+  adjustCardBalance: (id: string, amount: number, note: string) => boolean;
+  chargeCard: (id: string, amount: number, note: string) => boolean;
+  setCardPrice: (value: number) => void;
+  setCardDiscountPercent: (value: number) => void;
+  setCardMemberDiscountPercent: (value: number) => void;
   addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
   updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
   removeBooking: (id: string) => void;
