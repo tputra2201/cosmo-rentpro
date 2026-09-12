@@ -31,7 +31,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CardScanInput } from "@/components/CardScanInput";
+import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
