@@ -158,7 +158,7 @@ export function StationDialog({
   const bill = session
     ? sessionBill(session, now, station.console, priceCfg, {
         member: Boolean(session.member),
-        card: Boolean(isCardPayment && card),
+        card: Boolean(cardMethodSelected && cardFound),
       })
     : null;
   const sessionTotal = bill ? bill.total : 0;
