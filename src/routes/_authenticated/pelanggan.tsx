@@ -22,7 +22,74 @@ function PelangganPage() {
   return <div className="space-y-8"><header><h1 className="text-3xl font-bold sm:text-4xl">Pelanggan &amp; Member</h1><p className="mt-1 text-muted-foreground">Kelola profil, level, kunjungan, dan poin loyalitas.</p></header>
     <section className="grid gap-6 lg:grid-cols-[330px_1fr]"><div className="space-y-6"><form className="surface-panel space-y-4 p-5" onSubmit={(e) => { e.preventDefault(); if (!name.trim()) { toast.error("Nama pelanggan wajib diisi"); return; } addCustomer({ name: name.trim(), phone: phone.trim(), member, level }); setName(""); setPhone(""); toast.success("Pelanggan ditambahkan"); }}><h2 className="text-lg font-semibold">Pelanggan baru</h2><div className="space-y-1.5"><Label htmlFor="customer-new-name">Nama</Label><Input id="customer-new-name" value={name} onChange={(e) => setName(e.target.value)} /></div><div className="space-y-1.5"><Label htmlFor="customer-new-phone">Nomor HP</Label><Input id="customer-new-phone" value={phone} onChange={(e) => setPhone(e.target.value)} /></div><div className="flex items-center justify-between rounded-md border p-3"><Label>Member</Label><Switch checked={member} onCheckedChange={setMember}/></div><Select value={level} onValueChange={(value) => setLevel(value as CustomerLevel)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["Bronze","Silver","Gold"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><Button className="w-full" type="submit"><Plus className="size-4"/> Tambah Pelanggan</Button></form>
     <div className="surface-panel space-y-3 p-5"><h2 className="text-lg font-semibold">Aturan poin</h2><Label htmlFor="point-rule">1 poin setiap belanja</Label><Input id="point-rule" type="number" min={1} step={1000} value={pointsPerRupiah} onChange={(e) => setPointsPerRupiah(Number(e.target.value) || 1)}/><p className="text-sm text-muted-foreground">Saat ini: 1 poin / {formatRupiah(pointsPerRupiah)}</p></div></div>
-    <div className="space-y-4"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau nomor HP"/></div>{visible.length === 0 ? <div className="surface-panel p-10 text-center text-muted-foreground">Belum ada pelanggan yang cocok.</div> : <div className="grid gap-3 md:grid-cols-2">{visible.map((customer) => <article key={customer.id} className="surface-panel space-y-4 p-5"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary"><UserRound className="size-5"/></span><div className="min-w-0"><h3 className="truncate font-semibold">{customer.name}</h3><p className="text-sm text-muted-foreground">{customer.phone || "Tanpa nomor HP"}</p></div></div><Button size="icon" variant="ghost" onClick={() => removeCustomer(customer.id)} aria-label={`Hapus ${customer.name}`}><Trash2 className="size-4"/></Button></div><div className="flex flex-wrap gap-2"><Badge variant={customer.member ? "default" : "secondary"}>{customer.member ? "Member" : "Umum"}</Badge><Badge variant="outline"><Crown className="mr-1 size-3"/>{customer.level}</Badge></div><div className="grid grid-cols-3 gap-2 text-center"><MiniStat label="Poin" value={String(customer.points)}/><MiniStat label="Kunjungan" value={String(customer.visits)}/><MiniStat label="Belanja" value={formatRupiah(customer.totalSpent)}/></div><div className="flex gap-2"><Select value={customer.level} onValueChange={(value) => updateCustomer(customer.id, { level: value as CustomerLevel })}><SelectTrigger className="flex-1"><SelectValue/></SelectTrigger><SelectContent>{["Bronze","Silver","Gold"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><Button variant="outline" onClick={() => adjustPoints(customer.id, 10, "Bonus manual")}>+10 poin</Button></div><p className="text-xs text-muted-foreground">{pointEntries.filter((entry) => entry.customerId === customer.id).length} mutasi poin</p></article>)}</div>}</div></section>
+    <div className="space-y-4"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau nomor HP"/></div>{visible.length === 0 ? <div className="surface-panel p-10 text-center text-muted-foreground">Belum ada pelanggan yang cocok.</div> : <div className="grid gap-3 md:grid-cols-2">{visible.map((customer) => <CustomerCard key={customer.id} customer={customer} />)}</div>}</div></section>
   </div>;
+}
+
+function CustomerCard({ customer }: { customer: Customer }) {
+  const { updateCustomer, removeCustomer, adjustPoints, pointEntries, playingCards, history } = useBilling();
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"kunjungan" | "kartu">("kunjungan");
+  const cards = cardsOfCustomer(playingCards, customer);
+  const receipts = receiptsOfCustomer(history, customer);
+  const openWith = (value: "kunjungan" | "kartu") => { setTab(value); setOpen(true); };
+
+  return (
+    <article className="surface-panel space-y-4 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary"><UserRound className="size-5"/></span>
+          <div className="min-w-0"><h3 className="truncate font-semibold">{customer.name}</h3><p className="text-sm text-muted-foreground">{customer.phone || "Tanpa nomor HP"}</p></div>
+        </div>
+        <Button size="icon" variant="ghost" onClick={() => removeCustomer(customer.id)} aria-label={`Hapus ${customer.name}`}><Trash2 className="size-4"/></Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Badge variant={customer.member ? "default" : "secondary"}>{customer.member ? "Member" : "Umum"}</Badge>
+        <Badge variant="outline"><Crown className="mr-1 size-3"/>{customer.level}</Badge>
+      </div>
+
+      {cards.length === 0 ? (
+        <p className="rounded-md bg-secondary/60 px-3 py-2 text-sm text-muted-foreground">Belum punya Playing Card</p>
+      ) : (
+        <ul className="space-y-2">
+          {cards.map((card) => (
+            <li key={card.id}>
+              <button type="button" onClick={() => openWith("kartu")} className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-secondary/50 px-3 py-2 text-left hover:bg-secondary">
+                <span className="flex min-w-0 items-center gap-2 text-sm">
+                  <CreditCard className="size-4 shrink-0 text-muted-foreground"/>
+                  <span className="truncate font-semibold">{card.cardNumber}</span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-xs text-muted-foreground">Saldo</span>
+                  <span className="font-semibold text-accent">{formatRupiah(card.balance)}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <MiniStat label="Poin" value={String(customer.points)}/>
+        <MiniStat label="Kunjungan" value={String(receipts.length || customer.visits)}/>
+        <MiniStat label="Belanja" value={formatRupiah(customer.totalSpent)}/>
+      </div>
+
+      <div className="flex gap-2">
+        <Select value={customer.level} onValueChange={(value) => updateCustomer(customer.id, { level: value as CustomerLevel })}><SelectTrigger className="flex-1"><SelectValue/></SelectTrigger><SelectContent>{["Bronze","Silver","Gold"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
+        <Button variant="outline" onClick={() => adjustPoints(customer.id, 10, "Bonus manual")}>+10 poin</Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={() => openWith("kunjungan")}><History className="size-4"/> Riwayat &amp; nota ({receipts.length})</Button>
+        {cards.length > 0 && <Button variant="outline" onClick={() => openWith("kartu")}><CreditCard className="size-4"/> Riwayat kartu</Button>}
+      </div>
+
+      <p className="text-xs text-muted-foreground">{pointEntries.filter((entry) => entry.customerId === customer.id).length} mutasi poin</p>
+
+      {open && <CustomerDetailDialog customer={customer} open={open} onOpenChange={setOpen} initialTab={tab} />}
+    </article>
+  );
 }
 function MiniStat({ label, value }: { label: string; value: string }) { return <div className="rounded-md bg-secondary/60 p-2"><p className="truncate text-xs text-muted-foreground">{label}</p><p className="truncate font-semibold">{value}</p></div>; }
