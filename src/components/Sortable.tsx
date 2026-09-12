@@ -86,7 +86,7 @@ export function SortableItem({
         {...attributes}
         {...listeners}
         aria-label={label ? `Geser ${label}` : undefined}
-        className={`touch-none cursor-grab active:cursor-grabbing ${
+        className={`cursor-grab touch-manipulation active:cursor-grabbing ${
           isDragging ? "opacity-80 shadow-lg" : ""
         } ${className ?? ""}`}
       >
