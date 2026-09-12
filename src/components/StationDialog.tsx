@@ -787,47 +787,16 @@ export function StationDialog({
               </div>
             )}
 
-            {!isSettled && isCardPayment && (
-              <div className="space-y-2 rounded-md border border-border p-3">
-                <CardScanInput
-                  value={cardNumber}
-                  onChange={setCardNumber}
-                  label="Kartu Playing Card"
-                  id="pay-card-number"
-                />
-                {cardNumber.trim() === "" ? (
-                  <p className="text-xs text-muted-foreground">
-                    Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
-                  </p>
-                ) : !card ? (
-                  <p className="text-sm font-semibold text-destructive">
-                    Kartu tidak ditemukan.
-                  </p>
-                ) : (
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        {card.customerName || "Umum"} {card.member ? "· Member" : ""}
-                      </span>
-                      <span>Saldo {formatRupiah(card.balance)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total potongan</span>
-                      <span className="text-accent">-{formatRupiah(bill?.discount ?? 0)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold">
-                      <span>Dipotong dari saldo</span>
-                      <span>{formatRupiah(cardCharge)}</span>
-                    </div>
-                    {card.balance + 0.5 < cardCharge && (
-                      <p className="font-semibold text-destructive">
-                        Saldo kartu tidak mencukupi.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
+            {!isSettled && usesCard && (
+              <CardPaymentPanel
+                cardNumber={cardNumber}
+                onCardNumberChange={setCardNumber}
+                need={cardCharge}
+                discount={bill?.discount ?? 0}
+                inputId="pay-card-number"
+              />
             )}
+
 
             {!isSettled && !splitMode && selectedPayment === "Cash" && (
               <div className="space-y-2">
