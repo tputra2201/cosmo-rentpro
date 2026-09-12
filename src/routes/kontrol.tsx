@@ -374,8 +374,12 @@ function ControlCenter() {
         toast.error("Gagal memuat daftar store.");
         return;
       }
-      const json = (await res.json()) as { stores: StoreRow[] };
+      const json = (await res.json()) as {
+        stores: StoreRow[];
+        developers?: DeveloperRow[];
+      };
       setStores(json.stores);
+      setDevelopers(json.developers ?? []);
       setUnlocked(true);
       sessionStorage.setItem(SECRET_KEY, provided ?? key());
     } catch {
