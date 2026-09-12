@@ -163,6 +163,15 @@ export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
   if (!key) return undefined;
   return cards.find((c) => c.cardNumber.trim().toLowerCase() === key);
 }
+
+/** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
+export function cardDiscountPercentFor(
+  card: PlayingCard,
+  settings: { cardDiscountPercent: number; cardMemberDiscountPercent: number },
+) {
+  const pct = card.member ? settings.cardMemberDiscountPercent : settings.cardDiscountPercent;
+  return Math.min(100, Math.max(0, pct ?? 0));
+}
 export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
