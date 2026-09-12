@@ -45,6 +45,14 @@ const SETTINGS_KEYS = [
 
 export const recordKey = (kind: string, entityId: string) => `${kind}:${entityId}`;
 
+/**
+ * Hanya jenis data yang dikenal versi aplikasi ini boleh dihapus dari pusat.
+ * Tanpa ini, aplikasi versi lama akan menghapus data jenis baru
+ * (misal item kas) hanya karena ia belum mengenalnya.
+ */
+export const isKnownKind = (kind: string) =>
+  kind === SETTINGS_KIND || kind in LIST_KINDS;
+
 type AnyRow = { id: string } & Record<string, unknown>;
 
 /** Pecah state menjadi baris-baris kecil agar bisa disinkronkan per entitas. */
