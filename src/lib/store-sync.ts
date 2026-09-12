@@ -77,6 +77,9 @@ export function useStoreSync(options: {
   const outboxRef = useRef<Outbox>({});
   const busyRef = useRef(false);
   const loadedRef = useRef(false);
+  const stateRef = useRef(state);
+
+  stateRef.current = state;
 
   // Muat antrean & bayangan dari perangkat.
   useEffect(() => {
@@ -133,41 +136,43 @@ export function useStoreSync(options: {
     };
   }, [enabled]);
 
-  // Catat setiap perubahan lokal ke antrean kirim.
-  useEffect(() => {
-    if (!hydrated || !loadedRef.current) return;
-    const timer = setTimeout(() => {
-      const current = flattenSnapshot(state);
-      const shadow = shadowRef.current;
-      const outbox = outboxRef.current;
-      let changed = false;
+  const queueLocalChanges = useCallback((snapshot: BillingSnapshot) => {
+    const current = flattenSnapshot(snapshot);
+    const shadow = shadowRef.current;
+    const outbox = outboxRef.current;
+    let changed = false;
 
-      for (const [key, record] of current) {
-        const json = stableStringify(record.payload);
-        if (shadow[key] !== json) {
-          outbox[key] = record;
-          changed = true;
-        }
-      }
-      for (const key of Object.keys(shadow)) {
-        if (current.has(key)) continue;
-        const [kind, ...rest] = key.split(":");
-        outbox[key] = {
-          kind: kind ?? "",
-          entity_id: rest.join(":"),
-          payload: {},
-          deleted: true,
-        };
+    for (const [key, record] of current) {
+      const json = stableStringify(record.payload);
+      if (shadow[key] !== json) {
+        outbox[key] = record;
         changed = true;
       }
+    }
+    for (const key of Object.keys(shadow)) {
+      if (current.has(key)) continue;
+      const [kind, ...rest] = key.split(":");
+      outbox[key] = {
+        kind: kind ?? "",
+        entity_id: rest.join(":"),
+        payload: {},
+        deleted: true,
+      };
+      changed = true;
+    }
 
-      if (changed) {
-        writeJson(OUTBOX_KEY, outbox);
-        setPending(Object.keys(outbox).length);
-      }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [state, hydrated]);
+    if (changed) {
+      writeJson(OUTBOX_KEY, outbox);
+      setPending(Object.keys(outbox).length);
+    }
+  }, []);
+
+  // Catat perubahan lokal langsung. Jangan beri kesempatan tarikan berkala
+  // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
+  useEffect(() => {
+    if (!hydrated || !loadedRef.current || !storeId) return;
+    queueLocalChanges(state);
+  }, [state, hydrated, storeId, queueLocalChanges]);
 
   const noteShadow = useCallback((records: SyncRecord[]) => {
     for (const record of records) {
@@ -183,12 +188,21 @@ export function useStoreSync(options: {
     busyRef.current = true;
     setSyncing(true);
     try {
+      // Tangkap perubahan terbaru sekali lagi tepat sebelum kirim. Ini menutup
+      // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
+      queueLocalChanges(stateRef.current);
+
       // 1. Kirim perubahan lokal.
       const outbox = outboxRef.current;
       const keys = Object.keys(outbox);
       if (keys.length) {
-        const rows = keys.map((key) => {
-          const record = outbox[key]!;
+        const sentByKey = new Map(
+          keys.flatMap((key) => {
+            const record = outbox[key];
+            return record ? [[key, record] as const] : [];
+          }),
+        );
+        const rows = Array.from(sentByKey.values()).map((record) => {
           return {
             store_id: storeId,
             kind: record.kind,
@@ -202,8 +216,13 @@ export function useStoreSync(options: {
           .from("store_data")
           .upsert(rows as never, { onConflict: "store_id,kind,entity_id" });
         if (pushError) throw new Error(pushError.message);
-        const sent = keys.map((key) => outbox[key]!);
-        for (const key of keys) delete outbox[key];
+        const sent = Array.from(sentByKey.values());
+        for (const [key, sentRecord] of sentByKey) {
+          const currentRecord = outbox[key];
+          if (currentRecord && stableStringify(currentRecord) === stableStringify(sentRecord)) {
+            delete outbox[key];
+          }
+        }
         writeJson(OUTBOX_KEY, outbox);
         setPending(Object.keys(outbox).length);
         noteShadow(sent);
@@ -249,7 +268,7 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, applyRemote, noteShadow]);
+  }, [storeId, applyRemote, noteShadow, queueLocalChanges]);
 
   // Segera kirim begitu ada perubahan yang menunggu.
   useEffect(() => {
@@ -267,11 +286,13 @@ export function useStoreSync(options: {
       if (document.visibilityState === "visible") void sync();
     };
     document.addEventListener("visibilitychange", wake);
-    window.addEventListener("online", () => void sync());
+    const reconnect = () => void sync();
+    window.addEventListener("online", reconnect);
     window.addEventListener("focus", wake);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("online", reconnect);
       window.removeEventListener("focus", wake);
     };
   }, [storeId, enabled, sync]);
