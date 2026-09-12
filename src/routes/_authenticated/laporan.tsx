@@ -15,13 +15,13 @@ import { formatRupiah, useBilling } from "@/lib/billing-store";
 export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
     meta: [
-      { title: "Riwayat & Laporan — Billing Rental PS" },
+      { title: "Riwayat & Laporan — RentalPro" },
       {
         name: "description",
         content:
           "Rekap pendapatan harian rental PlayStation dan penjualan makanan minuman beserta riwayat transaksi.",
       },
-      { property: "og:title", content: "Riwayat & Laporan — Billing Rental PS" },
+      { property: "og:title", content: "Riwayat & Laporan — RentalPro" },
       {
         property: "og:description",
         content: "Rekap pendapatan harian rental dan penjualan kasir.",

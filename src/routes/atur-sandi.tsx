@@ -11,13 +11,13 @@ export const Route = createFileRoute("/atur-sandi")({
   
   head: () => ({
     meta: [
-      { title: "Buat Kata Sandi — Billing Rental PS" },
+      { title: "Buat Kata Sandi — RentalPro" },
       {
         name: "description",
         content:
           "Buat kata sandi sendiri lewat tautan undangan dari Admin untuk mulai memakai aplikasi billing rental PlayStation.",
       },
-      { property: "og:title", content: "Buat Kata Sandi — Billing Rental PS" },
+      { property: "og:title", content: "Buat Kata Sandi — RentalPro" },
       {
         property: "og:description",
         content: "Halaman pembuatan kata sandi bagi staf yang diundang Admin.",

@@ -18,7 +18,7 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 export const Route = createFileRoute("/_authenticated/kafe")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Meja Kafe — Billing Rental PS" },
+      { title: "Pengaturan Meja Kafe — RentalPro" },
       {
         name: "description",
         content:

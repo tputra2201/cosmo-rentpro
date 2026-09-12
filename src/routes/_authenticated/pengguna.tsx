@@ -31,13 +31,13 @@ import {
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Pengguna — Billing Rental PS" },
+      { title: "Pengaturan Pengguna — RentalPro" },
       {
         name: "description",
         content:
           "Admin mendaftarkan staf, mengatur level Admin atau Kasir, dan mengganti kata sandi pengguna.",
       },
-      { property: "og:title", content: "Pengaturan Pengguna — Billing Rental PS" },
+      { property: "og:title", content: "Pengaturan Pengguna — RentalPro" },
       {
         property: "og:description",
         content: "Kelola akun staf rental PlayStation: tambah, atur level, dan reset sandi.",
