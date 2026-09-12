@@ -86,7 +86,13 @@ export function StationCard({
             status === "offline" && "text-muted-foreground",
           )}
         >
-          {statusLabel[status]}
+          {session && isPaused(session) ? (
+            <span className="flex items-center gap-1 text-warning">
+              <Pause className="size-3" /> Dijeda
+            </span>
+          ) : (
+            statusLabel[status]
+          )}
         </Badge>
         </div>
       </div>
