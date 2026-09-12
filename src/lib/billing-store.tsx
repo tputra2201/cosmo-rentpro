@@ -283,9 +283,30 @@ export function billingTotal(session: Session, now: number) {
 
 export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
-export function stationStatus(station: Station, now: number): StationStatus {
+export const BOOKING_LEAD_MS = 2 * 60 * 60 * 1000;
+
+export function activeBooking(bookings: Booking[], stationId: string, now: number) {
+  return bookings
+    .filter(
+      (item) =>
+        item.stationId === stationId &&
+        item.status !== "cancelled" &&
+        item.status !== "completed" &&
+        item.endAt >= now &&
+        item.startAt - BOOKING_LEAD_MS <= now,
+    )
+    .sort((a, b) => a.startAt - b.startAt)[0];
+}
+
+export function stationStatus(
+  station: Station,
+  now: number,
+  bookings: Booking[] = [],
+): StationStatus {
   if (!station.session && station.availability !== "available") return station.availability;
-  if (!station.session) return "idle";
+  if (!station.session) {
+    return activeBooking(bookings, station.id, now) ? "booked" : "idle";
+  }
   if (station.session.mode === "open") return "playing";
   return remainingSeconds(station.session, now) <= 0 ? "timeup" : "playing";
 }

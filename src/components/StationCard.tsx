@@ -10,6 +10,8 @@ import {
   fnbTotal,
   paidTotal,
   stationStatus,
+  activeBooking,
+  useBilling,
   type Station,
 } from "@/lib/billing-store";
 
@@ -31,7 +33,9 @@ export function StationCard({
   now: number;
   onClick: () => void;
 }) {
-  const status = stationStatus(station, now);
+  const { bookings } = useBilling();
+  const status = stationStatus(station, now, bookings);
+  const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
   const session = station.session;
   const total = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
   const paid = paidTotal(session);
@@ -81,7 +85,21 @@ export function StationCard({
 
       <div className="mt-3">
         {!session ? (
-          <p className="timer-digits text-2xl text-muted-foreground">--:--:--</p>
+          booking ? (
+            <div>
+              <p className="timer-digits text-2xl text-primary">
+                {new Date(booking.startAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                {booking.customerName}
+              </p>
+            </div>
+          ) : (
+            <p className="timer-digits text-2xl text-muted-foreground">--:--:--</p>
+          )
         ) : session.mode === "open" ? (
           <div>
             <p className="timer-digits text-2xl text-accent">
