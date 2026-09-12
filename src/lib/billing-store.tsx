@@ -1545,6 +1545,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       addPromotion: (input) => update((prev) => ({ ...prev, promotions: [{ ...input, id: `promo-${Date.now()}` }, ...prev.promotions] })),
       updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
       removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
+      updateHistoryPayment: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          history: prev.history.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
+                  payments: patch.payments && patch.payments.length > 0 ? patch.payments : undefined,
+                }
+              : item,
+          ),
+        })),
+      removeHistory: (id) =>
+        update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
       clearHistory: () => update((prev) => ({ ...prev, history: [] })),
       resetTransactions: () => update((prev) => ({ ...prev, history: [], pointEntries: [] })),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
