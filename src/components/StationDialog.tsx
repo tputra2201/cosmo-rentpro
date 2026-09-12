@@ -141,7 +141,9 @@ export function StationDialog({
         )
         .sort((a, b) => a.startAt - b.startAt)[0];
   const isCardPayment = !splitMode && selectedPayment === CARD_PAYMENT_NAME;
-  const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
+  const cardFound = findCardByNumber(playingCards, cardNumber);
+  const card = isCardPayment ? cardFound : undefined;
+
   const priceCfg = {
     consoleDiscounts,
     menu,
