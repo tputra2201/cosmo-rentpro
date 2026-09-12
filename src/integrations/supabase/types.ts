@@ -214,6 +214,7 @@ export type Database = {
           dev_contact: string
           expires_at: string
           id: string
+          logo_url: string
           note: string
           owner_name: string
           phone: string
@@ -231,6 +232,7 @@ export type Database = {
           dev_contact?: string
           expires_at?: string
           id?: string
+          logo_url?: string
           note?: string
           owner_name?: string
           phone?: string
@@ -248,6 +250,7 @@ export type Database = {
           dev_contact?: string
           expires_at?: string
           id?: string
+          logo_url?: string
           note?: string
           owner_name?: string
           phone?: string

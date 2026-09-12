@@ -17,6 +17,7 @@ const storeFields = {
   app_version: z.string().max(40).optional(),
   dev_contact: z.string().max(40).optional(),
   note: z.string().max(500).optional(),
+  logo_url: z.string().max(400000).optional(),
   active: z.boolean().optional(),
   expires_at: z.string().datetime({ offset: true }).optional(),
 };
@@ -56,7 +57,7 @@ function authorize(request: Request) {
 }
 
 const columns =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url";
 
 export const Route = createFileRoute("/api/public/store-registry")({
   server: {

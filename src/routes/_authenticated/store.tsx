@@ -1,8 +1,154 @@
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Store } from "lucide-react";
+import { Store, ImageUp } from "lucide-react";
+import { toast } from "sonner";
 import { useStoreInfo } from "@/lib/store-info";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+/** Perkecil gambar agar ringan dan tetap tajam sebagai logo. */
+async function toLogoDataUrl(file: File, max = 256) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Tidak bisa memproses gambar");
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  return canvas.toDataURL("image/png");
+}
+
+function LogoSection({
+  storeId,
+  logoUrl,
+}: {
+  storeId: string | undefined;
+  logoUrl: string;
+}) {
+  const [secret, setSecret] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const save = async (logo: string) => {
+    if (!storeId) return;
+    if (!secret.trim()) {
+      toast.error("Masukkan Kunci Developer terlebih dahulu.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/public/store-registry", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-control-secret": secret.trim(),
+        },
+        body: JSON.stringify({ action: "update", id: storeId, logo_url: logo }),
+      });
+      if (!res.ok) {
+        toast.error(
+          res.status === 401
+            ? "Kunci Developer salah."
+            : "Gagal menyimpan logo. Coba lagi.",
+        );
+        return;
+      }
+      setPreview(logo);
+      toast.success(logo ? "Logo store tersimpan." : "Logo store dihapus.");
+    } catch {
+      toast.error("Tidak ada koneksi ke server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran gambar maksimal 5 MB.");
+      return;
+    }
+    try {
+      const data = await toLogoDataUrl(file);
+      await save(data);
+    } catch {
+      toast.error("Gambar tidak bisa dibaca.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const current = preview ?? logoUrl;
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <ImageUp className="size-5" /> Logo Store
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Logo tampil di samping nama store pada bagian atas aplikasi. Hanya
+          Developer yang bisa mengubahnya dengan memasukkan Kunci Developer.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        {current ? (
+          <img
+            src={current}
+            alt="Logo store"
+            className="size-16 rounded-xl border border-border object-contain"
+          />
+        ) : (
+          <div className="grid size-16 place-items-center rounded-xl border border-dashed border-border text-xs text-muted-foreground">
+            Kosong
+          </div>
+        )}
+        <div className="grid flex-1 gap-2 sm:max-w-xs">
+          <Label htmlFor="control-secret">Kunci Developer</Label>
+          <Input
+            id="control-secret"
+            type="password"
+            value={secret}
+            autoComplete="off"
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="Kunci Developer"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void pick(e.target.files?.[0])}
+        />
+        <Button
+          disabled={busy || !storeId}
+          onClick={() => fileRef.current?.click()}
+        >
+          {busy ? "Menyimpan…" : "Unggah Logo"}
+        </Button>
+        {current && (
+          <Button
+            variant="outline"
+            disabled={busy || !storeId}
+            onClick={() => void save("")}
+          >
+            Hapus Logo
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/store")({
   head: () => ({
@@ -122,6 +268,8 @@ function StorePage() {
           Perpanjangan dilakukan oleh Developer.
         </p>
       </div>
+
+      <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
 
       <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
         {loading && (
