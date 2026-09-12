@@ -289,6 +289,7 @@ function AppShell() {
           {session && !isAuthPage && (
             <>
               <div className="flex items-center gap-2">
+                <DeveloperStoreSwitcher enabled={Boolean(session)} />
                 <span
                   title={
                     sync.online
