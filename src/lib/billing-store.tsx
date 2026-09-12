@@ -438,7 +438,12 @@ function migrateState(raw: unknown): State {
       openedAt: table.openedAt ?? null,
       orders: table.orders ?? [],
     })),
-    paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
+    paymentMethods: (() => {
+      const list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      return list.some((p) => p.name === CARD_PAYMENT_NAME)
+        ? list
+        : [...list, { id: "pm-card", name: CARD_PAYMENT_NAME, active: true }];
+    })(),
     packages: parsed.packages ?? defaultState.packages,
     roundingRule: parsed.roundingRule ?? defaultState.roundingRule,
     defaultBonusMin: parsed.defaultBonusMin ?? defaultState.defaultBonusMin,
@@ -447,6 +452,13 @@ function migrateState(raw: unknown): State {
     promotions: parsed.promotions ?? defaultState.promotions,
     pointEntries: parsed.pointEntries ?? defaultState.pointEntries,
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
+    playingCards: parsed.playingCards ?? defaultState.playingCards,
+    cardEntries: parsed.cardEntries ?? defaultState.cardEntries,
+    cardPrice: parsed.cardPrice ?? defaultState.cardPrice,
+    cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
+    cardMemberDiscountPercent:
+      parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
+
 
   };
 }
