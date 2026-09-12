@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -30,7 +31,10 @@ export function SortableArea({
   children: ReactNode;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Mouse: perlu geser cukup jauh dulu supaya klik tetap enak.
+    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
+    // Sentuh: harus ditahan dulu, jadi swipe naik-turun tetap menggulir halaman.
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -82,7 +86,7 @@ export function SortableItem({
         {...attributes}
         {...listeners}
         aria-label={label ? `Geser ${label}` : undefined}
-        className={`touch-none cursor-grab active:cursor-grabbing ${
+        className={`cursor-grab touch-manipulation active:cursor-grabbing ${
           isDragging ? "opacity-80 shadow-lg" : ""
         } ${className ?? ""}`}
       >
