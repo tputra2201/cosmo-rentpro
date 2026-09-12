@@ -150,6 +150,7 @@ function LaporanPage() {
                   <TableHead className="text-right">Rental</TableHead>
                   <TableHead className="text-right">F&amp;B</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Nota</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,12 +180,25 @@ function LaporanPage() {
                     <TableCell className="text-right font-semibold">
                       {formatRupiah(h.total)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => setOpenId(h.id)}>
+                        <Receipt className="size-4" /> Buka
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </section>
         ))
+      )}
+
+      {selected && (
+        <ReceiptDialog
+          record={selected}
+          open={Boolean(openId)}
+          onOpenChange={(value) => setOpenId(value ? openId : null)}
+        />
       )}
     </div>
   );
