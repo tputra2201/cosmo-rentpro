@@ -212,9 +212,11 @@ export function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack?
     <div className="space-y-3 rounded-lg border border-border p-4 text-sm">
       <div className="flex items-center justify-between gap-2">
         <p className="font-display text-lg font-semibold">Nota transaksi</p>
-        <Button size="sm" variant="outline" onClick={onBack}>
-          Kembali
-        </Button>
+        {onBack && (
+          <Button size="sm" variant="outline" onClick={onBack}>
+            Kembali
+          </Button>
+        )}
       </div>
       <p className="text-xs text-muted-foreground">No. {record.id}</p>
 
