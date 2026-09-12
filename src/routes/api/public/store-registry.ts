@@ -38,6 +38,16 @@ const bodySchema = z.discriminatedUnion("action", [
     login_note: z.string().max(1000).optional(),
   }),
   z.object({
+    action: z.literal("developer-account"),
+    email: z.string().email(),
+    full_name: z.string().max(200).default("Developer"),
+    redirect_to: z.string().url(),
+  }),
+  z.object({
+    action: z.literal("developer-remove"),
+    user_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("assign"),
     id: z.string().uuid(),
     email: z.string().email(),
