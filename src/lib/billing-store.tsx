@@ -17,6 +17,7 @@ export type RoundingRule = "minute" | "30-minutes" | "hour";
 
 export type OrderItem = {
   id: string;
+  menuId?: string;
   name: string;
   price: number;
   qty: number;
