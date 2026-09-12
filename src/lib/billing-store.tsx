@@ -1191,6 +1191,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         mapStation(stationId, (s) =>
           s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
         ),
+      updateSessionCustomer: (stationId, patch) =>
+        mapStation(stationId, (s) =>
+          s.session ? { ...s, session: { ...s.session, ...patch } } : s,
+        ),
       pauseSession: (stationId) =>
         mapStation(stationId, (s) =>
           s.session && !s.session.pausedAt
