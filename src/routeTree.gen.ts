@@ -19,6 +19,7 @@ import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedBookingRouteImport } from './routes/_authenticated/booking'
 import { Route as AuthenticatedKafeRouteImport } from './routes/_authenticated/kafe'
 import { Route as AuthenticatedKartuRouteImport } from './routes/_authenticated/kartu'
+import { Route as AuthenticatedKasRouteImport } from './routes/_authenticated/kas'
 import { Route as AuthenticatedKasirRouteImport } from './routes/_authenticated/kasir'
 import { Route as AuthenticatedLaporanRouteImport } from './routes/_authenticated/laporan'
 import { Route as AuthenticatedPelangganRouteImport } from './routes/_authenticated/pelanggan'
@@ -78,6 +79,11 @@ const AuthenticatedKartuRoute = AuthenticatedKartuRouteImport.update({
   path: '/kartu',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedKasRoute = AuthenticatedKasRouteImport.update({
+  id: '/kas',
+  path: '/kas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedKasirRoute = AuthenticatedKasirRouteImport.update({
   id: '/kasir',
   path: '/kasir',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/booking': typeof AuthenticatedBookingRoute
   '/kafe': typeof AuthenticatedKafeRoute
   '/kartu': typeof AuthenticatedKartuRoute
+  '/kas': typeof AuthenticatedKasRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/booking': typeof AuthenticatedBookingRoute
   '/kafe': typeof AuthenticatedKafeRoute
   '/kartu': typeof AuthenticatedKartuRoute
+  '/kas': typeof AuthenticatedKasRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
   '/_authenticated/kafe': typeof AuthenticatedKafeRoute
   '/_authenticated/kartu': typeof AuthenticatedKartuRoute
+  '/_authenticated/kas': typeof AuthenticatedKasRoute
   '/_authenticated/kasir': typeof AuthenticatedKasirRoute
   '/_authenticated/laporan': typeof AuthenticatedLaporanRoute
   '/_authenticated/pelanggan': typeof AuthenticatedPelangganRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/booking'
     | '/kafe'
     | '/kartu'
+    | '/kas'
     | '/kasir'
     | '/laporan'
     | '/pelanggan'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/booking'
     | '/kafe'
     | '/kartu'
+    | '/kas'
     | '/kasir'
     | '/laporan'
     | '/pelanggan'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/booking'
     | '/_authenticated/kafe'
     | '/_authenticated/kartu'
+    | '/_authenticated/kas'
     | '/_authenticated/kasir'
     | '/_authenticated/laporan'
     | '/_authenticated/pelanggan'
@@ -330,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKartuRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/kas': {
+      id: '/_authenticated/kas'
+      path: '/kas'
+      fullPath: '/kas'
+      preLoaderRoute: typeof AuthenticatedKasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/kasir': {
       id: '/_authenticated/kasir'
       path: '/kasir'
@@ -402,6 +421,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBookingRoute: typeof AuthenticatedBookingRoute
   AuthenticatedKafeRoute: typeof AuthenticatedKafeRoute
   AuthenticatedKartuRoute: typeof AuthenticatedKartuRoute
+  AuthenticatedKasRoute: typeof AuthenticatedKasRoute
   AuthenticatedKasirRoute: typeof AuthenticatedKasirRoute
   AuthenticatedLaporanRoute: typeof AuthenticatedLaporanRoute
   AuthenticatedPelangganRoute: typeof AuthenticatedPelangganRoute
@@ -419,6 +439,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBookingRoute: AuthenticatedBookingRoute,
   AuthenticatedKafeRoute: AuthenticatedKafeRoute,
   AuthenticatedKartuRoute: AuthenticatedKartuRoute,
+  AuthenticatedKasRoute: AuthenticatedKasRoute,
   AuthenticatedKasirRoute: AuthenticatedKasirRoute,
   AuthenticatedLaporanRoute: AuthenticatedLaporanRoute,
   AuthenticatedPelangganRoute: AuthenticatedPelangganRoute,
