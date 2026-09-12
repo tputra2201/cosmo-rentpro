@@ -595,6 +595,68 @@ export function billingTotal(session: Session, now: number) {
   return rentalTotal(session, now) + fnbTotal(session) - discountTotal(session, now);
 }
 
+export type PriceConfig = {
+  consoleDiscounts: Record<string, ItemDiscount>;
+  menu: MenuItem[];
+  promotions: Promotion[];
+  cardDiscountPercent: number;
+  cardMemberDiscountPercent: number;
+};
+
+function fallbackCardPercent(cfg: PriceConfig, ctx: DiscountContext) {
+  if (!ctx.card) return 0;
+  return ctx.member ? cfg.cardMemberDiscountPercent : cfg.cardDiscountPercent;
+}
+
+/** Tagihan satu sesi rental lengkap dengan semua potongan. */
+export function sessionBill(
+  session: Session,
+  now: number,
+  consoleType: ConsoleType,
+  cfg: PriceConfig,
+  ctx: DiscountContext,
+  manual?: { type: DiscountType; value: number },
+): BillBreakdown {
+  const minutes = rentalMinutes(session, now);
+  const fallbackManual =
+    session.discountType && session.discountValue
+      ? { type: session.discountType, value: session.discountValue, max: session.discountMax }
+      : undefined;
+  return computeBill({
+    rental: rentalTotal(session, now),
+    rentalHours: minutes / 60,
+    ...(cfg.consoleDiscounts[consoleType] ? { rentalDiscount: cfg.consoleDiscounts[consoleType] } : {}),
+    orders: session.orders,
+    menu: cfg.menu,
+    ctx,
+    promotions: cfg.promotions,
+    now,
+    fallbackPercent: fallbackCardPercent(cfg, ctx),
+    ...(manual && manual.value ? { manual } : fallbackManual ? { manual: fallbackManual } : {}),
+  });
+}
+
+/** Tagihan satu meja kafe lengkap dengan semua potongan. */
+export function cafeBill(
+  orders: OrderItem[],
+  now: number,
+  cfg: PriceConfig,
+  ctx: DiscountContext,
+  manual?: { type: DiscountType; value: number },
+): BillBreakdown {
+  return computeBill({
+    rental: 0,
+    rentalHours: 0,
+    orders,
+    menu: cfg.menu,
+    ctx,
+    promotions: cfg.promotions,
+    now,
+    fallbackPercent: fallbackCardPercent(cfg, ctx),
+    ...(manual && manual.value ? { manual } : {}),
+  });
+}
+
 export type StationStatus = "idle" | "booked" | "playing" | "timeup" | "maintenance" | "offline";
 
 export const BOOKING_LEAD_MS = 2 * 60 * 60 * 1000;
@@ -757,6 +819,11 @@ type Ctx = State & {
   addConsoleType: (name: string, rate: number) => boolean;
   renameConsoleType: (oldName: string, newName: string) => boolean;
   setConsoleRate: (name: string, rate: number) => void;
+  setConsoleDiscount: (name: string, patch: Partial<ItemDiscount>) => void;
+  setSessionDiscount: (
+    stationId: string,
+    patch: { type?: DiscountType; value?: number },
+  ) => void;
   removeConsoleType: (name: string) => boolean;
   updateStation: (stationId: string, patch: Partial<Omit<Station, "id" | "session">>) => void;
   addStation: (init?: {
@@ -787,7 +854,13 @@ type Ctx = State & {
   clearCafeTable: (tableId: string) => void;
   payCafeTable: (
     tableId: string,
-    input: { payment?: string; payments?: PaymentSplit[]; amountPaid?: number },
+    input: {
+      payment?: string;
+      payments?: PaymentSplit[];
+      amountPaid?: number;
+      member?: boolean;
+      discount?: { type: DiscountType; value: number };
+    },
   ) => HistoryRecord | null;
 
   addPaymentMethod: (name: string) => void;
@@ -1003,10 +1076,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!station?.session) return prev;
         const endAt = Date.now();
         const session = station.session;
-        const rental = rentalTotal(session, endAt);
-        const fnb = fnbTotal(session);
-        const discount = discountTotal(session, endAt);
-        const total = rental + fnb - discount;
+        const methodsUsed = [
+          ...(session.settlements ?? []).flatMap((s) =>
+            s.payments?.length ? s.payments.map((p) => p.method) : [s.payment],
+          ),
+          ...(payments?.length ? payments.map((p) => p.method) : [payment ?? ""]),
+        ];
+        const usesCard = methodsUsed.some((m) => m === CARD_PAYMENT_NAME);
+        const bill = sessionBill(session, endAt, station.console, prev, {
+          member: Boolean(session.member),
+          card: usesCard,
+        });
+        const rental = bill.rental;
+        const fnb = bill.fnb;
+        const discount = bill.discount;
+        const total = bill.total;
 
         const prior = session.settlements ?? [];
         const priorPaid = prior.reduce((sum, s) => sum + s.amount, 0);
@@ -1069,7 +1153,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           change: totalChange,
           orders: session.orders,
           ...(session.customerId ? { customerId: session.customerId } : {}),
-          ...(session.promoName ? { promoName: session.promoName } : {}),
+          ...(session.promoName || bill.promoName
+            ? { promoName: session.promoName || bill.promoName }
+            : {}),
           discount,
           pointsEarned,
         };
@@ -1185,6 +1271,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   ...s.session.orders,
                   {
                     id: `${item.id}-${Date.now()}`,
+                    menuId: item.id,
                     name: item.name,
                     price: item.price,
                     qty,
@@ -1234,6 +1321,33 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       addOrder,
       removeOrder,
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
+      setConsoleDiscount: (name, patch) =>
+        update((prev) => ({
+          ...prev,
+          consoleDiscounts: {
+            ...prev.consoleDiscounts,
+            [name]: {
+              ...emptyItemDiscount,
+              ...prev.consoleDiscounts[name],
+              ...patch,
+            },
+          },
+        })),
+      setSessionDiscount: (stationId, patch) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  ...(patch.type ? { discountType: patch.type } : {}),
+                  ...(patch.value !== undefined
+                    ? { discountValue: Math.max(0, Math.round(patch.value)) }
+                    : {}),
+                },
+              }
+            : s,
+        ),
       setStationConsole: (stationId, consoleType) =>
         mapStation(stationId, (s) => ({ ...s, console: consoleType })),
       addConsoleType: (name, rate) => {
@@ -1442,7 +1556,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   openedAt: t.openedAt ?? Date.now(),
                   orders: [
                     ...t.orders,
-                    { id: `${item.id}-${Date.now()}`, name: item.name, price: item.price, qty },
+                    { id: `${item.id}-${Date.now()}`, menuId: item.id, name: item.name, price: item.price, qty },
                   ],
                 }
               : t,
@@ -1468,7 +1582,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const table = prev.cafeTables.find((t) => t.id === tableId);
           if (!table || table.orders.length === 0) return prev;
           const endAt = Date.now();
-          const total = table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
+          const methodsUsed = input.payments?.length
+            ? input.payments.map((p) => p.method)
+            : [input.payment ?? ""];
+          const bill = cafeBill(
+            table.orders,
+            endAt,
+            prev,
+            { member: Boolean(input.member), card: methodsUsed.includes(CARD_PAYMENT_NAME) },
+            input.discount,
+          );
+          const total = bill.total;
           const splits = input.payments?.length ? input.payments : [];
           const received = splits.length
             ? splits.reduce((sum, p) => sum + p.amount, 0)
@@ -1486,8 +1610,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             endAt,
             minutes: 0,
             rentalTotal: 0,
-            fnbTotal: total,
+            fnbTotal: bill.fnb,
             total,
+            discount: bill.discount,
+            ...(bill.promoName ? { promoName: bill.promoName } : {}),
             payment: label,
             ...(splits.length > 1 ? { payments: splits } : {}),
             customerName: table.customerName || "Pelanggan Kafe",
