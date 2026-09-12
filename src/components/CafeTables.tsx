@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CardScanInput } from "@/components/CardScanInput";
+import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import {
   CARD_PAYMENT_NAME,
   cafeBill,
