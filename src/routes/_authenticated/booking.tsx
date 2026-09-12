@@ -88,6 +88,7 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
   const minutes = bookingMinutes(item);
   const ready = canCheckIn(item, now);
   const opensAt = new Date(item.startAt - CHECKIN_LEAD_MS).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  const readOnly = locked || item.status === "checked-in";
 
   const checkIn = () => {
     if (!ready) { toast.error(`Check-in baru bisa dilakukan mulai ${opensAt} (1 jam sebelum jadwal)`); return; }
