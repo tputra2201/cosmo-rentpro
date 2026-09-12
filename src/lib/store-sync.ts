@@ -173,9 +173,9 @@ export function useStoreSync(options: {
   // Catat perubahan lokal langsung. Jangan beri kesempatan tarikan berkala
   // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
   useEffect(() => {
-    if (!hydrated || !loadedRef.current || !storeId) return;
+    if (!hydrated || !loadedRef.current || !storeId || readyStoreId !== storeId) return;
     queueLocalChanges(state);
-  }, [state, hydrated, storeId, queueLocalChanges]);
+  }, [state, hydrated, storeId, readyStoreId, queueLocalChanges]);
 
   const noteShadow = useCallback((records: SyncRecord[]) => {
     for (const record of records) {
