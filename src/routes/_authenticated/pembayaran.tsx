@@ -10,7 +10,7 @@ import { formatRupiah, useBilling } from "@/lib/billing-store";
 export const Route = createFileRoute("/_authenticated/pembayaran")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Pembayaran — Billing Rental PS" },
+      { title: "Pengaturan Pembayaran — RentalPro" },
       {
         name: "description",
         content:
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/pembayaran")({
       },
       {
         property: "og:title",
-        content: "Pengaturan Pembayaran — Billing Rental PS",
+        content: "Pengaturan Pembayaran — RentalPro",
       },
       {
         property: "og:description",

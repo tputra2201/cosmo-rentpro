@@ -12,9 +12,9 @@ import { useBilling, canCheckIn, bookingMinutes, CHECKIN_LEAD_MS, type BookingSt
 
 export const Route = createFileRoute("/_authenticated/booking")({
   head: () => ({ meta: [
-    { title: "Booking Rental — Billing Rental PS" },
+    { title: "Booking Rental — RentalPro" },
     { name: "description", content: "Kelola jadwal booking unit PlayStation dan cegah bentrok pemakaian." },
-    { property: "og:title", content: "Booking Rental — Billing Rental PS" },
+    { property: "og:title", content: "Booking Rental — RentalPro" },
     { property: "og:description", content: "Agenda booking unit PlayStation dengan pemeriksaan jadwal otomatis." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ]}),

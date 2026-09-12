@@ -27,13 +27,13 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
     meta: [
-      { title: "Manajemen Tarif — Billing Rental PS" },
+      { title: "Manajemen Tarif — RentalPro" },
       {
         name: "description",
         content:
           "Atur tarif sewa per jam untuk PS3, PS4, dan PS5 serta daftar harga makanan dan minuman.",
       },
-      { property: "og:title", content: "Manajemen Tarif — Billing Rental PS" },
+      { property: "og:title", content: "Manajemen Tarif — RentalPro" },
       {
         property: "og:description",
         content: "Atur tarif per jam tiap konsol dan harga menu kasir.",

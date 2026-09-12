@@ -19,13 +19,13 @@ import { useBilling } from "@/lib/billing-store";
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
     meta: [
-      { title: "Backup & Restore Data — Billing Rental PS" },
+      { title: "Backup & Restore Data — RentalPro" },
       {
         name: "description",
         content:
           "Cadangkan seluruh pengaturan dan transaksi rental PlayStation ke file Excel, pulihkan kembali, atau reset data ke pengaturan awal.",
       },
-      { property: "og:title", content: "Backup & Restore Data — Billing Rental PS" },
+      { property: "og:title", content: "Backup & Restore Data — RentalPro" },
       {
         property: "og:description",
         content: "Backup Excel, restore, dan reset data aplikasi billing rental PS.",

@@ -17,13 +17,13 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Masuk Akun — Billing Rental PS" },
+      { title: "Masuk Akun — RentalPro" },
       {
         name: "description",
         content:
           "Masuk dengan akun staf yang sudah didaftarkan Admin untuk mengelola billing rental PlayStation.",
       },
-      { property: "og:title", content: "Masuk Akun — Billing Rental PS" },
+      { property: "og:title", content: "Masuk Akun — RentalPro" },
       {
         property: "og:description",
         content: "Halaman login staf untuk aplikasi billing rental PlayStation.",

@@ -153,13 +153,13 @@ function LogoSection({
 export const Route = createFileRoute("/_authenticated/store")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Store — Billing Rental PS" },
+      { title: "Pengaturan Store — RentalPro" },
       {
         name: "description",
         content:
           "Installer mengisi identitas store: kode, nama, email, alamat, kota, pemilik, dan nomor HP.",
       },
-      { property: "og:title", content: "Pengaturan Store — Billing Rental PS" },
+      { property: "og:title", content: "Pengaturan Store — RentalPro" },
       {
         property: "og:description",
         content: "Data identitas outlet rental PlayStation yang diatur oleh Installer.",
