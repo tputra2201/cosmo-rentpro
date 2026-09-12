@@ -116,6 +116,132 @@ const statusOf = (iso: string | null) => {
 
 const SECRET_KEY = "rentalpro-control-secret";
 
+function BrandingPanel({
+  busy,
+  post,
+}: {
+  busy: boolean;
+  post: (body: unknown, okMessage?: string) => Promise<unknown>;
+}) {
+  const branding = useBranding();
+  const [title, setTitle] = useState("");
+  const [note, setNote] = useState("");
+  const [logo, setLogo] = useState("");
+  const [ready, setReady] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ready) return;
+    setTitle(branding.login_title);
+    setNote(branding.login_note);
+    setLogo(branding.logo_url);
+    if (branding.login_title) setReady(true);
+  }, [branding, ready]);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran gambar maksimal 5 MB.");
+      return;
+    }
+    try {
+      const data = await toLogoDataUrl(file);
+      setLogo(data);
+      await post(
+        { action: "branding", logo_url: data },
+        "Logo halaman masuk tersimpan.",
+      );
+    } catch {
+      toast.error("Gambar tidak bisa dibaca.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <ImageUp className="size-5" /> Tampilan halaman masuk
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Logo, judul, dan kalimat di bawah tombol Masuk yang dilihat semua
+          pengguna sebelum login.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        {logo ? (
+          <img
+            src={logo}
+            alt="Logo halaman masuk"
+            className="size-16 rounded-xl border border-border object-contain"
+          />
+        ) : (
+          <div className="grid size-16 place-items-center rounded-xl border border-dashed border-border text-xs text-muted-foreground">
+            Kosong
+          </div>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void pick(e.target.files?.[0])}
+        />
+        <Button disabled={busy} onClick={() => fileRef.current?.click()}>
+          <ImageUp className="size-4" /> Unggah logo
+        </Button>
+        {logo && (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              setLogo("");
+              void post({ action: "branding", logo_url: "" }, "Logo dihapus.");
+            }}
+          >
+            Hapus logo
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="login_title">Judul halaman masuk</Label>
+        <Input
+          id="login_title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="BILLING RENTAL PS"
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="login_note">Kalimat di bawah tombol Masuk</Label>
+        <Textarea
+          id="login_note"
+          value={note}
+          rows={3}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Contoh: Hubungi Admin untuk mendapatkan akun."
+        />
+      </div>
+      <div>
+        <Button
+          disabled={busy}
+          onClick={() =>
+            void post(
+              { action: "branding", login_title: title, login_note: note },
+              "Tampilan halaman masuk tersimpan.",
+            )
+          }
+        >
+          <Save className="size-4" /> Simpan tampilan masuk
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ControlCenter() {
   const [secret, setSecret] = useState("");
   const [unlocked, setUnlocked] = useState(false);
