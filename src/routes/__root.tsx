@@ -259,7 +259,9 @@ function AppShell() {
     <div className="min-h-screen">
       {!isAuthPage && (
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
             {store?.logo_url ? (
               <img
