@@ -343,6 +343,30 @@ const defaultState: State = {
   cashEntries: [],
 };
 
+/** Catatan kas untuk top-up kartu: uang masuk, tapi bukan penghasilan. */
+function cardTopupCashEntry(
+  categories: CashCategory[],
+  amount: number,
+  cardNumber: string,
+  stamp: number,
+  payment = "Cash",
+): CashEntry | null {
+  const category = categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID);
+  if (!category || amount <= 0) return null;
+  return {
+    id: `cash-topup-${stamp}`,
+    categoryId: category.id,
+    categoryName: category.name,
+    group: category.group,
+    direction: "in",
+    payout: true,
+    amount,
+    payment,
+    note: `Top up kartu ${cardNumber}`,
+    createdAt: stamp,
+  };
+}
+
 export function formatRupiah(value: number) {
   return "Rp " + Math.round(value).toLocaleString("id-ID");
 }
