@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Upload, RotateCcw } from "lucide-react";
+import { Download, Upload, RotateCcw, Eraser } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,9 +89,10 @@ function fromRows(rows: Row[]): Row[] {
 
 function BackupPage() {
   const billing = useBilling();
-  const { exportSnapshot, replaceAll, resetAll } = billing;
+  const { exportSnapshot, replaceAll, resetAll, resetTransactions } = billing;
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmTrx, setConfirmTrx] = useState(false);
 
   const handleExport = () => {
     const snap = exportSnapshot();
@@ -241,6 +242,20 @@ function BackupPage() {
         </Button>
       </section>
 
+      <section className="surface-panel space-y-4 p-6">
+        <div>
+          <h2 className="text-lg font-semibold">Reset transaksi saja</h2>
+          <p className="text-sm text-muted-foreground">
+            Menghapus seluruh riwayat transaksi dan catatan poin. Pengaturan,
+            unit TV, tarif, menu, paket, pelanggan, booking, dan promo tetap
+            tersimpan.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setConfirmTrx(true)}>
+          <Eraser className="size-4" /> Reset transaksi
+        </Button>
+      </section>
+
       <section className="surface-panel space-y-4 border-destructive/40 p-6">
         <div>
           <h2 className="text-lg font-semibold text-destructive">
@@ -256,6 +271,29 @@ function BackupPage() {
           <RotateCcw className="size-4" /> Reset semua data
         </Button>
       </section>
+
+      <AlertDialog open={confirmTrx} onOpenChange={setConfirmTrx}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus seluruh transaksi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Riwayat transaksi dan catatan poin akan dihapus. Pengaturan dan
+              data lain tidak berubah.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetTransactions();
+                toast.success("Seluruh transaksi sudah dihapus");
+              }}
+            >
+              Ya, hapus transaksi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
         <AlertDialogContent>
