@@ -1401,10 +1401,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => {
           const rates = { ...prev.rates };
           delete rates[name];
+          const consoleDiscounts = { ...prev.consoleDiscounts };
+          delete consoleDiscounts[name];
           return {
             ...prev,
             consoleTypes: prev.consoleTypes.filter((c) => c !== name),
             rates,
+            consoleDiscounts,
           };
         });
         return true;
