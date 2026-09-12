@@ -218,8 +218,11 @@ export function itemDiscountAmount(
   const value = values.length ? Math.max(...values) : 0;
   const type = discount?.type ?? "fixed";
   const own = value <= 0 ? 0 : type === "percent" ? (base * value) / 100 : value * Math.max(0, units);
+  // Potongan yang sudah ditetapkan per item selalu menang. Potongan umum kartu
+  // hanya dipakai kalau item itu belum punya angka sendiri.
+  if (own > 0) return Math.min(base, Math.round(own));
   const fallback = ctx.card && fallbackPercent > 0 ? (base * fallbackPercent) / 100 : 0;
-  return Math.min(base, Math.round(Math.max(own, fallback)));
+  return Math.min(base, Math.round(fallback));
 }
 
 /** Total potongan per item untuk daftar pesanan makanan/minuman. */
@@ -1372,10 +1375,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           for (const key of Object.keys(prev.rates)) {
             rates[key === oldName ? clean : key] = prev.rates[key] ?? 0;
           }
+          // Potongan harga ikut pindah ke nama baru supaya tidak hilang.
+          const consoleDiscounts: Record<string, ItemDiscount> = {};
+          for (const key of Object.keys(prev.consoleDiscounts)) {
+            const row = prev.consoleDiscounts[key];
+            if (row) consoleDiscounts[key === oldName ? clean : key] = row;
+          }
           return {
             ...prev,
             consoleTypes: prev.consoleTypes.map((c) => (c === oldName ? clean : c)),
             rates,
+            consoleDiscounts,
             stations: prev.stations.map((s) =>
               s.console === oldName ? { ...s, console: clean } : s,
             ),
@@ -1394,10 +1404,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => {
           const rates = { ...prev.rates };
           delete rates[name];
+          const consoleDiscounts = { ...prev.consoleDiscounts };
+          delete consoleDiscounts[name];
           return {
             ...prev,
             consoleTypes: prev.consoleTypes.filter((c) => c !== name),
             rates,
+            consoleDiscounts,
           };
         });
         return true;
