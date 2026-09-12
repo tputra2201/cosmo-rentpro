@@ -96,17 +96,25 @@ function AuthPage() {
     <div className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center">
       <div className="surface-panel p-6 sm:p-8">
         <div className="flex flex-col items-center text-center">
-          {branding.logo_url ? (
-            <img
-              src={branding.logo_url}
-              alt={branding.login_title || "Logo aplikasi"}
-              className="size-20 rounded-xl object-contain"
-            />
-          ) : (
-            <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary glow-primary">
-              <Joystick className="size-6" />
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => setDevOpen(true)}
+            title="Akses Developer"
+            aria-label="Akses Developer"
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {branding.logo_url ? (
+              <img
+                src={branding.logo_url}
+                alt={branding.login_title || "Logo aplikasi"}
+                className="size-20 rounded-xl object-contain"
+              />
+            ) : (
+              <span className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-primary glow-primary">
+                <Joystick className="size-6" />
+              </span>
+            )}
+          </button>
           {branding.login_title.trim() && (
             <h1 className="mt-4 font-display text-2xl font-bold text-neon">
               {branding.login_title}
