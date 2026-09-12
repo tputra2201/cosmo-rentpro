@@ -185,8 +185,9 @@ export function StationDialog({
         .filter((s) => s.method === CARD_PAYMENT_NAME)
         .reduce((sum, s) => sum + s.amount, 0)
     : 0;
-  const usesCard = isCardPayment || cardSplit > 0;
+  const usesCard = cardMethodSelected;
   const cardCharge = isCardPayment ? payTarget : cardSplit;
+
 
 
   const resetPaymentForm = () => {
