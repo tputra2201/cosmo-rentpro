@@ -85,7 +85,21 @@ export function StationCard({
 
       <div className="mt-3">
         {!session ? (
-          <p className="timer-digits text-2xl text-muted-foreground">--:--:--</p>
+          booking ? (
+            <div>
+              <p className="timer-digits text-2xl text-primary">
+                {new Date(booking.startAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                {booking.customerName}
+              </p>
+            </div>
+          ) : (
+            <p className="timer-digits text-2xl text-muted-foreground">--:--:--</p>
+          )
         ) : session.mode === "open" ? (
           <div>
             <p className="timer-digits text-2xl text-accent">
