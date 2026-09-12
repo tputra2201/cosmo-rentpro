@@ -1129,27 +1129,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
       setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
       addBooking: (input) => {
-        let added = false;
-        update((prev) => {
-          const conflict = prev.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
-          if (conflict) return prev;
-          added = true;
-          return { ...prev, bookings: [{ ...input, id: `booking-${Date.now()}`, status: "confirmed" }, ...prev.bookings] };
-        });
-        return added;
+        const conflict = state.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
+        if (conflict) return false;
+        update((prev) => ({ ...prev, bookings: [{ ...input, id: `booking-${Date.now()}`, status: "confirmed" }, ...prev.bookings] }));
+        return true;
       },
       updateBooking: (id, patch) => {
-        let updated = false;
-        update((prev) => {
-          const current = prev.bookings.find((item) => item.id === id);
-          if (!current) return prev;
-          const candidate = { ...current, ...patch };
-          const conflict = prev.bookings.some((item) => item.id !== id && item.stationId === candidate.stationId && item.status !== "cancelled" && item.status !== "completed" && candidate.startAt < item.endAt && candidate.endAt > item.startAt);
-          if (conflict) return prev;
-          updated = true;
-          return { ...prev, bookings: prev.bookings.map((item) => item.id === id ? candidate : item) };
-        });
-        return updated;
+        const current = state.bookings.find((item) => item.id === id);
+        if (!current) return false;
+        const candidate = { ...current, ...patch };
+        const conflict = state.bookings.some((item) => item.id !== id && item.stationId === candidate.stationId && item.status !== "cancelled" && item.status !== "completed" && candidate.startAt < item.endAt && candidate.endAt > item.startAt);
+        if (conflict) return false;
+        update((prev) => ({ ...prev, bookings: prev.bookings.map((item) => item.id === id ? candidate : item) }));
+        return true;
       },
       removeBooking: (id) => update((prev) => ({ ...prev, bookings: prev.bookings.filter((item) => item.id !== id) })),
       addPromotion: (input) => update((prev) => ({ ...prev, promotions: [{ ...input, id: `promo-${Date.now()}` }, ...prev.promotions] })),
