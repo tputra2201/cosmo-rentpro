@@ -422,6 +422,10 @@ type Ctx = State & {
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
+  updateSessionCustomer: (
+    stationId: string,
+    patch: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "customerId">>,
+  ) => void;
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
