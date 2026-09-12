@@ -264,6 +264,7 @@ const defaultState: State = {
     { id: "pm-giftcard", name: "Gift Card", active: true },
     { id: "pm-transfer", name: "Transfer Bank", active: true },
     { id: "pm-compliment", name: "Compliment", active: true },
+    { id: "pm-card", name: CARD_PAYMENT_NAME, active: true },
     { id: "pm-lainnya", name: "Lainnya", active: true },
   ],
   packages: [
@@ -279,6 +280,11 @@ const defaultState: State = {
   promotions: [],
   pointEntries: [],
   pointsPerRupiah: 10000,
+  playingCards: [],
+  cardEntries: [],
+  cardPrice: 10000,
+  cardDiscountPercent: 10,
+  cardMemberDiscountPercent: 15,
 };
 
 export function formatRupiah(value: number) {
