@@ -1372,10 +1372,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           for (const key of Object.keys(prev.rates)) {
             rates[key === oldName ? clean : key] = prev.rates[key] ?? 0;
           }
+          // Potongan harga ikut pindah ke nama baru supaya tidak hilang.
+          const consoleDiscounts: Record<string, ItemDiscount> = {};
+          for (const key of Object.keys(prev.consoleDiscounts)) {
+            const row = prev.consoleDiscounts[key];
+            if (row) consoleDiscounts[key === oldName ? clean : key] = row;
+          }
           return {
             ...prev,
             consoleTypes: prev.consoleTypes.map((c) => (c === oldName ? clean : c)),
             rates,
+            consoleDiscounts,
             stations: prev.stations.map((s) =>
               s.console === oldName ? { ...s, console: clean } : s,
             ),
