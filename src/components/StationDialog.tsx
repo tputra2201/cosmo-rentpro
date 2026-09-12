@@ -37,6 +37,8 @@ import {
   formatClock,
   formatRupiah,
   paidTotal,
+  isPaused,
+  pausedMsTotal,
   remainingSeconds,
   rentalTotal,
   useBilling,
@@ -76,6 +78,8 @@ export function StationDialog({
     packages,
     defaultBonusMin,
     adjustBonusTime,
+    pauseSession,
+    resumeSession,
   } = useBilling();
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
