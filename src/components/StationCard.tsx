@@ -1,4 +1,4 @@
-import { Gamepad2, Clock, Utensils, Infinity as InfinityIcon } from "lucide-react";
+import { Gamepad2, Clock, Utensils, Infinity as InfinityIcon, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +11,7 @@ import {
   paidTotal,
   stationStatus,
   activeBooking,
+  isPaused,
   useBilling,
   type Station,
 } from "@/lib/billing-store";
