@@ -21,6 +21,7 @@ import {
   type StationAvailability,
 } from "@/lib/billing-store";
 import { ThemePicker } from "@/components/ThemePicker";
+import { SortableArea, SortableItem } from "@/components/Sortable";
 
 
 export const Route = createFileRoute("/_authenticated/tarif")({
@@ -63,6 +64,8 @@ function TarifPage() {
     setRoundingRule,
     defaultBonusMin,
     setDefaultBonusMin,
+    reorderList,
+    reorderConsoleTypes,
   } = useBilling();
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
@@ -81,7 +84,8 @@ function TarifPage() {
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Manajemen Tarif</h1>
         <p className="mt-1 text-muted-foreground">
-          Tarif tersimpan otomatis dan dipakai saat sesi baru dimulai.
+          Tarif tersimpan otomatis dan dipakai saat sesi baru dimulai. Geser ikon
+          pegangan di setiap baris untuk mengatur urutannya.
         </p>
       </header>
 
@@ -94,11 +98,18 @@ function TarifPage() {
         <p className="text-sm text-muted-foreground">
           Tambah, ubah nama, atau hapus jenis konsol beserta tarifnya.
         </p>
-        <ul className="mt-4 space-y-2">
+        <SortableArea
+          ids={consoleTypes}
+          onReorder={reorderConsoleTypes}
+          className="mt-4 space-y-2"
+        >
           {consoleTypes.map((c) => (
-            <li
+            <SortableItem
               key={c}
-              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_160px_auto_auto]"
+              id={c}
+              label={`konsol ${c}`}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_160px_auto_auto]"
             >
               <Input
                 defaultValue={c}
@@ -140,9 +151,9 @@ function TarifPage() {
               >
                 <Trash2 className="size-4" />
               </Button>
-            </li>
+            </SortableItem>
           ))}
-        </ul>
+        </SortableArea>
         <form
           className="mt-4 grid gap-2 sm:grid-cols-[1fr_160px_auto]"
           onSubmit={(e) => {
@@ -186,9 +197,13 @@ function TarifPage() {
             <Select value={roundingRule} onValueChange={(value) => setRoundingRule(value as RoundingRule)}><SelectTrigger className="w-52"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="minute">Hitung per menit</SelectItem><SelectItem value="30-minutes">Bulatkan 30 menit</SelectItem><SelectItem value="hour">Bulatkan per jam</SelectItem></SelectContent></Select>
           </div>
         </div>
-        <ul className="mt-4 space-y-2">
-          {packages.map((item) => <li key={item.id} className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_120px_140px_auto_auto]"><Input value={item.name} onChange={(e) => updatePackage(item.id, { name: e.target.value })} aria-label={`Nama paket ${item.name}`} /><Input type="number" min={1} value={item.durationMin} onChange={(e) => updatePackage(item.id, { durationMin: Number(e.target.value) })} aria-label={`Durasi ${item.name}`} /><Input type="number" min={0} value={item.price} onChange={(e) => updatePackage(item.id, { price: Number(e.target.value) })} aria-label={`Harga khusus ${item.name}`} /><Switch checked={item.active} onCheckedChange={(active) => updatePackage(item.id, { active })} aria-label={`Aktifkan ${item.name}`} /><Button size="icon" variant="ghost" onClick={() => removePackage(item.id)} aria-label={`Hapus ${item.name}`}><Trash2 className="size-4" /></Button></li>)}
-        </ul>
+        <SortableArea
+          ids={packages.map((item) => item.id)}
+          onReorder={(activeId, overId) => reorderList("packages", activeId, overId)}
+          className="mt-4 space-y-2"
+        >
+          {packages.map((item) => <SortableItem key={item.id} id={item.id} label={`paket ${item.name}`} className="rounded-lg bg-secondary/60 p-3" contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_120px_140px_auto_auto]"><Input value={item.name} onChange={(e) => updatePackage(item.id, { name: e.target.value })} aria-label={`Nama paket ${item.name}`} /><Input type="number" min={1} value={item.durationMin} onChange={(e) => updatePackage(item.id, { durationMin: Number(e.target.value) })} aria-label={`Durasi ${item.name}`} /><Input type="number" min={0} value={item.price} onChange={(e) => updatePackage(item.id, { price: Number(e.target.value) })} aria-label={`Harga khusus ${item.name}`} /><Switch checked={item.active} onCheckedChange={(active) => updatePackage(item.id, { active })} aria-label={`Aktifkan ${item.name}`} /><Button size="icon" variant="ghost" onClick={() => removePackage(item.id)} aria-label={`Hapus ${item.name}`}><Trash2 className="size-4" /></Button></SortableItem>)}
+        </SortableArea>
         <form className="mt-4 grid gap-2 sm:grid-cols-[1fr_120px_140px_auto]" onSubmit={(e) => { e.preventDefault(); const minutes = Number(packageDuration); const packageCost = Number(packagePrice); if (!packageName.trim() || minutes <= 0) { toast.error("Lengkapi nama dan durasi paket"); return; } addPackage(packageName.trim(), minutes, packageCost); setPackageName(""); setPackageDuration(""); setPackagePrice(""); }}><Input placeholder="Nama paket" value={packageName} onChange={(e) => setPackageName(e.target.value)} /><Input type="number" min={1} placeholder="Menit" value={packageDuration} onChange={(e) => setPackageDuration(e.target.value)} /><Input type="number" min={0} placeholder="Harga khusus" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} /><Button type="submit"><Plus className="size-4" /> Tambah</Button></form>
       </section>
 
@@ -257,11 +272,18 @@ function TarifPage() {
             Pengaturan Unit TV ({stations.length})
           </h2>
         </div>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <SortableArea
+          ids={stations.map((s) => s.id)}
+          onReorder={(activeId, overId) => reorderList("stations", activeId, overId)}
+          className="mt-4 grid gap-3 lg:grid-cols-2"
+        >
           {stations.map((s) => (
-            <div
+            <SortableItem
               key={s.id}
-              className="grid items-end gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_1fr_110px_130px_auto]"
+              id={s.id}
+              label={s.name}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid items-end gap-2 sm:grid-cols-[1fr_1fr_110px_130px_auto]"
             >
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Nomor TV</Label>
@@ -334,9 +356,9 @@ function TarifPage() {
               >
                 <Trash2 className="size-4" />
               </Button>
-            </div>
+            </SortableItem>
           ))}
-        </div>
+        </SortableArea>
       </section>
 
 
