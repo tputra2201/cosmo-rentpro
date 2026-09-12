@@ -201,6 +201,7 @@ function AppShell() {
   const isAuthPage = pathname === "/auth";
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
+  const developer = useDeveloper(Boolean(session));
   const { sync } = useBilling();
   const storeName = store?.store_name?.trim() ?? "";
   const signature = appSignature(store?.app_version, store?.dev_contact);
