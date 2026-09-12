@@ -364,7 +364,25 @@ function AppShell() {
               </div>
             </>
           )}
+          </div>
+          {session && !isAuthPage && (
+            <nav className="hidden flex-wrap items-center justify-center gap-x-1 gap-y-1.5 border-t border-border/60 pt-2 md:flex">
+              {items.map(({ to, label, icon: Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  activeOptions={{ exact: to === "/" }}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:px-3 lg:py-2 lg:text-sm"
+                  activeProps={{ className: "bg-secondary text-primary" }}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
+
       </header>
       )}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
