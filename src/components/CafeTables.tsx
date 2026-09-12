@@ -454,8 +454,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   onClick={() => {
                     if (isCardPayment) {
                       if (!card) {
-                        toast.error("Kartu tidak ditemukan", {
-                          description: "Scan kartu atau ketik nomor kartunya lebih dulu.",
+                        toast.error("Kartu belum terdaftar!", {
+                          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
                         });
                         return;
                       }
@@ -464,17 +464,28 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         return;
                       }
                       if (card.balance + 0.5 < cardCharge) {
-                        toast.error("Saldo Playing Card tidak mencukupi", {
-                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}.`,
+                        toast.error("Saldo kartu tidak mencukupi!", {
+                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
                         });
                         return;
                       }
-                      if (!chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
-                        toast.error("Saldo Playing Card tidak mencukupi");
+                      if (restAmount > 0 && otherMethods.length === 0) {
+                        toast.error("Belum ada metode lain untuk sisa tagihan");
+                        return;
+                      }
+                      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
+                        toast.error("Saldo kartu tidak mencukupi!");
                         return;
                       }
                       const cardRecord = payCafeTable(table.id, {
-                        payment: CARD_PAYMENT_NAME,
+                        ...(restAmount > 0
+                          ? {
+                              payments: [
+                                { method: CARD_PAYMENT_NAME, amount: cardCharge },
+                                { method: restMethod, amount: restAmount },
+                              ],
+                            }
+                          : { payment: CARD_PAYMENT_NAME }),
                         amountPaid: total,
                         member: Boolean(card.member),
                         discount: manualDisc,
@@ -485,15 +496,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       }
                       toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
                         description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
-                          bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""
-                        }`,
+                          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
+                        }${bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""}`,
                       });
                       setReceived("");
                       setCardNumber("");
                       setDiscValue("");
+                      setCardPart("");
+                      setRestPay("");
                       setOpenId(null);
                       return;
                     }
+
                     const paid = received === "" ? total : receivedValue;
                     if (paid + 0.5 < total) {
                       toast.error("Uang diterima kurang dari total tagihan");
