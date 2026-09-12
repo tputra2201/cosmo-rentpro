@@ -41,6 +41,8 @@ export type Session = {
   discountValue?: number;
   discountMax?: number;
   settlements?: Settlement[];
+  pausedAt?: number; // jika terisi, timer sedang dijeda
+  pausedMs?: number; // akumulasi total waktu jeda
 };
 
 export type Settlement = {
@@ -244,8 +246,20 @@ export function formatClock(totalSeconds: number) {
   return [h, m, sec].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+export function pausedMsTotal(session: Session, now: number) {
+  const base = session.pausedMs ?? 0;
+  return session.pausedAt ? base + Math.max(0, now - session.pausedAt) : base;
+}
+
+export function isPaused(session: Session) {
+  return Boolean(session.pausedAt);
+}
+
 export function elapsedSeconds(session: Session, now: number) {
-  return Math.max(0, Math.floor((now - session.startAt) / 1000));
+  return Math.max(
+    0,
+    Math.floor((now - session.startAt - pausedMsTotal(session, now)) / 1000),
+  );
 }
 
 export function effectiveMinutes(session: Session) {
@@ -397,6 +411,8 @@ type Ctx = State & {
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
+  pauseSession: (stationId: string) => void;
+  resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
@@ -1129,6 +1145,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         mapStation(stationId, (s) =>
           s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
         ),
+      pauseSession: (stationId) =>
+        mapStation(stationId, (s) =>
+          s.session && !s.session.pausedAt
+            ? { ...s, session: { ...s.session, pausedAt: Date.now() } }
+            : s,
+        ),
+      resumeSession: (stationId) =>
+        mapStation(stationId, (s) => {
+          if (!s.session?.pausedAt) return s;
+          const extra = Math.max(0, Date.now() - s.session.pausedAt);
+          const { pausedAt: _pausedAt, ...rest } = s.session;
+          return {
+            ...s,
+            session: { ...rest, pausedMs: (s.session.pausedMs ?? 0) + extra },
+          };
+        }),
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
         update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
