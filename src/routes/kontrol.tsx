@@ -263,7 +263,11 @@ function ControlCenter() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SECRET_KEY);
-    if (saved) setSecret(saved);
+    if (saved) {
+      setSecret(saved);
+      void load(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const key = () => secret || sessionStorage.getItem(SECRET_KEY) || "";
