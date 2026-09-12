@@ -84,6 +84,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
         const [{ data, error }, { data: members }, { data: developers }] = await Promise.all([
           supabaseAdmin.from("stores").select(columns).order("created_at"),
           supabaseAdmin.from("store_members").select("store_id"),
+          supabaseAdmin.from("developer_accounts").select("user_id, email, created_at"),
         ]);
         if (error) return new Response(error.message, { status: 500 });
         const counts = new Map<string, number>();
