@@ -121,6 +121,11 @@ export function StationDialog({
   const [confirmEnd, setConfirmEnd] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
 
+  const matchedCustomer =
+    customers.find(
+      (item) => item.name.trim().toLowerCase() === customerName.trim().toLowerCase(),
+    ) ?? null;
+
   const activePayments = paymentMethods.filter((p) => p.active);
   const selectedPayment =
     payment || activePayments[0]?.name || "Cash";
@@ -447,7 +452,7 @@ export function StationDialog({
               <Button
                 className="w-full"
                 onClick={() => {
-                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
+                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
                   toast.success(`${station.name} mulai ${Math.max(0, duration + bonusMin)} menit`, bonusMin !== 0 ? { description: `${duration} menit + ekstra ${bonusMin} menit (tarif tetap)` } : undefined);
                 }}
               >
@@ -461,7 +466,7 @@ export function StationDialog({
               variant="secondary"
               className="w-full"
               onClick={() => {
-                startSession(station.id, "open", 0, { customerName, customerPhone, member, packageName: "Open Time", notes });
+                startSession(station.id, "open", 0, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: "Open Time", notes });
                 toast.success(`${station.name} mulai Main Sepuasnya`);
               }}
             >
