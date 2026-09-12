@@ -187,30 +187,132 @@ function TarifPage() {
       </section>
 
       <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Konsol per TV</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="text-xl font-semibold">Tambah Unit TV</h2>
+        <form
+          className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_140px_auto]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) {
+              toast.error("Nomor / nama TV wajib diisi");
+              return;
+            }
+            addStation({ name, booth, console: consoleType });
+            setName("");
+            setBooth("");
+            toast.success("Unit ditambahkan");
+          }}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-name">Nomor / Nama TV</Label>
+            <Input
+              id="unit-name"
+              placeholder="TV 07"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-booth">Room / Booth</Label>
+            <Input
+              id="unit-booth"
+              placeholder="VIP 3"
+              value={booth}
+              onChange={(e) => setBooth(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-console">Konsol</Label>
+            <Select
+              value={consoleType}
+              onValueChange={(v) => setConsoleType(v as ConsoleType)}
+            >
+              <SelectTrigger id="unit-console">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {consoleTypes.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" className="self-end">
+            <Plus className="size-4" /> Tambah
+          </Button>
+        </form>
+      </section>
+
+      <section className="surface-panel p-6">
+        <div className="flex items-center gap-2">
+          <Tv className="size-5 text-primary" />
+          <h2 className="text-xl font-semibold">
+            Pengaturan Unit TV ({stations.length})
+          </h2>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {stations.map((s) => (
             <div
               key={s.id}
-               className="grid gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
+              className="grid items-end gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_1fr_110px_130px_auto]"
             >
-               <div className="grid grid-cols-2 gap-2 sm:block"><Input value={s.name} onChange={(e) => updateStation(s.id, { name: e.target.value })} aria-label={`Nama ${s.name}`} /><Input value={s.booth} onChange={(e) => updateStation(s.id, { booth: e.target.value })} aria-label={`Booth ${s.name}`} className="sm:mt-2" /></div>
-              <Select
-                value={s.console}
-                onValueChange={(v) => setStationConsole(s.id, v as ConsoleType)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {consoleTypes.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-               <Select value={s.availability} onValueChange={(value) => updateStation(s.id, { availability: value as StationAvailability })} disabled={Boolean(s.session)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="available">Tersedia</SelectItem><SelectItem value="booked">Booking</SelectItem><SelectItem value="maintenance">Maintenance</SelectItem><SelectItem value="offline">Offline</SelectItem></SelectContent></Select>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Nomor TV</Label>
+                <Input
+                  value={s.name}
+                  onChange={(e) => updateStation(s.id, { name: e.target.value })}
+                  aria-label={`Nama ${s.name}`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Room</Label>
+                <Input
+                  value={s.booth}
+                  onChange={(e) => updateStation(s.id, { booth: e.target.value })}
+                  aria-label={`Room ${s.name}`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Konsol</Label>
+                <Select
+                  value={s.console}
+                  onValueChange={(v) => setStationConsole(s.id, v as ConsoleType)}
+                >
+                  <SelectTrigger aria-label={`Konsol ${s.name}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {consoleTypes.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Status</Label>
+                <Select
+                  value={s.availability}
+                  disabled={Boolean(s.session)}
+                  onValueChange={(v) =>
+                    updateStation(s.id, {
+                      availability: v as StationAvailability,
+                    })
+                  }
+                >
+                  <SelectTrigger aria-label={`Status ${s.name}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Tersedia</SelectItem>
+                    <SelectItem value="booked">Booking</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="offline">Offline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 size="icon"
                 variant="ghost"
@@ -221,6 +323,7 @@ function TarifPage() {
                     return;
                   }
                   removeStation(s.id);
+                  toast.success(`${s.name} dihapus`);
                 }}
               >
                 <Trash2 className="size-4" />
@@ -229,6 +332,7 @@ function TarifPage() {
           ))}
         </div>
       </section>
+
 
     </div>
   );
