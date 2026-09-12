@@ -172,6 +172,37 @@ export function cardDiscountPercentFor(
   const pct = card.member ? settings.cardMemberDiscountPercent : settings.cardDiscountPercent;
   return Math.min(100, Math.max(0, pct ?? 0));
 }
+/** Arah uang kas: masuk (penerimaan) atau keluar (pengeluaran). */
+export type CashDirection = "in" | "out";
+
+/**
+ * Kelompok/item kas buatan pengguna.
+ * `payout: true` berarti tidak dihitung sebagai pendapatan / biaya,
+ * hanya perpindahan uang (misal setoran atau pengambilan uang owner).
+ */
+export type CashCategory = {
+  id: string;
+  name: string;
+  direction: CashDirection;
+  payout: boolean;
+  group: string;
+  active: boolean;
+  sort?: number;
+};
+
+export type CashEntry = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  group: string;
+  direction: CashDirection;
+  payout: boolean;
+  amount: number;
+  payment: string;
+  note: string;
+  createdAt: number;
+};
+
 export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
