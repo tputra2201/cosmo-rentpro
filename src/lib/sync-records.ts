@@ -40,6 +40,7 @@ const SETTINGS_KEYS = [
   "cardPrice",
   "cardDiscountPercent",
   "cardMemberDiscountPercent",
+  "consoleDiscounts",
 ] as const;
 
 

@@ -21,7 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CardScanInput } from "@/components/CardScanInput";
-import { CARD_PAYMENT_NAME, cardDiscountPercentFor, findCardByNumber, formatRupiah, useBilling, type CafeTable } from "@/lib/billing-store";
+import {
+  CARD_PAYMENT_NAME,
+  cafeBill,
+  findCardByNumber,
+  formatRupiah,
+  useBilling,
+  type CafeTable,
+  type DiscountType,
+} from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 
 export function tableTotal(table: CafeTable) {
@@ -44,6 +52,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     playingCards,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    consoleDiscounts,
+    promotions,
+    now,
     chargeCard,
   } = useBilling();
 
@@ -52,10 +63,11 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
+  const [discType, setDiscType] = useState<DiscountType>("fixed");
+  const [discValue, setDiscValue] = useState("");
 
   const activeMethods = paymentMethods.filter((p) => p.active);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
-  const total = table ? tableTotal(table) : 0;
   const visibleMenu = useMemo(
     () => (category === "semua" ? menu : menu.filter((m) => m.category === category)),
     [menu, category],
@@ -63,11 +75,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   const isCardPayment = payMethod === CARD_PAYMENT_NAME;
   const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
-  const cardPercent = card
-    ? cardDiscountPercentFor(card, { cardDiscountPercent, cardMemberDiscountPercent })
-    : 0;
-  const cardDiscount = card ? Math.round((total * cardPercent) / 100) : 0;
-  const cardCharge = Math.max(0, total - cardDiscount);
+  const manualDisc = { type: discType, value: Math.max(0, Number(discValue) || 0) };
+  const bill = cafeBill(
+    table?.orders ?? [],
+    now,
+    { consoleDiscounts, menu, promotions, cardDiscountPercent, cardMemberDiscountPercent },
+    { member: Boolean(card?.member), card: Boolean(isCardPayment && card) },
+    manualDisc,
+  );
+  const total = bill.total;
+  const cardCharge = total;
 
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
@@ -258,11 +275,64 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 )}
 
                 <div className="space-y-3 border-t border-border pt-4">
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatRupiah(bill.subtotal)}</span>
+                    </div>
+                    {bill.itemDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Potongan menu</span>
+                        <span className="text-neon">-{formatRupiah(bill.itemDiscount)}</span>
+                      </div>
+                    )}
+                    {bill.promoDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{bill.promoName}</span>
+                        <span className="text-neon">-{formatRupiah(bill.promoDiscount)}</span>
+                      </div>
+                    )}
+                    {bill.manualDiscount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Diskon transaksi</span>
+                        <span className="text-neon">-{formatRupiah(bill.manualDiscount)}</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between text-base font-semibold">
                     <span className="flex items-center gap-1.5">
                       <Receipt className="size-4 text-primary" /> Total
                     </span>
                     <span className="text-neon">{formatRupiah(total)}</span>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Diskon transaksi</Label>
+                      <Select
+                        value={discType}
+                        onValueChange={(v) => setDiscType(v as DiscountType)}
+                      >
+                        <SelectTrigger aria-label="Jenis diskon transaksi">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fixed">Rupiah</SelectItem>
+                          <SelectItem value="percent">Persen</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cafe-disc">Nilai diskon</Label>
+                      <Input
+                        id="cafe-disc"
+                        type="number"
+                        min={0}
+                        placeholder="0"
+                        value={discValue}
+                        onChange={(e) => setDiscValue(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   {activeMethods.length === 0 ? (
@@ -326,8 +396,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             <span>Saldo {formatRupiah(card.balance)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Potongan {cardPercent}%</span>
-                            <span className="text-neon">-{formatRupiah(cardDiscount)}</span>
+                            <span className="text-muted-foreground">Total potongan</span>
+                            <span className="text-neon">-{formatRupiah(bill.discount)}</span>
                           </div>
                           <div className="flex justify-between font-semibold">
                             <span>Dipotong dari saldo</span>
@@ -393,6 +463,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       const cardRecord = payCafeTable(table.id, {
                         payment: CARD_PAYMENT_NAME,
                         amountPaid: total,
+                        member: Boolean(card.member),
+                        discount: manualDisc,
                       });
                       if (!cardRecord) {
                         toast.error("Pembayaran gagal diproses");
@@ -400,11 +472,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       }
                       toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
                         description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
-                          cardDiscount > 0 ? ` · potongan ${cardPercent}%` : ""
+                          bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""
                         }`,
                       });
                       setReceived("");
                       setCardNumber("");
+                      setDiscValue("");
                       setOpenId(null);
                       return;
                     }
@@ -416,6 +489,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     const record = payCafeTable(table.id, {
                       payment: payMethod || activeMethods[0]?.name || "Cash",
                       amountPaid: paid,
+                      discount: manualDisc,
                     });
                     if (!record) {
                       toast.error("Pembayaran gagal diproses");
@@ -425,6 +499,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       description: `${record.payment} · kembalian ${formatRupiah(record.change ?? 0)}`,
                     });
                     setReceived("");
+                    setDiscValue("");
                     setOpenId(null);
                   }}
                 >

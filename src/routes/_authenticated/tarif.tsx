@@ -21,6 +21,7 @@ import {
   type StationAvailability,
 } from "@/lib/billing-store";
 import { ThemePicker } from "@/components/ThemePicker";
+import { DiscountFields } from "@/components/DiscountFields";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 
 
@@ -50,6 +51,8 @@ function TarifPage() {
     addConsoleType,
     renameConsoleType,
     setConsoleRate,
+    setConsoleDiscount,
+    consoleDiscounts,
     removeConsoleType,
     stations,
     addStation,
@@ -96,7 +99,9 @@ function TarifPage() {
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Jenis Konsol & Tarif per Jam</h2>
         <p className="text-sm text-muted-foreground">
-          Tambah, ubah nama, atau hapus jenis konsol beserta tarifnya.
+          Tambah, ubah nama, atau hapus jenis konsol beserta tarifnya. Potongan harga
+          diisi per jam pemakaian; kalau pelanggan member sekaligus bayar dengan Playing
+          Card, dipakai potongan yang paling besar.
         </p>
         <SortableArea
           ids={consoleTypes}
@@ -151,6 +156,12 @@ function TarifPage() {
               >
                 <Trash2 className="size-4" />
               </Button>
+              <DiscountFields
+                label={c}
+                unitHint="Rp / jam"
+                value={consoleDiscounts[c]}
+                onChange={(patch) => setConsoleDiscount(c, patch)}
+              />
             </SortableItem>
           ))}
         </SortableArea>

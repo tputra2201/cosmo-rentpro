@@ -11,9 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatRupiah, useBilling } from "@/lib/billing-store";
+import { emptyItemDiscount, formatRupiah, useBilling } from "@/lib/billing-store";
 import { tableTotal } from "@/components/CafeTables";
 import { SortableArea, SortableItem } from "@/components/Sortable";
+import { DiscountFields } from "@/components/DiscountFields";
 
 export const Route = createFileRoute("/_authenticated/kafe")({
   head: () => ({
@@ -254,6 +255,10 @@ function KafePage() {
 
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Menu Makanan &amp; Minuman</h2>
+        <p className="text-sm text-muted-foreground">
+          Setiap menu bisa punya potongan harga sendiri untuk pembayaran Playing Card
+          maupun pelanggan member.
+        </p>
         <SortableArea
           ids={menu.map((m) => m.id)}
           onReorder={(activeId, overId) => reorderList("menu", activeId, overId)}
@@ -304,6 +309,16 @@ function KafePage() {
               >
                 <Trash2 className="size-4" />
               </Button>
+              <DiscountFields
+                label={m.name}
+                unitHint="Rp / item"
+                value={m.discount}
+                onChange={(patch) =>
+                  updateMenuItem(m.id, {
+                    discount: { ...emptyItemDiscount, ...m.discount, ...patch },
+                  })
+                }
+              />
             </SortableItem>
           ))}
         </SortableArea>
