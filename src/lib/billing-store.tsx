@@ -327,6 +327,17 @@ const defaultState: State = {
   cardPrice: 10000,
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
+  cashCategories: [
+    { id: "cc-lain", name: "Pendapatan Lain", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
+    { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
+    { id: "cc-modal-owner", name: "Tambah Kas dari Owner", direction: "in", payout: true, group: "Kas Owner", active: true },
+    { id: "cc-listrik", name: "Pembayaran Listrik", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-gas", name: "Pembelian Gas", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
+    { id: "cc-gaji", name: "Gaji Karyawan", direction: "out", payout: false, group: "Gaji", active: true },
+    { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
+  ],
+  cashEntries: [],
 };
 
 export function formatRupiah(value: number) {
