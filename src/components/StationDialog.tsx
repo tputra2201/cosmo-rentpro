@@ -1030,8 +1030,19 @@ export function StationDialog({
                   </SelectContent>
                 </Select>
               )}
+
+              {usesCard && (
+                <CardPaymentPanel
+                  cardNumber={cardNumber}
+                  onCardNumberChange={setCardNumber}
+                  need={cardCharge}
+                  discount={bill?.discount ?? 0}
+                  inputId="pay-card-number"
+                />
+              )}
             </div>
             )}
+
 
 
             <div className="grid gap-2 sm:grid-cols-2">
