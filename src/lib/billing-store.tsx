@@ -411,6 +411,8 @@ type Ctx = State & {
   addTime: (stationId: string, extraMin: number) => void;
   adjustBonusTime: (stationId: string, deltaMin: number) => void;
   setSessionBonus: (stationId: string, bonusMin: number) => void;
+  pauseSession: (stationId: string) => void;
+  resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
@@ -1143,6 +1145,25 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         mapStation(stationId, (s) =>
           s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
         ),
+      pauseSession: (stationId) =>
+        mapStation(stationId, (s) =>
+          s.session && !s.session.pausedAt
+            ? { ...s, session: { ...s.session, pausedAt: Date.now() } }
+            : s,
+        ),
+      resumeSession: (stationId) =>
+        mapStation(stationId, (s) => {
+          if (!s.session?.pausedAt) return s;
+          const extra = Math.max(0, Date.now() - s.session.pausedAt);
+          return {
+            ...s,
+            session: {
+              ...s.session,
+              pausedAt: undefined,
+              pausedMs: (s.session.pausedMs ?? 0) + extra,
+            },
+          };
+        }),
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
         update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
