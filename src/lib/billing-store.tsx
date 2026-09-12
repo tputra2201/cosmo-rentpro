@@ -1548,15 +1548,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updateHistoryPayment: (id, patch) =>
         update((prev) => ({
           ...prev,
-          history: prev.history.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
-                  payments: patch.payments && patch.payments.length > 0 ? patch.payments : undefined,
-                }
-              : item,
-          ),
+          history: prev.history.map((item) => {
+            if (item.id !== id) return item;
+            const { payments: _old, ...rest } = item;
+            const next: HistoryRecord = { ...rest };
+            if (patch.payment !== undefined) next.payment = patch.payment;
+            if (patch.payments && patch.payments.length > 0) next.payments = patch.payments;
+            return next;
+          }),
         })),
       removeHistory: (id) =>
         update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
