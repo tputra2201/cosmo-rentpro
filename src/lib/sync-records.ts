@@ -88,6 +88,8 @@ export function applyRecords(
     pointEntries: [...state.pointEntries],
     history: [...state.history],
     cafeTables: [...state.cafeTables],
+    playingCards: [...state.playingCards],
+    cardEntries: [...state.cardEntries],
   };
 
 
