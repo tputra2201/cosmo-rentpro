@@ -242,6 +242,20 @@ function BackupPage() {
         </Button>
       </section>
 
+      <section className="surface-panel space-y-4 p-6">
+        <div>
+          <h2 className="text-lg font-semibold">Reset transaksi saja</h2>
+          <p className="text-sm text-muted-foreground">
+            Menghapus seluruh riwayat transaksi dan catatan poin. Pengaturan,
+            unit TV, tarif, menu, paket, pelanggan, booking, dan promo tetap
+            tersimpan.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setConfirmTrx(true)}>
+          <Eraser className="size-4" /> Reset transaksi
+        </Button>
+      </section>
+
       <section className="surface-panel space-y-4 border-destructive/40 p-6">
         <div>
           <h2 className="text-lg font-semibold text-destructive">
