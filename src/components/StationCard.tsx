@@ -47,7 +47,7 @@ export function StationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "surface-panel group relative overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
+        "surface-panel group relative block w-full min-w-0 max-w-full overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
         status === "idle" && "opacity-90 hover:glow-primary",
         status === "booked" && "border-primary/60 glow-primary",
         status === "playing" && "glow-accent",
