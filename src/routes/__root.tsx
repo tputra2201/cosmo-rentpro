@@ -211,7 +211,7 @@ function AppShell() {
   const msLeft = expiryDate ? expiryDate.getTime() - Date.now() : null;
   const daysLeft =
     msLeft === null ? null : Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-  const expired = msLeft !== null && msLeft <= 0;
+  const expired = msLeft !== null && msLeft <= 0 && !developer.isDeveloper;
   const expiryLabel = expiryDate
     ? expiryDate.toLocaleDateString("id-ID", {
         day: "numeric",
