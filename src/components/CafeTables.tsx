@@ -65,8 +65,11 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [cardNumber, setCardNumber] = useState("");
   const [discType, setDiscType] = useState<DiscountType>("fixed");
   const [discValue, setDiscValue] = useState("");
+  const [cardPart, setCardPart] = useState("");
+  const [restPay, setRestPay] = useState("");
 
   const activeMethods = paymentMethods.filter((p) => p.active);
+  const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
   const visibleMenu = useMemo(
     () => (category === "semua" ? menu : menu.filter((m) => m.category === category)),
@@ -84,7 +87,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     manualDisc,
   );
   const total = bill.total;
-  const cardCharge = total;
+  const cardCharge = isCardPayment
+    ? Math.min(total, Math.max(0, cardPart === "" ? total : Number(cardPart) || 0))
+    : total;
+  const restAmount = isCardPayment ? Math.max(0, total - cardCharge) : 0;
+  const restMethod = restPay || otherMethods[0]?.name || "Cash";
+
 
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
