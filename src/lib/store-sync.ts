@@ -70,6 +70,7 @@ export function useStoreSync(options: {
   const [syncing, setSyncing] = useState(false);
   const [pending, setPending] = useState(0);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [readyStoreId, setReadyStoreId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,6 +106,7 @@ export function useStoreSync(options: {
   useEffect(() => {
     if (!enabled) {
       setStoreId(null);
+      setReadyStoreId(null);
       return;
     }
     const cached = typeof window === "undefined" ? null : localStorage.getItem(STORE_KEY);
@@ -127,6 +129,7 @@ export function useStoreSync(options: {
         shadowRef.current = {};
         outboxRef.current = {};
         setPending(0);
+        setReadyStoreId(null);
       }
       localStorage.setItem(STORE_KEY, id);
       setStoreId(id);
@@ -183,8 +186,62 @@ export function useStoreSync(options: {
     writeJson(SHADOW_KEY, shadowRef.current);
   }, []);
 
+  // Perangkat baru wajib mengambil data pusat lebih dulu. Tanpa tahap ini,
+  // data bawaan (PS3/PS4/PS5) dapat terkirim dan menimpa pengaturan store.
+  useEffect(() => {
+    if (!storeId || !enabled || !hydrated || readyStoreId === storeId) return;
+
+    const hasSyncHistory =
+      Object.keys(shadowRef.current).length > 0 ||
+      Object.keys(outboxRef.current).length > 0 ||
+      Boolean(localStorage.getItem(SINCE_KEY));
+    if (hasSyncHistory) {
+      setReadyStoreId(storeId);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error: bootstrapError } = await supabase
+        .from("store_data")
+        .select("kind, entity_id, payload, deleted, updated_at")
+        .order("updated_at", { ascending: true });
+      if (cancelled) return;
+      if (bootstrapError) {
+        setError(bootstrapError.message);
+        return;
+      }
+
+      const remote = (data ?? []) as {
+        kind: string;
+        entity_id: string;
+        payload: Record<string, unknown>;
+        deleted: boolean;
+        updated_at: string;
+      }[];
+      if (remote.length > 0) {
+        const records: SyncRecord[] = remote.map((row) => ({
+          kind: row.kind,
+          entity_id: row.entity_id,
+          payload: row.payload ?? {},
+          deleted: row.deleted,
+        }));
+        applyRemote((prev) => applyRecords(prev, records));
+        noteShadow(records);
+        const newest = remote.at(-1)?.updated_at;
+        if (newest) localStorage.setItem(SINCE_KEY, newest);
+      }
+      setError(null);
+      setReadyStoreId(storeId);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId, enabled, hydrated, readyStoreId, applyRemote, noteShadow]);
+
   const sync = useCallback(async () => {
-    if (!storeId || busyRef.current || !navigator.onLine) return;
+    if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
     busyRef.current = true;
     setSyncing(true);
     try {
@@ -268,18 +325,18 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, applyRemote, noteShadow, queueLocalChanges]);
+  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges]);
 
   // Segera kirim begitu ada perubahan yang menunggu.
   useEffect(() => {
-    if (!storeId || !enabled || pending === 0) return;
+    if (!storeId || readyStoreId !== storeId || !enabled || pending === 0) return;
     const timer = setTimeout(() => void sync(), 1200);
     return () => clearTimeout(timer);
-  }, [pending, storeId, enabled, sync]);
+  }, [pending, storeId, readyStoreId, enabled, sync]);
 
   // Jalankan sinkronisasi saat daring, saat layar aktif, dan berkala.
   useEffect(() => {
-    if (!storeId || !enabled) return;
+    if (!storeId || readyStoreId !== storeId || !enabled) return;
     void sync();
     const id = setInterval(() => void sync(), 20000);
     const wake = () => {
@@ -295,7 +352,7 @@ export function useStoreSync(options: {
       window.removeEventListener("online", reconnect);
       window.removeEventListener("focus", wake);
     };
-  }, [storeId, enabled, sync]);
+  }, [storeId, readyStoreId, enabled, sync]);
 
   return {
     online,
