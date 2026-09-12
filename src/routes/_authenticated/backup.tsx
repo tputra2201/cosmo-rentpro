@@ -51,6 +51,8 @@ const SHEETS: { sheet: string; key: string }[] = [
   { sheet: "Booking", key: "bookings" },
   { sheet: "Promo", key: "promotions" },
   { sheet: "Poin", key: "pointEntries" },
+  { sheet: "Playing Card", key: "playingCards" },
+  { sheet: "Transaksi Kartu", key: "cardEntries" },
   { sheet: "Transaksi", key: "history" },
   { sheet: "Pengaturan", key: "settings" },
 ];
