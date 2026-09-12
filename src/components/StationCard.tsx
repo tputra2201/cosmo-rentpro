@@ -33,7 +33,9 @@ export function StationCard({
   now: number;
   onClick: () => void;
 }) {
-  const status = stationStatus(station, now);
+  const { bookings } = useBilling();
+  const status = stationStatus(station, now, bookings);
+  const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
   const session = station.session;
   const total = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
   const paid = paidTotal(session);
