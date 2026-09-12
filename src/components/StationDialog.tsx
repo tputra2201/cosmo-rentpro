@@ -361,7 +361,16 @@ export function StationDialog({
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5"><Label htmlFor="customer-name">Nama pelanggan</Label><Input id="customer-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Pelanggan umum" /></div>
+              <CustomerPicker
+                value={customerName}
+                onChange={setCustomerName}
+                onPick={(item) => {
+                  setCustomerName(item.name);
+                  setCustomerPhone(item.phone);
+                  setMember(item.member);
+                }}
+              />
+
               <div className="space-y-1.5"><Label htmlFor="customer-phone">Nomor HP</Label><Input id="customer-phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="08..." inputMode="tel" /></div>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border p-3"><div><p className="text-sm font-medium">Harga member</p><p className="text-xs text-muted-foreground">Tandai pelanggan sebagai member</p></div><Switch checked={member} onCheckedChange={setMember} aria-label="Status member" /></div>
