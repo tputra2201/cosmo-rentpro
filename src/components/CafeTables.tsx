@@ -403,7 +403,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         {restAmount > 0 && (
                           <div className="space-y-1.5">
                             <Label>Sisa {formatRupiah(restAmount)} dibayar dengan</Label>
-                            <Select value={restMethod} onValueChange={setRestMethod}>
+                            <Select value={restMethod} onValueChange={setRestPay}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Pilih metode" />
                               </SelectTrigger>
