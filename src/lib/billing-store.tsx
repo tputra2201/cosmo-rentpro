@@ -256,6 +256,8 @@ type State = {
   cardPrice: number;
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
+  cashCategories: CashCategory[];
+  cashEntries: CashEntry[];
 };
 
 
