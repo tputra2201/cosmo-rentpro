@@ -155,6 +155,7 @@ export function useStoreSync(options: {
     for (const key of Object.keys(shadow)) {
       if (current.has(key)) continue;
       const [kind, ...rest] = key.split(":");
+      if (!kind || !isKnownKind(kind)) continue;
       outbox[key] = {
         kind: kind ?? "",
         entity_id: rest.join(":"),
