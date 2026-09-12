@@ -114,11 +114,11 @@ function AuthPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Tidak ada pendaftaran mandiri. Admin mengirim undangan ke email kamu,
-          lalu kamu membuat kata sandi sendiri lewat tautan di email itu. Lupa
-          sandi? Minta Admin mengirim tautan atur ulang.
-        </p>
+        {branding.login_note.trim() && (
+          <p className="mt-6 whitespace-pre-line text-center text-xs text-muted-foreground">
+            {branding.login_note}
+          </p>
+        )}
 
       </div>
     </div>
