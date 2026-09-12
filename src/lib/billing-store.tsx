@@ -1504,6 +1504,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           playingCards: [card, ...prev.playingCards],
           cardEntries: [...entries, ...prev.cardEntries],
+          cashEntries: (() => {
+            const row = cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now);
+            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+          })(),
           customers: newCustomer
             ? [newCustomer, ...prev.customers]
             : customerId
