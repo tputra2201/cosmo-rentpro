@@ -330,7 +330,7 @@ function AppShell() {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="xl:hidden"
+                      className="md:hidden"
                       aria-label="Buka menu"
                     >
                       <Menu className="size-5" />
