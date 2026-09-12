@@ -483,6 +483,8 @@ function ControlCenter() {
         </Button>
       </div>
 
+      <BrandingPanel busy={busy} post={post} />
+
       <div className="surface-panel grid gap-4 p-5">
         <h2 className="font-display text-lg font-bold">Buat store baru</h2>
         <div className="grid gap-4 sm:grid-cols-2">
