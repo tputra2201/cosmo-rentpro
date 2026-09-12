@@ -67,6 +67,12 @@ export function StationCard({
             {station.booth}
           </p>
         </div>
+        <div className="flex max-w-[45%] shrink-0 flex-col items-end gap-1">
+        {(session?.customerName || booking?.customerName) && (
+          <p className="max-w-full truncate text-right text-[11px] font-semibold text-foreground">
+            {session?.customerName || booking?.customerName}
+          </p>
+        )}
         <Badge
           variant="outline"
           className={cn(
