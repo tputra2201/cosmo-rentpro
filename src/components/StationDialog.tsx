@@ -176,7 +176,14 @@ export function StationDialog({
   const cashReceived =
     amountPaid === "" ? payTarget : Math.max(0, Number(amountPaid) || 0);
 
-  const cardCharge = payTarget;
+  const cardSplit = splitMode
+    ? splitRows
+        .filter((s) => s.method === CARD_PAYMENT_NAME)
+        .reduce((sum, s) => sum + s.amount, 0)
+    : 0;
+  const usesCard = isCardPayment || cardSplit > 0;
+  const cardCharge = isCardPayment ? payTarget : cardSplit;
+
 
   const resetPaymentForm = () => {
     setSplitMode(false);
