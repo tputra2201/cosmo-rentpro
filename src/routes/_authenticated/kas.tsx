@@ -61,16 +61,7 @@ function timeOf(ts: number) {
 }
 
 function KasPage() {
-  const {
-    cashCategories,
-    cashEntries,
-    paymentMethods,
-    addCashCategory,
-    updateCashCategory,
-    removeCashCategory,
-    addCashEntry,
-    removeCashEntry,
-  } = useBilling();
+  const { cashEntries, removeCashEntry } = useBilling();
 
   const todayKey = new Date().toDateString();
   const today = cashEntries.filter(
