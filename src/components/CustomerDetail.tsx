@@ -68,8 +68,6 @@ export function CustomerDetailDialog({
 
   const cards = useMemo(() => cardsOfCustomer(playingCards, customer), [playingCards, customer]);
   const receipts = useMemo(() => receiptsOfCustomer(history, customer), [history, customer]);
-  const cardIds = cards.map((c) => c.id);
-  const entries = cardEntries.filter((e) => cardIds.includes(e.cardId));
   const spent = receipts.reduce((sum, item) => sum + item.total, 0);
 
   return (
@@ -144,61 +142,68 @@ export function CustomerDetailDialog({
                   Pelanggan ini belum punya Playing Card.
                 </p>
               ) : (
-                cards.map((card) => (
-                  <div key={card.id} className="space-y-2 rounded-lg border border-border p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-display text-lg font-semibold">{card.cardNumber}</span>
-                      <span className="text-right">
-                        <span className="block text-xs text-muted-foreground">Saldo</span>
-                        <span className="font-display text-lg font-semibold text-accent">
-                          {formatRupiah(card.balance)}
-                        </span>
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {card.active ? "Aktif" : "Diblokir"} · potongan{" "}
-                      {cardDiscountPercentFor(card, {
-                        cardDiscountPercent,
-                        cardMemberDiscountPercent,
-                      })}
-                      %
-                    </p>
-                  </div>
-                ))
-              )}
-
-              {entries.length > 0 && (
-                <>
-                  <Separator />
-                  <p className="text-sm font-semibold">Riwayat pemakaian kartu</p>
-                  <ul className="space-y-2">
-                    {entries.slice(0, 100).map((entry) => (
-                      <li
-                        key={entry.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
-                      >
-                        <span className="min-w-0">
-                          <span className="font-semibold">{entry.cardNumber}</span> ·{" "}
-                          {CARD_TYPE_LABEL[entry.type] ?? entry.type} · {entry.note}
-                          <span className="block text-xs text-muted-foreground">
-                            {dt(entry.createdAt)} · saldo {formatRupiah(entry.balanceAfter)}
+                cards.map((card) => {
+                  const cardHistory = cardEntries.filter((e) => e.cardId === card.id);
+                  return (
+                    <div key={card.id} className="space-y-2 rounded-lg border border-border p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-display text-lg font-semibold">{card.cardNumber}</span>
+                        <span className="text-right">
+                          <span className="block text-xs text-muted-foreground">Saldo</span>
+                          <span className="font-display text-lg font-semibold text-accent">
+                            {formatRupiah(card.balance)}
                           </span>
                         </span>
-                        <span
-                          className={
-                            entry.amount < 0
-                              ? "font-semibold text-destructive"
-                              : "font-semibold text-accent"
-                          }
-                        >
-                          {entry.amount < 0 ? "-" : "+"}
-                          {formatRupiah(Math.abs(entry.amount))}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {card.active ? "Aktif" : "Diblokir"} · potongan{" "}
+                        {cardDiscountPercentFor(card, {
+                          cardDiscountPercent,
+                          cardMemberDiscountPercent,
+                        })}
+                        %
+                      </p>
+
+                      <Separator />
+                      <p className="text-sm font-semibold">
+                        Riwayat pemakaian kartu {card.cardNumber}
+                      </p>
+                      {cardHistory.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Belum ada transaksi untuk kartu ini.
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {cardHistory.slice(0, 100).map((entry) => (
+                            <li
+                              key={entry.id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
+                            >
+                              <span className="min-w-0">
+                                {CARD_TYPE_LABEL[entry.type] ?? entry.type} · {entry.note}
+                                <span className="block text-xs text-muted-foreground">
+                                  {dt(entry.createdAt)} · saldo {formatRupiah(entry.balanceAfter)}
+                                </span>
+                              </span>
+                              <span
+                                className={
+                                  entry.amount < 0
+                                    ? "font-semibold text-destructive"
+                                    : "font-semibold text-accent"
+                                }
+                              >
+                                {entry.amount < 0 ? "-" : "+"}
+                                {formatRupiah(Math.abs(entry.amount))}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })
               )}
+
             </TabsContent>
           </Tabs>
         )}

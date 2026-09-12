@@ -389,15 +389,38 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function HistoryPanel() {
-  const { cardEntries } = useBilling();
+  const { cardEntries, playingCards } = useBilling();
+  const [cardId, setCardId] = useState<string>(playingCards[0]?.id ?? "");
+  const selectedId = playingCards.some((c) => c.id === cardId) ? cardId : (playingCards[0]?.id ?? "");
+  const entries = cardEntries.filter((e) => e.cardId === selectedId);
   return (
     <section className="surface-panel space-y-3 p-4 sm:p-6">
       <h2 className="font-display text-xl font-semibold">Riwayat pemakaian kartu</h2>
-      {cardEntries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Belum ada transaksi kartu.</p>
+      {playingCards.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Belum ada kartu.</p>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor="history-card">Nomor kartu</Label>
+          <Select value={selectedId} onValueChange={setCardId}>
+            <SelectTrigger id="history-card" className="sm:w-72">
+              <SelectValue placeholder="Pilih nomor kartu" />
+            </SelectTrigger>
+            <SelectContent>
+              {playingCards.map((card) => (
+                <SelectItem key={card.id} value={card.id}>
+                  {card.cardNumber} — {card.customerName || "Tanpa nama"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      {playingCards.length === 0 ? null : entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Belum ada transaksi untuk kartu ini.</p>
       ) : (
         <ul className="space-y-2">
-          {cardEntries.slice(0, 200).map((entry) => (
+          {entries.slice(0, 200).map((entry) => (
+
             <li
               key={entry.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
