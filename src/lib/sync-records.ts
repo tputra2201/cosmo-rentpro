@@ -18,6 +18,7 @@ export const LIST_KINDS = {
   promotion: "promotions",
   point: "pointEntries",
   history: "history",
+  cafe_table: "cafeTables",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
@@ -31,7 +32,9 @@ const SETTINGS_KEYS = [
   "roundingRule",
   "defaultBonusMin",
   "pointsPerRupiah",
+  "menuCategories",
 ] as const;
+
 
 export const recordKey = (kind: string, entityId: string) => `${kind}:${entityId}`;
 
