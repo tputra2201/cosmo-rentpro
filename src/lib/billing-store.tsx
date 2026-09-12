@@ -630,6 +630,26 @@ type Ctx = State & {
   removeHistory: (id: string) => void;
   clearHistory: () => void;
   resetTransactions: () => void;
+  addCashCategory: (input: {
+    name: string;
+    direction: CashDirection;
+    payout?: boolean;
+    group?: string;
+  }) => CashCategory | null;
+  updateCashCategory: (id: string, patch: Partial<Omit<CashCategory, "id">>) => void;
+  removeCashCategory: (id: string) => void;
+  addCashEntry: (input: {
+    categoryId: string;
+    amount: number;
+    payment?: string;
+    note?: string;
+    createdAt?: number;
+  }) => CashEntry | null;
+  updateCashEntry: (
+    id: string,
+    patch: { amount?: number; payment?: string; note?: string; categoryId?: string },
+  ) => void;
+  removeCashEntry: (id: string) => void;
   exportSnapshot: () => BillingSnapshot;
   replaceAll: (data: unknown) => void;
   resetAll: () => void;
