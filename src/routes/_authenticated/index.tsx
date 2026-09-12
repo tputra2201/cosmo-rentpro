@@ -42,7 +42,7 @@ function Dashboard() {
 
   useEffect(() => {
     stations.forEach((station) => {
-      const status = stationStatus(station, now);
+      const status = stationStatus(station, now, bookings);
       if (status === "timeup" && !alerted.current.has(station.id)) {
         alerted.current.add(station.id);
         playAlarm();
@@ -56,7 +56,7 @@ function Dashboard() {
   }, [stations, now]);
 
   const active = stations.filter((s) => s.session);
-  const available = stations.filter((s) => stationStatus(s, now) === "idle");
+  const available = stations.filter((s) => stationStatus(s, now, bookings) === "idle");
   const openBill = active.reduce(
     (sum, s) =>
       sum +
