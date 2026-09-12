@@ -127,6 +127,42 @@ export type Promotion = {
   active: boolean;
 };
 export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
+
+/** Kartu bermain (Playing Card) berchip RFID Mifare Classic 13,56 MHz. */
+export type PlayingCard = {
+  id: string;
+  cardNumber: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  member: boolean;
+  balance: number;
+  active: boolean;
+  cardPrice: number;
+  createdAt: number;
+  sort?: number;
+};
+
+export type CardEntryType = "purchase" | "topup" | "payment" | "adjust";
+export type CardEntry = {
+  id: string;
+  cardId: string;
+  cardNumber: string;
+  type: CardEntryType;
+  amount: number;
+  balanceAfter: number;
+  note: string;
+  createdAt: number;
+};
+
+export const CARD_PAYMENT_NAME = "Playing Card";
+
+/** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
+export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
+  const key = cardNumber.trim().toLowerCase();
+  if (!key) return undefined;
+  return cards.find((c) => c.cardNumber.trim().toLowerCase() === key);
+}
 export type PaymentSplit = { method: string; amount: number };
 
 export type HistoryRecord = {
