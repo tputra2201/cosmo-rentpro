@@ -424,7 +424,7 @@ type Ctx = State & {
   setSessionBonus: (stationId: string, bonusMin: number) => void;
   updateSessionCustomer: (
     stationId: string,
-    patch: Partial<Pick<Session, "customerName" | "customerPhone" | "member" | "customerId">>,
+    patch: { customerName?: string; customerPhone?: string; member?: boolean; customerId?: string | undefined },
   ) => void;
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
