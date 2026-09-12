@@ -76,6 +76,8 @@ function timeOf(ts: number) {
 
 function LaporanPage() {
   const { history, clearHistory } = useBilling();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
   const today = history.filter((h) => dayKey(h.endAt) === todayKey);
 
