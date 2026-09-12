@@ -41,8 +41,9 @@ function BookingPage() {
 
   const ordered = [...bookings].sort((a, b) => a.startAt - b.startAt);
   const now = Date.now();
-  const upcoming = ordered.filter((item) => item.endAt >= now && item.status !== "cancelled" && item.status !== "completed");
-  const past = ordered.filter((item) => !upcoming.includes(item));
+  const checkedIn = ordered.filter((item) => item.status === "checked-in");
+  const upcoming = ordered.filter((item) => item.endAt >= now && item.status === "confirmed");
+  const past = ordered.filter((item) => !upcoming.includes(item) && !checkedIn.includes(item));
 
   const chooseCustomer = (id: string) => {
     setCustomerId(id);
