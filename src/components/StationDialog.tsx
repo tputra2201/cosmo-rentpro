@@ -47,6 +47,7 @@ import {
   rentalTotal,
   useBilling,
   type ConsoleType,
+  type DiscountType,
   type Station,
 } from "@/lib/billing-store";
 
