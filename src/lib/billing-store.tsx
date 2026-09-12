@@ -466,6 +466,7 @@ type Ctx = State & {
   updatePromotion: (id: string, patch: Partial<Omit<Promotion, "id">>) => void;
   removePromotion: (id: string) => void;
   clearHistory: () => void;
+  resetTransactions: () => void;
   exportSnapshot: () => BillingSnapshot;
   replaceAll: (data: unknown) => void;
   resetAll: () => void;
