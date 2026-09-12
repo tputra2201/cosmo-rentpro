@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Crown, Plus, Search, Trash2, UserRound } from "lucide-react";
+import { CreditCard, Crown, History, Plus, Search, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { formatRupiah, useBilling, type CustomerLevel } from "@/lib/billing-store";
+import { formatRupiah, useBilling, type Customer, type CustomerLevel } from "@/lib/billing-store";
+import { CustomerDetailDialog, cardsOfCustomer, receiptsOfCustomer } from "@/components/CustomerDetail";
 
 export const Route = createFileRoute("/_authenticated/pelanggan")({ head: () => ({ meta: [
   { title: "Pelanggan & Member — RentalPro" }, { name: "description", content: "Kelola pelanggan, member, level, kunjungan, dan poin loyalitas rental PlayStation." },
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/pelanggan")({ head: () => 
 ] }), component: PelangganPage });
 
 function PelangganPage() {
-  const { customers, addCustomer, updateCustomer, removeCustomer, adjustPoints, pointsPerRupiah, setPointsPerRupiah, pointEntries } = useBilling();
+  const { customers, addCustomer, pointsPerRupiah, setPointsPerRupiah } = useBilling();
   const [search, setSearch] = useState(""); const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [member, setMember] = useState(true); const [level, setLevel] = useState<CustomerLevel>("Bronze");
   const visible = customers.filter((item) => `${item.name} ${item.phone}`.toLowerCase().includes(search.toLowerCase()));
   return <div className="space-y-8"><header><h1 className="text-3xl font-bold sm:text-4xl">Pelanggan &amp; Member</h1><p className="mt-1 text-muted-foreground">Kelola profil, level, kunjungan, dan poin loyalitas.</p></header>
