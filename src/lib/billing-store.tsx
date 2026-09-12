@@ -156,6 +156,8 @@ export type CardEntry = {
 };
 
 export const CARD_PAYMENT_NAME = "Playing Card";
+/** Top-up kartu hanya deposit: masuk kas, tapi bukan penghasilan. */
+export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
 
 /** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
@@ -331,6 +333,7 @@ const defaultState: State = {
     { id: "cc-lain", name: "Pendapatan Lain", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-modal-owner", name: "Tambah Kas dari Owner", direction: "in", payout: true, group: "Kas Owner", active: true },
+    { id: CARD_TOPUP_CATEGORY_ID, name: "Top Up Playing Card", direction: "in", payout: true, group: "Playing Card", active: true },
     { id: "cc-listrik", name: "Pembayaran Listrik", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-gas", name: "Pembelian Gas", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
@@ -339,6 +342,30 @@ const defaultState: State = {
   ],
   cashEntries: [],
 };
+
+/** Catatan kas untuk top-up kartu: uang masuk, tapi bukan penghasilan. */
+function cardTopupCashEntry(
+  categories: CashCategory[],
+  amount: number,
+  cardNumber: string,
+  stamp: number,
+  payment = "Cash",
+): CashEntry | null {
+  const category = categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID);
+  if (!category || amount <= 0) return null;
+  return {
+    id: `cash-topup-${stamp}`,
+    categoryId: category.id,
+    categoryName: category.name,
+    group: category.group,
+    direction: "in",
+    payout: true,
+    amount,
+    payment,
+    note: `Top up kartu ${cardNumber}`,
+    createdAt: stamp,
+  };
+}
 
 export function formatRupiah(value: number) {
   return "Rp " + Math.round(value).toLocaleString("id-ID");
@@ -511,15 +538,24 @@ function migrateState(raw: unknown): State {
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
-    cashCategories: (parsed.cashCategories?.length
-      ? parsed.cashCategories
-      : defaultState.cashCategories
-    ).map((item) => ({
-      ...item,
-      group: item.group?.trim() ? item.group : "Lainnya",
-      payout: Boolean(item.payout),
-      active: item.active ?? true,
-    })),
+    cashCategories: (() => {
+      const list = (parsed.cashCategories?.length
+        ? parsed.cashCategories
+        : defaultState.cashCategories
+      ).map((item) => ({
+        ...item,
+        group: item.group?.trim() ? item.group : "Lainnya",
+        payout: Boolean(item.payout),
+        active: item.active ?? true,
+      }));
+      if (!list.some((item) => item.id === CARD_TOPUP_CATEGORY_ID)) {
+        const preset = defaultState.cashCategories.find(
+          (item) => item.id === CARD_TOPUP_CATEGORY_ID,
+        );
+        if (preset) list.push(preset);
+      }
+      return list;
+    })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
 
 
@@ -1468,6 +1504,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           playingCards: [card, ...prev.playingCards],
           cardEntries: [...entries, ...prev.cardEntries],
+          cashEntries: (() => {
+            const row = cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now);
+            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+          })(),
           customers: newCustomer
             ? [newCustomer, ...prev.customers]
             : customerId
@@ -1540,6 +1580,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             },
             ...prev.cardEntries,
           ],
+          cashEntries: (() => {
+            const row = cardTopupCashEntry(
+              prev.cashCategories,
+              value,
+              card.cardNumber,
+              stamp,
+            );
+            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+          })(),
         }));
         return true;
       },
