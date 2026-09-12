@@ -31,6 +31,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import {
   CARD_PAYMENT_NAME,
@@ -119,6 +120,11 @@ export function StationDialog({
   const [confirmPay, setConfirmPay] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
+
+  const matchedCustomer =
+    customers.find(
+      (item) => item.name.trim().toLowerCase() === customerName.trim().toLowerCase(),
+    ) ?? null;
 
   const activePayments = paymentMethods.filter((p) => p.active);
   const selectedPayment =
@@ -361,7 +367,16 @@ export function StationDialog({
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5"><Label htmlFor="customer-name">Nama pelanggan</Label><Input id="customer-name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Pelanggan umum" /></div>
+              <CustomerPicker
+                value={customerName}
+                onChange={setCustomerName}
+                onPick={(item) => {
+                  setCustomerName(item.name);
+                  setCustomerPhone(item.phone);
+                  setMember(item.member);
+                }}
+              />
+
               <div className="space-y-1.5"><Label htmlFor="customer-phone">Nomor HP</Label><Input id="customer-phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="08..." inputMode="tel" /></div>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border p-3"><div><p className="text-sm font-medium">Harga member</p><p className="text-xs text-muted-foreground">Tandai pelanggan sebagai member</p></div><Switch checked={member} onCheckedChange={setMember} aria-label="Status member" /></div>
@@ -437,7 +452,7 @@ export function StationDialog({
               <Button
                 className="w-full"
                 onClick={() => {
-                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
+                  startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
                   toast.success(`${station.name} mulai ${Math.max(0, duration + bonusMin)} menit`, bonusMin !== 0 ? { description: `${duration} menit + ekstra ${bonusMin} menit (tarif tetap)` } : undefined);
                 }}
               >
@@ -451,7 +466,7 @@ export function StationDialog({
               variant="secondary"
               className="w-full"
               onClick={() => {
-                startSession(station.id, "open", 0, { customerName, customerPhone, member, packageName: "Open Time", notes });
+                startSession(station.id, "open", 0, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: "Open Time", notes });
                 toast.success(`${station.name} mulai Main Sepuasnya`);
               }}
             >
