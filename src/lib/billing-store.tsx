@@ -889,6 +889,7 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
 
 
 
