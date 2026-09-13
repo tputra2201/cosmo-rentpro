@@ -192,6 +192,7 @@ function RootComponent() {
         <AuthProvider>
           <BillingProvider>
             <AppShell />
+            <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
         </AuthProvider>

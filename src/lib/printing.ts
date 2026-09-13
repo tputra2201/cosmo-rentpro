@@ -85,7 +85,8 @@ export const CHARS_PER_LINE: Record<PaperSize, number> = {
 };
 
 export function printMode(printer: PrinterConfig): PrintMode {
-  if (printer.mode === "rawbt" || printer.mode === "android") return printer.mode;
+  if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";
+  if (printer.mode === "rawbt") return "rawbt";
   return "system";
 }
 
