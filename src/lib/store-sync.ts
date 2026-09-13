@@ -109,6 +109,9 @@ export function useStoreSync(options: {
   const [readyStoreId, setReadyStoreId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [memberAttempt, setMemberAttempt] = useState(0);
+  const [bootAttempt, setBootAttempt] = useState(0);
+
 
   const shadowRef = useRef<Shadow>({});
   const outboxRef = useRef<Outbox>({});
