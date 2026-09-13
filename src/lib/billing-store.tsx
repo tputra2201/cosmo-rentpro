@@ -1294,19 +1294,30 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const removeSettlement = useCallback<Ctx["removeSettlement"]>(
     (stationId, settlementId) =>
-      mapStation(stationId, (s) =>
-        s.session
-          ? {
-              ...s,
-              session: {
-                ...s.session,
-                settlements: (s.session.settlements ?? []).filter((x) => x.id !== settlementId),
-              },
-            }
-          : s,
-      ),
-    [mapStation],
+      setState((prev) => {
+        const station = prev.stations.find((s) => s.id === stationId);
+        if (!station?.session) return prev;
+        const settlements = (station.session.settlements ?? []).filter(
+          (x) => x.id !== settlementId,
+        );
+        const historyId = station.session.historyId;
+        // Nota otomatis dibatalkan bila pembayaran dihapus dan sesi masih berjalan.
+        const history = historyId
+          ? prev.history.filter((h) => !(h.id === historyId && h.ongoing))
+          : prev.history;
+        return {
+          ...prev,
+          history,
+          stations: prev.stations.map((s) => {
+            if (s.id !== stationId || !s.session) return s;
+            const { historyId: _drop, paidAt: _drop2, ...rest } = s.session;
+            return { ...s, session: { ...rest, settlements } };
+          }),
+        };
+      }),
+    [setState],
   );
+
 
 
 
