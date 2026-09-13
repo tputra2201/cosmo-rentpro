@@ -207,7 +207,7 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
-  const { sync, shifts } = useBilling();
+  const { sync, shifts, rolePermissions } = useBilling();
   const needCheckIn = {
     done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
   };
@@ -253,14 +253,13 @@ function AppShell() {
     }
   }, [pathname, navigate]);
 
-  const items = navItems.filter(({ to }) => {
-    if (installerOnlyPaths.includes(to)) return role === "installer";
-    return isAdminLevel(role) || !adminOnlyPaths.includes(to);
-  });
-  const blocked =
-    session !== null &&
-    ((installerOnlyPaths.includes(pathname) && role !== "installer") ||
-      (!isAdminLevel(role) && adminOnlyPaths.includes(pathname)));
+  const allowed = (path: string) => {
+    const key = MENU_PERMISSION[path];
+    if (!key) return true;
+    return can(role, key, rolePermissions);
+  };
+  const items = navItems.filter(({ to }) => allowed(to));
+  const blocked = session !== null && role !== null && !allowed(pathname);
 
   const handleSignOut = async () => {
     await signOut();
@@ -441,9 +440,8 @@ function AppShell() {
               <div className="surface-panel mx-auto max-w-md p-8 text-center">
                 <h1 className="text-xl font-semibold">Akses terbatas</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {installerOnlyPaths.includes(pathname)
-                    ? "Halaman ini hanya untuk Installer."
-                    : "Halaman ini hanya untuk Admin. Silakan hubungi Admin bila kamu membutuhkan aksesnya."}
+                  Level {role ? roleLabel[role] : ""} belum punya hak akses ke
+                  halaman ini. Silakan hubungi Installer atau Manager.
                 </p>
                 <Button className="mt-6" onClick={() => navigate({ to: "/" })}>
                   Kembali ke Dashboard
