@@ -131,6 +131,12 @@ export function CardPaymentPanel({
                 <PlusCircle className="size-4" /> Top up
               </Button>
             </div>
+            <CardFundingSelect
+              id={`${inputId}-topup-pay`}
+              value={topupPay}
+              onChange={setTopupPay}
+              label="Dibayar dengan"
+            />
             {shortage > 0 && (
               <button
                 type="button"
