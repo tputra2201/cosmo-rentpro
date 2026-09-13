@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { MailCheck, Send, Trash2, UserPlus } from "lucide-react";
+import { MailCheck, Send, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import {
   listUsers,
   inviteUser,
@@ -13,12 +13,21 @@ import {
   deleteUser,
   type ManagedUser,
 } from "@/lib/users.functions";
-import { useAuth, roleLabel } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { useBilling } from "@/lib/billing-store";
+import {
+  ALL_ROLES,
+  PERMISSION_GROUPS,
+  defaultRolePermissions,
+  permissionsOf,
+  roleLabel,
+  type AppRole,
+} from "@/lib/permissions";
 import { passwordSetupUrl } from "@/lib/app-url";
-import type { AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -27,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
     meta: [
@@ -35,17 +43,22 @@ export const Route = createFileRoute("/_authenticated/pengguna")({
       {
         name: "description",
         content:
-          "Admin mendaftarkan staf, mengatur level Admin atau Kasir, dan mengganti kata sandi pengguna.",
+          "Daftar pengguna setiap store, pengaturan level Manager, Finance, Kasir, Operator, dan hak akses tiap menu.",
       },
       { property: "og:title", content: "Pengaturan Pengguna — RentalPro" },
       {
         property: "og:description",
-        content: "Kelola akun staf rental PlayStation: tambah, atur level, dan reset sandi.",
+        content:
+          "Kelola akun staf rental PlayStation per store dan atur hak akses tiap level lewat centang.",
       },
     ],
   }),
   component: PenggunaPage,
 });
+
+/** Level yang bisa dipilih di form (Installer hanya oleh Installer). */
+const selectableRoles = (canInstaller: boolean): AppRole[] =>
+  canInstaller ? ALL_ROLES : ALL_ROLES.filter((r) => r !== "installer");
 
 function PenggunaPage() {
   const { user, role: myRole } = useAuth();
@@ -69,17 +82,13 @@ function PenggunaPage() {
 
   const redirectTo = passwordSetupUrl;
 
-
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<AppRole>("kasir");
 
   const add = useMutation({
-    mutationFn: (data: {
-      email: string;
-      fullName: string;
-      role: AppRole;
-    }) => addFn({ data: { ...data, redirectTo: redirectTo() } }),
+    mutationFn: (data: { email: string; fullName: string; role: AppRole }) =>
+      addFn({ data: { ...data, redirectTo: redirectTo() } }),
     onSuccess: () => {
       toast.success("Undangan terkirim ke email staf");
       setEmail("");
@@ -104,7 +113,6 @@ function PenggunaPage() {
     onError,
   });
 
-
   const edit = useMutation({
     mutationFn: (data: {
       id: string;
@@ -128,6 +136,16 @@ function PenggunaPage() {
     onError,
   });
 
+  /** Kelompokkan pengguna per store. */
+  const groups = useMemo(() => {
+    const map = new Map<string, ManagedUser[]>();
+    for (const u of users as ManagedUser[]) {
+      const key = u.storeName || "Tanpa store";
+      map.set(key, [...(map.get(key) ?? []), u]);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [users]);
+
   return (
     <div className="grid gap-6">
       <div>
@@ -135,8 +153,8 @@ function PenggunaPage() {
           Pengaturan Pengguna
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Admin mengundang staf lewat email. Staf membuat kata sandinya sendiri
-          dari tautan undangan — tidak ada sandi awal yang dikirim.
+          Daftar pengguna setiap store beserta levelnya. Staf diundang lewat
+          email dan membuat kata sandinya sendiri dari tautan undangan.
         </p>
       </div>
 
@@ -175,9 +193,11 @@ function PenggunaPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="kasir">Kasir</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              {canInstaller && <SelectItem value="installer">Installer</SelectItem>}
+              {selectableRoles(canInstaller).map((r) => (
+                <SelectItem key={r} value={r}>
+                  {roleLabel[r]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -188,33 +208,46 @@ function PenggunaPage() {
         </div>
       </form>
 
-      <div className="surface-panel p-5">
-        {isLoading && <p className="text-sm text-muted-foreground">Memuat pengguna…</p>}
+      <div className="grid gap-4">
+        {isLoading && (
+          <p className="text-sm text-muted-foreground">Memuat pengguna…</p>
+        )}
         {error && (
           <p className="text-sm text-destructive">
             {error instanceof Error ? error.message : "Gagal memuat pengguna"}
           </p>
         )}
-        <div className="grid gap-3">
-          {users.map((u: ManagedUser) => (
-            <UserRow
-              key={u.id}
-              user={u}
-              isSelf={u.id === user?.id}
-              canInstaller={canInstaller}
-              busy={resend.isPending || reset.isPending}
-              onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
-              onResend={() => resend.mutate(u.email)}
-              onReset={() => reset.mutate(u.email)}
-              onDelete={() => remove.mutate(u.id)}
-            />
-          ))}
-
-          {!isLoading && users.length === 0 && (
-            <p className="text-sm text-muted-foreground">Belum ada pengguna.</p>
-          )}
-        </div>
+        {groups.map(([storeName, rows]) => (
+          <div key={storeName} className="surface-panel p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg font-semibold">{storeName}</h2>
+              <span className="text-xs text-muted-foreground">
+                {rows.length} pengguna
+              </span>
+            </div>
+            <div className="grid gap-3">
+              {rows.map((u) => (
+                <UserRow
+                  key={u.id}
+                  user={u}
+                  isSelf={u.id === user?.id}
+                  canInstaller={canInstaller}
+                  busy={resend.isPending || reset.isPending}
+                  onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
+                  onResend={() => resend.mutate(u.email)}
+                  onReset={() => reset.mutate(u.email)}
+                  onDelete={() => remove.mutate(u.id)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+        {!isLoading && groups.length === 0 && (
+          <p className="text-sm text-muted-foreground">Belum ada pengguna.</p>
+        )}
       </div>
+
+      {canInstaller && <AccessMatrix />}
     </div>
   );
 }
@@ -240,6 +273,7 @@ function UserRow({
 }) {
   const [name, setName] = useState(user.fullName);
   const [role, setRole] = useState<AppRole>(user.role);
+  const options = selectableRoles(canInstaller);
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_auto_auto_auto] lg:items-end">
@@ -253,7 +287,9 @@ function UserRow({
         <Input value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="grid gap-1">
-        <Label className="text-xs text-muted-foreground">Level saat ini: {roleLabel[user.role]}</Label>
+        <Label className="text-xs text-muted-foreground">
+          Level saat ini: {roleLabel[user.role]}
+        </Label>
         <Select
           value={role}
           onValueChange={(v) => setRole(v as AppRole)}
@@ -263,9 +299,14 @@ function UserRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="kasir">Kasir</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            {canInstaller && <SelectItem value="installer">Installer</SelectItem>}
+            {(options.includes(user.role)
+              ? options
+              : [user.role, ...options]
+            ).map((r) => (
+              <SelectItem key={r} value={r}>
+                {roleLabel[r]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -305,7 +346,104 @@ function UserRow({
       >
         <Trash2 className="size-4" />
       </Button>
+    </div>
+  );
+}
 
+/** Pengaturan hak akses tiap level lewat centang (hanya Installer). */
+function AccessMatrix() {
+  const { rolePermissions, setRolePermissions } = useBilling();
+  const editableRoles = ALL_ROLES.filter((r) => r !== "installer");
+  const [active, setActive] = useState<AppRole>(editableRoles[0] ?? "manager");
+  const allowed = permissionsOf(active, rolePermissions);
+
+  const toggle = (key: string, on: boolean) => {
+    const next = on
+      ? [...new Set([...allowed, key])]
+      : allowed.filter((k) => k !== key);
+    setRolePermissions(active, next);
+  };
+
+  const setGroup = (keys: string[], on: boolean) => {
+    const next = on
+      ? [...new Set([...allowed, ...keys])]
+      : allowed.filter((k) => !keys.includes(k));
+    setRolePermissions(active, next);
+  };
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+            <ShieldCheck className="size-5 text-primary" /> Hak Akses per Level
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Centang menu, sub menu, dan fitur yang boleh dipakai tiap level.
+            Installer selalu punya akses penuh.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setRolePermissions(active, defaultRolePermissions[active] ?? [])
+          }
+        >
+          Kembalikan bawaan {roleLabel[active]}
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {editableRoles.map((r) => (
+          <Button
+            key={r}
+            size="sm"
+            variant={r === active ? "default" : "outline"}
+            onClick={() => setActive(r)}
+          >
+            {roleLabel[r]}
+          </Button>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {PERMISSION_GROUPS.map((group) => {
+          const keys = group.items.map((i) => i.key);
+          const allOn = keys.every((k) => allowed.includes(k));
+          return (
+            <div
+              key={group.label}
+              className="rounded-lg border border-border bg-secondary/30 p-4"
+            >
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">{group.label}</h3>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setGroup(keys, !allOn)}
+                >
+                  {allOn ? "Hapus semua" : "Pilih semua"}
+                </button>
+              </div>
+              <div className="grid gap-2">
+                {group.items.map((item) => (
+                  <label
+                    key={item.key}
+                    className="flex items-center gap-2.5 text-sm"
+                  >
+                    <Checkbox
+                      checked={allowed.includes(item.key)}
+                      onCheckedChange={(v) => toggle(item.key, v === true)}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
