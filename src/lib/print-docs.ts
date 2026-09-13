@@ -7,6 +7,7 @@ import {
   paperCss,
   printHtml,
   printMode,
+  printViaAndroid,
   printViaRawBt,
   textCenter,
   textRow,
@@ -199,6 +200,10 @@ export function printReceipt(opts: {
   kind: "receipt" | "invoice";
   cashier?: string;
 }) {
+  if (printMode(opts.printer) === "android") {
+    printViaAndroid(opts.printer, textWithCopies(opts.printer, receiptText(opts)));
+    return;
+  }
   if (printMode(opts.printer) === "rawbt") {
     printViaRawBt(textWithCopies(opts.printer, receiptText(opts)));
     return;
@@ -225,6 +230,29 @@ export function printLabels(opts: {
 }) {
   const { printer, items, heading, source, customerName, note } = opts;
   const stamp = time(opts.at ?? Date.now());
+  if (printMode(printer) === "android") {
+    const w = CHARS_PER_LINE[printer.paper];
+    const text = items
+      .map((item) =>
+        [
+          textCenter(heading, w),
+          textSep(w),
+          item.name,
+          `x ${item.qty}`,
+          item.note ?? "",
+          textSep(w),
+          source,
+          customerName ?? "",
+          note ?? "",
+          stamp,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      )
+      .join("\n\n");
+    printViaAndroid(printer, textWithCopies(printer, text));
+    return;
+  }
   if (printMode(printer) === "rawbt") {
     const w = CHARS_PER_LINE[printer.paper];
     const text = items
@@ -271,7 +299,7 @@ export function printLabels(opts: {
 
 /** Cetak isi laporan yang sedang tampil di layar. */
 export function printReport(printer: PrinterConfig, title: string, innerHtml: string) {
-  if (printMode(printer) === "rawbt") {
+  if (printMode(printer) === "rawbt" || printMode(printer) === "android") {
     const w = CHARS_PER_LINE[printer.paper];
     const plain = innerHtml
       .replace(/<\/(tr|div|p|h1|h2|h3|section|table)>/gi, "\n")
@@ -283,7 +311,9 @@ export function printReport(printer: PrinterConfig, title: string, innerHtml: st
       .map((l) => l.replace(/\s+/g, " ").trim())
       .filter(Boolean)
       .join("\n");
-    printViaRawBt(`${textCenter(title, w)}\n${textSep(w)}\n${plain}`);
+    const text = `${textCenter(title, w)}\n${textSep(w)}\n${plain}`;
+    if (printMode(printer) === "android") printViaAndroid(printer, text);
+    else printViaRawBt(text);
     return;
   }
   const css = `

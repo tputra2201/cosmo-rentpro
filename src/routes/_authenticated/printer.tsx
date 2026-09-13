@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Printer as PrinterIcon, Trash2 } from "lucide-react";
+import { Plus, Printer as PrinterIcon, RefreshCw, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ import {
   PRINTER_ROLE_LABEL,
   PRINT_MODES,
   PRINT_MODE_LABEL,
+  isAndroidPrintAvailable,
+  pairedAndroidPrinters,
   type DocLayout,
   type PaperSize,
   type PrintMode,
@@ -55,6 +58,8 @@ export const Route = createFileRoute("/_authenticated/printer")({
 });
 
 function PrinterPage() {
+  const [pairedPrinters, setPairedPrinters] = useState(() => pairedAndroidPrinters());
+  const androidApp = isAndroidPrintAvailable();
   const {
     printers,
     addPrinter,
@@ -73,6 +78,10 @@ function PrinterPage() {
   const canManage = can(role, "printer.kelola", rolePermissions);
 
   const labelPrinters = printers.filter((p) => p.role === "kitchen" || p.role === "bar");
+
+  useEffect(() => {
+    if (androidApp) setPairedPrinters(pairedAndroidPrinters());
+  }, [androidApp]);
 
   const testPrint = (printer: PrinterConfig) => {
     if (printer.role === "kitchen" || printer.role === "bar") {
@@ -124,25 +133,16 @@ function PrinterPage() {
       </header>
 
       <section className="surface-panel space-y-2 p-6">
-        <h2 className="text-xl font-semibold">Mencetak dari Android</h2>
+        <h2 className="text-xl font-semibold">Mencetak dari aplikasi Android</h2>
         <p className="text-sm text-muted-foreground">
-          Android tidak mengenali printer Bluetooth thermal di dialog cetak, jadi printer seperti
-          Kassen MT-300 VL (80 mm, ESC/POS) tidak akan pernah muncul di daftar. Langkahnya:
+          Aplikasi Android Billing Rental PS menghubungkan Kassen MT-300 VL langsung melalui
+          Bluetooth tanpa RawBT. Pasangkan printer sekali di pengaturan Bluetooth Android, lalu
+          pilih cara mencetak dan perangkatnya pada daftar di bawah.
         </p>
-        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-          <li>Pasangkan printer lewat Bluetooth di pengaturan Android.</li>
-          <li>
-            Pasang aplikasi <span className="font-medium">RawBT</span> dari Play Store, buka, lalu
-            pilih printer itu sebagai printer utama (ESC/POS, lebar 80 mm).
-          </li>
-          <li>
-            Di daftar di bawah, ubah <span className="font-medium">Cara mencetak</span> printer
-            struk menjadi <span className="font-medium">Android — aplikasi RawBT</span>.
-          </li>
-          <li>Tekan Uji cetak; struk langsung keluar tanpa dialog cetak.</li>
-        </ol>
         <p className="text-sm text-muted-foreground">
-          Di komputer Windows atau Mac, biarkan pilihannya pada dialog cetak perangkat.
+          {androidApp
+            ? `${pairedPrinters.length} printer Bluetooth ditemukan pada perangkat ini.`
+            : "Pilihan Bluetooth langsung aktif saat halaman dibuka dari aplikasi Android khusus."}
         </p>
       </section>
 
@@ -231,10 +231,41 @@ function PrinterPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Di Android, printer Bluetooth thermal (mis. Kassen MT-300 VL) tidak muncul di
-                    dialog cetak. Pilih mode RawBT agar teks dikirim langsung ke printer.
+                    Gunakan Bluetooth langsung di aplikasi Android, atau dialog cetak di komputer.
                   </p>
                 </div>
+                {p.mode === "android" && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label>Printer Bluetooth</Label>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Muat ulang printer Bluetooth"
+                        onClick={() => setPairedPrinters(pairedAndroidPrinters())}
+                      >
+                        <RefreshCw className="size-4" />
+                      </Button>
+                    </div>
+                    <Select
+                      value={p.bluetoothAddress ?? ""}
+                      disabled={!canManage || !androidApp}
+                      onValueChange={(value) => updatePrinter(p.id, { bluetoothAddress: value })}
+                    >
+                      <SelectTrigger aria-label={`Printer Bluetooth ${p.name}`}>
+                        <SelectValue placeholder="Pilih printer yang dipasangkan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pairedPrinters.map((device) => (
+                          <SelectItem key={device.address} value={device.address}>
+                            {device.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="mt-2 grid gap-2 sm:grid-cols-4">

@@ -38,6 +38,7 @@ import {
 
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -191,6 +192,7 @@ function RootComponent() {
         <AuthProvider>
           <BillingProvider>
             <AppShell />
+            <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
         </AuthProvider>
@@ -198,6 +200,20 @@ function RootComponent() {
     </QueryClientProvider>
 
   );
+}
+
+function AndroidPrintFeedback() {
+  useEffect(() => {
+    const handle = (event: Event) => {
+      const detail = (event as CustomEvent<{ ok?: boolean; message?: string }>).detail;
+      const message = detail?.message || (detail?.ok ? "Cetak berhasil" : "Cetak gagal");
+      if (detail?.ok) toast.success(message);
+      else toast.error(message);
+    };
+    window.addEventListener("billing-android-print", handle);
+    return () => window.removeEventListener("billing-android-print", handle);
+  }, []);
+  return null;
 }
 
 function AppShell() {
