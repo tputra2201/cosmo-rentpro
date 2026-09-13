@@ -34,11 +34,39 @@ export function StationCard({
   now: number;
   onClick: () => void;
 }) {
-  const { bookings } = useBilling();
+  const {
+    bookings,
+    consoleDiscounts,
+    menu,
+    promotions,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+  } = useBilling();
   const status = stationStatus(station, now, bookings);
   const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
   const session = station.session;
-  const total = session ? rentalTotal(session, now) + fnbTotal(session) : 0;
+  const usedCard = Boolean(
+    session?.settlements?.some(
+      (settlement) =>
+        settlement.payment === CARD_PAYMENT_NAME ||
+        settlement.payments?.some((row) => row.method === CARD_PAYMENT_NAME),
+    ),
+  );
+  const total = session
+    ? sessionBill(
+        session,
+        now,
+        station.console,
+        {
+          consoleDiscounts,
+          menu,
+          promotions,
+          cardDiscountPercent,
+          cardMemberDiscountPercent,
+        },
+        { member: Boolean(session.member), card: usedCard },
+      ).total
+    : 0;
   const paid = paidTotal(session);
   const due = Math.max(0, total - paid);
 
