@@ -2,10 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound, ShieldCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { setOwnPassword as setOwnPasswordFn } from "@/lib/users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 
 export const Route = createFileRoute("/atur-sandi")({
   
@@ -29,6 +32,8 @@ export const Route = createFileRoute("/atur-sandi")({
 
 function AturSandiPage() {
   const navigate = useNavigate();
+  const savePassword = useServerFn(setOwnPasswordFn);
+
   const [ready, setReady] = useState(false);
   const [valid, setValid] = useState(false);
   const [next, setNext] = useState("");
@@ -71,8 +76,8 @@ function AturSandiPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next.length < 6) {
-      toast.error("Kata sandi minimal 6 karakter");
+    if (next.length < 8) {
+      toast.error("Kata sandi minimal 8 karakter");
       return;
     }
     if (next !== confirm) {
@@ -81,9 +86,9 @@ function AturSandiPage() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) throw error;
+      await savePassword({ data: { password: next } });
       await supabase.auth.signOut();
+
       toast.success("Kata sandi tersimpan. Silakan masuk dengan sandi baru.");
       navigate({ to: "/auth", replace: true });
     } catch (err) {
@@ -137,10 +142,10 @@ function AturSandiPage() {
                   id="new"
                   type={show ? "text" : "password"}
                   autoComplete="new-password"
-                  minLength={6}
+                  minLength={8}
                   value={next}
                   onChange={(e) => setNext(e.target.value)}
-                  placeholder="Minimal 6 karakter"
+                  placeholder="Minimal 8 karakter"
                   required
                 />
                 <button
@@ -159,7 +164,7 @@ function AturSandiPage() {
                 id="confirm"
                 type={show ? "text" : "password"}
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Ketik ulang kata sandi"

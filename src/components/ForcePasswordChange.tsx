@@ -3,8 +3,11 @@ import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { markPasswordChanged as markPasswordChangedFn } from "@/lib/users.functions";
+import {
+  markPasswordChanged as markPasswordChangedFn,
+  setOwnPassword as setOwnPasswordFn,
+} from "@/lib/users.functions";
+
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +16,7 @@ import { Label } from "@/components/ui/label";
 export function ForcePasswordChange() {
   const { markPasswordChanged, signOut } = useAuth();
   const markDone = useServerFn(markPasswordChangedFn);
+  const savePassword = useServerFn(setOwnPasswordFn);
   const navigate = useNavigate();
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -23,8 +27,8 @@ export function ForcePasswordChange() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next.length < 6) {
-      toast.error("Kata sandi minimal 6 karakter");
+    if (next.length < 8) {
+      toast.error("Kata sandi minimal 8 karakter");
       return;
     }
     if (next !== confirm) {
@@ -33,8 +37,7 @@ export function ForcePasswordChange() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) throw error;
+      await savePassword({ data: { password: next } });
       await markDone({});
       markPasswordChanged();
       toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
@@ -46,6 +49,7 @@ export function ForcePasswordChange() {
       setBusy(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm">
@@ -73,10 +77,10 @@ export function ForcePasswordChange() {
                 id="force-new"
                 type={show ? "text" : "password"}
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
-                placeholder="Minimal 6 karakter"
+                placeholder="Minimal 8 karakter"
                 required
               />
               <button
@@ -96,7 +100,7 @@ export function ForcePasswordChange() {
               id="force-confirm"
               type={show ? "text" : "password"}
               autoComplete="new-password"
-              minLength={6}
+              minLength={8}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Ketik ulang kata sandi"

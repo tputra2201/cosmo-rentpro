@@ -14,6 +14,8 @@ const OUTBOX_KEY = "billing-sync-outbox-v1";
 const SHADOW_KEY = "billing-sync-shadow-v1";
 const SINCE_KEY = "billing-sync-since-v1";
 const STORE_KEY = "billing-sync-store-v1";
+const FRESH_KEY = "billing-sync-fresh-v1";
+
 
 const EPOCH = "1970-01-01T00:00:00Z";
 
@@ -107,6 +109,9 @@ export function useStoreSync(options: {
   const [readyStoreId, setReadyStoreId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [memberAttempt, setMemberAttempt] = useState(0);
+  const [bootAttempt, setBootAttempt] = useState(0);
+
 
   const shadowRef = useRef<Shadow>({});
   const outboxRef = useRef<Outbox>({});
@@ -114,6 +119,8 @@ export function useStoreSync(options: {
   const loadedRef = useRef(false);
   const stateRef = useRef(state);
   const prevKeysRef = useRef<Set<string> | null>(null);
+  const blockedUntilRef = useRef(0);
+
 
   stateRef.current = state;
 
@@ -150,41 +157,68 @@ export function useStoreSync(options: {
     // membuat data store A diterapkan ke store B sebelum membership terbaca.
     if (cached && typeof navigator !== "undefined" && !navigator.onLine) {
       setStoreId(cached);
+      // Tanpa internet, data lokal yang sudah bertanda store ini boleh langsung
+      // dicatat ke antrean kirim supaya transaksi hari ini tidak hilang.
+      if (stateRef.current.storeId === cached) setReadyStoreId(cached);
     }
     let cancelled = false;
-    (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) return;
-      const { data } = await supabase
-        .from("store_members")
-        .select("store_id")
-        .eq("user_id", userId)
-        .limit(1)
-        .maybeSingle();
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    const fail = () => {
       if (cancelled) return;
-      const id = (data as { store_id: string } | null)?.store_id ?? null;
-      if (!id) return;
-      if (stateRef.current.storeId !== id) {
-        // Data lokal milik store lain (atau data bawaan yang belum bertanda
-        // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
-        localStorage.removeItem(SHADOW_KEY);
-        localStorage.removeItem(OUTBOX_KEY);
-        localStorage.removeItem(SINCE_KEY);
-        shadowRef.current = {};
-        outboxRef.current = {};
-        prevKeysRef.current = null;
-        setPending(0);
-        setReadyStoreId(null);
+      // Coba lagi: kegagalan jaringan tidak boleh membuat perangkat berhenti
+      // menyinkronkan sepanjang sesi.
+      retry = setTimeout(() => {
+        if (!cancelled) setMemberAttempt((n) => n + 1);
+      }, 8000);
+    };
+    (async () => {
+      try {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError) throw new Error(authError.message);
+        const userId = auth.user?.id;
+        if (!userId) return;
+        const { data, error: memberError } = await supabase
+          .from("store_members")
+          .select("store_id")
+          .eq("user_id", userId)
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (memberError) throw new Error(memberError.message);
+        const id = (data as { store_id: string } | null)?.store_id ?? null;
+        if (!id) {
+          setError("Akun belum terhubung ke store. Hubungi Admin atau Developer.");
+          return;
+        }
+        if (stateRef.current.storeId !== id) {
+          // Data lokal milik store lain (atau data bawaan yang belum bertanda
+          // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
+          localStorage.removeItem(SHADOW_KEY);
+          localStorage.removeItem(OUTBOX_KEY);
+          localStorage.removeItem(SINCE_KEY);
+          // Tandai bahwa data lokal baru saja dikosongkan, jadi isi pusat aman
+          // dipakai sebagai satu-satunya sumber saat pengambilan pertama.
+          localStorage.setItem(FRESH_KEY, id);
+          shadowRef.current = {};
+          outboxRef.current = {};
+          prevKeysRef.current = null;
+          setPending(0);
+          setReadyStoreId(null);
+        }
+        bindStore(id);
+        localStorage.setItem(STORE_KEY, id);
+        setStoreId(id);
+        setError(null);
+      } catch {
+        fail();
       }
-      bindStore(id);
-      localStorage.setItem(STORE_KEY, id);
-      setStoreId(id);
     })();
     return () => {
       cancelled = true;
+      if (retry) clearTimeout(retry);
     };
-  }, [enabled, bindStore]);
+  }, [enabled, bindStore, memberAttempt]);
+
 
   const queueLocalChanges = useCallback((snapshot: BillingSnapshot, activeStoreId: string) => {
     // Kunci utama: hanya data yang memang bertanda store ini yang boleh masuk
@@ -266,6 +300,7 @@ export function useStoreSync(options: {
     }
 
     let cancelled = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
     void (async () => {
       const { data, error: bootstrapError } = await supabase
         .from("store_data")
@@ -275,6 +310,11 @@ export function useStoreSync(options: {
       if (cancelled) return;
       if (bootstrapError) {
         setError(bootstrapError.message);
+        // Ulangi sampai berhasil. Tanpa ini, satu kegagalan jaringan membuat
+        // perangkat berhenti menyinkronkan sepanjang sesi.
+        retry = setTimeout(() => {
+          if (!cancelled) setBootAttempt((n) => n + 1);
+        }, 8000);
         return;
       }
 
@@ -292,25 +332,45 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
-        // Isi pusat adalah satu-satunya sumber saat pertama kali mengambil
-        // data store: buang dulu seluruh daftar lokal supaya unit atau meja
-        // milik store lain (dan data bawaan) tidak ikut terkirim.
-        applyRemote((prev) => applyRecords(clearSyncedLists(prev), records));
+        // Kalau data lokal baru saja dikosongkan (perangkat baru/ganti store),
+        // isi pusat menjadi satu-satunya sumber. Kalau perangkat ini sudah
+        // memegang data store yang sama — misalnya transaksi yang dibuat saat
+        // internet mati — data itu dipertahankan dan hanya ditimpa per baris.
+        const isFresh = localStorage.getItem(FRESH_KEY) === storeId;
+        applyRemote((prev) =>
+          applyRecords(isFresh ? clearSyncedLists(prev) : prev, records),
+        );
         noteShadow(records);
         const newest = remote.at(-1)?.updated_at;
         if (newest) localStorage.setItem(SINCE_KEY, newest);
       }
+      localStorage.removeItem(FRESH_KEY);
       setError(null);
       setReadyStoreId(storeId);
     })();
 
+
     return () => {
       cancelled = true;
+      if (retry) clearTimeout(retry);
     };
-  }, [storeId, enabled, hydrated, readyStoreId, state.storeId, applyRemote, noteShadow]);
+  }, [
+    storeId,
+    enabled,
+    hydrated,
+    readyStoreId,
+    state.storeId,
+    bootAttempt,
+    applyRemote,
+    noteShadow,
+  ]);
+
 
   const sync = useCallback(async () => {
     if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
+    // Jeda setelah penolakan aturan baris: data lokal tetap tersimpan di antrean.
+    if (Date.now() < blockedUntilRef.current) return;
+
     busyRef.current = true;
     setSyncing(true);
     try {
@@ -334,6 +394,8 @@ export function useStoreSync(options: {
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
         localStorage.setItem(STORE_KEY, currentStoreId);
+        localStorage.setItem(FRESH_KEY, currentStoreId);
+
         shadowRef.current = {};
         outboxRef.current = {};
         prevKeysRef.current = null;
@@ -462,11 +524,24 @@ export function useStoreSync(options: {
       setError(null);
       setLastSyncedAt(Date.now());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sinkronisasi gagal");
+      const message = err instanceof Error ? err.message : "Sinkronisasi gagal";
+      // Penolakan aturan baris berarti akun ini tidak (lagi) terhubung ke store
+      // yang dipakai, atau sesinya kedaluwarsa. Coba segarkan sesi sekali, lalu
+      // beri jeda supaya tidak menabrak pusat setiap 20 detik tanpa hasil.
+      if (/row-level security|row level security/i.test(message)) {
+        blockedUntilRef.current = Date.now() + 5 * 60 * 1000;
+        await supabase.auth.refreshSession().catch(() => null);
+        setError(
+          "Data belum bisa disimpan ke pusat: akun ini belum terhubung ke store yang dipakai, atau sesinya kedaluwarsa. Keluar lalu masuk kembali, atau hubungi Admin.",
+        );
+      } else {
+        setError(message);
+      }
     } finally {
       busyRef.current = false;
       setSyncing(false);
     }
+
   }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, bindStore]);
 
 
