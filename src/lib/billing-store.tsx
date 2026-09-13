@@ -566,18 +566,54 @@ function cardTopupCashEntry(
   stamp: number,
   payment = "Cash",
 ): CashEntry | null {
-  const category = categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID);
-  if (!category || amount <= 0) return null;
+  if (amount <= 0) return null;
+  const category =
+    categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID) ?? {
+      id: CARD_TOPUP_CATEGORY_ID,
+      name: "Top Up Playing Card",
+      group: "Playing Card",
+      payout: true,
+    };
   return {
     id: `cash-topup-${stamp}`,
     categoryId: category.id,
     categoryName: category.name,
     group: category.group,
     direction: "in",
-    payout: true,
+    payout: category.payout,
     amount,
     payment,
     note: `Top up kartu ${cardNumber}`,
+    createdAt: stamp,
+  };
+}
+
+/** Catatan kas untuk penjualan kartu baru: uang masuk dan jadi penghasilan. */
+function cardSaleCashEntry(
+  categories: CashCategory[],
+  amount: number,
+  cardNumber: string,
+  stamp: number,
+  payment = "Cash",
+): CashEntry | null {
+  if (amount <= 0) return null;
+  const category =
+    categories.find((item) => item.id === CARD_SALE_CATEGORY_ID) ?? {
+      id: CARD_SALE_CATEGORY_ID,
+      name: "Penjualan Playing Card",
+      group: "Playing Card",
+      payout: false,
+    };
+  return {
+    id: `cash-cardsale-${stamp}`,
+    categoryId: category.id,
+    categoryName: category.name,
+    group: category.group,
+    direction: "in",
+    payout: category.payout,
+    amount,
+    payment,
+    note: `Penjualan kartu ${cardNumber}`,
     createdAt: stamp,
   };
 }
