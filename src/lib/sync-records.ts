@@ -154,3 +154,16 @@ export function applyRecords(
 
   return next;
 }
+
+/**
+ * Kosongkan seluruh koleksi yang disinkronkan. Dipakai saat perangkat pertama
+ * kali mengambil data satu store: isi pusat menjadi satu-satunya sumber, agar
+ * sisa data bawaan atau data store sebelumnya tidak ikut terkirim.
+ */
+export function clearSyncedLists(state: BillingSnapshot): BillingSnapshot {
+  const next = { ...state } as Record<string, unknown>;
+  for (const kind of Object.keys(LIST_KINDS) as ListKind[]) {
+    next[LIST_KINDS[kind]] = [];
+  }
+  return next as BillingSnapshot;
+}
