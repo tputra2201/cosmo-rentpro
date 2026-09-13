@@ -517,11 +517,24 @@ export function useStoreSync(options: {
       setError(null);
       setLastSyncedAt(Date.now());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sinkronisasi gagal");
+      const message = err instanceof Error ? err.message : "Sinkronisasi gagal";
+      // Penolakan aturan baris berarti akun ini tidak (lagi) terhubung ke store
+      // yang dipakai, atau sesinya kedaluwarsa. Coba segarkan sesi sekali, lalu
+      // beri jeda supaya tidak menabrak pusat setiap 20 detik tanpa hasil.
+      if (/row-level security|row level security/i.test(message)) {
+        blockedUntilRef.current = Date.now() + 5 * 60 * 1000;
+        await supabase.auth.refreshSession().catch(() => null);
+        setError(
+          "Data belum bisa disimpan ke pusat: akun ini belum terhubung ke store yang dipakai, atau sesinya kedaluwarsa. Keluar lalu masuk kembali, atau hubungi Admin.",
+        );
+      } else {
+        setError(message);
+      }
     } finally {
       busyRef.current = false;
       setSyncing(false);
     }
+
   }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, bindStore]);
 
 
