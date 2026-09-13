@@ -1005,6 +1005,82 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, [hydrated]);
 
+  // Sesi yang tagihannya sudah lunas selalu punya nota di laporan, termasuk
+  // sesi yang dilunasi sebelum fitur nota otomatis ada.
+  useEffect(() => {
+    if (!hydrated) return;
+    setState((prev) => {
+      const missing = prev.stations.filter((station) => {
+        const session = station.session;
+        if (!session) return false;
+        const settlements = session.settlements ?? [];
+        if (!settlements.length) return false;
+        if (session.historyId && prev.history.some((h) => h.id === session.historyId))
+          return false;
+        const paid = settlements.reduce((sum, s) => sum + s.amount, 0);
+        const methods = settlements.flatMap((s) =>
+          s.payments?.length ? s.payments.map((p) => p.method) : [s.payment],
+        );
+        const at = settlements[settlements.length - 1]!.at;
+        const bill = sessionBill(session, at, station.console, prev, {
+          member: Boolean(session.member),
+          card: methods.some((m) => m === CARD_PAYMENT_NAME),
+        });
+        return bill.total > 0 && paid + 0.5 >= bill.total;
+      });
+      if (!missing.length) return prev;
+      const added: HistoryRecord[] = [];
+      const stations = prev.stations.map((station) => {
+        if (!missing.includes(station) || !station.session) return station;
+        const session = station.session;
+        const settlements = session.settlements ?? [];
+        const at = settlements[settlements.length - 1]!.at;
+        const methods = settlements.flatMap((s) =>
+          s.payments?.length ? s.payments.map((p) => p.method) : [s.payment],
+        );
+        const bill = sessionBill(session, at, station.console, prev, {
+          member: Boolean(session.member),
+          card: methods.some((m) => m === CARD_PAYMENT_NAME),
+        });
+        const splits: PaymentSplit[] = settlements.flatMap((s) =>
+          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+        );
+        const historyId = session.historyId ?? `${station.id}-paid-${at}`;
+        added.push({
+          id: historyId,
+          stationName: station.name,
+          console: station.console,
+          mode: session.mode,
+          startAt: session.startAt,
+          endAt: at,
+          paidAt: at,
+          ongoing: true,
+          minutes: Math.ceil(elapsedSeconds(session, at) / 60),
+          rentalTotal: bill.rental,
+          fnbTotal: bill.fnb,
+          total: bill.total,
+          payment: Array.from(new Set(methods)).filter(Boolean).join(" + ") || "Cash",
+          ...(splits.length > 1 ? { payments: splits } : {}),
+          customerName: session.customerName,
+          customerPhone: session.customerPhone,
+          packageName: session.packageName,
+          amountPaid: settlements.reduce((sum, s) => sum + s.amountPaid, 0),
+          change: settlements.reduce((sum, s) => sum + s.change, 0),
+          orders: session.orders,
+          ...(session.customerId ? { customerId: session.customerId } : {}),
+          ...(session.promoName || bill.promoName
+            ? { promoName: session.promoName || bill.promoName }
+            : {}),
+          discount: bill.discount,
+        });
+        return { ...station, session: { ...session, historyId, paidAt: at } };
+      });
+      return { ...prev, stations, history: [...added, ...prev.history] };
+    });
+  }, [hydrated, state.stations, state.history]);
+
+
+
 
   const update = useCallback(
     (fn: (draft: State) => State) => setState((prev) => fn(prev)),
