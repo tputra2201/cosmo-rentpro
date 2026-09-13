@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 const ALL = "__all__";
@@ -65,7 +65,7 @@ export function MembershipReport({ range }: { range: ReportRange }) {
         total: list.reduce((s, h) => s + h.total, 0),
         discount: list.reduce((s, h) => s + (h.discount ?? 0), 0),
         points: list.reduce((s, h) => s + (h.pointsEarned ?? 0), 0),
-        cardNumber: card?.cardNumber ?? "",
+        cardNumber: card ? cardLabel(card) : "",
         cardBalance: card?.balance ?? 0,
       };
     })

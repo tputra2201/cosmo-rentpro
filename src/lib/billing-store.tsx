@@ -150,6 +150,8 @@ export type PointEntry = { id: string; customerId: string; points: number; reaso
 export type PlayingCard = {
   id: string;
   cardNumber: string;
+  /** Kode kartu (alfanumerik) yang dicetak/ditempel di kartu. */
+  cardCode?: string;
   customerId?: string;
   customerName: string;
   customerPhone: string;
@@ -166,12 +168,21 @@ export type CardEntry = {
   id: string;
   cardId: string;
   cardNumber: string;
+  cardCode?: string;
   type: CardEntryType;
   amount: number;
   balanceAfter: number;
   note: string;
   createdAt: number;
 };
+
+/** Label kartu: nomor kartu + kode kartu bila ada. */
+export function cardLabel(card?: { cardNumber: string; cardCode?: string } | null) {
+  if (!card) return "";
+  const code = card.cardCode?.trim();
+  return code ? `${card.cardNumber} · ${code}` : card.cardNumber;
+}
+
 
 export const CARD_PAYMENT_NAME = "Playing Card";
 /** Top-up kartu hanya deposit: masuk kas, tapi bukan penghasilan. */
@@ -187,11 +198,14 @@ export const CARD_FUNDING_METHODS = [
   "Transfer Bank Mandiri",
 ] as const;
 
-/** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
+/** Cari kartu berdasarkan nomor kartu atau kode kartu (tidak peka huruf besar/kecil). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
   const key = cardNumber.trim().toLowerCase();
   if (!key) return undefined;
-  return cards.find((c) => c.cardNumber.trim().toLowerCase() === key);
+  return (
+    cards.find((c) => c.cardNumber.trim().toLowerCase() === key) ??
+    cards.find((c) => (c.cardCode ?? "").trim().toLowerCase() === key)
+  );
 }
 
 /** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
@@ -1050,6 +1064,7 @@ type Ctx = State & {
   setPointsPerRupiah: (value: number) => void;
   buyPlayingCard: (input: {
     cardNumber: string;
+    cardCode?: string;
     customerName?: string;
     customerPhone?: string;
     customerId?: string;
@@ -2070,6 +2085,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const cardNumber = input.cardNumber.trim();
         if (!cardNumber) return null;
         if (findCardByNumber(state.playingCards, cardNumber)) return null;
+        const cardCode = input.cardCode?.trim() ?? "";
         const now = Date.now();
         const topup = Math.max(0, Math.round(input.topup ?? 0));
         const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
@@ -2107,6 +2123,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const card: PlayingCard = {
           id: `card-${now}`,
           cardNumber,
+          ...(cardCode ? { cardCode } : {}),
           ...(customerId ? { customerId } : {}),
           customerName: holderName || "Umum",
           customerPhone: holderPhone,
@@ -2121,6 +2138,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             id: `ce-${now}`,
             cardId: card.id,
             cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
             type: "purchase",
             amount: price,
             balanceAfter: 0,
@@ -2133,6 +2151,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             id: `ce-${now}-topup`,
             cardId: card.id,
             cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
             type: "topup",
             amount: topup,
             balanceAfter: topup,
@@ -2217,6 +2236,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "topup",
               amount: value,
               balanceAfter: card.balance + value,
@@ -2253,6 +2273,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "adjust",
               amount: value,
               balanceAfter: next,
@@ -2279,6 +2300,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "payment",
               amount: -value,
               balanceAfter: next,

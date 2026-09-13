@@ -3,7 +3,7 @@ import { CreditCard, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cardsOfCustomer } from "@/components/CustomerDetail";
-import { formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
 
 /**
  * Kolom nama pelanggan dengan saran otomatis.
@@ -95,7 +95,7 @@ export function CustomerPicker({
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {cards[0]
-                        ? `${cards[0].cardNumber} · ${formatRupiah(cards[0].balance)}`
+                        ? `${cardLabel(cards[0])} · ${formatRupiah(cards[0].balance)}`
                         : item.phone || "-"}
                     </span>
                   </button>
@@ -119,7 +119,7 @@ export function CustomerPicker({
             pickedCards.map((card) => (
               <p key={card.id} className="mt-1 flex items-center gap-1.5">
                 <CreditCard className="size-3.5 text-muted-foreground" />
-                <span className="font-medium">{card.cardNumber}</span>
+                <span className="font-medium">{cardLabel(card)}</span>
                 <span>saldo {formatRupiah(card.balance)}</span>
                 <span className={card.active ? "text-success" : "text-destructive"}>
                   {card.active ? "aktif" : "diblokir"}

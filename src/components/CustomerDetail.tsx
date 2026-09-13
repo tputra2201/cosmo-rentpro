@@ -147,7 +147,14 @@ export function CustomerDetailDialog({
                   return (
                     <div key={card.id} className="space-y-2 rounded-lg border border-border p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-display text-lg font-semibold">{card.cardNumber}</span>
+                        <span className="font-display text-lg font-semibold">
+                          {card.cardNumber}
+                          {card.cardCode?.trim() ? (
+                            <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-primary">
+                              Kode: {card.cardCode.trim()}
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="text-right">
                           <span className="block text-xs text-muted-foreground">Saldo</span>
                           <span className="font-display text-lg font-semibold text-accent">
