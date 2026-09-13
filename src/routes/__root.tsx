@@ -210,7 +210,11 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
-  const { sync } = useBilling();
+  const { sync, shifts } = useBilling();
+  const needCheckIn = {
+    done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
+  };
+
   const storeName = store?.store_name?.trim() ?? "";
   const signature = appSignature(store?.app_version, store?.dev_contact);
   const expiresAt = store?.expires_at ?? null;
