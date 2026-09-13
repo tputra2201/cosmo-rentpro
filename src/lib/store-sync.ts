@@ -91,8 +91,10 @@ export function useStoreSync(options: {
   hydrated: boolean;
   enabled: boolean;
   applyRemote: (apply: (prev: BillingSnapshot) => BillingSnapshot) => void;
+  /** Dipanggil saat perangkat masuk ke store lain: data store sebelumnya wajib dibuang. */
+  resetLocal?: () => void;
 }): SyncStatus {
-  const { state, hydrated, enabled, applyRemote } = options;
+  const { state, hydrated, enabled, applyRemote, resetLocal } = options;
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -151,14 +153,18 @@ export function useStoreSync(options: {
       const id = (data as { store_id: string } | null)?.store_id ?? null;
       if (!id) return;
       if (cached && cached !== id) {
-        // Perangkat berpindah store: buang jejak sinkronisasi lama.
+        // Perangkat berpindah store: buang jejak sinkronisasi lama sekaligus
+        // seluruh data store sebelumnya (kartu, member, sesi, laporan) supaya
+        // tidak ikut terkirim ke store baru.
         localStorage.removeItem(SHADOW_KEY);
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
         shadowRef.current = {};
         outboxRef.current = {};
+        prevKeysRef.current = null;
         setPending(0);
         setReadyStoreId(null);
+        resetLocal?.();
       }
       localStorage.setItem(STORE_KEY, id);
       setStoreId(id);
@@ -166,7 +172,7 @@ export function useStoreSync(options: {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, resetLocal]);
 
   const queueLocalChanges = useCallback((snapshot: BillingSnapshot) => {
     const current = flattenSnapshot(snapshot);
