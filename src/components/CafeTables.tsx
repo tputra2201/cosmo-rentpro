@@ -34,7 +34,6 @@ import {
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels } from "@/lib/print-docs";
-import { printerFor } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
   return table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
