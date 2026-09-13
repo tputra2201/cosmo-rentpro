@@ -3,8 +3,11 @@ import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { markPasswordChanged as markPasswordChangedFn } from "@/lib/users.functions";
+import {
+  markPasswordChanged as markPasswordChangedFn,
+  setOwnPassword as setOwnPasswordFn,
+} from "@/lib/users.functions";
+
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
