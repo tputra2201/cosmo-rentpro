@@ -4,6 +4,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebResourceRequest;
@@ -31,9 +33,11 @@ public final class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String host = request.getUrl().getHost();
-                if (host != null && (host.equals("cosmo-rentpro.lovable.app") || host.endsWith(".lovable.app"))) {
+                if (host != null && host.equals("cosmo-rentpro.lovable.app")) {
                     return false;
                 }
+                Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(request.getUrl().toString()));
+                startActivity(browser);
                 return true;
             }
         });
