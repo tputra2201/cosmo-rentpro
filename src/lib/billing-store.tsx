@@ -198,11 +198,14 @@ export const CARD_FUNDING_METHODS = [
   "Transfer Bank Mandiri",
 ] as const;
 
-/** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
+/** Cari kartu berdasarkan nomor kartu atau kode kartu (tidak peka huruf besar/kecil). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
   const key = cardNumber.trim().toLowerCase();
   if (!key) return undefined;
-  return cards.find((c) => c.cardNumber.trim().toLowerCase() === key);
+  return (
+    cards.find((c) => c.cardNumber.trim().toLowerCase() === key) ??
+    cards.find((c) => (c.cardCode ?? "").trim().toLowerCase() === key)
+  );
 }
 
 /** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
