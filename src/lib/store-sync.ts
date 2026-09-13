@@ -17,7 +17,9 @@ const STORE_KEY = "billing-sync-store-v1";
 const EPOCH = "1970-01-01T00:00:00Z";
 
 type Shadow = Record<string, string>;
-type Outbox = Record<string, SyncRecord>;
+/** Baris yang menunggu dikirim, plus daftar kolom yang benar-benar diubah di perangkat ini. */
+type Pending = SyncRecord & { fields?: string[] };
+type Outbox = Record<string, Pending>;
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -47,6 +49,31 @@ function writeJson(key: string, value: unknown) {
   } catch {
     /* penyimpanan penuh: tetap jalan di memori */
   }
+}
+
+function parseJson(raw: string | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw) as unknown;
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Kolom mana saja yang berubah dibanding salinan terakhir dari pusat. */
+function changedFields(
+  base: Record<string, unknown>,
+  next: Record<string, unknown>,
+): string[] {
+  const keys = new Set([...Object.keys(base), ...Object.keys(next)]);
+  const out: string[] = [];
+  for (const key of keys) {
+    if (stableStringify(base[key]) !== stableStringify(next[key])) out.push(key);
+  }
+  return out;
 }
 
 export type SyncStatus = {
@@ -149,10 +176,15 @@ export function useStoreSync(options: {
 
     for (const [key, record] of current) {
       const json = stableStringify(record.payload);
-      if (shadow[key] !== json) {
-        outbox[key] = record;
-        changed = true;
-      }
+      if (shadow[key] === json) continue;
+      // Catat kolom mana yang diubah di perangkat ini, supaya kolom lain
+      // tidak ikut menimpa perubahan perangkat lain pada baris yang sama.
+      const base = parseJson(shadow[key]);
+      const fields = base ? changedFields(base, record.payload) : Object.keys(record.payload);
+      const prev = outbox[key];
+      const before = prev && !prev.deleted ? (prev.fields ?? Object.keys(prev.payload)) : [];
+      outbox[key] = { ...record, fields: Array.from(new Set([...before, ...fields])) };
+      changed = true;
     }
     // Hanya baris yang benar-benar dihapus di perangkat ini yang boleh
     // dihapus di pusat: baris itu harus ada di snapshot sebelumnya.
@@ -276,21 +308,40 @@ export function useStoreSync(options: {
         updated_at: string;
       }[];
       if (remote.length) {
-        const records: SyncRecord[] = remote.map((row) => ({
-          kind: row.kind,
-          entity_id: row.entity_id,
-          payload: row.payload ?? {},
-          deleted: row.deleted,
-        }));
-        // Hanya perubahan yang benar-benar dibuat di perangkat ini (sudah masuk
-        // antrean kirim) yang boleh menang atas data pusat.
-        const fresh = records.filter(
-          (record) => !(recordKey(record.kind, record.entity_id) in outboxRef.current),
-        );
-        if (fresh.length) {
-          applyRemote((prev) => applyRecords(prev, fresh));
-          noteShadow(fresh);
+        // Gabungkan per kolom: kolom yang diubah di perangkat ini dipertahankan,
+        // kolom lain diambil dari pusat. Dua kasir yang mengubah bagian berbeda
+        // pada baris yang sama tidak lagi saling menimpa.
+        const merged: SyncRecord[] = [];
+        for (const row of remote) {
+          const record: SyncRecord = {
+            kind: row.kind,
+            entity_id: row.entity_id,
+            payload: row.payload ?? {},
+            deleted: row.deleted,
+          };
+          const key = recordKey(record.kind, record.entity_id);
+          const pending = outboxRef.current[key];
+          if (!pending) {
+            merged.push(record);
+            continue;
+          }
+          // Penghapusan (di sisi mana pun) tetap dimenangkan oleh niat lokal.
+          if (pending.deleted || record.deleted) continue;
+          const fields = pending.fields ?? Object.keys(pending.payload);
+          const payload = { ...record.payload };
+          for (const field of fields) {
+            if (field in pending.payload) payload[field] = pending.payload[field];
+            else delete payload[field];
+          }
+          const mergedRecord: SyncRecord = { ...record, payload };
+          merged.push(mergedRecord);
+          outboxRef.current[key] = { ...pending, payload };
         }
+        if (merged.length) {
+          applyRemote((prev) => applyRecords(prev, merged));
+          noteShadow(merged);
+        }
+        writeJson(OUTBOX_KEY, outboxRef.current);
         const newest = remote[remote.length - 1]!.updated_at;
         localStorage.setItem(SINCE_KEY, newest);
       }
@@ -305,20 +356,20 @@ export function useStoreSync(options: {
             return record ? [[key, record] as const] : [];
           }),
         );
-        const stamp = new Date().toISOString();
-        const rows = Array.from(sentByKey.values()).map((record) => {
-          return {
-            store_id: storeId,
-            kind: record.kind,
-            entity_id: record.entity_id,
-            payload: record.payload,
-            deleted: record.deleted,
-            updated_at: stamp,
-          };
-        });
-        const { error: pushError } = await supabase
+        const rows = Array.from(sentByKey.values()).map((record) => ({
+          store_id: storeId,
+          kind: record.kind,
+          entity_id: record.entity_id,
+          payload: record.payload,
+          deleted: record.deleted,
+        }));
+        // Waktu perubahan ditentukan oleh pusat (nilai bawaan + pemicu tabel),
+        // bukan jam perangkat: jam yang meleset bisa membuat perubahan
+        // perangkat lain tidak pernah terbaca.
+        const { data: pushed, error: pushError } = await supabase
           .from("store_data")
-          .upsert(rows as never, { onConflict: "store_id,kind,entity_id" });
+          .upsert(rows as never, { onConflict: "store_id,kind,entity_id" })
+          .select("updated_at");
         if (pushError) throw new Error(pushError.message);
         const sent = Array.from(sentByKey.values());
         for (const [key, sentRecord] of sentByKey) {
@@ -331,8 +382,10 @@ export function useStoreSync(options: {
         setPending(Object.keys(outbox).length);
         noteShadow(sent);
         // Baris yang baru saja dikirim tidak perlu ditarik ulang.
+        const stamps = ((pushed ?? []) as { updated_at: string }[]).map((r) => r.updated_at);
+        const newest = stamps.length ? stamps.reduce((a, b) => (a > b ? a : b)) : null;
         const currentSince = localStorage.getItem(SINCE_KEY) ?? EPOCH;
-        if (stamp > currentSince) localStorage.setItem(SINCE_KEY, stamp);
+        if (newest && newest > currentSince) localStorage.setItem(SINCE_KEY, newest);
       }
       setError(null);
       setLastSyncedAt(Date.now());
