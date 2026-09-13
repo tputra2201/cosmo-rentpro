@@ -339,14 +339,19 @@ export function useStoreSync(options: {
         prevKeysRef.current = null;
         setPending(0);
         setReadyStoreId(null);
-        resetLocal?.();
+        bindStore(currentStoreId);
         setStoreId(currentStoreId);
+        return;
+      }
+      // Data lokal harus bertanda store ini. Kalau tidak, jangan kirim apa pun.
+      if (stateRef.current.storeId !== storeId) {
+        bindStore(storeId);
         return;
       }
 
       // Tangkap perubahan terbaru sekali lagi tepat sebelum tukar data. Ini menutup
       // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
-      queueLocalChanges(stateRef.current);
+      queueLocalChanges(stateRef.current, storeId);
 
       // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
       // yang datanya masih lama akan menimpa perubahan perangkat lain.
