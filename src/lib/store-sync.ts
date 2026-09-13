@@ -350,8 +350,19 @@ export function useStoreSync(options: {
 
     return () => {
       cancelled = true;
+      if (retry) clearTimeout(retry);
     };
-  }, [storeId, enabled, hydrated, readyStoreId, state.storeId, applyRemote, noteShadow]);
+  }, [
+    storeId,
+    enabled,
+    hydrated,
+    readyStoreId,
+    state.storeId,
+    bootAttempt,
+    applyRemote,
+    noteShadow,
+  ]);
+
 
   const sync = useCallback(async () => {
     if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
