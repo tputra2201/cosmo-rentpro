@@ -253,6 +253,8 @@ export function useStoreSync(options: {
   // data bawaan (PS3/PS4/PS5) dapat terkirim dan menimpa pengaturan store.
   useEffect(() => {
     if (!storeId || !enabled || !hydrated || readyStoreId === storeId) return;
+    // Tunggu sampai data lokal resmi bertanda store ini.
+    if (stateRef.current.storeId !== storeId) return;
 
     const hasSyncHistory =
       Object.keys(shadowRef.current).length > 0 ||
