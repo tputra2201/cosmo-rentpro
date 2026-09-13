@@ -92,10 +92,13 @@ export function useStoreSync(options: {
   hydrated: boolean;
   enabled: boolean;
   applyRemote: (apply: (prev: BillingSnapshot) => BillingSnapshot) => void;
-  /** Dipanggil saat perangkat masuk ke store lain: data store sebelumnya wajib dibuang. */
-  resetLocal?: () => void;
+  /**
+   * Mengikat data lokal ke satu store. Kalau perangkat sebelumnya memegang data
+   * store lain, data itu dibuang dan state baru langsung bertanda store ini.
+   */
+  bindStore: (storeId: string) => void;
 }): SyncStatus {
-  const { state, hydrated, enabled, applyRemote, resetLocal } = options;
+  const { state, hydrated, enabled, applyRemote, bindStore } = options;
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -162,10 +165,9 @@ export function useStoreSync(options: {
       if (cancelled) return;
       const id = (data as { store_id: string } | null)?.store_id ?? null;
       if (!id) return;
-      if (cached && cached !== id) {
-        // Perangkat berpindah store: buang jejak sinkronisasi lama sekaligus
-        // seluruh data store sebelumnya (kartu, member, sesi, laporan) supaya
-        // tidak ikut terkirim ke store baru.
+      if (stateRef.current.storeId !== id) {
+        // Data lokal milik store lain (atau data bawaan yang belum bertanda
+        // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
         localStorage.removeItem(SHADOW_KEY);
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
@@ -174,17 +176,20 @@ export function useStoreSync(options: {
         prevKeysRef.current = null;
         setPending(0);
         setReadyStoreId(null);
-        resetLocal?.();
       }
+      bindStore(id);
       localStorage.setItem(STORE_KEY, id);
       setStoreId(id);
     })();
     return () => {
       cancelled = true;
     };
-  }, [enabled, resetLocal]);
+  }, [enabled, bindStore]);
 
-  const queueLocalChanges = useCallback((snapshot: BillingSnapshot) => {
+  const queueLocalChanges = useCallback((snapshot: BillingSnapshot, activeStoreId: string) => {
+    // Kunci utama: hanya data yang memang bertanda store ini yang boleh masuk
+    // antrean kirim. Ini yang mencegah data store lain berpindah.
+    if (snapshot.storeId !== activeStoreId) return;
     const current = flattenSnapshot(snapshot);
     const shadow = shadowRef.current;
     const outbox = outboxRef.current;
@@ -232,7 +237,7 @@ export function useStoreSync(options: {
   // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
   useEffect(() => {
     if (!hydrated || !loadedRef.current || !storeId || readyStoreId !== storeId) return;
-    queueLocalChanges(state);
+    queueLocalChanges(state, storeId);
   }, [state, hydrated, storeId, readyStoreId, queueLocalChanges]);
 
   const noteShadow = useCallback((records: SyncRecord[]) => {
@@ -248,6 +253,8 @@ export function useStoreSync(options: {
   // data bawaan (PS3/PS4/PS5) dapat terkirim dan menimpa pengaturan store.
   useEffect(() => {
     if (!storeId || !enabled || !hydrated || readyStoreId === storeId) return;
+    // Tunggu sampai data lokal resmi bertanda store ini.
+    if (stateRef.current.storeId !== storeId) return;
 
     const hasSyncHistory =
       Object.keys(shadowRef.current).length > 0 ||
@@ -300,7 +307,7 @@ export function useStoreSync(options: {
     return () => {
       cancelled = true;
     };
-  }, [storeId, enabled, hydrated, readyStoreId, applyRemote, noteShadow]);
+  }, [storeId, enabled, hydrated, readyStoreId, state.storeId, applyRemote, noteShadow]);
 
   const sync = useCallback(async () => {
     if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
@@ -332,14 +339,19 @@ export function useStoreSync(options: {
         prevKeysRef.current = null;
         setPending(0);
         setReadyStoreId(null);
-        resetLocal?.();
+        bindStore(currentStoreId);
         setStoreId(currentStoreId);
+        return;
+      }
+      // Data lokal harus bertanda store ini. Kalau tidak, jangan kirim apa pun.
+      if (stateRef.current.storeId !== storeId) {
+        bindStore(storeId);
         return;
       }
 
       // Tangkap perubahan terbaru sekali lagi tepat sebelum tukar data. Ini menutup
       // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
-      queueLocalChanges(stateRef.current);
+      queueLocalChanges(stateRef.current, storeId);
 
       // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
       // yang datanya masih lama akan menimpa perubahan perangkat lain.
@@ -455,7 +467,7 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, resetLocal]);
+  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, bindStore]);
 
 
   // Segera kirim begitu ada perubahan yang menunggu.

@@ -476,6 +476,11 @@ export const defaultTvNotice: TvNotice = {
 };
 
 type State = {
+  /**
+   * Store pemilik seluruh data di perangkat ini. Semua data hanya boleh dikirim
+   * ke store ini; kalau perangkat masuk ke store lain, data lokal dibuang dulu.
+   */
+  storeId: string | null;
   stations: Station[];
   consoleTypes: string[];
   rates: Rates;
@@ -523,6 +528,7 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
 }
 
 const defaultState: State = {
+  storeId: null,
   stations: [
     { id: "tv-1", name: "TV 01", console: "PS3", booth: "Booth 1", availability: "available", session: null },
     { id: "tv-2", name: "TV 02", console: "PS3", booth: "Booth 2", availability: "available", session: null },
@@ -1676,15 +1682,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const { session: authSession } = useAuth();
-  // Kartu, member, sesi, dan laporan hanya milik satu store. Kalau perangkat
-  // ini dipakai masuk ke store lain, data store sebelumnya dibuang dulu.
-  const resetLocal = useCallback(() => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* penyimpanan diblokir: cukup reset di memori */
-    }
-    setState(defaultState);
+  // Seluruh data di perangkat terikat ke satu store. Begitu store pengguna
+  // diketahui, data lokal dari store lain dibuang sebelum satu baris pun
+  // dikirim, dan data baru langsung bertanda store ini.
+  const bindStore = useCallback((id: string) => {
+    setState((prev) => {
+      if (prev.storeId === id) return prev;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* penyimpanan diblokir: cukup reset di memori */
+      }
+      return { ...defaultState, storeId: id };
+    });
   }, []);
 
   const sync = useStoreSync({
@@ -1692,7 +1702,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     hydrated,
     enabled: Boolean(authSession),
     applyRemote: setState,
-    resetLocal,
+    bindStore,
   });
 
   const value = useMemo<Ctx>(
