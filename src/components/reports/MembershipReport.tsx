@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 const ALL = "__all__";
