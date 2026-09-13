@@ -550,6 +550,7 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  tvNotice: defaultTvNotice,
 
 };
 
