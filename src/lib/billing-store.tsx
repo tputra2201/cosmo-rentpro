@@ -921,6 +921,7 @@ type Ctx = State & {
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
+  setTvNotice: (patch: Partial<TvNotice>) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
