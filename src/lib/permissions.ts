@@ -162,6 +162,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "kartu.topup",
     "pembayaran.kelola",
     "backup.export",
+    "laporan.cetak",
   ],
   kasir: [
     "menu.dashboard",
@@ -184,6 +185,8 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "kartu.jual",
     "kartu.topup",
     "pelanggan.kelola",
+    "cetak.struk",
+    "cetak.label",
   ],
   operator: [
     "menu.dashboard",
@@ -193,6 +196,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "menu.akun",
     "sesi.mulai",
     "sesi.tambahwaktu",
+    "cetak.label",
   ],
 };
 
