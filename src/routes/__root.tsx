@@ -167,6 +167,7 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
   { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
+  { to: "/tv", label: "Layar TV", icon: MonitorPlay },
 
   { to: "/kafe", label: "Kafe", icon: Coffee },
 
