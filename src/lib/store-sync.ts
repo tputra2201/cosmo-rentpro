@@ -141,12 +141,21 @@ export function useStoreSync(options: {
       return;
     }
     const cached = typeof window === "undefined" ? null : localStorage.getItem(STORE_KEY);
-    if (cached) setStoreId(cached);
+    // Saat daring, jangan mulai sinkronisasi dari store cache. Akun Developer
+    // dapat memilih store berbeda di perangkat lain, sehingga cache lama bisa
+    // membuat data store A diterapkan ke store B sebelum membership terbaca.
+    if (cached && typeof navigator !== "undefined" && !navigator.onLine) {
+      setStoreId(cached);
+    }
     let cancelled = false;
     (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) return;
       const { data } = await supabase
         .from("store_members")
         .select("store_id")
+        .eq("user_id", userId)
         .limit(1)
         .maybeSingle();
       if (cancelled) return;
@@ -253,6 +262,7 @@ export function useStoreSync(options: {
       const { data, error: bootstrapError } = await supabase
         .from("store_data")
         .select("kind, entity_id, payload, deleted, updated_at")
+        .eq("store_id", storeId)
         .order("updated_at", { ascending: true });
       if (cancelled) return;
       if (bootstrapError) {
@@ -293,6 +303,36 @@ export function useStoreSync(options: {
     busyRef.current = true;
     setSyncing(true);
     try {
+      // Pastikan pilihan store di perangkat masih sama dengan membership di
+      // pusat. Ini penting untuk akun Developer yang dapat berganti store dari
+      // perangkat lain. Jika berubah, hentikan sebelum satu baris pun diterapkan.
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) return;
+      const { data: membership, error: membershipError } = await supabase
+        .from("store_members")
+        .select("store_id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw new Error(membershipError.message);
+      const currentStoreId = (membership as { store_id: string } | null)?.store_id ?? null;
+      if (!currentStoreId) throw new Error("Akun belum terhubung ke store.");
+      if (currentStoreId !== storeId) {
+        localStorage.removeItem(SHADOW_KEY);
+        localStorage.removeItem(OUTBOX_KEY);
+        localStorage.removeItem(SINCE_KEY);
+        localStorage.setItem(STORE_KEY, currentStoreId);
+        shadowRef.current = {};
+        outboxRef.current = {};
+        prevKeysRef.current = null;
+        setPending(0);
+        setReadyStoreId(null);
+        resetLocal?.();
+        setStoreId(currentStoreId);
+        return;
+      }
+
       // Tangkap perubahan terbaru sekali lagi tepat sebelum tukar data. Ini menutup
       // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
       queueLocalChanges(stateRef.current);
@@ -303,6 +343,7 @@ export function useStoreSync(options: {
       const { data, error: pullError } = await supabase
         .from("store_data")
         .select("kind, entity_id, payload, deleted, updated_at")
+        .eq("store_id", storeId)
         .gt("updated_at", since)
         .order("updated_at", { ascending: true });
       if (pullError) throw new Error(pullError.message);
@@ -401,7 +442,7 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges]);
+  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, resetLocal]);
 
 
   // Segera kirim begitu ada perubahan yang menunggu.
