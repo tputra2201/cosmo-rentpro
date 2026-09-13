@@ -16,7 +16,7 @@ export type PaperSize = "40mm" | "80mm" | "a4";
  * - "rawbt": aplikasi RawBT di Android, langsung ke printer thermal Bluetooth/USB
  *   tanpa perlu printer terdaftar di sistem Android.
  */
-export type PrintMode = "system" | "rawbt";
+export type PrintMode = "system" | "rawbt" | "android";
 
 export type PrinterConfig = {
   id: string;
@@ -25,6 +25,8 @@ export type PrinterConfig = {
   paper: PaperSize;
   /** Cara pengiriman dokumen; default dialog cetak sistem. */
   mode?: PrintMode;
+  /** Alamat perangkat Bluetooth yang dipasangkan, untuk aplikasi Android khusus. */
+  bluetoothAddress?: string;
   /** Ukuran huruf (pt). */
   fontSizePt: number;
   /** Huruf tebal. */
@@ -71,8 +73,9 @@ export const PRINTER_ROLES: PrinterRole[] = ["receipt", "invoice", "kitchen", "b
 export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
   system: "Dialog cetak perangkat",
   rawbt: "Android — aplikasi RawBT (Bluetooth/USB)",
+  android: "Aplikasi Android — Bluetooth langsung",
 };
-export const PRINT_MODES: PrintMode[] = ["system", "rawbt"];
+export const PRINT_MODES: PrintMode[] = ["system", "android", "rawbt"];
 
 /** Jumlah huruf per baris untuk cetak teks polos (RawBT). */
 export const CHARS_PER_LINE: Record<PaperSize, number> = {
@@ -82,7 +85,41 @@ export const CHARS_PER_LINE: Record<PaperSize, number> = {
 };
 
 export function printMode(printer: PrinterConfig): PrintMode {
-  return printer.mode === "rawbt" ? "rawbt" : "system";
+  if (printer.mode === "rawbt" || printer.mode === "android") return printer.mode;
+  return "system";
+}
+
+type AndroidPrinter = { name: string; address: string };
+
+declare global {
+  interface Window {
+    BillingAndroid?: {
+      getPairedPrinters: () => string;
+      printBase64: (address: string, payload: string) => void;
+    };
+  }
+}
+
+export function isAndroidPrintAvailable() {
+  return typeof window !== "undefined" && Boolean(window.BillingAndroid);
+}
+
+export function pairedAndroidPrinters(): AndroidPrinter[] {
+  if (!isAndroidPrintAvailable()) return [];
+  try {
+    const value = window.BillingAndroid?.getPairedPrinters();
+    const parsed: unknown = value ? JSON.parse(value) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is AndroidPrinter =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as AndroidPrinter).name === "string" &&
+        typeof (item as AndroidPrinter).address === "string",
+    );
+  } catch {
+    return [];
+  }
 }
 
 /** Baris kiri-kanan rata untuk cetak teks polos. */
@@ -120,6 +157,29 @@ export function printViaRawBt(text: string) {
   if (typeof window === "undefined") return;
   const body = text.endsWith("\n") ? text : `${text}\n`;
   window.location.href = `rawbt:base64,${encodeURIComponent(toBase64(body))}`;
+}
+
+/** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
+export function printViaAndroid(printer: PrinterConfig, text: string) {
+  if (typeof window === "undefined") return false;
+  if (!window.BillingAndroid) {
+    window.dispatchEvent(
+      new CustomEvent("billing-android-print", {
+        detail: { ok: false, message: "Buka halaman ini dari aplikasi Android Billing Rental PS" },
+      }),
+    );
+    return false;
+  }
+  if (!printer.bluetoothAddress) {
+    window.dispatchEvent(
+      new CustomEvent("billing-android-print", {
+        detail: { ok: false, message: "Pilih printer Bluetooth di menu Printer" },
+      }),
+    );
+    return false;
+  }
+  window.BillingAndroid.printBase64(printer.bluetoothAddress, toBase64(text));
+  return true;
 }
 
 /** Ulangi teks sesuai jumlah salinan printer. */
