@@ -476,6 +476,11 @@ export const defaultTvNotice: TvNotice = {
 };
 
 type State = {
+  /**
+   * Store pemilik seluruh data di perangkat ini. Semua data hanya boleh dikirim
+   * ke store ini; kalau perangkat masuk ke store lain, data lokal dibuang dulu.
+   */
+  storeId: string | null;
   stations: Station[];
   consoleTypes: string[];
   rates: Rates;
