@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ import { ShiftReport } from "@/components/reports/ShiftReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
@@ -99,6 +100,7 @@ function LaporanPage() {
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
+  const reportRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-6">
@@ -109,13 +111,19 @@ function LaporanPage() {
         </p>
       </header>
 
-      <ReportRangePicker range={range} onChange={setRange} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ReportRangePicker range={range} onChange={setRange} />
+        {allow("laporan.cetak") && (
+          <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
+        )}
+      </div>
 
       {tabs.length === 0 && (
         <p className="text-sm text-muted-foreground">
           Levelmu belum punya hak akses ke laporan mana pun.
         </p>
       )}
+      <div ref={reportRef}>
       <Tabs key={first} defaultValue={first}>
         <TabsList>
           {tabs.map((t) => (
@@ -159,6 +167,7 @@ function LaporanPage() {
           />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
