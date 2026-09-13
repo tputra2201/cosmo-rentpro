@@ -35,9 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReceiptView } from "@/components/CustomerDetail";
+import { CompanyReport } from "@/components/reports/CompanyReport";
+import { CardReport } from "@/components/reports/CardReport";
+import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { isAdminLevel, useAuth } from "@/lib/auth";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+
 
 export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
@@ -75,13 +81,50 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
+  const [range, setRange] = useState<ReportRange>(() => defaultRange("day"));
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
+        <p className="mt-1 text-muted-foreground">
+          Pilih jenis laporan dan rentang waktunya.
+        </p>
+      </header>
+
+      <ReportRangePicker range={range} onChange={setRange} />
+
+      <Tabs defaultValue="nota">
+        <TabsList>
+          <TabsTrigger value="nota">Nota Transaksi</TabsTrigger>
+          <TabsTrigger value="company">Company Report</TabsTrigger>
+          <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
+        </TabsList>
+        <TabsContent value="nota" className="mt-6">
+          <ReceiptReport range={range} />
+        </TabsContent>
+        <TabsContent value="company" className="mt-6">
+          <CompanyReport range={range} />
+        </TabsContent>
+        <TabsContent value="kartu" className="mt-6">
+          <CardReport range={range} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ReceiptReport({ range }: { range: ReportRange }) {
   const { history: rawHistory, cashEntries, clearHistory } = useBilling();
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
-  const history = [...rawHistory].sort((a, b) => paidTime(b) - paidTime(a));
+  const history = [...rawHistory]
+    .filter((h) => inRange(paidTime(h), range))
+    .sort((a, b) => paidTime(b) - paidTime(a));
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
   const today = history.filter((h) => dayKey(paidTime(h)) === todayKey);
+
   const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
@@ -116,14 +159,12 @@ function LaporanPage() {
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
-          <p className="mt-1 text-muted-foreground">
-            Rekap pendapatan dari sesi rental dan penjualan kasir.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Rekap pendapatan dari sesi rental dan penjualan kasir.
+        </p>
         {history.length > 0 && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Cetak</Button><Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Ekspor CSV</Button><Button variant="outline" onClick={clearHistory}><Trash2 className="size-4" /> Hapus riwayat</Button></div>}
       </header>
+
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
