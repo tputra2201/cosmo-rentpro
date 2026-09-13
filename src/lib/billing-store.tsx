@@ -528,6 +528,7 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
 }
 
 const defaultState: State = {
+  storeId: null,
   stations: [
     { id: "tv-1", name: "TV 01", console: "PS3", booth: "Booth 1", availability: "available", session: null },
     { id: "tv-2", name: "TV 02", console: "PS3", booth: "Booth 2", availability: "available", session: null },
