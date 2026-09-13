@@ -467,7 +467,7 @@ export function useStoreSync(options: {
       busyRef.current = false;
       setSyncing(false);
     }
-  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, resetLocal]);
+  }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges, bindStore]);
 
 
   // Segera kirim begitu ada perubahan yang menunggu.
