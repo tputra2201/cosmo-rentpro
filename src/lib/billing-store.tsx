@@ -180,7 +180,12 @@ export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
 export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
 
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
-export const CARD_FUNDING_METHODS = ["Cash", "QRIS", "Transfer Bank"] as const;
+export const CARD_FUNDING_METHODS = [
+  "Cash",
+  "QRIS",
+  "Transfer Bank BCA",
+  "Transfer Bank Mandiri",
+] as const;
 
 /** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
