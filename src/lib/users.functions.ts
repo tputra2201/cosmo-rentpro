@@ -36,12 +36,13 @@ async function myStoreId(context: Ctx): Promise<string | null> {
   // Dibaca dengan hak server agar tidak bergantung pada aturan baris,
   // supaya level Manager tetap mendapat store-nya sendiri.
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("store_members")
     .select("store_id")
     .eq("user_id", context.userId)
     .limit(1)
     .maybeSingle();
+  if (error) throw new Error(`Gagal membaca store pengguna: ${error.message}`);
   return (data as { store_id: string } | null)?.store_id ?? null;
 }
 
@@ -196,6 +197,12 @@ export const inviteUser = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
     if (data.role === "installer") await assertInstaller(context as unknown as Ctx);
+    const storeId = await myStoreId(context as unknown as Ctx);
+    if (!storeId) {
+      throw new Error(
+        "Akun pengundang belum terhubung ke store. Pilih store terlebih dahulu lalu coba lagi.",
+      );
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: created, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       data.email,
@@ -207,25 +214,28 @@ export const inviteUser = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const id = created.user!.id;
 
-    await supabaseAdmin
+    const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .upsert(
         { id, full_name: data.fullName, must_change_password: true } as never,
         { onConflict: "id" },
       );
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
+    if (profileError) throw new Error(profileError.message);
+    const { error: deleteRoleError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", id);
+    if (deleteRoleError) throw new Error(deleteRoleError.message);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: id, role: data.role });
     if (roleError) throw new Error(roleError.message);
 
     // Staf baru otomatis terikat ke store milik pengundang.
-    const storeId = await myStoreId(context as unknown as Ctx);
-    if (storeId) {
-      await supabaseAdmin
-        .from("store_members")
-        .upsert({ user_id: id, store_id: storeId } as never, { onConflict: "user_id" });
-    }
+    const { error: memberError } = await supabaseAdmin
+      .from("store_members")
+      .upsert({ user_id: id, store_id: storeId } as never, { onConflict: "user_id" });
+    if (memberError) throw new Error(`Gagal menghubungkan pengguna ke store: ${memberError.message}`);
     return { id };
   });
 
