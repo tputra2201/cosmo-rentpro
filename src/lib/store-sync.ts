@@ -176,10 +176,15 @@ export function useStoreSync(options: {
 
     for (const [key, record] of current) {
       const json = stableStringify(record.payload);
-      if (shadow[key] !== json) {
-        outbox[key] = record;
-        changed = true;
-      }
+      if (shadow[key] === json) continue;
+      // Catat kolom mana yang diubah di perangkat ini, supaya kolom lain
+      // tidak ikut menimpa perubahan perangkat lain pada baris yang sama.
+      const base = parseJson(shadow[key]);
+      const fields = base ? changedFields(base, record.payload) : Object.keys(record.payload);
+      const prev = outbox[key];
+      const before = prev && !prev.deleted ? (prev.fields ?? Object.keys(prev.payload)) : [];
+      outbox[key] = { ...record, fields: Array.from(new Set([...before, ...fields])) };
+      changed = true;
     }
     // Hanya baris yang benar-benar dihapus di perangkat ini yang boleh
     // dihapus di pusat: baris itu harus ada di snapshot sebelumnya.
