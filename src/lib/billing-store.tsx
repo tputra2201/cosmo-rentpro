@@ -419,6 +419,26 @@ export type HistoryRecord = {
 
 export type Rates = Record<string, number>;
 
+/** Pengaturan notifikasi yang tampil di layar TV pelanggan. */
+export type TvNotice = {
+  warnMinutes: number;
+  warnText: string;
+  endText: string;
+  countdownSec: number;
+  blockTitle: string;
+  blockText: string;
+};
+
+export const defaultTvNotice: TvNotice = {
+  warnMinutes: 5,
+  warnText:
+    "Waktu bermain Anda tersisa 5 menit. Silahkan menghubungi Operator untuk penambahan waktu.",
+  endText: "Waktu bermain Anda telah habis.",
+  countdownSec: 10,
+  blockTitle: "WAKTU BERMAIN HABIS",
+  blockText: "Silahkan menghubungi Operator untuk penambahan waktu.",
+};
+
 type State = {
   stations: Station[];
   consoleTypes: string[];
