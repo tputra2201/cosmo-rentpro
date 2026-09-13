@@ -137,6 +137,7 @@ function BuyCardPanel() {
       member,
       topup: topupValue,
       price: priceValue,
+      payment,
       ...(customerId ? { customerId } : {}),
     });
     if (!card) {
@@ -144,7 +145,7 @@ function BuyCardPanel() {
       return;
     }
     toast.success(`Kartu ${card.cardNumber} terdaftar`, {
-      description: `Harga kartu ${formatRupiah(priceValue)} · saldo awal ${formatRupiah(topupValue)}`,
+      description: `Harga kartu ${formatRupiah(priceValue)} · saldo awal ${formatRupiah(topupValue)} · dibayar ${payment}`,
     });
     setCardNumber("");
     setName("");
