@@ -41,14 +41,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BillingProvider, useBilling } from "@/lib/billing-store";
-import {
-  AuthProvider,
-  useAuth,
-  roleLabel,
-  adminOnlyPaths,
-  installerOnlyPaths,
-  isAdminLevel,
-} from "@/lib/auth";
+import { AuthProvider, useAuth, roleLabel } from "@/lib/auth";
+import { can, MENU_PERMISSION } from "@/lib/permissions";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
