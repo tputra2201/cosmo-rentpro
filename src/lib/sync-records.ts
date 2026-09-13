@@ -73,16 +73,20 @@ export function flattenSnapshot(state: BillingSnapshot) {
       });
     }
   }
-  const settings: Record<string, unknown> = {};
-  for (const key of SETTINGS_KEYS) settings[key] = state[key];
-  out.set(recordKey(SETTINGS_KIND, SETTINGS_ID), {
-    kind: SETTINGS_KIND,
-    entity_id: SETTINGS_ID,
-    payload: settings,
-    deleted: false,
-  });
+  // Setiap pengaturan disimpan sebagai baris sendiri. Kalau satu blok besar,
+  // perangkat lain yang pengaturannya masih lama bisa menimpa pengaturan baru
+  // (misal hak akses per level) hanya karena ikut mengirim blok itu.
+  for (const key of SETTINGS_KEYS) {
+    out.set(recordKey(SETTINGS_KIND, key), {
+      kind: SETTINGS_KIND,
+      entity_id: key,
+      payload: { [key]: state[key] },
+      deleted: false,
+    });
+  }
   return out;
 }
+
 
 /** Gabungkan baris dari pusat ke state lokal. */
 export function applyRecords(
