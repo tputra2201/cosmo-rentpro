@@ -18,6 +18,7 @@ import { useBilling } from "@/lib/billing-store";
 import {
   ALL_ROLES,
   PERMISSION_GROUPS,
+  can,
   defaultRolePermissions,
   permissionsOf,
   roleLabel,
