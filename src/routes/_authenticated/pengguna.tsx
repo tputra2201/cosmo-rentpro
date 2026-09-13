@@ -353,9 +353,10 @@ function UserRow({
   );
 }
 
-/** Pengaturan hak akses tiap level lewat centang (hanya Installer). */
-function AccessMatrix() {
+/** Pengaturan hak akses tiap level lewat centang. */
+function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
   const { rolePermissions, setRolePermissions } = useBilling();
+  void canInstaller;
   const editableRoles = ALL_ROLES.filter((r) => r !== "installer");
   const [active, setActive] = useState<AppRole>(editableRoles[0] ?? "manager");
   const allowed = permissionsOf(active, rolePermissions);
