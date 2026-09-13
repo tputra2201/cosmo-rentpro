@@ -92,10 +92,13 @@ export function useStoreSync(options: {
   hydrated: boolean;
   enabled: boolean;
   applyRemote: (apply: (prev: BillingSnapshot) => BillingSnapshot) => void;
-  /** Dipanggil saat perangkat masuk ke store lain: data store sebelumnya wajib dibuang. */
-  resetLocal?: () => void;
+  /**
+   * Mengikat data lokal ke satu store. Kalau perangkat sebelumnya memegang data
+   * store lain, data itu dibuang dan state baru langsung bertanda store ini.
+   */
+  bindStore: (storeId: string) => void;
 }): SyncStatus {
-  const { state, hydrated, enabled, applyRemote, resetLocal } = options;
+  const { state, hydrated, enabled, applyRemote, bindStore } = options;
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
