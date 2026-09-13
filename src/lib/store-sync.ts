@@ -285,7 +285,10 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
-        applyRemote((prev) => applyRecords(prev, records));
+        // Isi pusat adalah satu-satunya sumber saat pertama kali mengambil
+        // data store: buang dulu seluruh daftar lokal supaya unit atau meja
+        // milik store lain (dan data bawaan) tidak ikut terkirim.
+        applyRemote((prev) => applyRecords(clearSyncedLists(prev), records));
         noteShadow(records);
         const newest = remote.at(-1)?.updated_at;
         if (newest) localStorage.setItem(SINCE_KEY, newest);
