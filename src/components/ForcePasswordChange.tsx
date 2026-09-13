@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 export function ForcePasswordChange() {
   const { markPasswordChanged, signOut } = useAuth();
   const markDone = useServerFn(markPasswordChangedFn);
+  const savePassword = useServerFn(setOwnPasswordFn);
   const navigate = useNavigate();
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -26,8 +27,8 @@ export function ForcePasswordChange() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next.length < 6) {
-      toast.error("Kata sandi minimal 6 karakter");
+    if (next.length < 8) {
+      toast.error("Kata sandi minimal 8 karakter");
       return;
     }
     if (next !== confirm) {
@@ -36,8 +37,7 @@ export function ForcePasswordChange() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) throw error;
+      await savePassword({ data: { password: next } });
       await markDone({});
       markPasswordChanged();
       toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
@@ -49,6 +49,7 @@ export function ForcePasswordChange() {
       setBusy(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm">
