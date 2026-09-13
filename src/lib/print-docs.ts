@@ -225,6 +225,29 @@ export function printLabels(opts: {
 }) {
   const { printer, items, heading, source, customerName, note } = opts;
   const stamp = time(opts.at ?? Date.now());
+  if (printMode(printer) === "rawbt") {
+    const w = CHARS_PER_LINE[printer.paper];
+    const text = items
+      .map((item) =>
+        [
+          textCenter(heading, w),
+          textSep(w),
+          item.name,
+          `x ${item.qty}`,
+          item.note ?? "",
+          textSep(w),
+          source,
+          customerName ?? "",
+          note ?? "",
+          stamp,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      )
+      .join("\n\n");
+    printViaRawBt(textWithCopies(printer, text));
+    return;
+  }
   const labels = items
     .map(
       (item) => `
