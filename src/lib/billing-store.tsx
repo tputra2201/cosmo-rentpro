@@ -176,6 +176,11 @@ export type CardEntry = {
 export const CARD_PAYMENT_NAME = "Playing Card";
 /** Top-up kartu hanya deposit: masuk kas, tapi bukan penghasilan. */
 export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
+/** Penjualan kartu baru: penghasilan store. */
+export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
+
+/** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
+export const CARD_FUNDING_METHODS = ["Cash", "QRIS", "Transfer Bank"] as const;
 
 /** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
@@ -545,6 +550,7 @@ const defaultState: State = {
     { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-modal-owner", name: "Tambah Kas dari Owner", direction: "in", payout: true, group: "Kas Owner", active: true },
     { id: CARD_TOPUP_CATEGORY_ID, name: "Top Up Playing Card", direction: "in", payout: true, group: "Playing Card", active: true },
+    { id: CARD_SALE_CATEGORY_ID, name: "Penjualan Playing Card", direction: "in", payout: false, group: "Playing Card", active: true },
     { id: "cc-listrik", name: "Pembayaran Listrik", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-gas", name: "Pembelian Gas", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
@@ -566,18 +572,54 @@ function cardTopupCashEntry(
   stamp: number,
   payment = "Cash",
 ): CashEntry | null {
-  const category = categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID);
-  if (!category || amount <= 0) return null;
+  if (amount <= 0) return null;
+  const category =
+    categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID) ?? {
+      id: CARD_TOPUP_CATEGORY_ID,
+      name: "Top Up Playing Card",
+      group: "Playing Card",
+      payout: true,
+    };
   return {
     id: `cash-topup-${stamp}`,
     categoryId: category.id,
     categoryName: category.name,
     group: category.group,
     direction: "in",
-    payout: true,
+    payout: category.payout,
     amount,
     payment,
     note: `Top up kartu ${cardNumber}`,
+    createdAt: stamp,
+  };
+}
+
+/** Catatan kas untuk penjualan kartu baru: uang masuk dan jadi penghasilan. */
+function cardSaleCashEntry(
+  categories: CashCategory[],
+  amount: number,
+  cardNumber: string,
+  stamp: number,
+  payment = "Cash",
+): CashEntry | null {
+  if (amount <= 0) return null;
+  const category =
+    categories.find((item) => item.id === CARD_SALE_CATEGORY_ID) ?? {
+      id: CARD_SALE_CATEGORY_ID,
+      name: "Penjualan Playing Card",
+      group: "Playing Card",
+      payout: false,
+    };
+  return {
+    id: `cash-cardsale-${stamp}`,
+    categoryId: category.id,
+    categoryName: category.name,
+    group: category.group,
+    direction: "in",
+    payout: category.payout,
+    amount,
+    payment,
+    note: `Penjualan kartu ${cardNumber}`,
     createdAt: stamp,
   };
 }
@@ -999,13 +1041,14 @@ type Ctx = State & {
     member?: boolean;
     topup?: number;
     price?: number;
+    payment?: string;
   }) => PlayingCard | null;
   updatePlayingCard: (
     id: string,
     patch: Partial<Omit<PlayingCard, "id" | "createdAt" | "balance">>,
   ) => void;
   removePlayingCard: (id: string) => void;
-  topupCard: (id: string, amount: number, note?: string) => boolean;
+  topupCard: (id: string, amount: number, note?: string, payment?: string) => boolean;
   adjustCardBalance: (id: string, amount: number, note: string) => boolean;
   chargeCard: (id: string, amount: number, note: string) => boolean;
   setCardPrice: (value: number) => void;
@@ -2087,8 +2130,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           playingCards: [card, ...prev.playingCards],
           cardEntries: [...entries, ...prev.cardEntries],
           cashEntries: (() => {
-            const row = cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now);
-            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+            const method = input.payment?.trim() || "Cash";
+            const rows = [
+              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method),
+              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method),
+            ].filter(Boolean) as CashEntry[];
+            return rows.length ? [...rows, ...prev.cashEntries] : prev.cashEntries;
           })(),
           customers: newCustomer
             ? [newCustomer, ...prev.customers]
@@ -2139,11 +2186,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           playingCards: prev.playingCards.filter((c) => c.id !== id),
           cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
         })),
-      topupCard: (id, amount, note) => {
+      topupCard: (id, amount, note, payment) => {
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || value <= 0) return false;
         const stamp = Date.now();
+        const method = payment?.trim() || "Cash";
         update((prev) => ({
           ...prev,
           playingCards: prev.playingCards.map((c) =>
@@ -2157,7 +2205,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               type: "topup",
               amount: value,
               balanceAfter: card.balance + value,
-              note: note?.trim() || "Top-up saldo",
+              note: `${note?.trim() || "Top-up saldo"} · ${method}`,
               createdAt: stamp,
             },
             ...prev.cardEntries,
@@ -2168,6 +2216,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               value,
               card.cardNumber,
               stamp,
+              method,
             );
             return row ? [row, ...prev.cashEntries] : prev.cashEntries;
           })(),

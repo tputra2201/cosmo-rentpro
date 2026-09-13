@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CardScanInput } from "@/components/CardScanInput";
+import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,6 +106,7 @@ function BuyCardPanel() {
   const [member, setMember] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [topup, setTopup] = useState("");
+  const [payment, setPayment] = useState("Cash");
 
   const priceValue = price === "" ? cardPrice : Math.max(0, Number(price) || 0);
   const topupValue = Math.max(0, Number(topup) || 0);
@@ -136,6 +138,7 @@ function BuyCardPanel() {
       member,
       topup: topupValue,
       price: priceValue,
+      payment,
       ...(customerId ? { customerId } : {}),
     });
     if (!card) {
@@ -143,7 +146,7 @@ function BuyCardPanel() {
       return;
     }
     toast.success(`Kartu ${card.cardNumber} terdaftar`, {
-      description: `Harga kartu ${formatRupiah(priceValue)} · saldo awal ${formatRupiah(topupValue)}`,
+      description: `Harga kartu ${formatRupiah(priceValue)} · saldo awal ${formatRupiah(topupValue)} · dibayar ${payment}`,
     });
     setCardNumber("");
     setName("");
@@ -181,6 +184,10 @@ function BuyCardPanel() {
             onChange={(e) => setTopup(e.target.value)}
           />
         </div>
+        <CardFundingSelect id="card-buy-payment" value={payment} onChange={setPayment} />
+        <p className="self-end text-sm text-muted-foreground">
+          Total dibayar sekarang: {formatRupiah(priceValue + topupValue)}
+        </p>
       </div>
 
       <Separator />
@@ -235,6 +242,7 @@ function CardListPanel() {
   } = useBilling();
   const [search, setSearch] = useState("");
   const [topupValues, setTopupValues] = useState<Record<string, string>>({});
+  const [payValues, setPayValues] = useState<Record<string, string>>({});
 
   const key = search.trim().toLowerCase();
   const list = key
@@ -341,15 +349,25 @@ function CardListPanel() {
                     }
                   />
                 </div>
+                <div className="min-w-40">
+                  <CardFundingSelect
+                    id={`topup-pay-${card.id}`}
+                    value={payValues[card.id] ?? "Cash"}
+                    onChange={(value) =>
+                      setPayValues((prev) => ({ ...prev, [card.id]: value }))
+                    }
+                  />
+                </div>
                 <Button
                   onClick={() => {
                     const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
-                    if (!topupCard(card.id, amount)) {
+                    const method = payValues[card.id] ?? "Cash";
+                    if (!topupCard(card.id, amount, "Top-up saldo", method)) {
                       toast.error("Jumlah top-up harus lebih dari 0");
                       return;
                     }
                     setTopupValues((prev) => ({ ...prev, [card.id]: "" }));
-                    toast.success(`Saldo ditambah ${formatRupiah(amount)}`);
+                    toast.success(`Saldo ditambah ${formatRupiah(amount)} · ${method}`);
                   }}
                 >
                   <Wallet className="size-4" /> Isi saldo

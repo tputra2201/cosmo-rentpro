@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardScanInput } from "@/components/CardScanInput";
+import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { findCardByNumber, formatRupiah, useBilling } from "@/lib/billing-store";
 
 /**
@@ -29,6 +30,7 @@ export function CardPaymentPanel({
   const shortage = card ? Math.max(0, need - card.balance) : 0;
   const notEnough = Boolean(card && card.balance + 0.5 < need);
   const [topup, setTopup] = useState("");
+  const [topupPay, setTopupPay] = useState("Cash");
 
   const doTopup = () => {
     if (!card) return;
@@ -37,12 +39,12 @@ export function CardPaymentPanel({
       toast.error("Nominal top up harus lebih dari 0");
       return;
     }
-    if (!topupCard(card.id, amount, "Top up saat pembayaran")) {
+    if (!topupCard(card.id, amount, "Top up saat pembayaran", topupPay)) {
       toast.error("Top up gagal diproses");
       return;
     }
     setTopup("");
-    toast.success(`Top up ${formatRupiah(amount)} berhasil`, {
+    toast.success(`Top up ${formatRupiah(amount)} berhasil · ${topupPay}`, {
       description: `Saldo kartu ${card.cardNumber} kini ${formatRupiah(card.balance + amount)}`,
     });
   };
@@ -130,6 +132,12 @@ export function CardPaymentPanel({
                 <PlusCircle className="size-4" /> Top up
               </Button>
             </div>
+            <CardFundingSelect
+              id={`${inputId}-topup-pay`}
+              value={topupPay}
+              onChange={setTopupPay}
+              label="Dibayar dengan"
+            />
             {shortage > 0 && (
               <button
                 type="button"
