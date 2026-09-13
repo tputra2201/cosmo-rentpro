@@ -165,10 +165,9 @@ export function useStoreSync(options: {
       if (cancelled) return;
       const id = (data as { store_id: string } | null)?.store_id ?? null;
       if (!id) return;
-      if (cached && cached !== id) {
-        // Perangkat berpindah store: buang jejak sinkronisasi lama sekaligus
-        // seluruh data store sebelumnya (kartu, member, sesi, laporan) supaya
-        // tidak ikut terkirim ke store baru.
+      if (stateRef.current.storeId !== id) {
+        // Data lokal milik store lain (atau data bawaan yang belum bertanda
+        // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
         localStorage.removeItem(SHADOW_KEY);
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
@@ -177,17 +176,20 @@ export function useStoreSync(options: {
         prevKeysRef.current = null;
         setPending(0);
         setReadyStoreId(null);
-        resetLocal?.();
       }
+      bindStore(id);
       localStorage.setItem(STORE_KEY, id);
       setStoreId(id);
     })();
     return () => {
       cancelled = true;
     };
-  }, [enabled, resetLocal]);
+  }, [enabled, bindStore]);
 
-  const queueLocalChanges = useCallback((snapshot: BillingSnapshot) => {
+  const queueLocalChanges = useCallback((snapshot: BillingSnapshot, activeStoreId: string) => {
+    // Kunci utama: hanya data yang memang bertanda store ini yang boleh masuk
+    // antrean kirim. Ini yang mencegah data store lain berpindah.
+    if (snapshot.storeId !== activeStoreId) return;
     const current = flattenSnapshot(snapshot);
     const shadow = shadowRef.current;
     const outbox = outboxRef.current;
