@@ -86,6 +86,10 @@ export type MenuItem = {
   sort?: number;
   /** Potongan harga khusus untuk item ini (Playing Card / Member). */
   discount?: ItemDiscount;
+  /** Cetak label saat pesanan dibuat (default: ya). */
+  printEnabled?: boolean;
+  /** Printer label tujuan (Kitchen / Bar). */
+  printerId?: string;
 };
 
 export type CafeTable = {
