@@ -138,10 +138,12 @@ function Dashboard() {
       </section>
 
       <StationDialog
+        key={selectedId ?? "kosong"}
         station={selected}
         open={selected !== null}
         onOpenChange={(open) => !open && setSelectedId(null)}
       />
+
     </div>
   );
 }

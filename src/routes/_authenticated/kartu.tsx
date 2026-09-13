@@ -157,6 +157,8 @@ function BuyCardPanel() {
     setMember(false);
     setCustomerId("");
     setTopup("");
+    setPayment("Cash");
+
     setPrice("");
   };
 
