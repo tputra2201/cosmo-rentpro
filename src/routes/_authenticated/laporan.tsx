@@ -40,6 +40,8 @@ import { ReceiptView } from "@/components/CustomerDetail";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
+import { MembershipReport } from "@/components/reports/MembershipReport";
+import { MethodReport } from "@/components/reports/MethodReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { isAdminLevel, useAuth } from "@/lib/auth";
@@ -101,6 +103,9 @@ function LaporanPage() {
           <TabsTrigger value="company">Company Report</TabsTrigger>
           <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
           <TabsTrigger value="shift">Cash Close Out</TabsTrigger>
+          <TabsTrigger value="member">Laporan Membership</TabsTrigger>
+          <TabsTrigger value="qris">Pembayaran QRIS</TabsTrigger>
+          <TabsTrigger value="transfer">Transfer Bank</TabsTrigger>
         </TabsList>
         <TabsContent value="nota" className="mt-6">
           <ReceiptReport range={range} />
@@ -113,6 +118,28 @@ function LaporanPage() {
         </TabsContent>
         <TabsContent value="shift" className="mt-6">
           <ShiftReport range={range} />
+        </TabsContent>
+        <TabsContent value="member" className="mt-6">
+          <MembershipReport range={range} />
+        </TabsContent>
+        <TabsContent value="qris" className="mt-6">
+          <MethodReport
+            range={range}
+            title="Pembayaran QRIS"
+            match={(m) => m.toLowerCase().includes("qris")}
+            emptyText="Belum ada pembayaran QRIS pada periode ini."
+          />
+        </TabsContent>
+        <TabsContent value="transfer" className="mt-6">
+          <MethodReport
+            range={range}
+            title="Pembayaran transfer bank"
+            match={(m) => {
+              const key = m.toLowerCase();
+              return key.includes("transfer") || key.includes("bank");
+            }}
+            emptyText="Belum ada pembayaran transfer bank pada periode ini."
+          />
         </TabsContent>
       </Tabs>
     </div>
