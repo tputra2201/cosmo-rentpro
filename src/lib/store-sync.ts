@@ -17,7 +17,9 @@ const STORE_KEY = "billing-sync-store-v1";
 const EPOCH = "1970-01-01T00:00:00Z";
 
 type Shadow = Record<string, string>;
-type Outbox = Record<string, SyncRecord>;
+/** Baris yang menunggu dikirim, plus daftar kolom yang benar-benar diubah di perangkat ini. */
+type Pending = SyncRecord & { fields?: string[] };
+type Outbox = Record<string, Pending>;
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
