@@ -105,6 +105,7 @@ function BuyCardPanel() {
   const [member, setMember] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [topup, setTopup] = useState("");
+  const [payment, setPayment] = useState("Cash");
 
   const priceValue = price === "" ? cardPrice : Math.max(0, Number(price) || 0);
   const topupValue = Math.max(0, Number(topup) || 0);
