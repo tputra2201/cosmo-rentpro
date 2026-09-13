@@ -255,47 +255,12 @@ export function useStoreSync(options: {
     busyRef.current = true;
     setSyncing(true);
     try {
-      // Tangkap perubahan terbaru sekali lagi tepat sebelum kirim. Ini menutup
+      // Tangkap perubahan terbaru sekali lagi tepat sebelum tukar data. Ini menutup
       // celah antara render, efek React, dan sinkronisasi berkala/fokus layar.
       queueLocalChanges(stateRef.current);
 
-      // 1. Kirim perubahan lokal.
-      const outbox = outboxRef.current;
-      const keys = Object.keys(outbox);
-      if (keys.length) {
-        const sentByKey = new Map(
-          keys.flatMap((key) => {
-            const record = outbox[key];
-            return record ? [[key, record] as const] : [];
-          }),
-        );
-        const rows = Array.from(sentByKey.values()).map((record) => {
-          return {
-            store_id: storeId,
-            kind: record.kind,
-            entity_id: record.entity_id,
-            payload: record.payload,
-            deleted: record.deleted,
-            updated_at: new Date().toISOString(),
-          };
-        });
-        const { error: pushError } = await supabase
-          .from("store_data")
-          .upsert(rows as never, { onConflict: "store_id,kind,entity_id" });
-        if (pushError) throw new Error(pushError.message);
-        const sent = Array.from(sentByKey.values());
-        for (const [key, sentRecord] of sentByKey) {
-          const currentRecord = outbox[key];
-          if (currentRecord && stableStringify(currentRecord) === stableStringify(sentRecord)) {
-            delete outbox[key];
-          }
-        }
-        writeJson(OUTBOX_KEY, outbox);
-        setPending(Object.keys(outbox).length);
-        noteShadow(sent);
-      }
-
-      // 2. Ambil perubahan dari pusat.
+      // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
+      // yang datanya masih lama akan menimpa perubahan perangkat lain.
       const since = localStorage.getItem(SINCE_KEY) ?? EPOCH;
       const { data, error: pullError } = await supabase
         .from("store_data")
@@ -317,6 +282,8 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
+        // Hanya perubahan yang benar-benar dibuat di perangkat ini (sudah masuk
+        // antrean kirim) yang boleh menang atas data pusat.
         const fresh = records.filter(
           (record) => !(recordKey(record.kind, record.entity_id) in outboxRef.current),
         );
@@ -327,6 +294,46 @@ export function useStoreSync(options: {
         const newest = remote[remote.length - 1]!.updated_at;
         localStorage.setItem(SINCE_KEY, newest);
       }
+
+      // 2. Kirim perubahan lokal yang tersisa.
+      const outbox = outboxRef.current;
+      const keys = Object.keys(outbox);
+      if (keys.length) {
+        const sentByKey = new Map(
+          keys.flatMap((key) => {
+            const record = outbox[key];
+            return record ? [[key, record] as const] : [];
+          }),
+        );
+        const stamp = new Date().toISOString();
+        const rows = Array.from(sentByKey.values()).map((record) => {
+          return {
+            store_id: storeId,
+            kind: record.kind,
+            entity_id: record.entity_id,
+            payload: record.payload,
+            deleted: record.deleted,
+            updated_at: stamp,
+          };
+        });
+        const { error: pushError } = await supabase
+          .from("store_data")
+          .upsert(rows as never, { onConflict: "store_id,kind,entity_id" });
+        if (pushError) throw new Error(pushError.message);
+        const sent = Array.from(sentByKey.values());
+        for (const [key, sentRecord] of sentByKey) {
+          const currentRecord = outbox[key];
+          if (currentRecord && stableStringify(currentRecord) === stableStringify(sentRecord)) {
+            delete outbox[key];
+          }
+        }
+        writeJson(OUTBOX_KEY, outbox);
+        setPending(Object.keys(outbox).length);
+        noteShadow(sent);
+        // Baris yang baru saja dikirim tidak perlu ditarik ulang.
+        const currentSince = localStorage.getItem(SINCE_KEY) ?? EPOCH;
+        if (stamp > currentSince) localStorage.setItem(SINCE_KEY, stamp);
+      }
       setError(null);
       setLastSyncedAt(Date.now());
     } catch (err) {
@@ -336,6 +343,7 @@ export function useStoreSync(options: {
       setSyncing(false);
     }
   }, [storeId, readyStoreId, applyRemote, noteShadow, queueLocalChanges]);
+
 
   // Segera kirim begitu ada perubahan yang menunggu.
   useEffect(() => {
