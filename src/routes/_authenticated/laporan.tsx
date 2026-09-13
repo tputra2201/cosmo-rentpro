@@ -100,6 +100,7 @@ function LaporanPage() {
           <TabsTrigger value="nota">Nota Transaksi</TabsTrigger>
           <TabsTrigger value="company">Company Report</TabsTrigger>
           <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
+          <TabsTrigger value="shift">Cash Close Out</TabsTrigger>
         </TabsList>
         <TabsContent value="nota" className="mt-6">
           <ReceiptReport range={range} />
