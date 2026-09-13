@@ -2123,6 +2123,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const card: PlayingCard = {
           id: `card-${now}`,
           cardNumber,
+          ...(cardCode ? { cardCode } : {}),
           ...(customerId ? { customerId } : {}),
           customerName: holderName || "Umum",
           customerPhone: holderPhone,
