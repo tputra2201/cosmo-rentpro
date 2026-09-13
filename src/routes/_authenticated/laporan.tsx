@@ -75,13 +75,50 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
+  const [range, setRange] = useState<ReportRange>(() => defaultRange("day"));
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
+        <p className="mt-1 text-muted-foreground">
+          Pilih jenis laporan dan rentang waktunya.
+        </p>
+      </header>
+
+      <ReportRangePicker range={range} onChange={setRange} />
+
+      <Tabs defaultValue="nota">
+        <TabsList>
+          <TabsTrigger value="nota">Nota Transaksi</TabsTrigger>
+          <TabsTrigger value="company">Company Report</TabsTrigger>
+          <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
+        </TabsList>
+        <TabsContent value="nota" className="mt-6">
+          <ReceiptReport range={range} />
+        </TabsContent>
+        <TabsContent value="company" className="mt-6">
+          <CompanyReport range={range} />
+        </TabsContent>
+        <TabsContent value="kartu" className="mt-6">
+          <CardReport range={range} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ReceiptReport({ range }: { range: ReportRange }) {
   const { history: rawHistory, cashEntries, clearHistory } = useBilling();
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
-  const history = [...rawHistory].sort((a, b) => paidTime(b) - paidTime(a));
+  const history = [...rawHistory]
+    .filter((h) => inRange(paidTime(h), range))
+    .sort((a, b) => paidTime(b) - paidTime(a));
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
   const today = history.filter((h) => dayKey(paidTime(h)) === todayKey);
+
   const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
