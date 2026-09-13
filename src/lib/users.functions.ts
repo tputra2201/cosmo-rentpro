@@ -15,8 +15,12 @@ async function myRoles(context: Ctx): Promise<string[]> {
 
 async function assertAdmin(context: Ctx) {
   const roles = await myRoles(context);
-  if (!roles.includes("admin") && !roles.includes("installer")) {
-    throw new Error("Hanya Admin yang boleh mengelola pengguna.");
+  if (
+    !roles.includes("admin") &&
+    !roles.includes("manager") &&
+    !roles.includes("installer")
+  ) {
+    throw new Error("Hanya Manager atau Installer yang boleh mengelola pengguna.");
   }
 }
 
@@ -52,7 +56,22 @@ async function assertSameStore(context: Ctx, targetId: string) {
   }
 }
 
-export type AppRole = "installer" | "admin" | "kasir";
+export type AppRole =
+  | "installer"
+  | "manager"
+  | "admin"
+  | "finance"
+  | "kasir"
+  | "operator";
+
+const roleSchema = z.enum([
+  "installer",
+  "manager",
+  "admin",
+  "finance",
+  "kasir",
+  "operator",
+]);
 
 export type ManagedUser = {
   id: string;
@@ -61,6 +80,8 @@ export type ManagedUser = {
   role: AppRole;
   createdAt: string;
   pending: boolean;
+  storeId: string | null;
+  storeName: string;
 
 };
 
@@ -75,10 +96,23 @@ export const listUsers = createServerFn({ method: "GET" })
     });
     if (error) throw new Error(error.message);
 
-    const storeId = await myStoreId(context as unknown as Ctx);
+    const roles0 = await myRoles(context as unknown as Ctx);
+    const seeAllStores = roles0.includes("installer");
+    const storeId = seeAllStores
+      ? null
+      : await myStoreId(context as unknown as Ctx);
     const { data: members } = await supabaseAdmin
       .from("store_members")
       .select("user_id, store_id");
+    const { data: storeRows } = await supabaseAdmin
+      .from("stores")
+      .select("id, store_name");
+    const storeNameById = new Map(
+      ((storeRows ?? []) as { id: string; store_name: string }[]).map((s) => [
+        s.id,
+        s.store_name,
+      ]),
+    );
     const memberStore = new Map(
       ((members ?? []) as { user_id: string; store_id: string }[]).map((m) => [
         m.user_id,
@@ -109,6 +143,9 @@ export const listUsers = createServerFn({ method: "GET" })
       role: roleById.get(u.id) ?? "kasir",
       createdAt: u.created_at,
       pending: !u.last_sign_in_at,
+      storeId: memberStore.get(u.id) ?? null,
+      storeName:
+        storeNameById.get(memberStore.get(u.id) ?? "") ?? "Tanpa store",
 
     }));
   });
@@ -120,7 +157,7 @@ export const inviteUser = createServerFn({ method: "POST" })
       .object({
         email: z.string().email(),
         fullName: z.string().min(1),
-        role: z.enum(["installer", "admin", "kasir"]),
+        role: roleSchema,
         redirectTo: z.string().url(),
       })
       .parse(data),
@@ -200,7 +237,7 @@ export const updateUser = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         fullName: z.string().min(1).optional(),
-        role: z.enum(["installer", "admin", "kasir"]).optional(),
+        role: roleSchema.optional(),
         password: z.string().min(6).optional(),
       })
       .parse(data),
@@ -233,7 +270,12 @@ export const updateUser = createServerFn({ method: "POST" })
 
     if (data.role) {
       if (data.role === "installer") await assertInstaller(context as unknown as Ctx);
-      if (data.role !== "admin" && data.role !== "installer" && data.id === (context as unknown as Ctx).userId) {
+      if (
+        data.role !== "admin" &&
+        data.role !== "manager" &&
+        data.role !== "installer" &&
+        data.id === (context as unknown as Ctx).userId
+      ) {
         throw new Error("Kamu tidak bisa menurunkan level akunmu sendiri.");
       }
       await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id);
