@@ -10,12 +10,21 @@
 
 export type PrinterRole = "receipt" | "invoice" | "kitchen" | "bar" | "report";
 export type PaperSize = "40mm" | "80mm" | "a4";
+/**
+ * Cara mengirim dokumen ke printer.
+ * - "system": dialog cetak bawaan perangkat (Windows, Mac, iOS, printer A4).
+ * - "rawbt": aplikasi RawBT di Android, langsung ke printer thermal Bluetooth/USB
+ *   tanpa perlu printer terdaftar di sistem Android.
+ */
+export type PrintMode = "system" | "rawbt";
 
 export type PrinterConfig = {
   id: string;
   name: string;
   role: PrinterRole;
   paper: PaperSize;
+  /** Cara pengiriman dokumen; default dialog cetak sistem. */
+  mode?: PrintMode;
   /** Ukuran huruf (pt). */
   fontSizePt: number;
   /** Huruf tebal. */
