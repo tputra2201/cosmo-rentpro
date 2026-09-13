@@ -56,6 +56,22 @@ async function assertSameStore(context: Ctx, targetId: string) {
   }
 }
 
+/** Semua akun Developer (disembunyikan dari Installer & level lain). */
+async function developerIds(): Promise<Set<string>> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.from("developer_accounts").select("user_id");
+  return new Set(
+    ((data ?? []) as { user_id: string }[]).map((r) => r.user_id),
+  );
+}
+
+async function assertNotDeveloper(context: Ctx, targetId: string) {
+  const devs = await developerIds();
+  if (devs.has(targetId) && targetId !== context.userId) {
+    throw new Error("Akun Developer tidak bisa diubah atau dihapus dari sini.");
+  }
+}
+
 export type AppRole =
   | "installer"
   | "manager"
@@ -134,8 +150,13 @@ export const listUsers = createServerFn({ method: "GET" })
       roleById.set(r.user_id, r.role as AppRole);
     }
 
+    const devs = await developerIds();
+    const iamDeveloper = devs.has((context as unknown as Ctx).userId);
+
     return list.users
       .filter((u) => {
+        // Akun Developer hanya terlihat oleh Developer sendiri.
+        if (devs.has(u.id) && !iamDeveloper) return false;
         const target = memberStore.get(u.id) ?? null;
         // Tanpa store tidak pernah tampil.
         if (!target) return false;
@@ -250,6 +271,7 @@ export const updateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
+    await assertNotDeveloper(context as unknown as Ctx, data.id);
     await assertSameStore(context as unknown as Ctx, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -300,6 +322,7 @@ export const deleteUser = createServerFn({ method: "POST" })
     const ctx = context as unknown as Ctx;
     await assertAdmin(ctx);
     if (data.id === ctx.userId) throw new Error("Kamu tidak bisa menghapus akunmu sendiri.");
+    await assertNotDeveloper(ctx, data.id);
     await assertSameStore(ctx, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
