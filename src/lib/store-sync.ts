@@ -14,6 +14,8 @@ const OUTBOX_KEY = "billing-sync-outbox-v1";
 const SHADOW_KEY = "billing-sync-shadow-v1";
 const SINCE_KEY = "billing-sync-since-v1";
 const STORE_KEY = "billing-sync-store-v1";
+const FRESH_KEY = "billing-sync-fresh-v1";
+
 
 const EPOCH = "1970-01-01T00:00:00Z";
 
