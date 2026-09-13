@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Coffee, Plus, Trash2, Utensils, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,19 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [discValue, setDiscValue] = useState("");
   const [cardPart, setCardPart] = useState("");
   const [restPay, setRestPay] = useState("");
+
+  // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
+  useEffect(() => {
+    setCategory("semua");
+    setPayMethod("");
+    setReceived("");
+    setCardNumber("");
+    setDiscType("fixed");
+    setDiscValue("");
+    setCardPart("");
+    setRestPay("");
+  }, [openId]);
+
 
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
