@@ -445,6 +445,7 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  tvNotice: TvNotice;
 
 };
 
