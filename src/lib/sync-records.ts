@@ -77,13 +77,20 @@ export function flattenSnapshot(state: BillingSnapshot) {
   // perangkat lain yang pengaturannya masih lama bisa menimpa pengaturan baru
   // (misal hak akses per level) hanya karena ikut mengirim blok itu.
   for (const key of SETTINGS_KEYS) {
+    const value = state[key];
+    // Pengaturan hak akses yang masih kosong berarti "belum diatur": jangan
+    // dikirim, supaya perangkat lain tidak menghapus pengaturan yang sudah ada.
+    if (key === "rolePermissions" && Object.keys((value ?? {}) as object).length === 0) {
+      continue;
+    }
     out.set(recordKey(SETTINGS_KIND, key), {
       kind: SETTINGS_KIND,
       entity_id: key,
-      payload: { [key]: state[key] },
+      payload: { [key]: value },
       deleted: false,
     });
   }
+
   return out;
 }
 
