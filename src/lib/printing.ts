@@ -57,13 +57,7 @@ export const PAPER_LABEL: Record<PaperSize, string> = {
 };
 
 export const PAPER_OPTIONS: PaperSize[] = ["40mm", "80mm", "a4"];
-export const PRINTER_ROLES: PrinterRole[] = [
-  "receipt",
-  "invoice",
-  "kitchen",
-  "bar",
-  "report",
-];
+export const PRINTER_ROLES: PrinterRole[] = ["receipt", "invoice", "kitchen", "bar", "report"];
 
 export const defaultReceiptLayout: DocLayout = {
   headerText: "",

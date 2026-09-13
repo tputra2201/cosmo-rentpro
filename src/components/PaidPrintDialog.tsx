@@ -55,9 +55,7 @@ export function PaidPrintDialog({
         <DialogHeader>
           <DialogTitle>Pembayaran lunas</DialogTitle>
           <DialogDescription>
-            {record
-              ? `${record.stationName} · ${formatRupiah(record.total)}`
-              : ""}
+            {record ? `${record.stationName} · ${formatRupiah(record.total)}` : ""}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">

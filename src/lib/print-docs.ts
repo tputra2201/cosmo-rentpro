@@ -30,11 +30,9 @@ function layoutCss(layout: DocLayout) {
 
 function storeBlock(store: PrintStore, layout: DocLayout) {
   if (!layout.showStoreInfo) return "";
-  const lines = [
-    store?.address,
-    store?.city,
-    store?.phone ? `Telp ${store.phone}` : "",
-  ].filter(Boolean);
+  const lines = [store?.address, store?.city, store?.phone ? `Telp ${store.phone}` : ""].filter(
+    Boolean,
+  );
   return `
     <div class="center bold big">${escapeHtml(store?.store_name || "Billing Rental PS")}</div>
     ${lines.map((l) => `<div class="center muted">${escapeHtml(l)}</div>`).join("")}

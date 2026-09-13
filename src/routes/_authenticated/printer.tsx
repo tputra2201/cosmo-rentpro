@@ -41,7 +41,8 @@ export const Route = createFileRoute("/_authenticated/printer")({
       { property: "og:title", content: "Printer & Cetak" },
       {
         property: "og:description",
-        content: "Pengaturan printer thermal 40mm/80mm dan printer laporan A4 beserta layout struk.",
+        content:
+          "Pengaturan printer thermal 40mm/80mm dan printer laporan A4 beserta layout struk.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -113,9 +114,9 @@ function PrinterPage() {
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Printer &amp; Cetak</h1>
         <p className="mt-1 text-muted-foreground">
-          Atur printer struk, invoice, label dapur, label bar, dan printer laporan. Saat
-          menekan tombol Cetak, dialog cetak perangkat akan terbuka sehingga Anda bisa
-          memilih printer yang dituju.
+          Atur printer struk, invoice, label dapur, label bar, dan printer laporan. Saat menekan
+          tombol Cetak, dialog cetak perangkat akan terbuka sehingga Anda bisa memilih printer yang
+          dituju.
         </p>
       </header>
 
@@ -211,9 +212,7 @@ function PrinterPage() {
                     max={25}
                     value={p.marginMm}
                     disabled={!canManage}
-                    onChange={(e) =>
-                      updatePrinter(p.id, { marginMm: Number(e.target.value) || 0 })
-                    }
+                    onChange={(e) => updatePrinter(p.id, { marginMm: Number(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -293,8 +292,8 @@ function PrinterPage() {
         <div>
           <h2 className="text-xl font-semibold">Cetak Label per Menu</h2>
           <p className="text-sm text-muted-foreground">
-            Pilih menu mana yang dicetak sebagai label dan ke printer dapur atau bar mana.
-            Satu label dicetak untuk setiap item pesanan.
+            Pilih menu mana yang dicetak sebagai label dan ke printer dapur atau bar mana. Satu
+            label dicetak untuk setiap item pesanan.
           </p>
         </div>
         <div className="space-y-2">
@@ -462,12 +461,7 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center gap-2 text-sm">
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onChange}
-        aria-label={label}
-      />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} aria-label={label} />
       {label}
     </label>
   );
