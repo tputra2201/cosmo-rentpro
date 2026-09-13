@@ -74,8 +74,8 @@ function AturSandiPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next.length < 6) {
-      toast.error("Kata sandi minimal 6 karakter");
+    if (next.length < 8) {
+      toast.error("Kata sandi minimal 8 karakter");
       return;
     }
     if (next !== confirm) {
@@ -84,9 +84,9 @@ function AturSandiPage() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) throw error;
+      await savePassword({ data: { password: next } });
       await supabase.auth.signOut();
+
       toast.success("Kata sandi tersimpan. Silakan masuk dengan sandi baru.");
       navigate({ to: "/auth", replace: true });
     } catch (err) {
