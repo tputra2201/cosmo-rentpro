@@ -2308,7 +2308,38 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         })),
       removeCashEntry: (id) =>
         update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
+      openShift: (input) => {
+        const name = input.cashierName.trim();
+        if (!name) return null;
+        if (state.shifts.some((s) => !s.closedAt)) return null;
+        const row: CashShift = {
+          id: `shift-${Date.now()}`,
+          cashierName: name,
+          ...(input.cashierId ? { cashierId: input.cashierId } : {}),
+          openedAt: Date.now(),
+          startCash: Math.max(0, Math.round(input.startCash)),
+        };
+        update((prev) => ({ ...prev, shifts: [row, ...prev.shifts] }));
+        return row;
+      },
+      closeShift: (id, input) => {
+        const shift = state.shifts.find((s) => s.id === id);
+        if (!shift || shift.closedAt) return null;
+        const closed: CashShift = {
+          ...shift,
+          closedAt: Date.now(),
+          cashActual: Math.max(0, Math.round(input.cashActual)),
+          balanceNote: input.balanceNote?.trim() ?? "",
+          nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
+        };
+        update((prev) => ({
+          ...prev,
+          shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
+        }));
+        return closed;
+      },
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
+
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
       sync,
