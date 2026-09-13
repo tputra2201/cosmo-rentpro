@@ -228,8 +228,13 @@ function LaporanPage() {
                 {records.map((h) => (
                   <TableRow key={h.id}>
                     <TableCell className="whitespace-nowrap">
-                      {timeOf(h.startAt)} – {timeOf(h.endAt)}
+                      {timeOf(paidTime(h))}
+                      <span className="block text-xs text-muted-foreground">
+                        {timeOf(h.startAt)} – {timeOf(h.endAt)}
+                        {h.ongoing ? " · masih main" : ""}
+                      </span>
                     </TableCell>
+
                     <TableCell>
                       {h.stationName}{" "}
                       <span className="text-muted-foreground">({h.console})</span>
