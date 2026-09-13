@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { formatRupiah, useBilling, type Customer, type CustomerLevel } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type Customer, type CustomerLevel } from "@/lib/billing-store";
 import { CustomerDetailDialog, cardsOfCustomer, receiptsOfCustomer } from "@/components/CustomerDetail";
 
 export const Route = createFileRoute("/_authenticated/pelanggan")({ head: () => ({ meta: [
@@ -59,7 +59,7 @@ function CustomerCard({ customer }: { customer: Customer }) {
               <button type="button" onClick={() => openWith("kartu")} className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-secondary/50 px-3 py-2 text-left hover:bg-secondary">
                 <span className="flex min-w-0 items-center gap-2 text-sm">
                   <CreditCard className="size-4 shrink-0 text-muted-foreground"/>
-                  <span className="truncate font-semibold">{card.cardNumber}</span>
+                  <span className="truncate font-semibold">{cardLabel(card)}</span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block text-xs text-muted-foreground">Saldo</span>

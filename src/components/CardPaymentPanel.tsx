@@ -78,6 +78,9 @@ export function CardPaymentPanel({
               <UserRound className="size-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0">
                 <span className="block truncate font-semibold">{card.cardNumber}</span>
+                <span className="block truncate text-xs font-semibold uppercase tracking-wider text-primary">
+                  Kode: {card.cardCode?.trim() || "-"}
+                </span>
                 <span className="block truncate text-muted-foreground">
                   {card.customerName || "Tanpa nama"}
                   {card.member ? " · Member" : ""}

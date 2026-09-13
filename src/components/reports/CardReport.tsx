@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type CardEntryType } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type CardEntryType } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 const ALL = "__all__";
@@ -82,7 +82,7 @@ export function CardReport({ range }: { range: ReportRange }) {
               <SelectItem value={ALL}>Semua kartu</SelectItem>
               {playingCards.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.cardNumber}
+                  {cardLabel(c)}
                   {c.customerName ? ` · ${c.customerName}` : ""}
                 </SelectItem>
               ))}
@@ -95,7 +95,7 @@ export function CardReport({ range }: { range: ReportRange }) {
       {selected && (
         <div className="surface-panel flex flex-wrap items-center gap-3 p-4">
           <div>
-            <p className="text-lg font-semibold">{selected.cardNumber}</p>
+            <p className="text-lg font-semibold">{cardLabel(selected)}</p>
             <p className="text-sm text-muted-foreground">
               {selected.customerName || "Tanpa pemilik"}
             </p>
@@ -140,6 +140,7 @@ export function CardReport({ range }: { range: ReportRange }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nomor kartu</TableHead>
+                <TableHead>Kode kartu</TableHead>
                 <TableHead>Pemilik</TableHead>
                 <TableHead className="text-right">Transaksi</TableHead>
                 <TableHead className="text-right">Penjualan</TableHead>
@@ -152,6 +153,7 @@ export function CardReport({ range }: { range: ReportRange }) {
               {perCard.map((row) => (
                 <TableRow key={row.card.id}>
                   <TableCell>{row.card.cardNumber}</TableCell>
+                  <TableCell>{row.card.cardCode?.trim() || "-"}</TableCell>
                   <TableCell>{row.card.customerName || "-"}</TableCell>
                   <TableCell className="text-right">{row.count}</TableCell>
                   <TableCell className="text-right">{formatRupiah(row.purchase)}</TableCell>
@@ -179,6 +181,7 @@ export function CardReport({ range }: { range: ReportRange }) {
               <TableRow>
                 <TableHead>Waktu</TableHead>
                 <TableHead>Nomor kartu</TableHead>
+                <TableHead>Kode kartu</TableHead>
                 <TableHead>Pemilik</TableHead>
                 <TableHead>Jenis</TableHead>
                 <TableHead>Catatan</TableHead>
@@ -199,6 +202,11 @@ export function CardReport({ range }: { range: ReportRange }) {
                     })}
                   </TableCell>
                   <TableCell>{e.cardNumber}</TableCell>
+                  <TableCell>
+                    {e.cardCode?.trim() ||
+                      playingCards.find((c) => c.id === e.cardId)?.cardCode?.trim() ||
+                      "-"}
+                  </TableCell>
                   <TableCell>{cardOwner(e.cardId)}</TableCell>
                   <TableCell>{typeLabels[e.type]}</TableCell>
                   <TableCell>{e.note || "-"}</TableCell>

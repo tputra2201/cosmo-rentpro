@@ -100,6 +100,7 @@ function KartuPage() {
 function BuyCardPanel() {
   const { playingCards, customers, cardPrice, buyPlayingCard } = useBilling();
   const [cardNumber, setCardNumber] = useState("");
+  const [cardCode, setCardCode] = useState("");
   const [price, setPrice] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -133,6 +134,7 @@ function BuyCardPanel() {
     }
     const card = buyPlayingCard({
       cardNumber: number,
+      cardCode: cardCode.trim(),
       customerName: name,
       customerPhone: phone,
       member,
@@ -149,6 +151,7 @@ function BuyCardPanel() {
       description: `Harga kartu ${formatRupiah(priceValue)} · saldo awal ${formatRupiah(topupValue)} · dibayar ${payment}`,
     });
     setCardNumber("");
+    setCardCode("");
     setName("");
     setPhone("");
     setMember(false);
@@ -161,6 +164,19 @@ function BuyCardPanel() {
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <h2 className="font-display text-xl font-semibold">Pembelian kartu baru</h2>
       <CardScanInput value={cardNumber} onChange={setCardNumber} autoFocus />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="card-code">Kode Kartu</Label>
+        <Input
+          id="card-code"
+          value={cardCode}
+          placeholder="Contoh: PC-001A"
+          onChange={(e) => setCardCode(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").toUpperCase())}
+        />
+        <p className="text-xs text-muted-foreground">
+          Huruf dan angka, tercetak di kartu. Muncul di pembayaran, saldo, riwayat, dan laporan.
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -249,6 +265,7 @@ function CardListPanel() {
     ? playingCards.filter(
         (c) =>
           c.cardNumber.toLowerCase().includes(key) ||
+          (c.cardCode ?? "").toLowerCase().includes(key) ||
           c.customerName.toLowerCase().includes(key) ||
           c.customerPhone.includes(key),
       )
@@ -276,6 +293,9 @@ function CardListPanel() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-display text-lg font-semibold">{card.cardNumber}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    Kode: {card.cardCode?.trim() || "-"}
+                  </p>
                   <p className="truncate text-sm text-muted-foreground">
                     {card.customerName || "Umum"}
                     {card.customerPhone ? ` · ${card.customerPhone}` : ""} ·{" "}
@@ -291,6 +311,16 @@ function CardListPanel() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  value={card.cardCode ?? ""}
+                  placeholder="Kode Kartu"
+                  aria-label={`Kode kartu ${card.cardNumber}`}
+                  onChange={(e) =>
+                    updatePlayingCard(card.id, {
+                      cardCode: e.target.value.replace(/[^a-zA-Z0-9-]/g, "").toUpperCase(),
+                    })
+                  }
+                />
                 <Input
                   value={card.customerName}
                   aria-label={`Nama pemilik ${card.cardNumber}`}
