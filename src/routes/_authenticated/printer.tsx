@@ -123,6 +123,29 @@ function PrinterPage() {
         </p>
       </header>
 
+      <section className="surface-panel space-y-2 p-6">
+        <h2 className="text-xl font-semibold">Mencetak dari Android</h2>
+        <p className="text-sm text-muted-foreground">
+          Android tidak mengenali printer Bluetooth thermal di dialog cetak, jadi printer seperti
+          Kassen MT-300 VL (80 mm, ESC/POS) tidak akan pernah muncul di daftar. Langkahnya:
+        </p>
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>Pasangkan printer lewat Bluetooth di pengaturan Android.</li>
+          <li>
+            Pasang aplikasi <span className="font-medium">RawBT</span> dari Play Store, buka, lalu
+            pilih printer itu sebagai printer utama (ESC/POS, lebar 80 mm).
+          </li>
+          <li>
+            Di daftar di bawah, ubah <span className="font-medium">Cara mencetak</span> printer
+            struk menjadi <span className="font-medium">Android — aplikasi RawBT</span>.
+          </li>
+          <li>Tekan Uji cetak; struk langsung keluar tanpa dialog cetak.</li>
+        </ol>
+        <p className="text-sm text-muted-foreground">
+          Di komputer Windows atau Mac, biarkan pilihannya pada dialog cetak perangkat.
+        </p>
+      </section>
+
       <section className="surface-panel space-y-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
