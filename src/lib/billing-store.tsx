@@ -444,6 +444,8 @@ type State = {
   cardMemberDiscountPercent: number;
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
+  shifts: CashShift[];
+
 };
 
 
