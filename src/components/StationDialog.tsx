@@ -941,7 +941,25 @@ export function StationDialog({
                   </div>
                 </>
               )}
+              {isSettled && paidHistoryId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    const found = history.find((h) => h.id === paidHistoryId);
+                    if (!found) {
+                      toast.error("Nota belum tersedia");
+                      return;
+                    }
+                    setPaidRecord(found);
+                  }}
+                >
+                  <PrinterIcon className="size-4" /> Cetak / cetak ulang struk
+                </Button>
+              )}
             </div>
+
 
             {(session.settlements ?? []).length > 0 && (
               <div className="space-y-1.5 rounded-md border border-border p-3">
