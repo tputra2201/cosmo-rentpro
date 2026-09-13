@@ -237,7 +237,7 @@ export function useStoreSync(options: {
   // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
   useEffect(() => {
     if (!hydrated || !loadedRef.current || !storeId || readyStoreId !== storeId) return;
-    queueLocalChanges(state);
+    queueLocalChanges(state, storeId);
   }, [state, hydrated, storeId, readyStoreId, queueLocalChanges]);
 
   const noteShadow = useCallback((records: SyncRecord[]) => {
