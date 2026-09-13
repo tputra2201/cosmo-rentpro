@@ -1650,11 +1650,23 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const { session: authSession } = useAuth();
+  // Kartu, member, sesi, dan laporan hanya milik satu store. Kalau perangkat
+  // ini dipakai masuk ke store lain, data store sebelumnya dibuang dulu.
+  const resetLocal = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* penyimpanan diblokir: cukup reset di memori */
+    }
+    setState(defaultState);
+  }, []);
+
   const sync = useStoreSync({
     state,
     hydrated,
     enabled: Boolean(authSession),
     applyRemote: setState,
+    resetLocal,
   });
 
   const value = useMemo<Ctx>(
