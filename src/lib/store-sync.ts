@@ -368,12 +368,21 @@ export function useStoreSync(options: {
           };
           const key = recordKey(record.kind, record.entity_id);
           const pending = outboxRef.current[key];
+          // Baris yang sudah dihapus di pusat selalu menang. Kalau tidak,
+          // perangkat yang masih menyimpan salinan lama akan menghidupkannya
+          // kembali — inilah yang membuat unit store lain muncul lagi.
+          if (record.deleted) {
+            delete outboxRef.current[key];
+            merged.push(record);
+            continue;
+          }
           if (!pending) {
             merged.push(record);
             continue;
           }
-          // Penghapusan (di sisi mana pun) tetap dimenangkan oleh niat lokal.
-          if (pending.deleted || record.deleted) continue;
+          // Penghapusan lokal tetap dikirim ke pusat.
+          if (pending.deleted) continue;
+
           const fields = pending.fields ?? Object.keys(pending.payload);
           const payload = { ...record.payload };
           for (const field of fields) {
