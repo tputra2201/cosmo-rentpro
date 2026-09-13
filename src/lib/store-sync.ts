@@ -51,6 +51,31 @@ function writeJson(key: string, value: unknown) {
   }
 }
 
+function parseJson(raw: string | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw) as unknown;
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Kolom mana saja yang berubah dibanding salinan terakhir dari pusat. */
+function changedFields(
+  base: Record<string, unknown>,
+  next: Record<string, unknown>,
+): string[] {
+  const keys = new Set([...Object.keys(base), ...Object.keys(next)]);
+  const out: string[] = [];
+  for (const key of keys) {
+    if (stableStringify(base[key]) !== stableStringify(next[key])) out.push(key);
+  }
+  return out;
+}
+
 export type SyncStatus = {
   online: boolean;
   syncing: boolean;
