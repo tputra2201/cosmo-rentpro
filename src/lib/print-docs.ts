@@ -121,6 +121,76 @@ export function receiptBody(opts: {
   `;
 }
 
+/** Versi teks polos struk / invoice untuk printer thermal Android (RawBT). */
+export function receiptText(opts: {
+  record: HistoryRecord;
+  store: PrintStore;
+  printer: PrinterConfig;
+  layout: DocLayout;
+  kind: "receipt" | "invoice";
+  cashier?: string;
+}) {
+  const { record, store, printer, layout, kind, cashier } = opts;
+  const w = CHARS_PER_LINE[printer.paper];
+  const lines: string[] = [];
+  if (layout.headerText) lines.push(textCenter(layout.headerText, w));
+  if (layout.showStoreInfo) {
+    lines.push(textCenter(store?.store_name || "Billing Rental PS", w));
+    for (const l of [store?.address, store?.city, store?.phone ? `Telp ${store.phone}` : ""]) {
+      if (l) lines.push(textCenter(l, w));
+    }
+  }
+  lines.push(textSep(w));
+  lines.push(textCenter(kind === "invoice" ? "INVOICE" : "STRUK PEMBAYARAN", w));
+  lines.push(`No: ${record.id}`);
+  lines.push(`Waktu: ${time(record.paidAt ?? record.endAt)}`);
+  if (cashier) lines.push(`Kasir: ${cashier}`);
+  if (layout.showCustomer) {
+    lines.push(`Pelanggan: ${record.customerName || "Umum"}`);
+    if (record.tableName) lines.push(`Meja: ${record.tableName}`);
+  }
+  lines.push(textSep(w));
+  if (layout.showItems) {
+    if (record.rentalTotal > 0) {
+      lines.push(
+        textRow(
+          `Rental ${record.stationName} (${record.minutes}m)`,
+          formatRupiah(record.rentalTotal),
+          w,
+        ),
+      );
+    }
+    for (const o of record.orders ?? []) {
+      lines.push(textRow(`${o.name} x${o.qty}`, formatRupiah(o.price * o.qty), w));
+    }
+    lines.push(textSep(w));
+  }
+  lines.push(textRow("Subtotal", formatRupiah(record.rentalTotal + record.fnbTotal), w));
+  if (record.discount) {
+    lines.push(
+      textRow(`Potongan ${record.promoName || ""}`.trim(), `- ${formatRupiah(record.discount)}`, w),
+    );
+  }
+  lines.push(textRow("TOTAL", formatRupiah(record.total), w));
+  if (layout.showPayment) {
+    lines.push(textSep(w));
+    const splits = record.payments?.length
+      ? record.payments.map((p) => textRow(p.method, formatRupiah(p.amount), w))
+      : [
+          textRow(
+            record.payment ?? "Cash",
+            formatRupiah(record.amountPaid ?? record.total),
+            w,
+          ),
+        ];
+    lines.push(...splits);
+    if (record.change) lines.push(textRow("Kembali", formatRupiah(record.change), w));
+  }
+  lines.push(textSep(w));
+  if (layout.footerText) lines.push(textCenter(layout.footerText, w));
+  return lines.join("\n");
+}
+
 export function printReceipt(opts: {
   record: HistoryRecord;
   store: PrintStore;
@@ -129,6 +199,10 @@ export function printReceipt(opts: {
   kind: "receipt" | "invoice";
   cashier?: string;
 }) {
+  if (printMode(opts.printer) === "rawbt") {
+    printViaRawBt(textWithCopies(opts.printer, receiptText(opts)));
+    return;
+  }
   const body = receiptBody(opts);
   printHtml(
     opts.kind === "invoice" ? "Invoice" : "Struk",
