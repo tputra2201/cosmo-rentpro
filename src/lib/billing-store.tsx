@@ -176,6 +176,11 @@ export type CardEntry = {
 export const CARD_PAYMENT_NAME = "Playing Card";
 /** Top-up kartu hanya deposit: masuk kas, tapi bukan penghasilan. */
 export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
+/** Penjualan kartu baru: penghasilan store. */
+export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
+
+/** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
+export const CARD_FUNDING_METHODS = ["Cash", "QRIS", "Transfer Bank"] as const;
 
 /** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
