@@ -373,6 +373,20 @@ export type CashEntry = {
 
 export type PaymentSplit = { method: string; amount: number };
 
+/** Shift kasir: check-in sampai close out. */
+export type CashShift = {
+  id: string;
+  cashierName: string;
+  cashierId?: string;
+  openedAt: number;
+  closedAt?: number;
+  startCash: number;
+  cashActual?: number;
+  balanceNote?: string;
+  nextStartCash?: number;
+};
+
+
 export type HistoryRecord = {
   id: string;
   stationName: string;
@@ -430,6 +444,8 @@ type State = {
   cardMemberDiscountPercent: number;
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
+  shifts: CashShift[];
+
 };
 
 
@@ -512,6 +528,8 @@ const defaultState: State = {
     { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
   ],
   cashEntries: [],
+  shifts: [],
+
 };
 
 /** Catatan kas untuk top-up kartu: uang masuk, tapi bukan penghasilan. */
@@ -545,6 +563,63 @@ export function formatRupiah(value: number) {
 export function paidTotal(session: Session | null | undefined) {
   return (session?.settlements ?? []).reduce((sum, s) => sum + s.amount, 0);
 }
+
+/** Nama metode pembayaran tunai. */
+export const CASH_METHOD = "Cash";
+
+function cashOfRecord(record: HistoryRecord) {
+  if (record.payments?.length) {
+    return record.payments
+      .filter((p) => p.method === CASH_METHOD)
+      .reduce((sum, p) => sum + p.amount, 0);
+  }
+  return (record.payment ?? "") === CASH_METHOD ? record.total : 0;
+}
+
+export type ShiftSummary = {
+  paidIn: number;
+  paidOut: number;
+  sales: number;
+  expenses: number;
+  expected: number;
+};
+
+/** Hitung posisi uang tunai laci untuk satu shift kasir. */
+export function shiftSummary(
+  shift: CashShift,
+  history: HistoryRecord[],
+  cashEntries: CashEntry[],
+  until: number = Date.now(),
+): ShiftSummary {
+  const from = shift.openedAt;
+  const to = shift.closedAt ?? until;
+  const within = (stamp: number) => stamp >= from && stamp <= to;
+
+  const sales = history
+    .filter((h) => within(h.paidAt ?? h.endAt))
+    .reduce((sum, h) => sum + cashOfRecord(h), 0);
+
+  const cash = cashEntries.filter(
+    (e) => e.payment === CASH_METHOD && within(e.createdAt),
+  );
+  const sum = (pick: (e: CashEntry) => boolean) =>
+    cash.filter(pick).reduce((s, e) => s + e.amount, 0);
+
+  const paidIn = sum((e) => e.direction === "in" && e.payout);
+  const otherIncome = sum((e) => e.direction === "in" && !e.payout);
+  const paidOut = sum((e) => e.direction === "out" && e.payout);
+  const expenses = sum((e) => e.direction === "out" && !e.payout);
+  const salesTotal = sales + otherIncome;
+
+  return {
+    paidIn,
+    paidOut,
+    sales: salesTotal,
+    expenses,
+    expected: shift.startCash + paidIn - paidOut + salesTotal - expenses,
+  };
+}
+
 
 
 export function formatClock(totalSeconds: number) {
@@ -791,6 +866,8 @@ function migrateState(raw: unknown): State {
       return list;
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
+    shifts: parsed.shifts ?? defaultState.shifts,
+
 
 
   };
@@ -935,7 +1012,17 @@ type Ctx = State & {
   ) => void;
   removeCashEntry: (id: string) => void;
   exportSnapshot: () => BillingSnapshot;
+  openShift: (input: {
+    cashierName: string;
+    cashierId?: string;
+    startCash: number;
+  }) => CashShift | null;
+  closeShift: (
+    id: string,
+    input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
+  ) => CashShift | null;
   replaceAll: (data: unknown) => void;
+
   resetAll: () => void;
   sync: SyncStatus;
 };
@@ -2221,7 +2308,38 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         })),
       removeCashEntry: (id) =>
         update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
+      openShift: (input) => {
+        const name = input.cashierName.trim();
+        if (!name) return null;
+        if (state.shifts.some((s) => !s.closedAt)) return null;
+        const row: CashShift = {
+          id: `shift-${Date.now()}`,
+          cashierName: name,
+          ...(input.cashierId ? { cashierId: input.cashierId } : {}),
+          openedAt: Date.now(),
+          startCash: Math.max(0, Math.round(input.startCash)),
+        };
+        update((prev) => ({ ...prev, shifts: [row, ...prev.shifts] }));
+        return row;
+      },
+      closeShift: (id, input) => {
+        const shift = state.shifts.find((s) => s.id === id);
+        if (!shift || shift.closedAt) return null;
+        const closed: CashShift = {
+          ...shift,
+          closedAt: Date.now(),
+          cashActual: Math.max(0, Math.round(input.cashActual)),
+          balanceNote: input.balanceNote?.trim() ?? "",
+          nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
+        };
+        update((prev) => ({
+          ...prev,
+          shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
+        }));
+        return closed;
+      },
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
+
       replaceAll: (data) => setState(migrateState(data)),
       resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
       sync,

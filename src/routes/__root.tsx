@@ -32,6 +32,8 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
+  ClipboardCheck,
+
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -164,6 +166,8 @@ function RootShell({ children }: { children: ReactNode }) {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
+  { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
+
   { to: "/kafe", label: "Kafe", icon: Coffee },
 
   { to: "/booking", label: "Booking", icon: CalendarDays },
@@ -206,7 +210,11 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
-  const { sync } = useBilling();
+  const { sync, shifts } = useBilling();
+  const needCheckIn = {
+    done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
+  };
+
   const storeName = store?.store_name?.trim() ?? "";
   const signature = appSignature(store?.app_version, store?.dev_contact);
   const expiresAt = store?.expires_at ?? null;
@@ -419,6 +427,15 @@ function AppShell() {
                 ). Segera hubungi Developer untuk perpanjangan.
               </div>
             )}
+            {session && !isAuthPage && !needCheckIn.done && (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/60 bg-warning/10 px-4 py-3 text-sm font-semibold text-warning">
+                <span>Belum check-in shift kasir. Lakukan check-in dulu sebelum bertugas.</span>
+                <Button size="sm" variant="outline" onClick={() => navigate({ to: "/shift" })}>
+                  Check-in sekarang
+                </Button>
+              </div>
+            )}
+
             {blocked ? (
               <div className="surface-panel mx-auto max-w-md p-8 text-center">
                 <h1 className="text-xl font-semibold">Akses terbatas</h1>
