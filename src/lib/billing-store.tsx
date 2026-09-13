@@ -1064,6 +1064,7 @@ type Ctx = State & {
   setPointsPerRupiah: (value: number) => void;
   buyPlayingCard: (input: {
     cardNumber: string;
+    cardCode?: string;
     customerName?: string;
     customerPhone?: string;
     customerId?: string;
@@ -2135,6 +2136,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             id: `ce-${now}`,
             cardId: card.id,
             cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
             type: "purchase",
             amount: price,
             balanceAfter: 0,
@@ -2147,6 +2149,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             id: `ce-${now}-topup`,
             cardId: card.id,
             cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
             type: "topup",
             amount: topup,
             balanceAfter: topup,
@@ -2231,6 +2234,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "topup",
               amount: value,
               balanceAfter: card.balance + value,
@@ -2267,6 +2271,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "adjust",
               amount: value,
               balanceAfter: next,
@@ -2293,6 +2298,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               id: `ce-${stamp}`,
               cardId: id,
               cardNumber: card.cardNumber,
+            ...(card.cardCode ? { cardCode: card.cardCode } : {}),
               type: "payment",
               amount: -value,
               balanceAfter: next,
