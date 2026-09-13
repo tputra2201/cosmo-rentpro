@@ -56,6 +56,22 @@ async function assertSameStore(context: Ctx, targetId: string) {
   }
 }
 
+/** Semua akun Developer (disembunyikan dari Installer & level lain). */
+async function developerIds(): Promise<Set<string>> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.from("developer_accounts").select("user_id");
+  return new Set(
+    ((data ?? []) as { user_id: string }[]).map((r) => r.user_id),
+  );
+}
+
+async function assertNotDeveloper(context: Ctx, targetId: string) {
+  const devs = await developerIds();
+  if (devs.has(targetId) && targetId !== context.userId) {
+    throw new Error("Akun Developer tidak bisa diubah atau dihapus dari sini.");
+  }
+}
+
 export type AppRole =
   | "installer"
   | "manager"
