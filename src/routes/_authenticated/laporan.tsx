@@ -111,6 +111,9 @@ function LaporanPage() {
         <TabsContent value="kartu" className="mt-6">
           <CardReport range={range} />
         </TabsContent>
+        <TabsContent value="shift" className="mt-6">
+          <ShiftReport range={range} />
+        </TabsContent>
       </Tabs>
     </div>
   );
