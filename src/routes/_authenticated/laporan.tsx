@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,9 +43,13 @@ import { ShiftReport } from "@/components/reports/ShiftReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
+import { useStoreInfo } from "@/lib/store-info";
+import { printReceipt, type PrintStore } from "@/lib/print-docs";
+import { printerFor } from "@/lib/printing";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 
 
@@ -99,6 +103,7 @@ function LaporanPage() {
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
+  const reportRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-6">
@@ -109,13 +114,19 @@ function LaporanPage() {
         </p>
       </header>
 
-      <ReportRangePicker range={range} onChange={setRange} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ReportRangePicker range={range} onChange={setRange} />
+        {allow("laporan.cetak") && (
+          <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
+        )}
+      </div>
 
       {tabs.length === 0 && (
         <p className="text-sm text-muted-foreground">
           Levelmu belum punya hak akses ke laporan mana pun.
         </p>
       )}
+      <div ref={reportRef}>
       <Tabs key={first} defaultValue={first}>
         <TabsList>
           {tabs.map((t) => (
@@ -159,6 +170,7 @@ function LaporanPage() {
           />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
@@ -379,9 +391,35 @@ function ReceiptDialog({
   open: boolean;
   onOpenChange: (value: boolean) => void;
 }) {
-  const { paymentMethods, updateHistoryPayment, removeHistory, rolePermissions } =
-    useBilling();
+  const {
+    paymentMethods,
+    updateHistoryPayment,
+    removeHistory,
+    rolePermissions,
+    printers,
+    receiptLayout,
+    invoiceLayout,
+  } = useBilling();
   const { role } = useAuth();
+  const { store } = useStoreInfo(true);
+  const printDoc = (kind: "receipt" | "invoice") => {
+    if (!can(role, "cetak.struk", rolePermissions)) {
+      toast.error("Levelmu belum punya hak akses mencetak struk");
+      return;
+    }
+    const printer = printerFor(printers, kind);
+    if (!printer) {
+      toast.error("Printer belum diatur di menu Printer");
+      return;
+    }
+    printReceipt({
+      record,
+      store: store as PrintStore,
+      printer,
+      layout: kind === "invoice" ? invoiceLayout : receiptLayout,
+      kind,
+    });
+  };
   const canDelete = can(role, "laporan.hapus", rolePermissions);
   const [method, setMethod] = useState(record.payment ?? "Cash");
   const [confirm, setConfirm] = useState(false);
@@ -395,6 +433,18 @@ function ReceiptDialog({
         </DialogHeader>
 
         <ReceiptView record={record} />
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => printDoc("receipt")}
+          >
+            <Printer className="size-4" /> Cetak struk
+          </Button>
+          <Button variant="outline" onClick={() => printDoc("invoice")}>
+            <Printer className="size-4" /> Cetak invoice
+          </Button>
+        </div>
 
         <div className="space-y-2">
           <p className="text-sm font-semibold">Ubah metode pembayaran</p>

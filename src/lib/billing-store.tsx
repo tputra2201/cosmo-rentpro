@@ -10,6 +10,13 @@ import {
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
 import type { RolePermissions } from "./permissions";
+import {
+  defaultInvoiceLayout,
+  defaultPrinters,
+  defaultReceiptLayout,
+  type DocLayout,
+  type PrinterConfig,
+} from "./printing";
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
@@ -79,6 +86,10 @@ export type MenuItem = {
   sort?: number;
   /** Potongan harga khusus untuk item ini (Playing Card / Member). */
   discount?: ItemDiscount;
+  /** Cetak label saat pesanan dibuat (default: ya). */
+  printEnabled?: boolean;
+  /** Printer label tujuan (Kitchen / Bar). */
+  printerId?: string;
 };
 
 export type CafeTable = {
@@ -491,6 +502,10 @@ type State = {
   cashEntries: CashEntry[];
   shifts: CashShift[];
   tvNotice: TvNotice;
+  /** Daftar printer store (struk, invoice, dapur, bar, laporan). */
+  printers: PrinterConfig[];
+  receiptLayout: DocLayout;
+  invoiceLayout: DocLayout;
   /** Hak akses per level pengguna, diatur Installer. */
   rolePermissions: RolePermissions;
 
@@ -520,14 +535,14 @@ const defaultState: State = {
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   consoleDiscounts: {},
   menu: [
-    { id: "m1", name: "Air Mineral", price: 4000, category: "Minuman" },
-    { id: "m2", name: "Teh Botol", price: 6000, category: "Minuman" },
-    { id: "m3", name: "Kopi Hitam", price: 8000, category: "Coffee" },
-    { id: "m4", name: "Es Kopi Susu", price: 15000, category: "Coffee" },
-    { id: "m5", name: "Juice Jeruk", price: 14000, category: "Juice" },
-    { id: "m6", name: "Indomie Goreng", price: 10000, category: "Snack" },
-    { id: "m7", name: "Snack Ringan", price: 7000, category: "Snack" },
-    { id: "m8", name: "Nasi Goreng", price: 15000, category: "Main Course" },
+    { id: "m1", name: "Air Mineral", price: 4000, category: "Minuman", printerId: "prt-bar" },
+    { id: "m2", name: "Teh Botol", price: 6000, category: "Minuman", printerId: "prt-bar" },
+    { id: "m3", name: "Kopi Hitam", price: 8000, category: "Coffee", printerId: "prt-bar" },
+    { id: "m4", name: "Es Kopi Susu", price: 15000, category: "Coffee", printerId: "prt-bar" },
+    { id: "m5", name: "Juice Jeruk", price: 14000, category: "Juice", printerId: "prt-bar" },
+    { id: "m6", name: "Indomie Goreng", price: 10000, category: "Snack", printerId: "prt-kitchen" },
+    { id: "m7", name: "Snack Ringan", price: 7000, category: "Snack", printerId: "prt-kitchen" },
+    { id: "m8", name: "Nasi Goreng", price: 15000, category: "Main Course", printerId: "prt-kitchen" },
   ],
   menuCategories: ["Coffee", "Juice", "Minuman", "Snack", "Main Course"],
   cafeTables: [
@@ -580,6 +595,9 @@ const defaultState: State = {
   cashEntries: [],
   shifts: [],
   tvNotice: defaultTvNotice,
+  printers: defaultPrinters,
+  receiptLayout: defaultReceiptLayout,
+  invoiceLayout: defaultInvoiceLayout,
   rolePermissions: {},
 
 };
@@ -965,6 +983,9 @@ function migrateState(raw: unknown): State {
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
+    printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
+    receiptLayout: { ...defaultReceiptLayout, ...(parsed.receiptLayout ?? {}) },
+    invoiceLayout: { ...defaultInvoiceLayout, ...(parsed.invoiceLayout ?? {}) },
     rolePermissions: parsed.rolePermissions ?? {},
 
 
@@ -998,6 +1019,11 @@ type Ctx = State & {
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
+  addPrinter: (init?: Partial<Omit<PrinterConfig, "id">>) => void;
+  updatePrinter: (id: string, patch: Partial<Omit<PrinterConfig, "id">>) => void;
+  removePrinter: (id: string) => void;
+  setReceiptLayout: (patch: Partial<DocLayout>) => void;
+  setInvoiceLayout: (patch: Partial<DocLayout>) => void;
   setRolePermissions: (role: string, keys: string[]) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
@@ -2048,6 +2074,34 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           rolePermissions: { ...prev.rolePermissions, [role]: keys },
         })),
+      addPrinter: (init) =>
+        update((prev) => {
+          const id = `prt-${Date.now().toString(36)}`;
+          const printer: PrinterConfig = {
+            id,
+            name: init?.name?.trim() || `Printer ${prev.printers.length + 1}`,
+            role: init?.role ?? "receipt",
+            paper: init?.paper ?? "80mm",
+            fontSizePt: init?.fontSizePt ?? 9,
+            bold: init?.bold ?? false,
+            marginMm: init?.marginMm ?? 3,
+            copies: init?.copies ?? 1,
+            active: true,
+            sort: prev.printers.length + 1,
+          };
+          return { ...prev, printers: [...prev.printers, printer] };
+        }),
+      updatePrinter: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          printers: prev.printers.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        })),
+      removePrinter: (id) =>
+        update((prev) => ({ ...prev, printers: prev.printers.filter((p) => p.id !== id) })),
+      setReceiptLayout: (patch) =>
+        update((prev) => ({ ...prev, receiptLayout: { ...prev.receiptLayout, ...patch } })),
+      setInvoiceLayout: (patch) =>
+        update((prev) => ({ ...prev, invoiceLayout: { ...prev.invoiceLayout, ...patch } })),
       adjustBonusTime: (stationId, deltaMin) =>
         mapStation(stationId, (s) =>
           s.session

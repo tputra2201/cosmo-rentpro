@@ -25,6 +25,7 @@ import { Route as AuthenticatedLaporanRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPelangganRouteImport } from './routes/_authenticated/pelanggan'
 import { Route as AuthenticatedPembayaranRouteImport } from './routes/_authenticated/pembayaran'
 import { Route as AuthenticatedPenggunaRouteImport } from './routes/_authenticated/pengguna'
+import { Route as AuthenticatedPrinterRouteImport } from './routes/_authenticated/printer'
 import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/promo'
 import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
@@ -111,6 +112,11 @@ const AuthenticatedPenggunaRoute = AuthenticatedPenggunaRouteImport.update({
   path: '/pengguna',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPrinterRoute = AuthenticatedPrinterRouteImport.update({
+  id: '/printer',
+  path: '/printer',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPromoRoute = AuthenticatedPromoRouteImport.update({
   id: '/promo',
   path: '/promo',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/pelanggan': typeof AuthenticatedPelangganRoute
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
+  '/printer': typeof AuthenticatedPrinterRoute
   '/promo': typeof AuthenticatedPromoRoute
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/pelanggan': typeof AuthenticatedPelangganRoute
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
+  '/printer': typeof AuthenticatedPrinterRoute
   '/promo': typeof AuthenticatedPromoRoute
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/pelanggan': typeof AuthenticatedPelangganRoute
   '/_authenticated/pembayaran': typeof AuthenticatedPembayaranRoute
   '/_authenticated/pengguna': typeof AuthenticatedPenggunaRoute
+  '/_authenticated/printer': typeof AuthenticatedPrinterRoute
   '/_authenticated/promo': typeof AuthenticatedPromoRoute
   '/_authenticated/shift': typeof AuthenticatedShiftRoute
   '/_authenticated/store': typeof AuthenticatedStoreRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/pelanggan'
     | '/pembayaran'
     | '/pengguna'
+    | '/printer'
     | '/promo'
     | '/shift'
     | '/store'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/pelanggan'
     | '/pembayaran'
     | '/pengguna'
+    | '/printer'
     | '/promo'
     | '/shift'
     | '/store'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pelanggan'
     | '/_authenticated/pembayaran'
     | '/_authenticated/pengguna'
+    | '/_authenticated/printer'
     | '/_authenticated/promo'
     | '/_authenticated/shift'
     | '/_authenticated/store'
@@ -408,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPenggunaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/printer': {
+      id: '/_authenticated/printer'
+      path: '/printer'
+      fullPath: '/printer'
+      preLoaderRoute: typeof AuthenticatedPrinterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/promo': {
       id: '/_authenticated/promo'
       path: '/promo'
@@ -465,6 +484,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPelangganRoute: typeof AuthenticatedPelangganRoute
   AuthenticatedPembayaranRoute: typeof AuthenticatedPembayaranRoute
   AuthenticatedPenggunaRoute: typeof AuthenticatedPenggunaRoute
+  AuthenticatedPrinterRoute: typeof AuthenticatedPrinterRoute
   AuthenticatedPromoRoute: typeof AuthenticatedPromoRoute
   AuthenticatedShiftRoute: typeof AuthenticatedShiftRoute
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
@@ -485,6 +505,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPelangganRoute: AuthenticatedPelangganRoute,
   AuthenticatedPembayaranRoute: AuthenticatedPembayaranRoute,
   AuthenticatedPenggunaRoute: AuthenticatedPenggunaRoute,
+  AuthenticatedPrinterRoute: AuthenticatedPrinterRoute,
   AuthenticatedPromoRoute: AuthenticatedPromoRoute,
   AuthenticatedShiftRoute: AuthenticatedShiftRoute,
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,

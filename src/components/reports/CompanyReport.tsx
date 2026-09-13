@@ -1,5 +1,5 @@
-import { Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRef } from "react";
+import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import {
   Table,
   TableBody,
@@ -117,16 +117,19 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     .reduce((s, e) => s + Math.abs(e.amount), 0);
   const cardTopup = cards.filter((e) => e.type === "topup").reduce((s, e) => s + Math.abs(e.amount), 0);
 
+  const printRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printRef}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Company Report</h2>
           <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="size-4" /> Cetak
-        </Button>
+        <PrintReportButton
+          targetRef={printRef}
+          title={`Company Report — ${rangeLabel(range)}`}
+        />
       </div>
 
       <Section title="Penjualan">

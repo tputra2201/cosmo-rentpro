@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
+import { PaidPrintDialog } from "@/components/PaidPrintDialog";
+import { labelItemsFor, printLabels } from "@/lib/print-docs";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
@@ -95,7 +97,14 @@ export function StationDialog({
     promotions,
     setSessionDiscount,
     chargeCard,
+    printers,
   } = useBilling();
+  const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
+    null,
+  );
+  const labelPrinters = printers.filter(
+    (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
+  );
   const [cardNumber, setCardNumber] = useState("");
   const [editCustomer, setEditCustomer] = useState(false);
   const [editName, setEditName] = useState("");
@@ -332,6 +341,7 @@ export function StationDialog({
     }
     onOpenChange(false);
     resetPaymentForm();
+    setPaidRecord(record);
     toast.success(`${record.stationName} selesai`, {
       description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
     });
@@ -339,6 +349,8 @@ export function StationDialog({
 
 
   return (
+    <>
+    <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
@@ -698,6 +710,34 @@ export function StationDialog({
                   </Button>
                 ))}
               </div>
+
+              {session.orders.length > 0 && labelPrinters.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {labelPrinters.map((printer) => (
+                    <Button
+                      key={printer.id}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const items = labelItemsFor(session.orders, menu, printer.id);
+                        if (items.length === 0) {
+                          toast.error(`Tidak ada item untuk ${printer.name}`);
+                          return;
+                        }
+                        printLabels({
+                          printer,
+                          items,
+                          heading: printer.role === "bar" ? "BAR" : "DAPUR",
+                          source: station.name,
+                          ...(session.customerName ? { customerName: session.customerName } : {}),
+                        });
+                      }}
+                    >
+                      <PrinterIcon className="size-4" /> {printer.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
 
               {session.orders.length > 0 && (
                 <ul className="mt-2 space-y-1">
@@ -1145,5 +1185,6 @@ export function StationDialog({
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }
