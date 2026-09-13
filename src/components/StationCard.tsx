@@ -6,13 +6,13 @@ import {
   formatRupiah,
   elapsedSeconds,
   remainingSeconds,
-  rentalTotal,
-  fnbTotal,
   paidTotal,
+  sessionBill,
   stationStatus,
   activeBooking,
   isPaused,
   useBilling,
+  CARD_PAYMENT_NAME,
   type Station,
 } from "@/lib/billing-store";
 
