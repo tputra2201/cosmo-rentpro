@@ -32,6 +32,8 @@ export const Route = createFileRoute("/atur-sandi")({
 
 function AturSandiPage() {
   const navigate = useNavigate();
+  const savePassword = useServerFn(setOwnPasswordFn);
+
   const [ready, setReady] = useState(false);
   const [valid, setValid] = useState(false);
   const [next, setNext] = useState("");
