@@ -347,15 +347,25 @@ function CardListPanel() {
                     }
                   />
                 </div>
+                <div className="min-w-40">
+                  <CardFundingSelect
+                    id={`topup-pay-${card.id}`}
+                    value={payValues[card.id] ?? "Cash"}
+                    onChange={(value) =>
+                      setPayValues((prev) => ({ ...prev, [card.id]: value }))
+                    }
+                  />
+                </div>
                 <Button
                   onClick={() => {
                     const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
-                    if (!topupCard(card.id, amount)) {
+                    const method = payValues[card.id] ?? "Cash";
+                    if (!topupCard(card.id, amount, "Top-up saldo", method)) {
                       toast.error("Jumlah top-up harus lebih dari 0");
                       return;
                     }
                     setTopupValues((prev) => ({ ...prev, [card.id]: "" }));
-                    toast.success(`Saldo ditambah ${formatRupiah(amount)}`);
+                    toast.success(`Saldo ditambah ${formatRupiah(amount)} · ${method}`);
                   }}
                 >
                   <Wallet className="size-4" /> Isi saldo
