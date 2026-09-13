@@ -42,9 +42,12 @@ export type Session = {
   discountValue?: number;
   discountMax?: number;
   settlements?: Settlement[];
+  historyId?: string; // nota yang sudah dibuat saat tagihan lunas
+  paidAt?: number; // waktu tagihan dinyatakan lunas
   pausedAt?: number; // jika terisi, timer sedang dijeda
   pausedMs?: number; // akumulasi total waktu jeda
 };
+
 
 export type Settlement = {
   id: string;
