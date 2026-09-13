@@ -2186,11 +2186,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           playingCards: prev.playingCards.filter((c) => c.id !== id),
           cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
         })),
-      topupCard: (id, amount, note) => {
+      topupCard: (id, amount, note, payment) => {
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || value <= 0) return false;
         const stamp = Date.now();
+        const method = payment?.trim() || "Cash";
         update((prev) => ({
           ...prev,
           playingCards: prev.playingCards.map((c) =>
@@ -2204,7 +2205,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               type: "topup",
               amount: value,
               balanceAfter: card.balance + value,
-              note: note?.trim() || "Top-up saldo",
+              note: `${note?.trim() || "Top-up saldo"} · ${method}`,
               createdAt: stamp,
             },
             ...prev.cardEntries,
@@ -2215,6 +2216,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               value,
               card.cardNumber,
               stamp,
+              method,
             );
             return row ? [row, ...prev.cashEntries] : prev.cashEntries;
           })(),
