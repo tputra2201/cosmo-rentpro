@@ -35,9 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReceiptView } from "@/components/CustomerDetail";
+import { CompanyReport } from "@/components/reports/CompanyReport";
+import { CardReport } from "@/components/reports/CardReport";
+import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { isAdminLevel, useAuth } from "@/lib/auth";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+
 
 export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
