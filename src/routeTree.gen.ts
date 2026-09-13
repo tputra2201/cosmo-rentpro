@@ -26,6 +26,7 @@ import { Route as AuthenticatedPelangganRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPembayaranRouteImport } from './routes/_authenticated/pembayaran'
 import { Route as AuthenticatedPenggunaRouteImport } from './routes/_authenticated/pengguna'
 import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/promo'
+import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
@@ -114,6 +115,11 @@ const AuthenticatedPromoRoute = AuthenticatedPromoRouteImport.update({
   path: '/promo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedShiftRoute = AuthenticatedShiftRouteImport.update({
+  id: '/shift',
+  path: '/shift',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStoreRoute = AuthenticatedStoreRouteImport.update({
   id: '/store',
   path: '/store',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
   '/promo': typeof AuthenticatedPromoRoute
+  '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
   '/promo': typeof AuthenticatedPromoRoute
+  '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
   '/': typeof AuthenticatedIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_authenticated/pembayaran': typeof AuthenticatedPembayaranRoute
   '/_authenticated/pengguna': typeof AuthenticatedPenggunaRoute
   '/_authenticated/promo': typeof AuthenticatedPromoRoute
+  '/_authenticated/shift': typeof AuthenticatedShiftRoute
   '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/tarif': typeof AuthenticatedTarifRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/pembayaran'
     | '/pengguna'
     | '/promo'
+    | '/shift'
     | '/store'
     | '/tarif'
     | '/api/public/store-registry'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/pembayaran'
     | '/pengguna'
     | '/promo'
+    | '/shift'
     | '/store'
     | '/tarif'
     | '/'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pembayaran'
     | '/_authenticated/pengguna'
     | '/_authenticated/promo'
+    | '/_authenticated/shift'
     | '/_authenticated/store'
     | '/_authenticated/tarif'
     | '/_authenticated/'
@@ -391,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPromoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/shift': {
+      id: '/_authenticated/shift'
+      path: '/shift'
+      fullPath: '/shift'
+      preLoaderRoute: typeof AuthenticatedShiftRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/store': {
       id: '/_authenticated/store'
       path: '/store'
@@ -428,6 +447,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPembayaranRoute: typeof AuthenticatedPembayaranRoute
   AuthenticatedPenggunaRoute: typeof AuthenticatedPenggunaRoute
   AuthenticatedPromoRoute: typeof AuthenticatedPromoRoute
+  AuthenticatedShiftRoute: typeof AuthenticatedShiftRoute
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedTarifRoute: typeof AuthenticatedTarifRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -446,6 +466,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPembayaranRoute: AuthenticatedPembayaranRoute,
   AuthenticatedPenggunaRoute: AuthenticatedPenggunaRoute,
   AuthenticatedPromoRoute: AuthenticatedPromoRoute,
+  AuthenticatedShiftRoute: AuthenticatedShiftRoute,
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

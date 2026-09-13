@@ -32,6 +32,8 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
+  ClipboardCheck,
+
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -164,6 +166,8 @@ function RootShell({ children }: { children: ReactNode }) {
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
+  { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
+
   { to: "/kafe", label: "Kafe", icon: Coffee },
 
   { to: "/booking", label: "Booking", icon: CalendarDays },
