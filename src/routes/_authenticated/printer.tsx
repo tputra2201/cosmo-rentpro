@@ -23,8 +23,11 @@ import {
   PAPER_OPTIONS,
   PRINTER_ROLES,
   PRINTER_ROLE_LABEL,
+  PRINT_MODES,
+  PRINT_MODE_LABEL,
   type DocLayout,
   type PaperSize,
+  type PrintMode,
   type PrinterConfig,
   type PrinterRole,
 } from "@/lib/printing";
