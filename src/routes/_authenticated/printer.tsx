@@ -62,10 +62,11 @@ function PrinterPage() {
     setInvoiceLayout,
     menu,
     updateMenuItem,
+    rolePermissions,
   } = useBilling();
   const { role } = useAuth();
-  const store = useStoreInfo() as PrintStore;
-  const canManage = can(role, "printer.kelola");
+  const { store } = useStoreInfo(true);
+  const canManage = can(role, "printer.kelola", rolePermissions);
 
   const labelPrinters = printers.filter((p) => p.role === "kitchen" || p.role === "bar");
 
@@ -82,7 +83,7 @@ function PrinterPage() {
     const at = Date.now();
     printReceipt({
       printer,
-      store,
+      store: store as PrintStore,
       layout: printer.role === "invoice" ? invoiceLayout : receiptLayout,
       kind: printer.role === "invoice" ? "invoice" : "receipt",
       record: {
