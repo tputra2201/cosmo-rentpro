@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import {
   LayoutGrid,
+  MonitorPlay,
   Settings2,
   BarChart3,
   Joystick,
