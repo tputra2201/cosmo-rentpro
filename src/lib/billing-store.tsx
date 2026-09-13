@@ -528,6 +528,8 @@ const defaultState: State = {
     { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
   ],
   cashEntries: [],
+  shifts: [],
+
 };
 
 /** Catatan kas untuk top-up kartu: uang masuk, tapi bukan penghasilan. */
@@ -807,6 +809,8 @@ function migrateState(raw: unknown): State {
       return list;
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
+    shifts: parsed.shifts ?? defaultState.shifts,
+
 
 
   };
