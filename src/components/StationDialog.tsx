@@ -301,6 +301,7 @@ export function StationDialog({
         amountPaid: cardCharge,
       });
       const remaining = Math.max(0, dueAmount - payTarget);
+      if (remaining <= 0) setWantPrint(true);
       toast.success("Pembayaran Playing Card diterima", {
         description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
           (bill?.discount ?? 0) > 0 ? ` · potongan ${formatRupiah(bill?.discount ?? 0)}` : ""
@@ -332,6 +333,7 @@ export function StationDialog({
       });
     }
     const sisa = Math.max(0, dueAmount - payTarget);
+    if (sisa <= 0) setWantPrint(true);
     toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
       description: `${formatRupiah(payTarget)} — ${
         splitMode
