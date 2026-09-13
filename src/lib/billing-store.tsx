@@ -902,7 +902,16 @@ function migrateState(raw: unknown): State {
       orders: table.orders ?? [],
     })),
     paymentMethods: (() => {
-      const list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      let list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      // Transfer bank dipisah per bank: BCA dan Mandiri.
+      list = list.map((p) =>
+        p.name.trim().toLowerCase() === "transfer bank"
+          ? { ...p, name: "Transfer Bank BCA" }
+          : p,
+      );
+      if (!list.some((p) => p.name.trim().toLowerCase() === "transfer bank mandiri")) {
+        list = [...list, { id: "pm-transfer-mandiri", name: "Transfer Bank Mandiri", active: true }];
+      }
       return list.some((p) => p.name === CARD_PAYMENT_NAME)
         ? list
         : [...list, { id: "pm-card", name: CARD_PAYMENT_NAME, active: true }];
