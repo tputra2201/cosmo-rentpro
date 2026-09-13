@@ -10,6 +10,13 @@ import {
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
 import type { RolePermissions } from "./permissions";
+import {
+  defaultInvoiceLayout,
+  defaultPrinters,
+  defaultReceiptLayout,
+  type DocLayout,
+  type PrinterConfig,
+} from "./printing";
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
