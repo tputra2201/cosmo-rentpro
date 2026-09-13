@@ -119,6 +119,8 @@ export function useStoreSync(options: {
   const loadedRef = useRef(false);
   const stateRef = useRef(state);
   const prevKeysRef = useRef<Set<string> | null>(null);
+  const blockedUntilRef = useRef(0);
+
 
   stateRef.current = state;
 
