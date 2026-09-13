@@ -366,6 +366,9 @@ export function useStoreSync(options: {
 
   const sync = useCallback(async () => {
     if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
+    // Jeda setelah penolakan aturan baris: data lokal tetap tersimpan di antrean.
+    if (Date.now() < blockedUntilRef.current) return;
+
     busyRef.current = true;
     setSyncing(true);
     try {
