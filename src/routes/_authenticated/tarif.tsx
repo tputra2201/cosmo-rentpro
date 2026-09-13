@@ -69,6 +69,8 @@ function TarifPage() {
     setDefaultBonusMin,
     reorderList,
     reorderConsoleTypes,
+    tvNotice,
+    setTvNotice,
   } = useBilling();
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
