@@ -18,6 +18,7 @@ import { useBilling } from "@/lib/billing-store";
 import {
   ALL_ROLES,
   PERMISSION_GROUPS,
+  can,
   defaultRolePermissions,
   permissionsOf,
   roleLabel,
@@ -62,7 +63,9 @@ const selectableRoles = (canInstaller: boolean): AppRole[] =>
 
 function PenggunaPage() {
   const { user, role: myRole } = useAuth();
+  const { rolePermissions } = useBilling();
   const canInstaller = myRole === "installer";
+  const canEditAccess = can(myRole, "pengguna.hakakses", rolePermissions);
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listUsers);
   const addFn = useServerFn(inviteUser);
@@ -247,7 +250,7 @@ function PenggunaPage() {
         )}
       </div>
 
-      {canInstaller && <AccessMatrix />}
+      {canEditAccess && <AccessMatrix canInstaller={canInstaller} />}
     </div>
   );
 }
@@ -350,9 +353,10 @@ function UserRow({
   );
 }
 
-/** Pengaturan hak akses tiap level lewat centang (hanya Installer). */
-function AccessMatrix() {
+/** Pengaturan hak akses tiap level lewat centang. */
+function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
   const { rolePermissions, setRolePermissions } = useBilling();
+  void canInstaller;
   const editableRoles = ALL_ROLES.filter((r) => r !== "installer");
   const [active, setActive] = useState<AppRole>(editableRoles[0] ?? "manager");
   const allowed = permissionsOf(active, rolePermissions);
