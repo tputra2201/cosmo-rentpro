@@ -180,7 +180,12 @@ export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
 export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
 
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
-export const CARD_FUNDING_METHODS = ["Cash", "QRIS", "Transfer Bank"] as const;
+export const CARD_FUNDING_METHODS = [
+  "Cash",
+  "QRIS",
+  "Transfer Bank BCA",
+  "Transfer Bank Mandiri",
+] as const;
 
 /** Cari kartu berdasarkan nomor kartu (tidak peka huruf besar/kecil dan spasi). */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
@@ -522,7 +527,8 @@ const defaultState: State = {
     { id: "pm-cash", name: "Cash", active: true },
     { id: "pm-qris", name: "QRIS", active: true },
     { id: "pm-giftcard", name: "Gift Card", active: true },
-    { id: "pm-transfer", name: "Transfer Bank", active: true },
+    { id: "pm-transfer", name: "Transfer Bank BCA", active: true },
+    { id: "pm-transfer-mandiri", name: "Transfer Bank Mandiri", active: true },
     { id: "pm-compliment", name: "Compliment", active: true },
     { id: "pm-card", name: CARD_PAYMENT_NAME, active: true },
     { id: "pm-lainnya", name: "Lainnya", active: true },
@@ -896,7 +902,16 @@ function migrateState(raw: unknown): State {
       orders: table.orders ?? [],
     })),
     paymentMethods: (() => {
-      const list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      let list = parsed.paymentMethods ?? defaultState.paymentMethods;
+      // Transfer bank dipisah per bank: BCA dan Mandiri.
+      list = list.map((p) =>
+        p.name.trim().toLowerCase() === "transfer bank"
+          ? { ...p, name: "Transfer Bank BCA" }
+          : p,
+      );
+      if (!list.some((p) => p.name.trim().toLowerCase() === "transfer bank mandiri")) {
+        list = [...list, { id: "pm-transfer-mandiri", name: "Transfer Bank Mandiri", active: true }];
+      }
       return list.some((p) => p.name === CARD_PAYMENT_NAME)
         ? list
         : [...list, { id: "pm-card", name: CARD_PAYMENT_NAME, active: true }];
