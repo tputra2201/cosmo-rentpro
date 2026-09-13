@@ -2130,8 +2130,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           playingCards: [card, ...prev.playingCards],
           cardEntries: [...entries, ...prev.cardEntries],
           cashEntries: (() => {
-            const row = cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now);
-            return row ? [row, ...prev.cashEntries] : prev.cashEntries;
+            const method = input.payment?.trim() || "Cash";
+            const rows = [
+              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method),
+              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method),
+            ].filter(Boolean) as CashEntry[];
+            return rows.length ? [...rows, ...prev.cashEntries] : prev.cashEntries;
           })(),
           customers: newCustomer
             ? [newCustomer, ...prev.customers]
