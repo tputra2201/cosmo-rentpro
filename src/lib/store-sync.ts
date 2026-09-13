@@ -307,7 +307,7 @@ export function useStoreSync(options: {
     return () => {
       cancelled = true;
     };
-  }, [storeId, enabled, hydrated, readyStoreId, applyRemote, noteShadow]);
+  }, [storeId, enabled, hydrated, readyStoreId, state.storeId, applyRemote, noteShadow]);
 
   const sync = useCallback(async () => {
     if (!storeId || readyStoreId !== storeId || busyRef.current || !navigator.onLine) return;
