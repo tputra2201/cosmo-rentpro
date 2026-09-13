@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Coffee, Plus, Trash2, Utensils, Receipt } from "lucide-react";
+import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +29,12 @@ import {
   useBilling,
   type CafeTable,
   type DiscountType,
+  type HistoryRecord,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
+import { PaidPrintDialog } from "@/components/PaidPrintDialog";
+import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import { printerFor } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
   return table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
@@ -56,7 +60,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     promotions,
     now,
     chargeCard,
+    printers,
   } = useBilling();
+  const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
+  const labelPrinters = printers.filter(
+    (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
+  );
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
@@ -270,6 +279,35 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     )}
                   </div>
                 </div>
+
+                {table.orders.length > 0 && labelPrinters.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {labelPrinters.map((printer) => (
+                      <Button
+                        key={printer.id}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const items = labelItemsFor(table.orders, menu, printer.id);
+                          if (items.length === 0) {
+                            toast.error(`Tidak ada item untuk ${printer.name}`);
+                            return;
+                          }
+                          printLabels({
+                            printer,
+                            items,
+                            heading: printer.role === "bar" ? "BAR" : "DAPUR",
+                            source: table.name,
+                            ...(table.customerName ? { customerName: table.customerName } : {}),
+                            ...(table.notes ? { note: table.notes } : {}),
+                          });
+                        }}
+                      >
+                        <Printer className="size-4" /> {printer.name}
+                      </Button>
+                    ))}
+                  </div>
+                )}
 
                 {table.orders.length > 0 && (
                   <ul className="space-y-1">
@@ -518,6 +556,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       setCardPart("");
                       setRestPay("");
                       setOpenId(null);
+                      setPaidRecord(cardRecord);
                       return;
                     }
 
@@ -541,6 +580,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     setReceived("");
                     setDiscValue("");
                     setOpenId(null);
+                    setPaidRecord(record);
                   }}
                 >
                   Bayar &amp; selesaikan
@@ -550,6 +590,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
           )}
         </DialogContent>
       </Dialog>
+
+      <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
     </>
   );
 }
