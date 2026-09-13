@@ -42,6 +42,7 @@ const SETTINGS_KEYS = [
   "cardMemberDiscountPercent",
   "consoleDiscounts",
   "tvNotice",
+  "rolePermissions",
 ] as const;
 
 

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
+import type { RolePermissions } from "./permissions";
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
