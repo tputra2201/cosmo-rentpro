@@ -269,6 +269,24 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Mengganti kata sandi milik akun yang sedang masuk (layar wajib ganti sandi
+ * dan halaman tautan undangan). Dilakukan dengan hak server karena pengaturan
+ * keamanan mewajibkan kata sandi lama, sementara staf baru belum punya sandi
+ * yang bisa dipakai. Identitas diambil dari sesi, bukan dari input.
+ */
+export const setOwnPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ password: z.string().min(8) }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { userId } = context as unknown as Ctx;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
 
 export const updateUser = createServerFn({ method: "POST" })
