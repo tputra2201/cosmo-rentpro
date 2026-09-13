@@ -394,6 +394,8 @@ export function useStoreSync(options: {
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
         localStorage.setItem(STORE_KEY, currentStoreId);
+        localStorage.setItem(FRESH_KEY, currentStoreId);
+
         shadowRef.current = {};
         outboxRef.current = {};
         prevKeysRef.current = null;
