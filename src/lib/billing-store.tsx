@@ -1041,13 +1041,14 @@ type Ctx = State & {
     member?: boolean;
     topup?: number;
     price?: number;
+    payment?: string;
   }) => PlayingCard | null;
   updatePlayingCard: (
     id: string,
     patch: Partial<Omit<PlayingCard, "id" | "createdAt" | "balance">>,
   ) => void;
   removePlayingCard: (id: string) => void;
-  topupCard: (id: string, amount: number, note?: string) => boolean;
+  topupCard: (id: string, amount: number, note?: string, payment?: string) => boolean;
   adjustCardBalance: (id: string, amount: number, note: string) => boolean;
   chargeCard: (id: string, amount: number, note: string) => boolean;
   setCardPrice: (value: number) => void;
