@@ -137,10 +137,10 @@ function AturSandiPage() {
                   id="new"
                   type={show ? "text" : "password"}
                   autoComplete="new-password"
-                  minLength={6}
+                  minLength={8}
                   value={next}
                   onChange={(e) => setNext(e.target.value)}
-                  placeholder="Minimal 6 karakter"
+                  placeholder="Minimal 8 karakter"
                   required
                 />
                 <button
@@ -159,7 +159,7 @@ function AturSandiPage() {
                 id="confirm"
                 type={show ? "text" : "password"}
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Ketik ulang kata sandi"
