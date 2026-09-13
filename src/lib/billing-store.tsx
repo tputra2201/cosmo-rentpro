@@ -466,6 +466,8 @@ type State = {
   cashEntries: CashEntry[];
   shifts: CashShift[];
   tvNotice: TvNotice;
+  /** Hak akses per level pengguna, diatur Installer. */
+  rolePermissions: RolePermissions;
 
 };
 
@@ -551,6 +553,7 @@ const defaultState: State = {
   cashEntries: [],
   shifts: [],
   tvNotice: defaultTvNotice,
+  rolePermissions: {},
 
 };
 
@@ -890,6 +893,7 @@ function migrateState(raw: unknown): State {
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
+    rolePermissions: parsed.rolePermissions ?? {},
 
 
 
@@ -922,6 +926,7 @@ type Ctx = State & {
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
+  setRolePermissions: (role: string, keys: string[]) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
@@ -1952,6 +1957,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       setDefaultBonusMin: (minutes) => update((prev) => ({ ...prev, defaultBonusMin: Math.round(minutes) })),
       setTvNotice: (patch) =>
         update((prev) => ({ ...prev, tvNotice: { ...prev.tvNotice, ...patch } })),
+      setRolePermissions: (role, keys) =>
+        update((prev) => ({
+          ...prev,
+          rolePermissions: { ...prev.rolePermissions, [role]: keys },
+        })),
       adjustBonusTime: (stationId, deltaMin) =>
         mapStation(stationId, (s) =>
           s.session
