@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { BillingSnapshot } from "./billing-store";
 import {
   applyRecords,
+  clearSyncedLists,
   flattenSnapshot,
   isKnownKind,
   recordKey,
