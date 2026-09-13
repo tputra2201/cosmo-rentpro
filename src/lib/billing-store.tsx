@@ -373,6 +373,20 @@ export type CashEntry = {
 
 export type PaymentSplit = { method: string; amount: number };
 
+/** Shift kasir: check-in sampai close out. */
+export type CashShift = {
+  id: string;
+  cashierName: string;
+  cashierId?: string;
+  openedAt: number;
+  closedAt?: number;
+  startCash: number;
+  cashActual?: number;
+  balanceNote?: string;
+  nextStartCash?: number;
+};
+
+
 export type HistoryRecord = {
   id: string;
   stationName: string;
