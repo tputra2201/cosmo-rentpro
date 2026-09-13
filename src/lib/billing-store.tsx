@@ -491,6 +491,10 @@ type State = {
   cashEntries: CashEntry[];
   shifts: CashShift[];
   tvNotice: TvNotice;
+  /** Daftar printer store (struk, invoice, dapur, bar, laporan). */
+  printers: PrinterConfig[];
+  receiptLayout: DocLayout;
+  invoiceLayout: DocLayout;
   /** Hak akses per level pengguna, diatur Installer. */
   rolePermissions: RolePermissions;
 
