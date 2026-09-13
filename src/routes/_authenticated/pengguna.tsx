@@ -250,7 +250,7 @@ function PenggunaPage() {
         )}
       </div>
 
-      {canInstaller && <AccessMatrix />}
+      {canEditAccess && <AccessMatrix canInstaller={canInstaller} />}
     </div>
   );
 }
