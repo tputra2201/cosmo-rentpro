@@ -44,7 +44,8 @@ import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
-import { isAdminLevel, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 
 
@@ -85,6 +86,19 @@ function timeOf(ts: number) {
 
 function LaporanPage() {
   const [range, setRange] = useState<ReportRange>(() => defaultRange("day"));
+  const { role } = useAuth();
+  const { rolePermissions } = useBilling();
+  const allow = (key: string) => can(role, key, rolePermissions);
+  const tabs = [
+    { value: "nota", label: "Nota Transaksi", key: "laporan.receipt" },
+    { value: "company", label: "Company Report", key: "laporan.company" },
+    { value: "kartu", label: "Laporan Playing Card", key: "laporan.card" },
+    { value: "shift", label: "Cash Close Out", key: "laporan.shift" },
+    { value: "member", label: "Laporan Membership", key: "laporan.membership" },
+    { value: "qris", label: "Pembayaran QRIS", key: "laporan.qris" },
+    { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
+  ].filter((t) => allow(t.key));
+  const first = tabs[0]?.value ?? "nota";
 
   return (
     <div className="space-y-6">
@@ -97,15 +111,18 @@ function LaporanPage() {
 
       <ReportRangePicker range={range} onChange={setRange} />
 
-      <Tabs defaultValue="nota">
+      {tabs.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Levelmu belum punya hak akses ke laporan mana pun.
+        </p>
+      )}
+      <Tabs key={first} defaultValue={first}>
         <TabsList>
-          <TabsTrigger value="nota">Nota Transaksi</TabsTrigger>
-          <TabsTrigger value="company">Company Report</TabsTrigger>
-          <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
-          <TabsTrigger value="shift">Cash Close Out</TabsTrigger>
-          <TabsTrigger value="member">Laporan Membership</TabsTrigger>
-          <TabsTrigger value="qris">Pembayaran QRIS</TabsTrigger>
-          <TabsTrigger value="transfer">Transfer Bank</TabsTrigger>
+          {tabs.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>
+              {t.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value="nota" className="mt-6">
           <ReceiptReport range={range} />
@@ -362,9 +379,10 @@ function ReceiptDialog({
   open: boolean;
   onOpenChange: (value: boolean) => void;
 }) {
-  const { paymentMethods, updateHistoryPayment, removeHistory } = useBilling();
+  const { paymentMethods, updateHistoryPayment, removeHistory, rolePermissions } =
+    useBilling();
   const { role } = useAuth();
-  const canDelete = isAdminLevel(role);
+  const canDelete = can(role, "laporan.hapus", rolePermissions);
   const [method, setMethod] = useState(record.payment ?? "Cash");
   const [confirm, setConfirm] = useState(false);
   const options = paymentMethods.filter((p) => p.active);
