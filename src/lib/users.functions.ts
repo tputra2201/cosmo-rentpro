@@ -135,7 +135,13 @@ export const listUsers = createServerFn({ method: "GET" })
     }
 
     return list.users
-      .filter((u) => !storeId || (memberStore.get(u.id) ?? storeId) === storeId)
+      .filter((u) => {
+        const target = memberStore.get(u.id) ?? null;
+        // Tanpa store tidak pernah tampil.
+        if (!target) return false;
+        // Installer melihat semua store, staf lain hanya store sendiri.
+        return seeAllStores ? true : target === storeId;
+      })
       .map((u) => ({
       id: u.id,
       email: u.email ?? "",
