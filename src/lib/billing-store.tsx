@@ -1012,7 +1012,17 @@ type Ctx = State & {
   ) => void;
   removeCashEntry: (id: string) => void;
   exportSnapshot: () => BillingSnapshot;
+  openShift: (input: {
+    cashierName: string;
+    cashierId?: string;
+    startCash: number;
+  }) => CashShift | null;
+  closeShift: (
+    id: string,
+    input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
+  ) => CashShift | null;
   replaceAll: (data: unknown) => void;
+
   resetAll: () => void;
   sync: SyncStatus;
 };
