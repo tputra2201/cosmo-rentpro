@@ -171,7 +171,7 @@ function CheckInCard({
   cashierName: string;
   role: string;
   suggested: number;
-  lastClosedAt?: number;
+  lastClosedAt?: number | undefined;
   onOpen: (startCash: number) => void;
 }) {
   const [opened, setOpened] = useState(false);
@@ -370,7 +370,7 @@ function Field({
   label: string;
   value: string;
   highlight?: boolean;
-  tone?: "accent" | "danger";
+  tone?: "accent" | "danger" | undefined;
 }) {
   return (
     <div className="rounded-lg border border-border bg-secondary/50 px-3 py-2.5">
