@@ -1950,6 +1950,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({ ...prev, packages: prev.packages.filter((item) => item.id !== id) })),
       setRoundingRule: (roundingRule) => update((prev) => ({ ...prev, roundingRule })),
       setDefaultBonusMin: (minutes) => update((prev) => ({ ...prev, defaultBonusMin: Math.round(minutes) })),
+      setTvNotice: (patch) =>
+        update((prev) => ({ ...prev, tvNotice: { ...prev.tvNotice, ...patch } })),
       adjustBonusTime: (stationId, deltaMin) =>
         mapStation(stationId, (s) =>
           s.session
