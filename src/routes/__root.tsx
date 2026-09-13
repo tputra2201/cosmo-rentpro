@@ -423,6 +423,15 @@ function AppShell() {
                 ). Segera hubungi Developer untuk perpanjangan.
               </div>
             )}
+            {session && !isAuthPage && !needCheckIn.done && (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/60 bg-warning/10 px-4 py-3 text-sm font-semibold text-warning">
+                <span>Belum check-in shift kasir. Lakukan check-in dulu sebelum bertugas.</span>
+                <Button size="sm" variant="outline" onClick={() => navigate({ to: "/shift" })}>
+                  Check-in sekarang
+                </Button>
+              </div>
+            )}
+
             {blocked ? (
               <div className="surface-panel mx-auto max-w-md p-8 text-center">
                 <h1 className="text-xl font-semibold">Akses terbatas</h1>
