@@ -68,6 +68,66 @@ export const PAPER_LABEL: Record<PaperSize, string> = {
 export const PAPER_OPTIONS: PaperSize[] = ["40mm", "80mm", "a4"];
 export const PRINTER_ROLES: PrinterRole[] = ["receipt", "invoice", "kitchen", "bar", "report"];
 
+export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
+  system: "Dialog cetak perangkat",
+  rawbt: "Android — aplikasi RawBT (Bluetooth/USB)",
+};
+export const PRINT_MODES: PrintMode[] = ["system", "rawbt"];
+
+/** Jumlah huruf per baris untuk cetak teks polos (RawBT). */
+export const CHARS_PER_LINE: Record<PaperSize, number> = {
+  "40mm": 24,
+  "80mm": 42,
+  a4: 60,
+};
+
+export function printMode(printer: PrinterConfig): PrintMode {
+  return printer.mode === "rawbt" ? "rawbt" : "system";
+}
+
+/** Baris kiri-kanan rata untuk cetak teks polos. */
+export function textRow(left: string, right: string, width: number) {
+  const l = String(left ?? "");
+  const r = String(right ?? "");
+  const space = Math.max(1, width - l.length - r.length);
+  if (l.length + r.length + 1 > width) return `${l}\n${" ".repeat(Math.max(0, width - r.length))}${r}`;
+  return `${l}${" ".repeat(space)}${r}`;
+}
+
+export function textCenter(value: string, width: number) {
+  const v = String(value ?? "").slice(0, width);
+  const pad = Math.max(0, Math.floor((width - v.length) / 2));
+  return `${" ".repeat(pad)}${v}`;
+}
+
+export function textSep(width: number) {
+  return "-".repeat(width);
+}
+
+function toBase64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+/**
+ * Kirim teks polos ke aplikasi RawBT di Android.
+ * RawBT menerima skema `rawbt:base64,<data>` dan mencetak langsung ke printer
+ * thermal yang sudah dipasangkan lewat Bluetooth atau USB OTG.
+ */
+export function printViaRawBt(text: string) {
+  if (typeof window === "undefined") return;
+  const body = text.endsWith("\n") ? text : `${text}\n`;
+  window.location.href = `rawbt:base64,${encodeURIComponent(toBase64(body))}`;
+}
+
+/** Ulangi teks sesuai jumlah salinan printer. */
+export function textWithCopies(printer: PrinterConfig, body: string) {
+  const copies = Math.min(5, Math.max(1, Math.round(printer.copies || 1)));
+  return Array.from({ length: copies }, () => body).join("\n\n");
+}
+
 export const defaultReceiptLayout: DocLayout = {
   headerText: "",
   footerText: "Terima kasih atas kunjungan Anda",
