@@ -23,8 +23,11 @@ import {
   PAPER_OPTIONS,
   PRINTER_ROLES,
   PRINTER_ROLE_LABEL,
+  PRINT_MODES,
+  PRINT_MODE_LABEL,
   type DocLayout,
   type PaperSize,
+  type PrintMode,
   type PrinterConfig,
   type PrinterRole,
 } from "@/lib/printing";
@@ -120,6 +123,29 @@ function PrinterPage() {
         </p>
       </header>
 
+      <section className="surface-panel space-y-2 p-6">
+        <h2 className="text-xl font-semibold">Mencetak dari Android</h2>
+        <p className="text-sm text-muted-foreground">
+          Android tidak mengenali printer Bluetooth thermal di dialog cetak, jadi printer seperti
+          Kassen MT-300 VL (80 mm, ESC/POS) tidak akan pernah muncul di daftar. Langkahnya:
+        </p>
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>Pasangkan printer lewat Bluetooth di pengaturan Android.</li>
+          <li>
+            Pasang aplikasi <span className="font-medium">RawBT</span> dari Play Store, buka, lalu
+            pilih printer itu sebagai printer utama (ESC/POS, lebar 80 mm).
+          </li>
+          <li>
+            Di daftar di bawah, ubah <span className="font-medium">Cara mencetak</span> printer
+            struk menjadi <span className="font-medium">Android — aplikasi RawBT</span>.
+          </li>
+          <li>Tekan Uji cetak; struk langsung keluar tanpa dialog cetak.</li>
+        </ol>
+        <p className="text-sm text-muted-foreground">
+          Di komputer Windows atau Mac, biarkan pilihannya pada dialog cetak perangkat.
+        </p>
+      </section>
+
       <section className="surface-panel space-y-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -185,6 +211,29 @@ function PrinterPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Cara mencetak</Label>
+                  <Select
+                    value={p.mode ?? "system"}
+                    disabled={!canManage}
+                    onValueChange={(value) => updatePrinter(p.id, { mode: value as PrintMode })}
+                  >
+                    <SelectTrigger aria-label={`Cara mencetak ${p.name}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRINT_MODES.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {PRINT_MODE_LABEL[m]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Di Android, printer Bluetooth thermal (mis. Kassen MT-300 VL) tidak muncul di
+                    dialog cetak. Pilih mode RawBT agar teks dikirim langsung ke printer.
+                  </p>
                 </div>
               </div>
 
