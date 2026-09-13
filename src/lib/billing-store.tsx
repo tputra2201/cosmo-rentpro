@@ -398,7 +398,10 @@ export type HistoryRecord = {
   pointsEarned?: number;
   kind?: "rental" | "cafe";
   tableName?: string;
+  paidAt?: number; // waktu pembayaran lunas
+  ongoing?: boolean; // sesi masih berjalan saat nota dibuat
 };
+
 
 export type Rates = Record<string, number>;
 
