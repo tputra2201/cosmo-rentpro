@@ -64,7 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         | { full_name: string | null; must_change_password: boolean | null }
         | null;
       const list = (roles ?? []).map((r) => r.role as AppRole);
-      const priority: AppRole[] = ["installer", "admin", "kasir"];
+      const priority: AppRole[] = [
+        "installer",
+        "manager",
+        "admin",
+        "finance",
+        ...ALL_ROLES.filter((r) => r !== "installer" && r !== "manager" && r !== "finance"),
+      ];
       setRole(priority.find((r) => list.includes(r)) ?? "kasir");
       setFullName(profile?.full_name ?? "");
       setMustChangePassword(profile?.must_change_password === true);
@@ -106,26 +112,9 @@ export function useAuth() {
   return ctx;
 }
 
-export const roleLabel: Record<AppRole, string> = {
-  installer: "Installer",
-  admin: "Admin",
-  kasir: "Kasir",
-};
-
-/** Menu yang hanya boleh diakses Admin */
-export const adminOnlyPaths = [
-  "/tarif",
-  "/pembayaran",
-  "/laporan",
-  "/promo",
-  "/backup",
-  "/pengguna",
-  "/store",
-];
-
 /** Menu yang hanya boleh diakses Installer */
 export const installerOnlyPaths = ["/store"];
 
-/** Installer punya semua akses Admin */
+/** Level setara Admin: Installer dan Manager (termasuk akun Admin lama) */
 export const isAdminLevel = (role: AppRole | null) =>
-  role === "admin" || role === "installer";
+  role === "admin" || role === "manager" || role === "installer";
