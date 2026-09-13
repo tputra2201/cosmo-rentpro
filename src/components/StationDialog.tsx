@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -98,10 +98,21 @@ export function StationDialog({
     setSessionDiscount,
     chargeCard,
     printers,
+    history,
   } = useBilling();
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
   );
+  // Setelah tagihan lunas, tawarkan cetak struk walau sesi masih berjalan.
+  const [wantPrint, setWantPrint] = useState(false);
+  const paidHistoryId = station?.session?.historyId;
+  useEffect(() => {
+    if (!wantPrint || !paidHistoryId) return;
+    const found = history.find((h) => h.id === paidHistoryId);
+    if (!found) return;
+    setWantPrint(false);
+    setPaidRecord(found);
+  }, [wantPrint, paidHistoryId, history]);
   const labelPrinters = printers.filter(
     (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
   );
@@ -290,6 +301,7 @@ export function StationDialog({
         amountPaid: cardCharge,
       });
       const remaining = Math.max(0, dueAmount - payTarget);
+      if (remaining <= 0) setWantPrint(true);
       toast.success("Pembayaran Playing Card diterima", {
         description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
           (bill?.discount ?? 0) > 0 ? ` · potongan ${formatRupiah(bill?.discount ?? 0)}` : ""
@@ -321,6 +333,7 @@ export function StationDialog({
       });
     }
     const sisa = Math.max(0, dueAmount - payTarget);
+    if (sisa <= 0) setWantPrint(true);
     toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
       description: `${formatRupiah(payTarget)} — ${
         splitMode
@@ -928,7 +941,25 @@ export function StationDialog({
                   </div>
                 </>
               )}
+              {isSettled && paidHistoryId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    const found = history.find((h) => h.id === paidHistoryId);
+                    if (!found) {
+                      toast.error("Nota belum tersedia");
+                      return;
+                    }
+                    setPaidRecord(found);
+                  }}
+                >
+                  <PrinterIcon className="size-4" /> Cetak / cetak ulang struk
+                </Button>
+              )}
             </div>
+
 
             {(session.settlements ?? []).length > 0 && (
               <div className="space-y-1.5 rounded-md border border-border p-3">
