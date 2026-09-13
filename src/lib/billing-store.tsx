@@ -150,6 +150,8 @@ export type PointEntry = { id: string; customerId: string; points: number; reaso
 export type PlayingCard = {
   id: string;
   cardNumber: string;
+  /** Kode kartu (alfanumerik) yang dicetak/ditempel di kartu. */
+  cardCode?: string;
   customerId?: string;
   customerName: string;
   customerPhone: string;
@@ -166,12 +168,21 @@ export type CardEntry = {
   id: string;
   cardId: string;
   cardNumber: string;
+  cardCode?: string;
   type: CardEntryType;
   amount: number;
   balanceAfter: number;
   note: string;
   createdAt: number;
 };
+
+/** Label kartu: nomor kartu + kode kartu bila ada. */
+export function cardLabel(card?: { cardNumber: string; cardCode?: string } | null) {
+  if (!card) return "";
+  const code = card.cardCode?.trim();
+  return code ? `${card.cardNumber} · ${code}` : card.cardNumber;
+}
+
 
 export const CARD_PAYMENT_NAME = "Playing Card";
 /** Top-up kartu hanya deposit: masuk kas, tapi bukan penghasilan. */
