@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReceiptView } from "@/components/CustomerDetail";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
+import { ShiftReport } from "@/components/reports/ShiftReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
 import { isAdminLevel, useAuth } from "@/lib/auth";
@@ -99,6 +100,7 @@ function LaporanPage() {
           <TabsTrigger value="nota">Nota Transaksi</TabsTrigger>
           <TabsTrigger value="company">Company Report</TabsTrigger>
           <TabsTrigger value="kartu">Laporan Playing Card</TabsTrigger>
+          <TabsTrigger value="shift">Cash Close Out</TabsTrigger>
         </TabsList>
         <TabsContent value="nota" className="mt-6">
           <ReceiptReport range={range} />
@@ -108,6 +110,9 @@ function LaporanPage() {
         </TabsContent>
         <TabsContent value="kartu" className="mt-6">
           <CardReport range={range} />
+        </TabsContent>
+        <TabsContent value="shift" className="mt-6">
+          <ShiftReport range={range} />
         </TabsContent>
       </Tabs>
     </div>
