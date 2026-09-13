@@ -183,6 +183,10 @@ function BuyCardPanel() {
             onChange={(e) => setTopup(e.target.value)}
           />
         </div>
+        <CardFundingSelect id="card-buy-payment" value={payment} onChange={setPayment} />
+        <p className="self-end text-sm text-muted-foreground">
+          Total dibayar sekarang: {formatRupiah(priceValue + topupValue)}
+        </p>
       </div>
 
       <Separator />
