@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/tv")({
       },
     ],
   }),
-  component: TvScreen;
+  component: TvScreen,
 });
 
 const PICK_KEY = "tv-display-station-v1";
