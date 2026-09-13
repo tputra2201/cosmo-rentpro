@@ -550,6 +550,7 @@ const defaultState: State = {
     { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-modal-owner", name: "Tambah Kas dari Owner", direction: "in", payout: true, group: "Kas Owner", active: true },
     { id: CARD_TOPUP_CATEGORY_ID, name: "Top Up Playing Card", direction: "in", payout: true, group: "Playing Card", active: true },
+    { id: CARD_SALE_CATEGORY_ID, name: "Penjualan Playing Card", direction: "in", payout: false, group: "Playing Card", active: true },
     { id: "cc-listrik", name: "Pembayaran Listrik", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-gas", name: "Pembelian Gas", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
