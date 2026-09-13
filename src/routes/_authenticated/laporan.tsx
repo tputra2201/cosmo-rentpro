@@ -153,14 +153,12 @@ function ReceiptReport({ range }: { range: ReportRange }) {
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
-          <p className="mt-1 text-muted-foreground">
-            Rekap pendapatan dari sesi rental dan penjualan kasir.
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Rekap pendapatan dari sesi rental dan penjualan kasir.
+        </p>
         {history.length > 0 && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Cetak</Button><Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Ekspor CSV</Button><Button variant="outline" onClick={clearHistory}><Trash2 className="size-4" /> Hapus riwayat</Button></div>}
       </header>
+
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
