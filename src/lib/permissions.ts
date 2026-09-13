@@ -48,6 +48,7 @@ export const MENU_PERMISSION: Record<string, string> = {
   "/laporan": "menu.laporan",
   "/pengguna": "menu.pengguna",
   "/backup": "menu.backup",
+  "/printer": "menu.printer",
   "/store": "menu.store",
   "/akun": "menu.akun",
 };
@@ -70,6 +71,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "menu.tarif", label: "Tarif" },
       { key: "menu.laporan", label: "Laporan" },
       { key: "menu.pengguna", label: "Pengguna" },
+      { key: "menu.printer", label: "Printer & Cetak" },
       { key: "menu.backup", label: "Backup" },
       { key: "menu.store", label: "Store" },
       { key: "menu.akun", label: "Akun" },
@@ -86,6 +88,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "laporan.qris", label: "Pembayaran QRIS" },
       { key: "laporan.transfer", label: "Transfer Bank" },
       { key: "laporan.hapus", label: "Hapus data laporan" },
+      { key: "laporan.cetak", label: "Cetak laporan" },
     ],
   },
   {
@@ -96,6 +99,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "sesi.diskon", label: "Beri diskon" },
       { key: "sesi.bayar", label: "Terima pembayaran" },
       { key: "sesi.akhiri", label: "Akhiri sesi" },
+      { key: "cetak.struk", label: "Cetak struk / invoice" },
+      { key: "cetak.label", label: "Cetak label dapur / bar" },
     ],
   },
   {
@@ -121,6 +126,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "backup.import", label: "Pulihkan data" },
       { key: "backup.reset", label: "Reset ke pengaturan awal" },
       { key: "store.ubah", label: "Ubah data store" },
+      { key: "printer.kelola", label: "Atur printer & layout cetak" },
     ],
   },
 ];
