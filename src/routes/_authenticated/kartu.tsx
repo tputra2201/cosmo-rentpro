@@ -241,6 +241,7 @@ function CardListPanel() {
   } = useBilling();
   const [search, setSearch] = useState("");
   const [topupValues, setTopupValues] = useState<Record<string, string>>({});
+  const [payValues, setPayValues] = useState<Record<string, string>>({});
 
   const key = search.trim().toLowerCase();
   const list = key
