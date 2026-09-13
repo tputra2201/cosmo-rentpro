@@ -75,11 +75,13 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
-  const { history, cashEntries, clearHistory } = useBilling();
+  const { history: rawHistory, cashEntries, clearHistory } = useBilling();
+  const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
+  const history = [...rawHistory].sort((a, b) => paidTime(b) - paidTime(a));
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
   const todayKey = dayKey(Date.now());
-  const today = history.filter((h) => dayKey(h.endAt) === todayKey);
+  const today = history.filter((h) => dayKey(paidTime(h)) === todayKey);
   const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
@@ -93,10 +95,11 @@ function LaporanPage() {
 
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
-    const k = dayKey(h.endAt);
+    const k = dayKey(paidTime(h));
     (acc[k] ||= []).push(h);
     return acc;
   }, {});
+
 
   const exportCsv = () => {
     const header = ["Tanggal", "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "F&B", "Total"];
@@ -225,8 +228,13 @@ function LaporanPage() {
                 {records.map((h) => (
                   <TableRow key={h.id}>
                     <TableCell className="whitespace-nowrap">
-                      {timeOf(h.startAt)} – {timeOf(h.endAt)}
+                      {timeOf(paidTime(h))}
+                      <span className="block text-xs text-muted-foreground">
+                        {timeOf(h.startAt)} – {timeOf(h.endAt)}
+                        {h.ongoing ? " · masih main" : ""}
+                      </span>
                     </TableCell>
+
                     <TableCell>
                       {h.stationName}{" "}
                       <span className="text-muted-foreground">({h.console})</span>

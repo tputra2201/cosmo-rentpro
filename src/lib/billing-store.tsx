@@ -42,9 +42,12 @@ export type Session = {
   discountValue?: number;
   discountMax?: number;
   settlements?: Settlement[];
+  historyId?: string; // nota yang sudah dibuat saat tagihan lunas
+  paidAt?: number; // waktu tagihan dinyatakan lunas
   pausedAt?: number; // jika terisi, timer sedang dijeda
   pausedMs?: number; // akumulasi total waktu jeda
 };
+
 
 export type Settlement = {
   id: string;
@@ -395,7 +398,10 @@ export type HistoryRecord = {
   pointsEarned?: number;
   kind?: "rental" | "cafe";
   tableName?: string;
+  paidAt?: number; // waktu pembayaran lunas
+  ongoing?: boolean; // sesi masih berjalan saat nota dibuat
 };
+
 
 export type Rates = Record<string, number>;
 
@@ -1137,12 +1143,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ? Math.floor(total / Math.max(1, prev.pointsPerRupiah))
           : 0;
         const completedRecord: HistoryRecord = {
-          id: `${stationId}-${endAt}`,
+          id: session.historyId ?? `${stationId}-${endAt}`,
           stationName: station.name,
           console: station.console,
           mode: session.mode,
           startAt: session.startAt,
           endAt,
+          paidAt: session.paidAt ?? endAt,
+          ongoing: false,
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
           fnbTotal: fnb,
@@ -1164,9 +1172,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         };
 
         record = completedRecord;
+        const alreadyLogged = prev.history.some((h) => h.id === completedRecord.id);
         return {
           ...prev,
-          history: [completedRecord, ...prev.history],
+          history: alreadyLogged
+            ? prev.history.map((h) => (h.id === completedRecord.id ? completedRecord : h))
+            : [completedRecord, ...prev.history],
+
           customers: prev.customers.map((customer) => customer.id === session.customerId ? {
             ...customer,
             visits: customer.visits + 1,
@@ -1209,15 +1221,72 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           change: Math.max(0, amountPaid - amount),
         };
         created = settlement;
+        const settlements = [...(station.session.settlements ?? []), settlement];
+        const paid = settlements.reduce((sum, s) => sum + s.amount, 0);
+        const allMethods = settlements.flatMap((s) =>
+          s.payments?.length ? s.payments.map((p) => p.method) : [s.payment],
+        );
+        const bill = sessionBill(station.session, at, station.console, prev, {
+          member: Boolean(station.session.member),
+          card: allMethods.some((m) => m === CARD_PAYMENT_NAME),
+        });
+        const fullyPaid = paid + 0.5 >= bill.total && bill.total > 0;
+        const splits: PaymentSplit[] = settlements.flatMap((s) =>
+          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+        );
+        const historyId = station.session.historyId ?? `${stationId}-paid-${at}`;
+        const sess = station.session;
+        const receipt: HistoryRecord = {
+          id: historyId,
+          stationName: station.name,
+          console: station.console,
+          mode: sess.mode,
+          startAt: sess.startAt,
+          endAt: at,
+          paidAt: at,
+          ongoing: true,
+          minutes: Math.ceil(elapsedSeconds(sess, at) / 60),
+          rentalTotal: bill.rental,
+          fnbTotal: bill.fnb,
+          total: bill.total,
+          payment: Array.from(new Set(allMethods)).filter(Boolean).join(" + ") || "Cash",
+          ...(splits.length > 1 ? { payments: splits } : {}),
+          customerName: sess.customerName,
+          customerPhone: sess.customerPhone,
+          packageName: sess.packageName,
+          amountPaid: settlements.reduce((sum, s) => sum + s.amountPaid, 0),
+          change: settlements.reduce((sum, s) => sum + s.change, 0),
+          orders: sess.orders,
+          ...(sess.customerId ? { customerId: sess.customerId } : {}),
+          ...(sess.promoName || bill.promoName
+            ? { promoName: sess.promoName || bill.promoName }
+            : {}),
+          discount: bill.discount,
+        };
+        const existing = prev.history.some((h) => h.id === historyId);
+        const history = fullyPaid
+          ? existing
+            ? prev.history.map((h) => (h.id === historyId ? { ...h, ...receipt } : h))
+            : [receipt, ...prev.history]
+          : prev.history;
         return {
           ...prev,
+          history,
           stations: prev.stations.map((s) =>
             s.id === stationId && s.session
-              ? { ...s, session: { ...s.session, settlements: [...(s.session.settlements ?? []), settlement] } }
+              ? {
+                  ...s,
+                  session: {
+                    ...s.session,
+                    settlements,
+                    ...(fullyPaid ? { historyId, paidAt: at } : {}),
+                  },
+                }
               : s,
           ),
         };
       });
+
       return created;
     },
     [setState],
@@ -1225,19 +1294,30 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const removeSettlement = useCallback<Ctx["removeSettlement"]>(
     (stationId, settlementId) =>
-      mapStation(stationId, (s) =>
-        s.session
-          ? {
-              ...s,
-              session: {
-                ...s.session,
-                settlements: (s.session.settlements ?? []).filter((x) => x.id !== settlementId),
-              },
-            }
-          : s,
-      ),
-    [mapStation],
+      setState((prev) => {
+        const station = prev.stations.find((s) => s.id === stationId);
+        if (!station?.session) return prev;
+        const settlements = (station.session.settlements ?? []).filter(
+          (x) => x.id !== settlementId,
+        );
+        const historyId = station.session.historyId;
+        // Nota otomatis dibatalkan bila pembayaran dihapus dan sesi masih berjalan.
+        const history = historyId
+          ? prev.history.filter((h) => !(h.id === historyId && h.ongoing))
+          : prev.history;
+        return {
+          ...prev,
+          history,
+          stations: prev.stations.map((s) => {
+            if (s.id !== stationId || !s.session) return s;
+            const { historyId: _drop, paidAt: _drop2, ...rest } = s.session;
+            return { ...s, session: { ...rest, settlements } };
+          }),
+        };
+      }),
+    [setState],
   );
+
 
 
 
