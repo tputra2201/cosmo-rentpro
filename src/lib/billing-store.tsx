@@ -564,6 +564,63 @@ export function paidTotal(session: Session | null | undefined) {
   return (session?.settlements ?? []).reduce((sum, s) => sum + s.amount, 0);
 }
 
+/** Nama metode pembayaran tunai. */
+export const CASH_METHOD = "Cash";
+
+function cashOfRecord(record: HistoryRecord) {
+  if (record.payments?.length) {
+    return record.payments
+      .filter((p) => p.method === CASH_METHOD)
+      .reduce((sum, p) => sum + p.amount, 0);
+  }
+  return (record.payment ?? "") === CASH_METHOD ? record.total : 0;
+}
+
+export type ShiftSummary = {
+  paidIn: number;
+  paidOut: number;
+  sales: number;
+  expenses: number;
+  expected: number;
+};
+
+/** Hitung posisi uang tunai laci untuk satu shift kasir. */
+export function shiftSummary(
+  shift: CashShift,
+  history: HistoryRecord[],
+  cashEntries: CashEntry[],
+  until: number = Date.now(),
+): ShiftSummary {
+  const from = shift.openedAt;
+  const to = shift.closedAt ?? until;
+  const within = (stamp: number) => stamp >= from && stamp <= to;
+
+  const sales = history
+    .filter((h) => within(h.paidAt ?? h.endAt))
+    .reduce((sum, h) => sum + cashOfRecord(h), 0);
+
+  const cash = cashEntries.filter(
+    (e) => e.payment === CASH_METHOD && within(e.createdAt),
+  );
+  const sum = (pick: (e: CashEntry) => boolean) =>
+    cash.filter(pick).reduce((s, e) => s + e.amount, 0);
+
+  const paidIn = sum((e) => e.direction === "in" && e.payout);
+  const otherIncome = sum((e) => e.direction === "in" && !e.payout);
+  const paidOut = sum((e) => e.direction === "out" && e.payout);
+  const expenses = sum((e) => e.direction === "out" && !e.payout);
+  const salesTotal = sales + otherIncome;
+
+  return {
+    paidIn,
+    paidOut,
+    sales: salesTotal,
+    expenses,
+    expected: shift.startCash + paidIn - paidOut + salesTotal - expenses,
+  };
+}
+
+
 
 export function formatClock(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));
