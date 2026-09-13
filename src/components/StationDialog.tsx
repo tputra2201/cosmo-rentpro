@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -98,10 +98,21 @@ export function StationDialog({
     setSessionDiscount,
     chargeCard,
     printers,
+    history,
   } = useBilling();
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
   );
+  // Setelah tagihan lunas, tawarkan cetak struk walau sesi masih berjalan.
+  const [wantPrint, setWantPrint] = useState(false);
+  const paidHistoryId = station?.session?.historyId;
+  useEffect(() => {
+    if (!wantPrint || !paidHistoryId) return;
+    const found = history.find((h) => h.id === paidHistoryId);
+    if (!found) return;
+    setWantPrint(false);
+    setPaidRecord(found);
+  }, [wantPrint, paidHistoryId, history]);
   const labelPrinters = printers.filter(
     (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
   );
