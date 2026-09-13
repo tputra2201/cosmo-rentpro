@@ -150,41 +150,68 @@ export function useStoreSync(options: {
     // membuat data store A diterapkan ke store B sebelum membership terbaca.
     if (cached && typeof navigator !== "undefined" && !navigator.onLine) {
       setStoreId(cached);
+      // Tanpa internet, data lokal yang sudah bertanda store ini boleh langsung
+      // dicatat ke antrean kirim supaya transaksi hari ini tidak hilang.
+      if (stateRef.current.storeId === cached) setReadyStoreId(cached);
     }
     let cancelled = false;
-    (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) return;
-      const { data } = await supabase
-        .from("store_members")
-        .select("store_id")
-        .eq("user_id", userId)
-        .limit(1)
-        .maybeSingle();
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    const fail = () => {
       if (cancelled) return;
-      const id = (data as { store_id: string } | null)?.store_id ?? null;
-      if (!id) return;
-      if (stateRef.current.storeId !== id) {
-        // Data lokal milik store lain (atau data bawaan yang belum bertanda
-        // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
-        localStorage.removeItem(SHADOW_KEY);
-        localStorage.removeItem(OUTBOX_KEY);
-        localStorage.removeItem(SINCE_KEY);
-        shadowRef.current = {};
-        outboxRef.current = {};
-        prevKeysRef.current = null;
-        setPending(0);
-        setReadyStoreId(null);
+      // Coba lagi: kegagalan jaringan tidak boleh membuat perangkat berhenti
+      // menyinkronkan sepanjang sesi.
+      retry = setTimeout(() => {
+        if (!cancelled) setMemberAttempt((n) => n + 1);
+      }, 8000);
+    };
+    (async () => {
+      try {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError) throw new Error(authError.message);
+        const userId = auth.user?.id;
+        if (!userId) return;
+        const { data, error: memberError } = await supabase
+          .from("store_members")
+          .select("store_id")
+          .eq("user_id", userId)
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (memberError) throw new Error(memberError.message);
+        const id = (data as { store_id: string } | null)?.store_id ?? null;
+        if (!id) {
+          setError("Akun belum terhubung ke store. Hubungi Admin atau Developer.");
+          return;
+        }
+        if (stateRef.current.storeId !== id) {
+          // Data lokal milik store lain (atau data bawaan yang belum bertanda
+          // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
+          localStorage.removeItem(SHADOW_KEY);
+          localStorage.removeItem(OUTBOX_KEY);
+          localStorage.removeItem(SINCE_KEY);
+          // Tandai bahwa data lokal baru saja dikosongkan, jadi isi pusat aman
+          // dipakai sebagai satu-satunya sumber saat pengambilan pertama.
+          localStorage.setItem(FRESH_KEY, id);
+          shadowRef.current = {};
+          outboxRef.current = {};
+          prevKeysRef.current = null;
+          setPending(0);
+          setReadyStoreId(null);
+        }
+        bindStore(id);
+        localStorage.setItem(STORE_KEY, id);
+        setStoreId(id);
+        setError(null);
+      } catch {
+        fail();
       }
-      bindStore(id);
-      localStorage.setItem(STORE_KEY, id);
-      setStoreId(id);
     })();
     return () => {
       cancelled = true;
+      if (retry) clearTimeout(retry);
     };
-  }, [enabled, bindStore]);
+  }, [enabled, bindStore, memberAttempt]);
+
 
   const queueLocalChanges = useCallback((snapshot: BillingSnapshot, activeStoreId: string) => {
     // Kunci utama: hanya data yang memang bertanda store ini yang boleh masuk
