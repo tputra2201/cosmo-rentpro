@@ -208,7 +208,8 @@ function AppShell() {
   const { session, role, fullName, user, signOut, mustChangePassword } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const isAuthPage = pathname === "/auth";
+  const isTvPage = pathname === "/tv";
+  const isAuthPage = pathname === "/auth" || isTvPage;
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
