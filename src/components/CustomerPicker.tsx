@@ -3,7 +3,7 @@ import { CreditCard, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cardsOfCustomer } from "@/components/CustomerDetail";
-import { formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
+import { cardLabel, formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
 
 /**
  * Kolom nama pelanggan dengan saran otomatis.
