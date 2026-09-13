@@ -1143,12 +1143,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ? Math.floor(total / Math.max(1, prev.pointsPerRupiah))
           : 0;
         const completedRecord: HistoryRecord = {
-          id: `${stationId}-${endAt}`,
+          id: session.historyId ?? `${stationId}-${endAt}`,
           stationName: station.name,
           console: station.console,
           mode: session.mode,
           startAt: session.startAt,
           endAt,
+          paidAt: session.paidAt ?? endAt,
+          ongoing: false,
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
           fnbTotal: fnb,
@@ -1170,9 +1172,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         };
 
         record = completedRecord;
+        const alreadyLogged = prev.history.some((h) => h.id === completedRecord.id);
         return {
           ...prev,
-          history: [completedRecord, ...prev.history],
+          history: alreadyLogged
+            ? prev.history.map((h) => (h.id === completedRecord.id ? completedRecord : h))
+            : [completedRecord, ...prev.history],
+
           customers: prev.customers.map((customer) => customer.id === session.customerId ? {
             ...customer,
             visits: customer.visits + 1,
