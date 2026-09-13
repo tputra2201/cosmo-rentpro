@@ -29,6 +29,7 @@ import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
+import { Route as AuthenticatedTvRouteImport } from './routes/_authenticated/tv'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -130,6 +131,11 @@ const AuthenticatedTarifRoute = AuthenticatedTarifRouteImport.update({
   path: '/tarif',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTvRoute = AuthenticatedTvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicStoreRegistryRoute = ApiPublicStoreRegistryRouteImport.update({
   id: '/api/public/store-registry',
   path: '/api/public/store-registry',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
+  '/tv': typeof AuthenticatedTvRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
 export interface FileRoutesByTo {
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
+  '/tv': typeof AuthenticatedTvRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/shift': typeof AuthenticatedShiftRoute
   '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/tarif': typeof AuthenticatedTarifRoute
+  '/_authenticated/tv': typeof AuthenticatedTvRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/shift'
     | '/store'
     | '/tarif'
+    | '/tv'
     | '/api/public/store-registry'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/shift'
     | '/store'
     | '/tarif'
+    | '/tv'
     | '/'
     | '/api/public/store-registry'
   id:
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/_authenticated/shift'
     | '/_authenticated/store'
     | '/_authenticated/tarif'
+    | '/_authenticated/tv'
     | '/_authenticated/'
     | '/api/public/store-registry'
   fileRoutesById: FileRoutesById
@@ -424,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTarifRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tv': {
+      id: '/_authenticated/tv'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof AuthenticatedTvRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/store-registry': {
       id: '/api/public/store-registry'
       path: '/api/public/store-registry'
@@ -450,6 +469,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedShiftRoute: typeof AuthenticatedShiftRoute
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedTarifRoute: typeof AuthenticatedTarifRoute
+  AuthenticatedTvRoute: typeof AuthenticatedTvRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -469,6 +489,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedShiftRoute: AuthenticatedShiftRoute,
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
+  AuthenticatedTvRoute: AuthenticatedTvRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

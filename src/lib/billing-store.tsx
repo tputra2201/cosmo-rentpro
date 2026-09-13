@@ -419,6 +419,26 @@ export type HistoryRecord = {
 
 export type Rates = Record<string, number>;
 
+/** Pengaturan notifikasi yang tampil di layar TV pelanggan. */
+export type TvNotice = {
+  warnMinutes: number;
+  warnText: string;
+  endText: string;
+  countdownSec: number;
+  blockTitle: string;
+  blockText: string;
+};
+
+export const defaultTvNotice: TvNotice = {
+  warnMinutes: 5,
+  warnText:
+    "Waktu bermain Anda tersisa 5 menit. Silahkan menghubungi Operator untuk penambahan waktu.",
+  endText: "Waktu bermain Anda telah habis.",
+  countdownSec: 10,
+  blockTitle: "WAKTU BERMAIN HABIS",
+  blockText: "Silahkan menghubungi Operator untuk penambahan waktu.",
+};
+
 type State = {
   stations: Station[];
   consoleTypes: string[];
@@ -445,6 +465,7 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  tvNotice: TvNotice;
 
 };
 
@@ -529,6 +550,7 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  tvNotice: defaultTvNotice,
 
 };
 
@@ -867,6 +889,7 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
 
 
 
@@ -898,6 +921,7 @@ type Ctx = State & {
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
   setDefaultBonusMin: (minutes: number) => void;
+  setTvNotice: (patch: Partial<TvNotice>) => void;
   addOrder: (stationId: string, item: MenuItem, qty: number) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
@@ -1926,6 +1950,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({ ...prev, packages: prev.packages.filter((item) => item.id !== id) })),
       setRoundingRule: (roundingRule) => update((prev) => ({ ...prev, roundingRule })),
       setDefaultBonusMin: (minutes) => update((prev) => ({ ...prev, defaultBonusMin: Math.round(minutes) })),
+      setTvNotice: (patch) =>
+        update((prev) => ({ ...prev, tvNotice: { ...prev.tvNotice, ...patch } })),
       adjustBonusTime: (stationId, deltaMin) =>
         mapStation(stationId, (s) =>
           s.session

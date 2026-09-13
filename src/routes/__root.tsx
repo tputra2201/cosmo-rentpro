@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import {
   LayoutGrid,
+  MonitorPlay,
   Settings2,
   BarChart3,
   Joystick,
@@ -167,6 +168,7 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/kasir", label: "Kasir", icon: Receipt },
   { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
+  { to: "/tv", label: "Layar TV", icon: MonitorPlay },
 
   { to: "/kafe", label: "Kafe", icon: Coffee },
 
@@ -206,7 +208,8 @@ function AppShell() {
   const { session, role, fullName, user, signOut, mustChangePassword } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const isAuthPage = pathname === "/auth";
+  const isTvPage = pathname === "/tv";
+  const isAuthPage = pathname === "/auth" || isTvPage;
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
@@ -401,7 +404,11 @@ function AppShell() {
 
       </header>
       )}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main
+        className={
+          isTvPage ? "min-h-screen" : "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8"
+        }
+      >
         {session && !isAuthPage && expired ? (
           <div className="surface-panel mx-auto max-w-lg border-destructive/60 p-8 text-center">
             <h1 className="blink-warning font-display text-2xl font-bold text-destructive">

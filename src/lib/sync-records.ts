@@ -41,6 +41,7 @@ const SETTINGS_KEYS = [
   "cardDiscountPercent",
   "cardMemberDiscountPercent",
   "consoleDiscounts",
+  "tvNotice",
 ] as const;
 
 
