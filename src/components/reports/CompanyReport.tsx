@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
-import { useStoreInfo } from "@/lib/store-info";
 
 type Row = { label: string; amount: number; qty?: number };
 
@@ -32,7 +31,6 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cardEntries,
     menu,
   } = useBilling();
-  const store = useStoreInfo();
 
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const records = history.filter((h) => inRange(paidTime(h), range));
@@ -123,7 +121,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{store.storeName || "Company Report"}</h2>
+          <h2 className="text-xl font-semibold">Company Report</h2>
           <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
         </div>
         <Button variant="outline" onClick={() => window.print()}>
