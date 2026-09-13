@@ -271,6 +271,21 @@ export function printLabels(opts: {
 
 /** Cetak isi laporan yang sedang tampil di layar. */
 export function printReport(printer: PrinterConfig, title: string, innerHtml: string) {
+  if (printMode(printer) === "rawbt") {
+    const w = CHARS_PER_LINE[printer.paper];
+    const plain = innerHtml
+      .replace(/<\/(tr|div|p|h1|h2|h3|section|table)>/gi, "\n")
+      .replace(/<\/(td|th)>/gi, " ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .split("\n")
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .join("\n");
+    printViaRawBt(`${textCenter(title, w)}\n${textSep(w)}\n${plain}`);
+    return;
+  }
   const css = `
     ${paperCss(printer)}
     h1, h2, h3 { font-size: ${printer.fontSizePt + 2}pt; margin: 6px 0 3px; }
