@@ -33,9 +33,13 @@ async function assertInstaller(context: Ctx) {
 
 /** Store tempat akun ini terdaftar. */
 async function myStoreId(context: Ctx): Promise<string | null> {
-  const { data } = await context.supabase
+  // Dibaca dengan hak server agar tidak bergantung pada aturan baris,
+  // supaya level Manager tetap mendapat store-nya sendiri.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
     .from("store_members")
     .select("store_id")
+    .eq("user_id", context.userId)
     .limit(1)
     .maybeSingle();
   return (data as { store_id: string } | null)?.store_id ?? null;
