@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardScanInput } from "@/components/CardScanInput";
+import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { findCardByNumber, formatRupiah, useBilling } from "@/lib/billing-store";
 
 /**
