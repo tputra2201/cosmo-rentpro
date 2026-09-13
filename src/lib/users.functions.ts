@@ -271,6 +271,7 @@ export const updateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context as unknown as Ctx);
+    await assertNotDeveloper(context as unknown as Ctx, data.id);
     await assertSameStore(context as unknown as Ctx, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
