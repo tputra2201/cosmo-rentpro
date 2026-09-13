@@ -2,9 +2,16 @@
 
 import { formatRupiah, type HistoryRecord, type OrderItem } from "./billing-store";
 import {
+  CHARS_PER_LINE,
   escapeHtml,
   paperCss,
   printHtml,
+  printMode,
+  printViaRawBt,
+  textCenter,
+  textRow,
+  textSep,
+  textWithCopies,
   withCopies,
   type DocLayout,
   type PrinterConfig,
