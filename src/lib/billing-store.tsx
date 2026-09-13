@@ -2069,6 +2069,34 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           rolePermissions: { ...prev.rolePermissions, [role]: keys },
         })),
+      addPrinter: (init) =>
+        update((prev) => {
+          const id = `prt-${Date.now().toString(36)}`;
+          const printer: PrinterConfig = {
+            id,
+            name: init?.name?.trim() || `Printer ${prev.printers.length + 1}`,
+            role: init?.role ?? "receipt",
+            paper: init?.paper ?? "80mm",
+            fontSizePt: init?.fontSizePt ?? 9,
+            bold: init?.bold ?? false,
+            marginMm: init?.marginMm ?? 3,
+            copies: init?.copies ?? 1,
+            active: true,
+            sort: prev.printers.length + 1,
+          };
+          return { ...prev, printers: [...prev.printers, printer] };
+        }),
+      updatePrinter: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          printers: prev.printers.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        })),
+      removePrinter: (id) =>
+        update((prev) => ({ ...prev, printers: prev.printers.filter((p) => p.id !== id) })),
+      setReceiptLayout: (patch) =>
+        update((prev) => ({ ...prev, receiptLayout: { ...prev.receiptLayout, ...patch } })),
+      setInvoiceLayout: (patch) =>
+        update((prev) => ({ ...prev, invoiceLayout: { ...prev.invoiceLayout, ...patch } })),
       adjustBonusTime: (stationId, deltaMin) =>
         mapStation(stationId, (s) =>
           s.session
