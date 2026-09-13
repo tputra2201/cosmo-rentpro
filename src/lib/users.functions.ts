@@ -150,8 +150,13 @@ export const listUsers = createServerFn({ method: "GET" })
       roleById.set(r.user_id, r.role as AppRole);
     }
 
+    const devs = await developerIds();
+    const iamDeveloper = devs.has((context as unknown as Ctx).userId);
+
     return list.users
       .filter((u) => {
+        // Akun Developer hanya terlihat oleh Developer sendiri.
+        if (devs.has(u.id) && !iamDeveloper) return false;
         const target = memberStore.get(u.id) ?? null;
         // Tanpa store tidak pernah tampil.
         if (!target) return false;
