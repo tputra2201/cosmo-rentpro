@@ -298,6 +298,7 @@ export function useStoreSync(options: {
     }
 
     let cancelled = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
     void (async () => {
       const { data, error: bootstrapError } = await supabase
         .from("store_data")
@@ -307,6 +308,11 @@ export function useStoreSync(options: {
       if (cancelled) return;
       if (bootstrapError) {
         setError(bootstrapError.message);
+        // Ulangi sampai berhasil. Tanpa ini, satu kegagalan jaringan membuat
+        // perangkat berhenti menyinkronkan sepanjang sesi.
+        retry = setTimeout(() => {
+          if (!cancelled) setBootAttempt((n) => n + 1);
+        }, 8000);
         return;
       }
 
@@ -324,17 +330,23 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
-        // Isi pusat adalah satu-satunya sumber saat pertama kali mengambil
-        // data store: buang dulu seluruh daftar lokal supaya unit atau meja
-        // milik store lain (dan data bawaan) tidak ikut terkirim.
-        applyRemote((prev) => applyRecords(clearSyncedLists(prev), records));
+        // Kalau data lokal baru saja dikosongkan (perangkat baru/ganti store),
+        // isi pusat menjadi satu-satunya sumber. Kalau perangkat ini sudah
+        // memegang data store yang sama — misalnya transaksi yang dibuat saat
+        // internet mati — data itu dipertahankan dan hanya ditimpa per baris.
+        const isFresh = localStorage.getItem(FRESH_KEY) === storeId;
+        applyRemote((prev) =>
+          applyRecords(isFresh ? clearSyncedLists(prev) : prev, records),
+        );
         noteShadow(records);
         const newest = remote.at(-1)?.updated_at;
         if (newest) localStorage.setItem(SINCE_KEY, newest);
       }
+      localStorage.removeItem(FRESH_KEY);
       setError(null);
       setReadyStoreId(storeId);
     })();
+
 
     return () => {
       cancelled = true;
