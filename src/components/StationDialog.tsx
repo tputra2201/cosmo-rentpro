@@ -34,7 +34,9 @@ import { Switch } from "@/components/ui/switch";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
-import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
+import { printerFor } from "@/lib/printing";
+import { useStoreInfo } from "@/lib/store-info";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
@@ -99,7 +101,9 @@ export function StationDialog({
     chargeCard,
     printers,
     history,
+    receiptLayout,
   } = useBilling();
+  const { store: storeInfo } = useStoreInfo(true);
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
   );
@@ -940,6 +944,46 @@ export function StationDialog({
                     </span>
                   </div>
                 </>
+              )}
+              {!isSettled && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    const printer = printerFor(printers, "receipt");
+                    if (!printer) {
+                      toast.error("Printer struk belum diatur di menu Printer");
+                      return;
+                    }
+                    if (!bill) return;
+                    printReceipt({
+                      record: {
+                        id: `BILL-${station.id}-${Date.now()}`,
+                        stationName: station.name,
+                        console: station.console,
+                        mode: session.mode,
+                        startAt: session.startAt,
+                        endAt: now,
+                        minutes: Math.round(elapsedSeconds(session, now) / 60),
+                        rentalTotal: bill.rental,
+                        fnbTotal: bill.fnb,
+                        total: bill.total,
+                        ...(bill.discount ? { discount: bill.discount } : {}),
+                        ...(bill.promoName ? { promoName: bill.promoName } : {}),
+                        ...(session.customerName ? { customerName: session.customerName } : {}),
+                        orders: session.orders ?? [],
+                        ongoing: true,
+                      },
+                      store: storeInfo as PrintStore,
+                      printer,
+                      layout: { ...receiptLayout, showPayment: false },
+                      kind: "bill",
+                    });
+                  }}
+                >
+                  <PrinterIcon className="size-4" /> Cetak bill (belum lunas)
+                </Button>
               )}
               {isSettled && paidHistoryId && (
                 <Button
