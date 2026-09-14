@@ -308,40 +308,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 </div>
 
-                {table.orders.length > 0 && labelPrinters.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {labelPrinters.map((printer) => (
-                      <Button
-                        key={printer.id}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const items = labelItemsFor(table.orders, menu, printer.id);
-                          if (items.length === 0) {
-                            toast.error(`Tidak ada item untuk ${printer.name}`);
-                            return;
-                          }
-                          printLabels({
-                            printer,
-                            items,
-                            heading:
-                              printer.role === "bar"
-                                ? "BAR"
-                                : printer.role === "kitchen"
-                                  ? "DAPUR"
-                                  : printer.name,
-                            source: table.name,
-                            ...(table.customerName ? { customerName: table.customerName } : {}),
-                            ...(table.notes ? { note: table.notes } : {}),
-                          });
-                        }}
-                      >
-                        <Printer className="size-4" /> {printer.name}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-
                 {table.orders.length > 0 && (
                   <ul className="space-y-1">
                     {table.orders.map((o) => (
@@ -354,6 +320,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         </span>
                         <span className="flex items-center gap-2">
                           {formatRupiah(o.price * o.qty)}
+                          {labelPrinters.length > 0 && (
+                            <button
+                              type="button"
+                              aria-label={`Cetak label ${o.name}`}
+                              title="Cetak label"
+                              className="text-muted-foreground transition-colors hover:text-primary"
+                              onClick={() =>
+                                printOrderLabels(
+                                  [o],
+                                  table.name,
+                                  table.customerName ?? undefined,
+                                  table.notes ?? undefined,
+                                )
+                              }
+                            >
+                              <Printer className="size-3.5" />
+                            </button>
+                          )}
                           <button
                             aria-label={`Hapus ${o.name}`}
                             onClick={() => removeCafeOrder(table.id, o.id)}
@@ -364,6 +348,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {table.orders.length > 0 && labelPrinters.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() =>
+                      printOrderLabels(
+                        table.orders,
+                        table.name,
+                        table.customerName ?? undefined,
+                        table.notes ?? undefined,
+                      )
+                    }
+                  >
+                    <Printer className="size-4" /> Cetak semua label
+                  </Button>
                 )}
 
                 <div className="space-y-3 border-t border-border pt-4">
