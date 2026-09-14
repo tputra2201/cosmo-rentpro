@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

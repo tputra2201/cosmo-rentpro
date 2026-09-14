@@ -261,6 +261,7 @@ function CardListPanel() {
     updatePlayingCard,
     removePlayingCard,
   } = useBilling();
+  const { requireShift } = useShiftGate();
   const [search, setSearch] = useState("");
   const [topupValues, setTopupValues] = useState<Record<string, string>>({});
   const [payValues, setPayValues] = useState<Record<string, string>>({});
