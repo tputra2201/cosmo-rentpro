@@ -59,6 +59,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ReservationAlert } from "@/components/ReservationAlert";
+import { IdleLogout } from "@/components/IdleLogout";
 import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
@@ -206,6 +207,7 @@ function RootComponent() {
             <AppShell />
             <PresenceHeartbeat />
             <ReservationAlert />
+            <IdleLogout />
             <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
