@@ -60,9 +60,6 @@ function AkunPage() {
   return (
     <div className="mx-auto w-full max-w-md">
       <h1 className="font-display text-2xl font-bold text-neon">Akun Saya</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {fullName || user?.email} · {role ? roleLabel[role] : "—"}
-      </p>
 
       <form className="surface-panel mt-6 grid gap-4 p-6" onSubmit={submit}>
         <div className="grid gap-2">

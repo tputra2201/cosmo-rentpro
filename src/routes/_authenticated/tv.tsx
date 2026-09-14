@@ -56,10 +56,6 @@ function TvScreen() {
     return (
       <div className="mx-auto max-w-2xl p-6">
         <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Buka halaman ini di TV Android, lalu pilih unitnya sekali saja. Pilihan
-          disimpan di TV tersebut.
-        </p>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stations.map((s) => (
             <Button

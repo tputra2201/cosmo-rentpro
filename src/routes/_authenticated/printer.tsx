@@ -125,11 +125,6 @@ function PrinterPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Printer &amp; Cetak</h1>
-        <p className="mt-1 text-muted-foreground">
-          Atur printer struk, invoice, label dapur, label bar, dan printer laporan. Saat menekan
-          tombol Cetak, dialog cetak perangkat akan terbuka sehingga Anda bisa memilih printer yang
-          dituju.
-        </p>
       </header>
 
       <section className="surface-panel space-y-2 p-6">

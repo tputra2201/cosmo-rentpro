@@ -191,10 +191,6 @@ function BackupPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Backup &amp; Restore</h1>
-        <p className="mt-1 text-muted-foreground">
-          Cadangkan semua pengaturan dan transaksi ke file Excel, pulihkan kembali
-          kapan saja, atau kembalikan aplikasi ke pengaturan awal.
-        </p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -71,9 +71,6 @@ function PembayaranPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Pengaturan Pembayaran</h1>
-        <p className="mt-1 text-muted-foreground">
-          Tipe pembayaran yang aktif akan muncul saat mengakhiri sesi bermain.
-        </p>
       </header>
 
       <section className="surface-panel space-y-4 p-4 sm:p-6">

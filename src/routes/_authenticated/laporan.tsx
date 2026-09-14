@@ -113,9 +113,6 @@ function LaporanPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
-        <p className="mt-1 text-muted-foreground">
-          Pilih jenis laporan dan rentang waktunya.
-        </p>
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

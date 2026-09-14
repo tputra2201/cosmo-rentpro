@@ -58,9 +58,6 @@ function KasirPage() {
         <h1 className="font-display text-2xl font-bold tracking-wide text-neon sm:text-3xl">
           Layar Kasir
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tarif berlaku dan total tagihan berjalan setiap TV.
-        </p>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">

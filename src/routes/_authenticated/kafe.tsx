@@ -71,10 +71,6 @@ function KafePage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold sm:text-4xl">Pengaturan Meja Kafe</h1>
-          <p className="mt-1 text-muted-foreground">
-            Kartu meja dan pesanan kini ada di Dashboard. Di sini Anda mengatur daftar
-            mejanya. Geser ikon pegangan untuk mengatur urutan meja, kategori, dan menu.
-          </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">{openTables.length} meja terisi</p>
