@@ -63,6 +63,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     chargeCard,
     printers,
   } = useBilling();
+  const { requireShift } = useShiftGate();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const labelPrinters = printers.filter((p) => p.active);
   const labelHeading = (p: PrinterConfig) =>
@@ -287,6 +288,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         variant="secondary"
                         className="h-auto justify-between py-2"
                         onClick={() => {
+                          if (!requireShift()) return;
                           addCafeOrder(table.id, item, 1);
                           toast.success(`${item.name} ditambahkan`);
                         }}
@@ -563,6 +565,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         toast.error("Saldo kartu tidak mencukupi!");
                         return;
                       }
+                      if (!requireShift()) return;
                       const cardRecord = payCafeTable(table.id, {
                         ...(restAmount > 0
                           ? {
@@ -600,6 +603,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       toast.error("Uang diterima kurang dari total tagihan");
                       return;
                     }
+                    if (!requireShift()) return;
                     const record = payCafeTable(table.id, {
                       payment: payMethod || activeMethods[0]?.name || "Cash",
                       amountPaid: paid,
