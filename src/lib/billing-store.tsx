@@ -1001,6 +1001,10 @@ function migrateState(raw: unknown): State {
 
 type Ctx = State & {
   now: number;
+  /** Shift kasir yang sedang terbuka (null bila belum check-in). */
+  activeShift: CashShift | null;
+  /** True bila ada shift terbuka; transaksi uang hanya boleh saat true. */
+  shiftOpen: boolean;
   startSession: (
     stationId: string,
     mode: PlayMode,
@@ -1705,17 +1709,29 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     bindStore,
   });
 
+  // Kasir wajib check-in shift sebelum ada uang masuk atau keluar.
+  const activeShift = state.shifts.find((s) => !s.closedAt) ?? null;
+  const shiftOpen = Boolean(activeShift);
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
       now,
-      startSession: startSessionWithRate,
-      stopSession,
-      settleSession,
+      activeShift,
+      shiftOpen,
+      startSession: (...args) => {
+        if (!shiftOpen) return;
+        startSessionWithRate(...args);
+      },
+      stopSession: (...args) => (shiftOpen ? stopSession(...args) : null),
+      settleSession: (...args) => (shiftOpen ? settleSession(...args) : null),
       removeSettlement,
 
       addTime,
-      addOrder,
+      addOrder: (...args) => {
+        if (!shiftOpen) return;
+        addOrder(...args);
+      },
       removeOrder,
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
       setConsoleDiscount: (name, patch) =>
@@ -1940,7 +1956,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return true;
       },
       openCafeTable: (tableId, customerName, notes) =>
-        update((prev) => ({
+        !shiftOpen
+          ? undefined
+          : update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
             t.id === tableId
@@ -1954,7 +1972,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       addCafeOrder: (tableId, item, qty) =>
-        update((prev) => ({
+        !shiftOpen
+          ? undefined
+          : update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
             t.id === tableId
@@ -1984,6 +2004,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       payCafeTable: (tableId, input) => {
+        if (!shiftOpen) return null;
         let record: HistoryRecord | null = null;
         setState((prev) => {
           const table = prev.cafeTables.find((t) => t.id === tableId);
@@ -2158,6 +2179,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
       setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
       buyPlayingCard: (input) => {
+        if (!shiftOpen) return null;
         const cardNumber = input.cardNumber.trim();
         if (!cardNumber) return null;
         if (findCardByNumber(state.playingCards, cardNumber)) return null;
@@ -2297,6 +2319,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
         })),
       topupCard: (id, amount, note, payment) => {
+        if (!shiftOpen) return false;
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || value <= 0) return false;
@@ -2335,6 +2358,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return true;
       },
       adjustCardBalance: (id, amount, note) => {
+        if (!shiftOpen) return false;
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || value === 0) return false;
@@ -2362,6 +2386,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return true;
       },
       chargeCard: (id, amount, note) => {
+        if (!shiftOpen) return false;
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || !card.active || value <= 0) return false;
@@ -2462,6 +2487,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashCategories: prev.cashCategories.filter((item) => item.id !== id),
         })),
       addCashEntry: (input) => {
+        if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
         const amount = Math.max(0, Math.round(input.amount));
         if (!category || amount <= 0) return null;
@@ -2546,6 +2572,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [
       state,
       now,
+      activeShift,
+      shiftOpen,
       sync,
       startSessionWithRate,
       stopSession,

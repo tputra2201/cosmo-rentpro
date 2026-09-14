@@ -30,6 +30,7 @@ import {
   formatRupiah,
   useBilling,
 } from "@/lib/billing-store";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 
 export const Route = createFileRoute("/_authenticated/kartu")({
   head: () => ({
@@ -64,6 +65,7 @@ function KartuPage() {
         </p>
       </header>
 
+      <ShiftLockedNotice className="mb-3" />
       <Tabs defaultValue="beli">
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="beli">
@@ -99,6 +101,7 @@ function KartuPage() {
 
 function BuyCardPanel() {
   const { playingCards, customers, cardPrice, buyPlayingCard } = useBilling();
+  const { requireShift } = useShiftGate();
   const [cardNumber, setCardNumber] = useState("");
   const [cardCode, setCardCode] = useState("");
   const [price, setPrice] = useState("");
@@ -123,6 +126,7 @@ function BuyCardPanel() {
   };
 
   const submit = () => {
+    if (!requireShift()) return;
     const number = cardNumber.trim();
     if (!number) {
       toast.error("Nomor kartu belum diisi");
@@ -258,6 +262,7 @@ function CardListPanel() {
     updatePlayingCard,
     removePlayingCard,
   } = useBilling();
+  const { requireShift } = useShiftGate();
   const [search, setSearch] = useState("");
   const [topupValues, setTopupValues] = useState<Record<string, string>>({});
   const [payValues, setPayValues] = useState<Record<string, string>>({});
@@ -392,6 +397,7 @@ function CardListPanel() {
                 </div>
                 <Button
                   onClick={() => {
+                    if (!requireShift()) return;
                     const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
                     const method = payValues[card.id] ?? "Cash";
                     if (!topupCard(card.id, amount, "Top-up saldo", method)) {

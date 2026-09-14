@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,7 @@ function KasPage() {
 
 function EntryForm({ direction }: { direction: CashDirection }) {
   const { cashCategories, paymentMethods, addCashEntry } = useBilling();
+  const { requireShift } = useShiftGate();
   const options = cashCategories.filter((c) => c.direction === direction && c.active);
   const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
   const [amount, setAmount] = useState("");
@@ -201,6 +203,7 @@ function EntryForm({ direction }: { direction: CashDirection }) {
       toast.error("Pilih item dan isi jumlah uang");
       return;
     }
+    if (!requireShift()) return;
     const row = addCashEntry({ categoryId, amount: value, payment, note });
     if (!row) {
       toast.error("Catatan gagal disimpan");
@@ -225,6 +228,8 @@ function EntryForm({ direction }: { direction: CashDirection }) {
           {direction === "in" ? "Catat uang masuk" : "Catat uang keluar"}
         </h2>
       </div>
+
+      <ShiftLockedNotice />
 
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">
