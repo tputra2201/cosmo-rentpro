@@ -30,10 +30,12 @@ import {
   type CafeTable,
   type DiscountType,
   type HistoryRecord,
+  type OrderItem,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import type { PrinterConfig } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
   return table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
