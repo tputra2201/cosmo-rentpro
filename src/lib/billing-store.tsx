@@ -2536,22 +2536,51 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
       removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
       updateHistoryPayment: (id, patch) =>
-        update((prev) => ({
-          ...prev,
-          history: prev.history.map((item) => {
-            if (item.id !== id) return item;
-            const { payments: _old, ...rest } = item;
-            const next: HistoryRecord = { ...rest };
-            if (patch.payment !== undefined) next.payment = patch.payment;
-            if (patch.payments && patch.payments.length > 0) next.payments = patch.payments;
-            return next;
-          }),
-        })),
+        update((prev) => {
+          const target = prev.history.find((item) => item.id === id);
+          return withLog(
+            {
+              ...prev,
+              history: prev.history.map((item) => {
+                if (item.id !== id) return item;
+                const { payments: _old, ...rest } = item;
+                const next: HistoryRecord = { ...rest };
+                if (patch.payment !== undefined) next.payment = patch.payment;
+                if (patch.payments && patch.payments.length > 0) next.payments = patch.payments;
+                return next;
+              }),
+            },
+            "Ubah metode pembayaran nota",
+            `${target?.stationName ?? id} · ${target?.payment ?? "-"} → ${patch.payment ?? "-"}`,
+          );
+        }),
       removeHistory: (id) =>
-        update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
-      clearHistory: () => update((prev) => ({ ...prev, history: [] })),
+        update((prev) => {
+          const target = prev.history.find((item) => item.id === id);
+          return withLog(
+            { ...prev, history: prev.history.filter((item) => item.id !== id) },
+            "Hapus nota transaksi",
+            target
+              ? `${target.stationName} · ${target.customerName ?? "Umum"} · ${formatRupiah(target.total)}`
+              : id,
+          );
+        }),
+      clearHistory: () =>
+        update((prev) =>
+          withLog(
+            { ...prev, history: [] },
+            "Hapus seluruh riwayat nota",
+            `${prev.history.length} nota`,
+          ),
+        ),
       resetTransactions: () =>
-        update((prev) => ({ ...prev, history: [], pointEntries: [], cashEntries: [] })),
+        update((prev) =>
+          withLog(
+            { ...prev, history: [], pointEntries: [], cashEntries: [] },
+            "Reset data transaksi",
+            `${prev.history.length} nota · ${prev.cashEntries.length} catatan kas`,
+          ),
+        ),
       addCashCategory: (input) => {
         const name = input.name.trim();
         if (!name) return null;
