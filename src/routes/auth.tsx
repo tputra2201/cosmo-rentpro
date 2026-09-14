@@ -157,6 +157,15 @@ function AuthPage() {
           <Button type="submit" disabled={busy} className="w-full">
             <LogIn className="size-4" /> Masuk
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={resetBusy}
+            onClick={() => void sendReset()}
+          >
+            <MailQuestion className="size-4" /> Lupa password
+          </Button>
         </form>
 
         {branding.login_note.trim() && (
