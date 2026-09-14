@@ -58,7 +58,12 @@ function TvScreen() {
   if (!station) {
     return (
       <div className="mx-auto max-w-2xl p-6">
-        <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
+          <Button variant="outline" onClick={() => navigate({ to: "/" })}>
+            <LogOut className="size-4" /> Exit
+          </Button>
+        </div>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stations.map((s) => (
             <Button
