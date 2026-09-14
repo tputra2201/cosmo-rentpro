@@ -1189,7 +1189,230 @@ type Ctx = State & {
 
 export type BillingSnapshot = State;
 
+type LogInfo = { action: string; detail?: string; coalesce?: boolean };
+type LogDescriber = (
+  args: unknown[],
+  state: State,
+  result: unknown,
+) => LogInfo | null;
+
+const txt = (value: unknown) => {
+  if (typeof value === "boolean") return value ? "aktif" : "nonaktif";
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+};
+
+/** Ringkas isi patch menjadi teks "kolom: nilai" untuk log book. */
+const patchText = (patch: unknown) =>
+  patch && typeof patch === "object"
+    ? Object.entries(patch as Record<string, unknown>)
+        .map(([key, value]) => `${key} → ${txt(value)}`)
+        .join(", ")
+    : "";
+
+const nameById = (
+  list: readonly { id: string; name?: string }[] | undefined,
+  id: unknown,
+) => list?.find((row) => row.id === id)?.name ?? String(id ?? "");
+
+/**
+ * Aktivitas non-transaksi yang otomatis tercatat ke Log Book. Kunci = nama
+ * fungsi di context; nilai = cara menuliskan aktivitasnya. `coalesce` dipakai
+ * untuk kolom angka/teks yang berubah tiap ketikan agar log tidak membanjir.
+ */
+const LOG_DESCRIBERS: Record<string, LogDescriber> = {
+  // Menu kafe & kategorinya
+  addMenuItem: (a) => ({ action: "Tambah menu kafe", detail: `${txt(a[0])} · ${txt(a[1])}` }),
+  updateMenuItem: (a, s) => ({
+    action: "Ubah menu kafe",
+    detail: `${nameById(s.menu, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  addMenuCategory: (a, _s, r) =>
+    r === false ? null : { action: "Tambah kategori menu kafe", detail: txt(a[0]) },
+  renameMenuCategory: (a, _s, r) =>
+    r === false
+      ? null
+      : { action: "Ubah nama kategori menu kafe", detail: `${txt(a[0])} → ${txt(a[1])}` },
+  removeMenuCategory: (a, _s, r) =>
+    r === false ? null : { action: "Hapus kategori menu kafe", detail: txt(a[0]) },
+  reorderMenuCategories: () => ({ action: "Ubah urutan kategori menu kafe", coalesce: true }),
+
+  // Paket rental
+  addPackage: (a) => ({
+    action: "Tambah paket rental",
+    detail: `${txt(a[0])} · ${txt(a[1])} menit · ${txt(a[2])}`,
+  }),
+  updatePackage: (a, s) => ({
+    action: "Ubah paket rental",
+    detail: `${nameById(s.packages, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removePackage: (a, s) => ({
+    action: "Hapus paket rental",
+    detail: nameById(s.packages, a[0]),
+  }),
+
+  // Konsol & tarif
+  addConsoleType: (a, _s, r) =>
+    r === false ? null : { action: "Tambah jenis konsol", detail: `${txt(a[0])} · ${txt(a[1])}/jam` },
+  renameConsoleType: (a, _s, r) =>
+    r === false ? null : { action: "Ubah nama konsol", detail: `${txt(a[0])} → ${txt(a[1])}` },
+  removeConsoleType: (a, _s, r) =>
+    r === false ? null : { action: "Hapus jenis konsol", detail: txt(a[0]) },
+  setConsoleRate: (a) => ({
+    action: "Ubah tarif konsol",
+    detail: `${txt(a[0])} · ${txt(a[1])}/jam`,
+    coalesce: true,
+  }),
+  setConsoleDiscount: (a) => ({
+    action: "Ubah potongan harga konsol",
+    detail: `${txt(a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  setRates: () => ({ action: "Ubah tarif per jam", coalesce: true }),
+
+  // Unit TV
+  addStation: (a) => ({
+    action: "Tambah unit TV",
+    detail: patchText(a[0]),
+  }),
+  updateStation: (a, s) => ({
+    action: "Ubah unit TV",
+    detail: `${nameById(s.stations, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  setStationConsole: (a, s) => ({
+    action: "Ubah konsol unit TV",
+    detail: `${nameById(s.stations, a[0])} → ${txt(a[1])}`,
+  }),
+
+  // Meja kafe
+  addCafeTable: (a) => ({ action: "Tambah meja kafe", detail: patchText(a[0]) }),
+  updateCafeTable: (a, s) => ({
+    action: "Ubah meja kafe",
+    detail: `${nameById(s.cafeTables, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeCafeTable: (a, s, r) =>
+    r === false ? null : { action: "Hapus meja kafe", detail: nameById(s.cafeTables, a[0]) },
+
+  // Metode pembayaran
+  addPaymentMethod: (a) => ({ action: "Tambah metode pembayaran", detail: txt(a[0]) }),
+  updatePaymentMethod: (a, s) => ({
+    action: "Ubah metode pembayaran",
+    detail: `${nameById(s.paymentMethods, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removePaymentMethod: (a, s) => ({
+    action: "Hapus metode pembayaran",
+    detail: nameById(s.paymentMethods, a[0]),
+  }),
+
+  // Pengaturan umum
+  setRoundingRule: (a) => ({ action: "Ubah aturan pembulatan waktu", detail: txt(a[0]) }),
+  setDefaultBonusMin: (a) => ({
+    action: "Ubah waktu ekstra default",
+    detail: `${txt(a[0])} menit`,
+    coalesce: true,
+  }),
+  setTvNotice: (a) => ({
+    action: "Ubah notifikasi layar TV",
+    detail: patchText(a[0]),
+    coalesce: true,
+  }),
+  setPointsPerRupiah: (a) => ({ action: "Ubah rasio poin", detail: txt(a[0]), coalesce: true }),
+  setCardPrice: (a) => ({ action: "Ubah harga playing card", detail: txt(a[0]), coalesce: true }),
+  setCardDiscountPercent: (a) => ({
+    action: "Ubah potongan playing card",
+    detail: `${txt(a[0])}%`,
+    coalesce: true,
+  }),
+  setCardMemberDiscountPercent: (a) => ({
+    action: "Ubah potongan member playing card",
+    detail: `${txt(a[0])}%`,
+    coalesce: true,
+  }),
+  setReceiptLayout: (a) => ({
+    action: "Ubah tata letak struk",
+    detail: patchText(a[0]),
+    coalesce: true,
+  }),
+  setInvoiceLayout: (a) => ({
+    action: "Ubah tata letak invoice",
+    detail: patchText(a[0]),
+    coalesce: true,
+  }),
+
+  // Printer
+  addPrinter: () => ({ action: "Tambah printer" }),
+  updatePrinter: (a, s) => ({
+    action: "Ubah pengaturan printer",
+    detail: `${nameById(s.printers, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removePrinter: (a, s) => ({ action: "Hapus printer", detail: nameById(s.printers, a[0]) }),
+
+  // Pelanggan & poin
+  addCustomer: (a) => ({ action: "Tambah pelanggan", detail: patchText(a[0]) }),
+  updateCustomer: (a, s) => ({
+    action: "Ubah data pelanggan",
+    detail: `${nameById(s.customers, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeCustomer: (a, s) => ({
+    action: "Hapus pelanggan",
+    detail: nameById(s.customers, a[0]),
+  }),
+  adjustPoints: (a, s) => ({
+    action: "Sesuaikan poin pelanggan",
+    detail: `${nameById(s.customers, a[0])} · ${txt(a[1])} poin · ${txt(a[2])}`,
+  }),
+
+  // Playing card
+  updatePlayingCard: (a) => ({
+    action: "Ubah data playing card",
+    detail: patchText(a[1]),
+    coalesce: true,
+  }),
+  adjustCardBalance: (a, _s, r) =>
+    r === false
+      ? null
+      : { action: "Sesuaikan saldo playing card", detail: `${txt(a[1])} · ${txt(a[2])}` },
+
+  // Promo
+  addPromotion: (a) => ({ action: "Tambah promo", detail: patchText(a[0]) }),
+  updatePromotion: (a, s) => ({
+    action: "Ubah promo",
+    detail: `${nameById(s.promotions, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removePromotion: (a, s) => ({ action: "Hapus promo", detail: nameById(s.promotions, a[0]) }),
+
+  // Booking
+  addBooking: (a, _s, r) => (r === false ? null : { action: "Tambah booking", detail: patchText(a[0]) }),
+  updateBooking: (a, _s, r) =>
+    r === false ? null : { action: "Ubah booking", detail: patchText(a[1]) },
+  removeBooking: () => ({ action: "Hapus booking" }),
+
+  // Kas
+  addCashCategory: (a, _s, r) =>
+    r === null ? null : { action: "Tambah kategori kas", detail: patchText(a[0]) },
+  updateCashCategory: (a, s) => ({
+    action: "Ubah kategori kas",
+    detail: `${nameById(s.cashCategories, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  updateCashEntry: (a) => ({
+    action: "Ubah catatan kas",
+    detail: patchText(a[1]),
+    coalesce: true,
+  }),
+};
+
 const BillingContext = createContext<Ctx | null>(null);
+
 
 export function BillingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
