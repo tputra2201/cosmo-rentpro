@@ -550,6 +550,8 @@ type State = {
   consoleTypes: string[];
   rates: Rates;
   consoleDiscounts: Record<string, ItemDiscount>;
+  /** Sewa tambahan (Additional Rental) di luar konsol. */
+  addonRentals: AddonRental[];
   menu: MenuItem[];
   menuCategories: string[];
   cafeTables: CafeTable[];
@@ -607,6 +609,7 @@ const defaultState: State = {
   consoleTypes: ["PS3", "PS4", "PS5"],
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   consoleDiscounts: {},
+  addonRentals: [],
   menu: [
     { id: "m1", name: "Air Mineral", price: 4000, category: "Minuman", printerId: "prt-bar" },
     { id: "m2", name: "Teh Botol", price: 6000, category: "Minuman", printerId: "prt-bar" },
