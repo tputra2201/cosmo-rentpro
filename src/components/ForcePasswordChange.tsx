@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 
 export function ForcePasswordChange() {
   const { markPasswordChanged, signOut } = useAuth();
+  const { addLog } = useBilling();
   const markDone = useServerFn(markPasswordChangedFn);
   const savePassword = useServerFn(setOwnPasswordFn);
   const navigate = useNavigate();
