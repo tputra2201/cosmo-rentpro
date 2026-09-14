@@ -1953,10 +1953,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           return { ...prev, menuCategories: moveItem(prev.menuCategories, from, to) };
         }),
       removeStation: (stationId) =>
-        update((prev) => ({
-          ...prev,
-          stations: prev.stations.filter((s) => s.id !== stationId),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, stations: prev.stations.filter((s) => s.id !== stationId) },
+            "Hapus unit TV",
+            prev.stations.find((s) => s.id === stationId)?.name ?? stationId,
+          ),
+        ),
       updateStation: (stationId, patch) =>
         mapStation(stationId, (station) => ({ ...station, ...patch })),
       addMenuItem: (name, price, category) =>
