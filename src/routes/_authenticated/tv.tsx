@@ -36,6 +36,7 @@ const PICK_KEY = "tv-display-station-v1";
 
 function TvScreen() {
   const { stations, now, tvNotice, setTvNotice } = useBilling();
+  const navigate = useNavigate();
   const [stationId, setStationId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
