@@ -69,15 +69,11 @@ function PrinterPage() {
     invoiceLayout,
     setReceiptLayout,
     setInvoiceLayout,
-    menu,
-    updateMenuItem,
     rolePermissions,
   } = useBilling();
   const { role } = useAuth();
   const { store } = useStoreInfo(true);
   const canManage = can(role, "printer.kelola", rolePermissions);
-
-  const labelPrinters = printers.filter((p) => p.active);
 
   useEffect(() => {
     if (androidApp) setPairedPrinters(pairedAndroidPrinters());
@@ -125,11 +121,6 @@ function PrinterPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Printer &amp; Cetak</h1>
-        <p className="mt-1 text-muted-foreground">
-          Atur printer struk, invoice, label dapur, label bar, dan printer laporan. Saat menekan
-          tombol Cetak, dialog cetak perangkat akan terbuka sehingga Anda bisa memilih printer yang
-          dituju.
-        </p>
       </header>
 
       <section className="surface-panel space-y-2 p-6">
@@ -368,56 +359,6 @@ function PrinterPage() {
         disabled={!canManage}
       />
 
-      <section className="surface-panel space-y-3 p-6">
-        <div>
-          <h2 className="text-xl font-semibold">Cetak Label per Menu</h2>
-          <p className="text-sm text-muted-foreground">
-            Pilih menu mana yang dicetak sebagai label dan ke printer mana pun yang aktif. Satu
-            label dicetak untuk setiap item pesanan.
-          </p>
-        </div>
-        <div className="space-y-2">
-          {menu.map((m) => (
-            <div
-              key={m.id}
-              className="grid items-center gap-2 rounded-lg bg-secondary/60 p-3 sm:grid-cols-[1fr_140px_1fr]"
-            >
-              <div>
-                <p className="font-medium">{m.name}</p>
-                <p className="text-xs text-muted-foreground">{m.category}</p>
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <Switch
-                  checked={m.printEnabled !== false}
-                  disabled={!canManage}
-                  onCheckedChange={(v) => updateMenuItem(m.id, { printEnabled: v })}
-                  aria-label={`Cetak label ${m.name}`}
-                />
-                Dicetak
-              </label>
-              <Select
-                value={m.printerId ?? ""}
-                disabled={!canManage}
-                onValueChange={(value) => updateMenuItem(m.id, { printerId: value })}
-              >
-                <SelectTrigger aria-label={`Printer ${m.name}`}>
-                  <SelectValue placeholder="Pilih printer label" />
-                </SelectTrigger>
-                <SelectContent>
-                  {labelPrinters.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} · {PRINTER_ROLE_LABEL[p.role]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
-          {labelPrinters.length === 0 && (
-            <p className="text-sm text-muted-foreground">Tambahkan printer aktif terlebih dahulu.</p>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

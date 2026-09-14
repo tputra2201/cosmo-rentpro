@@ -21,7 +21,6 @@ import {
   type RoundingRule,
   type StationAvailability,
 } from "@/lib/billing-store";
-import { ThemePicker } from "@/components/ThemePicker";
 import { DiscountFields } from "@/components/DiscountFields";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 
@@ -29,13 +28,13 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
     meta: [
-      { title: "Manajemen Tarif — RentalPro" },
+      { title: "Setup Price — RentalPro" },
       {
         name: "description",
         content:
           "Atur tarif sewa per jam untuk PS3, PS4, dan PS5 serta daftar harga makanan dan minuman.",
       },
-      { property: "og:title", content: "Manajemen Tarif — RentalPro" },
+      { property: "og:title", content: "Setup Price — RentalPro" },
       {
         property: "og:description",
         content: "Atur tarif per jam tiap konsol dan harga menu kasir.",
@@ -70,8 +69,6 @@ function TarifPage() {
     setDefaultBonusMin,
     reorderList,
     reorderConsoleTypes,
-    tvNotice,
-    setTvNotice,
     addonRentals,
     addAddonRental,
     updateAddonRental,
@@ -96,83 +93,8 @@ function TarifPage() {
   return (
     <div className="space-y-10">
       <header>
-        <h1 className="text-3xl font-bold sm:text-4xl">Manajemen Tarif</h1>
-        <p className="mt-1 text-muted-foreground">
-          Tarif tersimpan otomatis dan dipakai saat sesi baru dimulai. Geser ikon
-          pegangan di setiap baris untuk mengatur urutannya.
-        </p>
+        <h1 className="text-3xl font-bold sm:text-4xl">Setup Price</h1>
       </header>
-
-      <ThemePicker />
-
-      <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Notifikasi di Layar TV</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Buka halaman <span className="font-semibold">Layar TV</span> di setiap TV
-          Android, pilih unitnya sekali, lalu peringatan berikut tampil otomatis.
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="tv-warn-min">Peringatan muncul saat sisa (menit)</Label>
-            <Input
-              id="tv-warn-min"
-              type="number"
-              min={1}
-              value={tvNotice.warnMinutes}
-              onChange={(e) =>
-                setTvNotice({ warnMinutes: Math.max(1, Number(e.target.value) || 1) })
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tv-count">Hitungan sebelum layar tertutup (detik)</Label>
-            <Input
-              id="tv-count"
-              type="number"
-              min={0}
-              value={tvNotice.countdownSec}
-              onChange={(e) =>
-                setTvNotice({ countdownSec: Math.max(0, Number(e.target.value) || 0) })
-              }
-            />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="tv-warn-text">Teks peringatan sisa waktu</Label>
-            <Input
-              id="tv-warn-text"
-              value={tvNotice.warnText}
-              onChange={(e) => setTvNotice({ warnText: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="tv-end-text">Teks saat waktu habis</Label>
-            <Input
-              id="tv-end-text"
-              value={tvNotice.endText}
-              onChange={(e) => setTvNotice({ endText: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tv-block-title">Judul peringatan besar</Label>
-            <Input
-              id="tv-block-title"
-              value={tvNotice.blockTitle}
-              onChange={(e) => setTvNotice({ blockTitle: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tv-block-text">Keterangan peringatan besar</Label>
-            <Input
-              id="tv-block-text"
-              value={tvNotice.blockText}
-              onChange={(e) => setTvNotice({ blockText: e.target.value })}
-            />
-          </div>
-        </div>
-      </section>
-
-
-
       <section className="surface-panel p-6">
         <h2 className="text-xl font-semibold">Jenis Konsol & Tarif per Jam</h2>
         <p className="text-sm text-muted-foreground">

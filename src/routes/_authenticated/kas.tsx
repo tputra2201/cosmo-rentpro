@@ -80,10 +80,6 @@ function KasPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Kas Lain &amp; Pengeluaran</h1>
-        <p className="mt-1 text-muted-foreground">
-          Catat pemasukan selain rental dan kafe, biaya operasional, serta uang kas
-          owner yang tidak dihitung untung maupun biaya.
-        </p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

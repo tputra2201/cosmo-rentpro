@@ -59,10 +59,6 @@ function KartuPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Playing Card</h1>
-        <p className="mt-1 text-muted-foreground">
-          Kartu bermain berchip RFID Mifare Classic 13,56 MHz. Bisa diisi saldo dan dipakai
-          membayar dengan potongan harga.
-        </p>
       </header>
 
       <ShiftLockedNotice className="mb-3" />

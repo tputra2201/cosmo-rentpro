@@ -37,6 +37,7 @@ import {
   Wrench,
   ChevronDown,
 
+  Palette,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -189,6 +190,7 @@ const setupItems = [
   { to: "/printer", label: "Printer", icon: Printer },
   { to: "/tv", label: "TV Connect", icon: MonitorPlay },
   { to: "/akun", label: "Password", icon: KeyRound },
+  { to: "/tema", label: "Tema", icon: Palette },
   { to: "/store", label: "Store", icon: Store },
 ] as const;
 

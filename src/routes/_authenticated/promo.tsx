@@ -60,10 +60,6 @@ function PromoPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Promo &amp; Happy Hour</h1>
-        <p className="mt-1 text-muted-foreground">
-          Diskon global berlaku otomatis untuk rental dan kafe selama tanggal dan jam yang
-          diatur di sini.
-        </p>
         {running && (
           <p className="mt-2 text-sm font-semibold text-accent">
             Sedang berjalan: {running.name}

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { KeyRound, MailQuestion } from "lucide-react";
+import { passwordSetupUrl } from "@/lib/app-url";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, roleLabel } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,27 @@ function AkunPage() {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const sendReset = async () => {
+    const email = user?.email;
+    if (!email) {
+      toast.error("Email akun tidak ditemukan");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: passwordSetupUrl(),
+      });
+      if (error) throw error;
+      toast.success(`Tautan atur ulang sandi dikirim ke ${email}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengirim tautan");
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,10 +81,7 @@ function AkunPage() {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="font-display text-2xl font-bold text-neon">Akun Saya</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {fullName || user?.email} · {role ? roleLabel[role] : "—"}
-      </p>
+      <h1 className="font-display text-2xl font-bold text-neon">Password</h1>
 
       <form className="surface-panel mt-6 grid gap-4 p-6" onSubmit={submit}>
         <div className="grid gap-2">
@@ -102,6 +121,14 @@ function AkunPage() {
         </div>
         <Button type="submit" disabled={busy}>
           <KeyRound className="size-4" /> Simpan kata sandi
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={resetBusy}
+          onClick={() => void sendReset()}
+        >
+          <MailQuestion className="size-4" /> Lupa password
         </Button>
       </form>
     </div>

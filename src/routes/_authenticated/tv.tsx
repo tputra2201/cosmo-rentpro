@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Monitor, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   formatClock,
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/tv")({
 const PICK_KEY = "tv-display-station-v1";
 
 function TvScreen() {
-  const { stations, now, tvNotice } = useBilling();
+  const { stations, now, tvNotice, setTvNotice } = useBilling();
   const [stationId, setStationId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -56,10 +58,6 @@ function TvScreen() {
     return (
       <div className="mx-auto max-w-2xl p-6">
         <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Buka halaman ini di TV Android, lalu pilih unitnya sekali saja. Pilihan
-          disimpan di TV tersebut.
-        </p>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stations.map((s) => (
             <Button
@@ -75,6 +73,68 @@ function TvScreen() {
             </Button>
           ))}
         </div>
+
+        <section className="surface-panel mt-8 p-6">
+          <h2 className="text-xl font-semibold">Notifikasi di Layar TV</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-warn-min">Peringatan muncul saat sisa (menit)</Label>
+              <Input
+                id="tv-warn-min"
+                type="number"
+                min={1}
+                value={tvNotice.warnMinutes}
+                onChange={(e) =>
+                  setTvNotice({ warnMinutes: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-count">Hitungan sebelum layar tertutup (detik)</Label>
+              <Input
+                id="tv-count"
+                type="number"
+                min={0}
+                value={tvNotice.countdownSec}
+                onChange={(e) =>
+                  setTvNotice({ countdownSec: Math.max(0, Number(e.target.value) || 0) })
+                }
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="tv-warn-text">Teks peringatan sisa waktu</Label>
+              <Input
+                id="tv-warn-text"
+                value={tvNotice.warnText}
+                onChange={(e) => setTvNotice({ warnText: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="tv-end-text">Teks saat waktu habis</Label>
+              <Input
+                id="tv-end-text"
+                value={tvNotice.endText}
+                onChange={(e) => setTvNotice({ endText: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-block-title">Judul peringatan besar</Label>
+              <Input
+                id="tv-block-title"
+                value={tvNotice.blockTitle}
+                onChange={(e) => setTvNotice({ blockTitle: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-block-text">Keterangan peringatan besar</Label>
+              <Input
+                id="tv-block-text"
+                value={tvNotice.blockText}
+                onChange={(e) => setTvNotice({ blockText: e.target.value })}
+              />
+            </div>
+          </div>
+        </section>
       </div>
     );
   }

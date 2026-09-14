@@ -62,10 +62,6 @@ function ShiftPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Shift Kasir</h1>
-        <p className="mt-1 text-muted-foreground">
-          Check-in dulu sebelum mulai bertugas, lalu isi form close out saat menutup
-          kasir.
-        </p>
       </header>
 
       {active ? (

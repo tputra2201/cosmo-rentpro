@@ -51,6 +51,7 @@ export const MENU_PERMISSION: Record<string, string> = {
   "/printer": "menu.printer",
   "/store": "menu.store",
   "/akun": "menu.akun",
+  "/tema": "menu.tema",
 };
 
 export const PERMISSION_GROUPS: PermissionGroup[] = [
@@ -75,6 +76,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "menu.backup", label: "Backup" },
       { key: "menu.store", label: "Store" },
       { key: "menu.akun", label: "Password" },
+      { key: "menu.tema", label: "Tema Tampilan" },
     ],
   },
   {
@@ -153,6 +155,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "menu.pembayaran",
     "menu.kartu",
     "menu.akun",
+    "menu.tema",
     "laporan.receipt",
     "laporan.company",
     "laporan.card",
@@ -178,6 +181,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "menu.kartu",
     "menu.kas",
     "menu.akun",
+    "menu.tema",
     "sesi.mulai",
     "sesi.tambahwaktu",
     "sesi.bayar",
@@ -197,6 +201,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "menu.tv",
     "menu.kafe",
     "menu.akun",
+    "menu.tema",
     "sesi.mulai",
     "sesi.tambahwaktu",
     "cetak.label",

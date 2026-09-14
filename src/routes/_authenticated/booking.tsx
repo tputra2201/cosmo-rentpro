@@ -62,7 +62,7 @@ function BookingPage() {
   };
 
   return <div className="space-y-8">
-    <header><h1 className="text-3xl font-bold sm:text-4xl">Reservasi</h1><p className="mt-1 text-muted-foreground">Atur reservasi unit dan cegah jadwal bertumpuk.</p></header>
+    <header><h1 className="text-3xl font-bold sm:text-4xl">Reservasi</h1></header>
     <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
       <form onSubmit={submit} className="surface-panel space-y-4 p-5">
         <div className="flex items-center gap-2"><Plus className="size-5 text-primary"/><h2 className="text-lg font-semibold">Reservasi baru</h2></div>

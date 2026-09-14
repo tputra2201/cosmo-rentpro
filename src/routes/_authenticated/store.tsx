@@ -251,10 +251,6 @@ function StorePage() {
         <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-neon">
           <Store className="size-6" /> Data Store
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Identitas outlet ini beserta masa aktif aplikasi. Semua data hanya
-          bisa diubah oleh Developer dari pusat kontrol jarak jauh.
-        </p>
       </div>
 
       <div className="surface-panel flex flex-wrap items-center justify-between gap-3 p-5">

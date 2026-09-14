@@ -177,10 +177,6 @@ function PenggunaPage() {
         <h1 className="font-display text-2xl font-bold text-neon">
           Pengaturan Pengguna
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Daftar pengguna setiap store beserta levelnya. Staf diundang lewat
-          email dan membuat kata sandinya sendiri dari tautan undangan.
-        </p>
       </div>
 
       <form

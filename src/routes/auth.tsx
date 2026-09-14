@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Joystick, LockKeyhole, LogIn } from "lucide-react";
+import { Joystick, LockKeyhole, LogIn, MailQuestion } from "lucide-react";
+import { passwordSetupUrl } from "@/lib/app-url";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,26 @@ function AuthPage() {
   const [devOpen, setDevOpen] = useState(false);
   const [devSecret, setDevSecret] = useState("");
   const [devBusy, setDevBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const sendReset = async () => {
+    if (!email.trim()) {
+      toast.error("Isi email akun dulu, lalu tekan Lupa password");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: passwordSetupUrl(),
+      });
+      if (error) throw error;
+      toast.success(`Tautan atur ulang sandi dikirim ke ${email.trim()}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengirim tautan");
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const openControlCenter = async () => {
     if (!devSecret) return;
@@ -156,6 +177,15 @@ function AuthPage() {
           </div>
           <Button type="submit" disabled={busy} className="w-full">
             <LogIn className="size-4" /> Masuk
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={resetBusy}
+            onClick={() => void sendReset()}
+          >
+            <MailQuestion className="size-4" /> Lupa password
           </Button>
         </form>
 
