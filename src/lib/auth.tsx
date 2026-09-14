@@ -20,6 +20,31 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
+const CACHE_KEY = "billing.auth-profile";
+
+type CachedProfile = { userId: string; role: AppRole; fullName: string; mustChangePassword: boolean };
+
+function readCache(userId: string): CachedProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedProfile;
+    return parsed && parsed.userId === userId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(value: CachedProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -44,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
 
   const userId = session?.user.id;
 
