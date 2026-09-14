@@ -2405,11 +2405,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }),
 
       removePlayingCard: (id) =>
-        update((prev) => ({
-          ...prev,
-          playingCards: prev.playingCards.filter((c) => c.id !== id),
-          cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
-        })),
+        update((prev) =>
+          withLog(
+            {
+              ...prev,
+              playingCards: prev.playingCards.filter((c) => c.id !== id),
+              cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
+            },
+            "Hapus playing card",
+            prev.playingCards.find((c) => c.id === id)?.cardNumber ?? id,
+          ),
+        ),
       topupCard: (id, amount, note, payment) => {
         if (!shiftOpen) return false;
         const value = Math.round(amount);
