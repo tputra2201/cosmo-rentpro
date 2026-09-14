@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  Palette,
   Outlet,
   Link,
   createRootRouteWithContext,
@@ -189,6 +190,7 @@ const setupItems = [
   { to: "/printer", label: "Printer", icon: Printer },
   { to: "/tv", label: "TV Connect", icon: MonitorPlay },
   { to: "/akun", label: "Password", icon: KeyRound },
+  { to: "/tema", label: "Tema", icon: Palette },
   { to: "/store", label: "Store", icon: Store },
 ] as const;
 

@@ -30,6 +30,7 @@ import { Route as AuthenticatedPromoRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
+import { Route as AuthenticatedTemaRouteImport } from './routes/_authenticated/tema'
 import { Route as AuthenticatedTvRouteImport } from './routes/_authenticated/tv'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
 
@@ -137,6 +138,11 @@ const AuthenticatedTarifRoute = AuthenticatedTarifRouteImport.update({
   path: '/tarif',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTemaRoute = AuthenticatedTemaRouteImport.update({
+  id: '/tema',
+  path: '/tema',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTvRoute = AuthenticatedTvRouteImport.update({
   id: '/tv',
   path: '/tv',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
+  '/tema': typeof AuthenticatedTemaRoute
   '/tv': typeof AuthenticatedTvRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/shift': typeof AuthenticatedShiftRoute
   '/store': typeof AuthenticatedStoreRoute
   '/tarif': typeof AuthenticatedTarifRoute
+  '/tema': typeof AuthenticatedTemaRoute
   '/tv': typeof AuthenticatedTvRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/shift': typeof AuthenticatedShiftRoute
   '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/tarif': typeof AuthenticatedTarifRoute
+  '/_authenticated/tema': typeof AuthenticatedTemaRoute
   '/_authenticated/tv': typeof AuthenticatedTvRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/shift'
     | '/store'
     | '/tarif'
+    | '/tema'
     | '/tv'
     | '/api/public/store-registry'
   fileRoutesByTo: FileRoutesByTo
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/shift'
     | '/store'
     | '/tarif'
+    | '/tema'
     | '/tv'
     | '/'
     | '/api/public/store-registry'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/_authenticated/shift'
     | '/_authenticated/store'
     | '/_authenticated/tarif'
+    | '/_authenticated/tema'
     | '/_authenticated/tv'
     | '/_authenticated/'
     | '/api/public/store-registry'
@@ -455,6 +467,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTarifRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tema': {
+      id: '/_authenticated/tema'
+      path: '/tema'
+      fullPath: '/tema'
+      preLoaderRoute: typeof AuthenticatedTemaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tv': {
       id: '/_authenticated/tv'
       path: '/tv'
@@ -489,6 +508,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedShiftRoute: typeof AuthenticatedShiftRoute
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedTarifRoute: typeof AuthenticatedTarifRoute
+  AuthenticatedTemaRoute: typeof AuthenticatedTemaRoute
   AuthenticatedTvRoute: typeof AuthenticatedTvRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -510,6 +530,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedShiftRoute: AuthenticatedShiftRoute,
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedTarifRoute: AuthenticatedTarifRoute,
+  AuthenticatedTemaRoute: AuthenticatedTemaRoute,
   AuthenticatedTvRoute: AuthenticatedTvRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
