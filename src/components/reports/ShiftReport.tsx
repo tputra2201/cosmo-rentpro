@@ -81,6 +81,7 @@ export function ShiftReport({ range }: { range: ReportRange }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Kasir</TableHead>
+                  <TableHead>Close out oleh</TableHead>
                   <TableHead>Opening</TableHead>
                   <TableHead>Closing</TableHead>
                   <TableHead className="text-right">Start cash</TableHead>
