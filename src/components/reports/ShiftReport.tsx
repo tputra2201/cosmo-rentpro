@@ -107,6 +107,9 @@ export function ShiftReport({ range }: { range: ReportRange }) {
                         </span>
                       )}
                     </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {shift.closedAt ? shift.closedByName || "-" : "-"}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{stamp(shift.openedAt)}</TableCell>
                     <TableCell className="whitespace-nowrap">{stamp(shift.closedAt)}</TableCell>
                     <TableCell className="text-right">{formatRupiah(shift.startCash)}</TableCell>
