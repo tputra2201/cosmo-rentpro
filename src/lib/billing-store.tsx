@@ -1371,6 +1371,24 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
   }),
   setRates: () => ({ action: "Ubah tarif per jam", coalesce: true }),
 
+  // Additional Rental
+  addAddonRental: (a, _s, r) =>
+    r === false ? null : { action: "Tambah additional rental", detail: `${txt(a[0])} · ${txt(a[1])}` },
+  updateAddonRental: (a, s) => ({
+    action: "Ubah additional rental",
+    detail: `${nameById(s.addonRentals, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  setAddonDiscount: (a, s) => ({
+    action: "Ubah potongan additional rental",
+    detail: `${nameById(s.addonRentals, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeAddonRental: (a, s) => ({
+    action: "Hapus additional rental",
+    detail: nameById(s.addonRentals, a[0]),
+  }),
+
   // Unit TV
   addStation: (a) => ({
     action: "Tambah unit TV",
@@ -1627,6 +1645,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ongoing: true,
           minutes: Math.ceil(elapsedSeconds(session, at) / 60),
           rentalTotal: bill.rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(session.addons?.length ? { addons: session.addons } : {}),
           fnbTotal: bill.fnb,
           total: bill.total,
           payment: Array.from(new Set(methods)).filter(Boolean).join(" + ") || "Cash",
@@ -1808,6 +1828,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(session.addons?.length ? { addons: session.addons } : {}),
           fnbTotal: fnb,
           total,
           payment: uniqueMethods.join(" + ") || "Cash",
@@ -1924,6 +1946,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(sess, at) / 60),
           rentalTotal: bill.rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(sess.addons?.length ? { addons: sess.addons } : {}),
           fnbTotal: bill.fnb,
           total: bill.total,
           payment: Array.from(new Set(allMethods)).filter(Boolean).join(" + ") || "Cash",
