@@ -188,6 +188,7 @@ function KasPage() {
 
 function EntryForm({ direction }: { direction: CashDirection }) {
   const { cashCategories, paymentMethods, addCashEntry } = useBilling();
+  const { requireShift } = useShiftGate();
   const options = cashCategories.filter((c) => c.direction === direction && c.active);
   const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
   const [amount, setAmount] = useState("");
@@ -201,6 +202,7 @@ function EntryForm({ direction }: { direction: CashDirection }) {
       toast.error("Pilih item dan isi jumlah uang");
       return;
     }
+    if (!requireShift()) return;
     const row = addCashEntry({ categoryId, amount: value, payment, note });
     if (!row) {
       toast.error("Catatan gagal disimpan");

@@ -30,6 +30,7 @@ import {
   formatRupiah,
   useBilling,
 } from "@/lib/billing-store";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 
 export const Route = createFileRoute("/_authenticated/kartu")({
   head: () => ({
@@ -99,6 +100,7 @@ function KartuPage() {
 
 function BuyCardPanel() {
   const { playingCards, customers, cardPrice, buyPlayingCard } = useBilling();
+  const { requireShift } = useShiftGate();
   const [cardNumber, setCardNumber] = useState("");
   const [cardCode, setCardCode] = useState("");
   const [price, setPrice] = useState("");
@@ -123,6 +125,7 @@ function BuyCardPanel() {
   };
 
   const submit = () => {
+    if (!requireShift()) return;
     const number = cardNumber.trim();
     if (!number) {
       toast.error("Nomor kartu belum diisi");
@@ -392,6 +395,7 @@ function CardListPanel() {
                 </div>
                 <Button
                   onClick={() => {
+                    if (!requireShift()) return;
                     const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
                     const method = payValues[card.id] ?? "Cash";
                     if (!topupCard(card.id, amount, "Top-up saldo", method)) {
