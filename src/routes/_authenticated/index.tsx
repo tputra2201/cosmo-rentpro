@@ -37,7 +37,18 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
-  const { stations, now, bookings, reorderList } = useBilling();
+  const {
+    stations,
+    now,
+    bookings,
+    reorderList,
+    consoleDiscounts,
+    menu,
+    promotions,
+    addonRentals,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+  } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const alerted = useRef<Set<string>>(new Set());
 
