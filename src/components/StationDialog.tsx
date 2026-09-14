@@ -1279,6 +1279,9 @@ export function StationDialog({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Akhiri sesi rental?</AlertDialogTitle>
                   <AlertDialogDescription>
+                    {leftMinutes > 0
+                      ? `Yakin akan mengakhiri sesi ini? Timer masih tersisa ${leftMinutes} menit. `
+                      : ""}
                     {station.name} akan dikosongkan dan transaksi masuk ke riwayat. Tindakan ini
                     tidak bisa dibatalkan.
                   </AlertDialogDescription>
