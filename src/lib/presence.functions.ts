@@ -69,12 +69,13 @@ export const listPresence = createServerFn({ method: "GET" })
     }
     const seeAll = roles.includes("installer");
     const storeId = seeAll ? null : await storeOf(ctx.userId);
+    if (!seeAll && !storeId) return [];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let query = supabaseAdmin
       .from("user_presence")
       .select("user_id, store_id, last_seen_at, device")
       .order("last_seen_at", { ascending: false });
-    if (!seeAll) query = query.eq("store_id", storeId ?? "");
+    if (storeId) query = query.eq("store_id", storeId);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return ((data ?? []) as {
