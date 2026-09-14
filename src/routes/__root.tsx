@@ -244,7 +244,9 @@ function AppShell() {
   };
 
   const storeName = store?.store_name?.trim() ?? "";
-  const signature = appSignature(store?.app_version, store?.dev_contact);
+  const brandSignature = brandingSignature(branding);
+  const signature =
+    brandSignature || appSignature(store?.app_version, store?.dev_contact);
   const expiresAt = store?.expires_at ?? null;
 
   const expiryDate = expiresAt ? new Date(expiresAt) : null;
