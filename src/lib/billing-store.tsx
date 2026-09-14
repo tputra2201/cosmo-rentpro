@@ -1015,6 +1015,11 @@ function migrateState(raw: unknown): State {
     })),
     rates: parsed.rates ?? defaultState.rates,
     consoleDiscounts: parsed.consoleDiscounts ?? defaultState.consoleDiscounts,
+    addonRentals: (parsed.addonRentals ?? defaultState.addonRentals).map((item) => ({
+      ...item,
+      mode: item.mode === "once" ? ("once" as const) : ("hourly" as const),
+      active: item.active ?? true,
+    })),
     consoleTypes:
       parsed.consoleTypes && parsed.consoleTypes.length
         ? parsed.consoleTypes
