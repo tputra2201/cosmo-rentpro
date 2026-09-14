@@ -1001,6 +1001,10 @@ function migrateState(raw: unknown): State {
 
 type Ctx = State & {
   now: number;
+  /** Shift kasir yang sedang terbuka (null bila belum check-in). */
+  activeShift: CashShift | null;
+  /** True bila ada shift terbuka; transaksi uang hanya boleh saat true. */
+  shiftOpen: boolean;
   startSession: (
     stationId: string,
     mode: PlayMode,
