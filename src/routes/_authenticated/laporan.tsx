@@ -42,6 +42,7 @@ import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
+import { CashierReport } from "@/components/reports/CashierReport";
 import { LogBookReport } from "@/components/reports/LogBookReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
@@ -102,6 +103,7 @@ function LaporanPage() {
     { value: "member", label: "Laporan Membership", key: "laporan.membership" },
     { value: "qris", label: "Pembayaran QRIS", key: "laporan.qris" },
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
+    { value: "kasir", label: "Transaksi per Kasir", key: "laporan.kasir" },
     { value: "logbook", label: "Log Book", key: "laporan.logbook" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
@@ -170,6 +172,9 @@ function LaporanPage() {
             }}
             emptyText="Belum ada pembayaran transfer bank pada periode ini."
           />
+        </TabsContent>
+        <TabsContent value="kasir" className="mt-6">
+          <CashierReport range={range} />
         </TabsContent>
         <TabsContent value="logbook" className="mt-6">
           <LogBookReport range={range} />
