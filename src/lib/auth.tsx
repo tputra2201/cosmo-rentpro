@@ -20,6 +20,31 @@ type AuthCtx = {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
+const CACHE_KEY = "billing.auth-profile";
+
+type CachedProfile = { userId: string; role: AppRole; fullName: string; mustChangePassword: boolean };
+
+function readCache(userId: string): CachedProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedProfile;
+    return parsed && parsed.userId === userId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(value: CachedProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -45,21 +70,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+
   const userId = session?.user.id;
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
+    // Pakai data tersimpan lebih dulu supaya saat internet mati level dan hak
+    // akses kasir tetap terbaca dan semua menu bisa dipakai.
+    const cached = readCache(userId);
+    if (cached) {
+      setRole(cached.role);
+      setFullName(cached.fullName);
+      setMustChangePassword(cached.mustChangePassword);
+    }
     (async () => {
-      const [{ data: roles }, { data: profileRow }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase
-          .from("profiles")
-          .select("full_name, must_change_password")
-          .eq("id", userId)
-          .maybeSingle(),
-      ]);
+      const [{ data: roles, error: roleError }, { data: profileRow, error: profileError }] =
+        await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", userId),
+          supabase
+            .from("profiles")
+            .select("full_name, must_change_password")
+            .eq("id", userId)
+            .maybeSingle(),
+        ]);
       if (cancelled) return;
+      if (roleError || profileError) {
+        // Tanpa koneksi: biarkan data tersimpan yang dipakai.
+        if (!cached) setRole("kasir");
+        return;
+      }
       const profile = profileRow as
         | { full_name: string | null; must_change_password: boolean | null }
         | null;
@@ -71,21 +111,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "finance",
         ...ALL_ROLES.filter((r) => r !== "installer" && r !== "manager" && r !== "finance"),
       ];
-      setRole(priority.find((r) => list.includes(r)) ?? "kasir");
-      setFullName(profile?.full_name ?? "");
-      setMustChangePassword(profile?.must_change_password === true);
+      const nextRole = priority.find((r) => list.includes(r)) ?? "kasir";
+      const nextName = profile?.full_name ?? "";
+      const nextMust = profile?.must_change_password === true;
+      setRole(nextRole);
+      setFullName(nextName);
+      setMustChangePassword(nextMust);
+      writeCache({ userId, role: nextRole, fullName: nextName, mustChangePassword: nextMust });
     })();
     return () => {
       cancelled = true;
     };
   }, [userId]);
 
+
   const signOut = async () => {
+    if (typeof window !== "undefined") localStorage.removeItem(CACHE_KEY);
     await supabase.auth.signOut();
     setSession(null);
     setRole(null);
     setMustChangePassword(false);
   };
+
 
   return (
     <Ctx.Provider
