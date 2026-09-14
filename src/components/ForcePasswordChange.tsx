@@ -9,6 +9,7 @@ import {
 } from "@/lib/users.functions";
 
 import { useAuth } from "@/lib/auth";
+import { useBilling } from "@/lib/billing-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
