@@ -51,6 +51,8 @@ import {
   pausedMsTotal,
   remainingSeconds,
   rentalTotal,
+  rentalMinutes,
+  addonAmount,
   useBilling,
   type ConsoleType,
   type DiscountType,
@@ -104,6 +106,9 @@ export function StationDialog({
     printers,
     history,
     receiptLayout,
+    addonRentals,
+    addSessionAddon,
+    removeSessionAddon,
   } = useBilling();
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
