@@ -15,7 +15,6 @@ import {
   Settings2,
   BarChart3,
   Joystick,
-  Receipt,
   Coffee,
   Coins,
   CreditCard,
@@ -35,6 +34,8 @@ import {
   WifiOff,
   RefreshCw,
   ClipboardCheck,
+  Wrench,
+  ChevronDown,
 
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,6 +48,12 @@ import { AuthProvider, useAuth, roleLabel } from "@/lib/auth";
 import { can, MENU_PERMISSION } from "@/lib/permissions";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
