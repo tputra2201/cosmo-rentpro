@@ -23,6 +23,7 @@ export const LIST_KINDS = {
   card_entry: "cardEntries",
   cash_category: "cashCategories",
   cash_entry: "cashEntries",
+  shift: "shifts",
   log_entry: "logEntries",
 } as const;
 
