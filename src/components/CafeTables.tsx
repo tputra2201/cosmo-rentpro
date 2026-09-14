@@ -30,10 +30,12 @@ import {
   type CafeTable,
   type DiscountType,
   type HistoryRecord,
+  type OrderItem,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import type { PrinterConfig } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
   return table.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
@@ -63,6 +65,35 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   } = useBilling();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const labelPrinters = printers.filter((p) => p.active);
+  const labelHeading = (p: PrinterConfig) =>
+    p.role === "bar" ? "BAR" : p.role === "kitchen" ? "DAPUR" : p.name;
+  /** Cetak label untuk satu atau semua pesanan meja, sesuai printer per menu. */
+  const printOrderLabels = (
+    orders: OrderItem[],
+    source: string,
+    customerName?: string,
+    note?: string,
+  ) => {
+    let printed = 0;
+    for (const printer of labelPrinters) {
+      const items = labelItemsFor(orders, menu, printer.id);
+      if (items.length === 0) continue;
+      printLabels({
+        printer,
+        items,
+        heading: labelHeading(printer),
+        source,
+        ...(customerName ? { customerName } : {}),
+        ...(note ? { note } : {}),
+      });
+      printed += items.length;
+    }
+    if (printed === 0) {
+      toast.error("Label belum bisa dicetak", {
+        description: "Atur printer label untuk menu ini di menu Printer.",
+      });
+    }
+  };
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
@@ -277,40 +308,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 </div>
 
-                {table.orders.length > 0 && labelPrinters.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {labelPrinters.map((printer) => (
-                      <Button
-                        key={printer.id}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const items = labelItemsFor(table.orders, menu, printer.id);
-                          if (items.length === 0) {
-                            toast.error(`Tidak ada item untuk ${printer.name}`);
-                            return;
-                          }
-                          printLabels({
-                            printer,
-                            items,
-                            heading:
-                              printer.role === "bar"
-                                ? "BAR"
-                                : printer.role === "kitchen"
-                                  ? "DAPUR"
-                                  : printer.name,
-                            source: table.name,
-                            ...(table.customerName ? { customerName: table.customerName } : {}),
-                            ...(table.notes ? { note: table.notes } : {}),
-                          });
-                        }}
-                      >
-                        <Printer className="size-4" /> {printer.name}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-
                 {table.orders.length > 0 && (
                   <ul className="space-y-1">
                     {table.orders.map((o) => (
@@ -323,6 +320,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         </span>
                         <span className="flex items-center gap-2">
                           {formatRupiah(o.price * o.qty)}
+                          {labelPrinters.length > 0 && (
+                            <button
+                              type="button"
+                              aria-label={`Cetak label ${o.name}`}
+                              title="Cetak label"
+                              className="text-muted-foreground transition-colors hover:text-primary"
+                              onClick={() =>
+                                printOrderLabels(
+                                  [o],
+                                  table.name,
+                                  table.customerName ?? undefined,
+                                  table.notes ?? undefined,
+                                )
+                              }
+                            >
+                              <Printer className="size-3.5" />
+                            </button>
+                          )}
                           <button
                             aria-label={`Hapus ${o.name}`}
                             onClick={() => removeCafeOrder(table.id, o.id)}
@@ -333,6 +348,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {table.orders.length > 0 && labelPrinters.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() =>
+                      printOrderLabels(
+                        table.orders,
+                        table.name,
+                        table.customerName ?? undefined,
+                        table.notes ?? undefined,
+                      )
+                    }
+                  >
+                    <Printer className="size-4" /> Cetak semua label
+                  </Button>
                 )}
 
                 <div className="space-y-3 border-t border-border pt-4">
