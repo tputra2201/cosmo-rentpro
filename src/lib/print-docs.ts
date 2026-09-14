@@ -56,6 +56,14 @@ function itemRows(record: HistoryRecord) {
       )}</td></tr>`,
     );
   }
+  for (const a of record.addons ?? []) {
+    const amount = addonAmount(a, Math.max(0, record.minutes) / 60);
+    rows.push(
+      `<tr><td>${escapeHtml(a.name)} × ${a.qty}${
+        a.mode === "hourly" ? " (per jam)" : ""
+      }</td><td class="right">${formatRupiah(amount)}</td></tr>`,
+    );
+  }
   for (const o of record.orders ?? []) {
     rows.push(
       `<tr><td>${escapeHtml(o.name)} × ${o.qty}</td><td class="right">${formatRupiah(
@@ -108,7 +116,7 @@ export function receiptBody(opts: {
     <div class="sep"></div>
     ${layout.showItems ? `<table>${itemRows(record)}</table><div class="sep"></div>` : ""}
     <div class="row"><span>Subtotal</span><span>${formatRupiah(
-      record.rentalTotal + record.fnbTotal,
+      record.rentalTotal + (record.addonTotal ?? 0) + record.fnbTotal,
     )}</span></div>
     ${
       record.discount
@@ -169,12 +177,27 @@ export function receiptText(opts: {
         ),
       );
     }
+    for (const a of record.addons ?? []) {
+      lines.push(
+        textRow(
+          `${a.name} x${a.qty}${a.mode === "hourly" ? " /jam" : ""}`,
+          formatRupiah(addonAmount(a, Math.max(0, record.minutes) / 60)),
+          w,
+        ),
+      );
+    }
     for (const o of record.orders ?? []) {
       lines.push(textRow(`${o.name} x${o.qty}`, formatRupiah(o.price * o.qty), w));
     }
     lines.push(textSep(w));
   }
-  lines.push(textRow("Subtotal", formatRupiah(record.rentalTotal + record.fnbTotal), w));
+  lines.push(
+    textRow(
+      "Subtotal",
+      formatRupiah(record.rentalTotal + (record.addonTotal ?? 0) + record.fnbTotal),
+      w,
+    ),
+  );
   if (record.discount) {
     lines.push(
       textRow(`Potongan ${record.promoName || ""}`.trim(), `- ${formatRupiah(record.discount)}`, w),
