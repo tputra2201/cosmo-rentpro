@@ -1172,6 +1172,8 @@ const BillingContext = createContext<Ctx | null>(null);
 
 export function BillingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
+  const stateRef = useRef<State>(state);
+  stateRef.current = state;
   const [now, setNow] = useState(() => Date.now());
   const [hydrated, setHydrated] = useState(false);
 
