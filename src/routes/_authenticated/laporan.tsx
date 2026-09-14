@@ -338,6 +338,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                   <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Durasi</TableHead>
                   <TableHead className="text-right">Rental</TableHead>
+                  <TableHead className="text-right">Add. Rental</TableHead>
                   <TableHead className="text-right">F&amp;B</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Nota</TableHead>
