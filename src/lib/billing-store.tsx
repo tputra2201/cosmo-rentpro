@@ -1709,17 +1709,29 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     bindStore,
   });
 
+  // Kasir wajib check-in shift sebelum ada uang masuk atau keluar.
+  const activeShift = state.shifts.find((s) => !s.closedAt) ?? null;
+  const shiftOpen = Boolean(activeShift);
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
       now,
-      startSession: startSessionWithRate,
-      stopSession,
-      settleSession,
+      activeShift,
+      shiftOpen,
+      startSession: (...args) => {
+        if (!shiftOpen) return;
+        startSessionWithRate(...args);
+      },
+      stopSession: (...args) => (shiftOpen ? stopSession(...args) : null),
+      settleSession: (...args) => (shiftOpen ? settleSession(...args) : null),
       removeSettlement,
 
       addTime,
-      addOrder,
+      addOrder: (...args) => {
+        if (!shiftOpen) return;
+        addOrder(...args);
+      },
       removeOrder,
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
       setConsoleDiscount: (name, patch) =>
