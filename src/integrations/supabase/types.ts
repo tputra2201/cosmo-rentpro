@@ -16,27 +16,45 @@ export type Database = {
     Tables: {
       app_branding: {
         Row: {
+          app_name: string
+          app_version: string
           created_at: string
+          developer_contact: string
+          developer_email: string
+          developer_name: string
           id: string
           login_note: string
           login_title: string
           logo_url: string
+          release_date: string
           updated_at: string
         }
         Insert: {
+          app_name?: string
+          app_version?: string
           created_at?: string
+          developer_contact?: string
+          developer_email?: string
+          developer_name?: string
           id?: string
           login_note?: string
           login_title?: string
           logo_url?: string
+          release_date?: string
           updated_at?: string
         }
         Update: {
+          app_name?: string
+          app_version?: string
           created_at?: string
+          developer_contact?: string
+          developer_email?: string
+          developer_name?: string
           id?: string
           login_note?: string
           login_title?: string
           logo_url?: string
+          release_date?: string
           updated_at?: string
         }
         Relationships: []

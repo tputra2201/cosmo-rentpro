@@ -60,6 +60,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ReservationAlert } from "@/components/ReservationAlert";
 import { appSignature } from "@/lib/app-info";
+import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
 import { useDeveloper } from "@/lib/developer";
 import { DeveloperStoreSwitcher } from "@/components/DeveloperStoreSwitcher";
@@ -238,13 +239,16 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
+  const branding = useBranding();
   const { sync, shifts, rolePermissions } = useBilling();
   const needCheckIn = {
     done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
   };
 
   const storeName = store?.store_name?.trim() ?? "";
-  const signature = appSignature(store?.app_version, store?.dev_contact);
+  const brandSignature = brandingSignature(branding);
+  const signature =
+    brandSignature || appSignature(store?.app_version, store?.dev_contact);
   const expiresAt = store?.expires_at ?? null;
 
   const expiryDate = expiresAt ? new Date(expiresAt) : null;

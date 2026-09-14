@@ -16,6 +16,7 @@ import {
   UserPlus,
   Users,
   ImageUp,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -240,6 +241,92 @@ function BrandingPanel({
           }
         >
           <Save className="size-4" /> Simpan tampilan masuk
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const APP_FIELDS = [
+  { key: "app_name", label: "Nama Aplikasi", placeholder: "RentalPro" },
+  { key: "app_version", label: "Versi Aplikasi", placeholder: "v1.0" },
+  { key: "release_date", label: "Tanggal Rilis", type: "date" },
+  { key: "developer_name", label: "Nama Developer", placeholder: "Nama lengkap" },
+  { key: "developer_email", label: "Email Developer", type: "email" },
+  { key: "developer_contact", label: "Nomor Contact Developer", placeholder: "081282284411" },
+] as const;
+
+type AppField = (typeof APP_FIELDS)[number]["key"];
+
+function AppIdentityPanel({
+  busy,
+  post,
+}: {
+  busy: boolean;
+  post: (body: unknown, okMessage?: string) => Promise<unknown>;
+}) {
+  const branding = useBranding();
+  const [form, setForm] = useState<Record<AppField, string>>({
+    app_name: "",
+    app_version: "",
+    release_date: "",
+    developer_name: "",
+    developer_email: "",
+    developer_contact: "",
+  });
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (ready) return;
+    setForm({
+      app_name: branding.app_name,
+      app_version: branding.app_version,
+      release_date: branding.release_date,
+      developer_name: branding.developer_name,
+      developer_email: branding.developer_email,
+      developer_contact: branding.developer_contact,
+    });
+    if (branding.login_title) setReady(true);
+  }, [branding, ready]);
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <Info className="size-5" /> Identitas aplikasi
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Nama aplikasi, versi, dan nomor kontak developer tampil di bawah nama
+          store pada pojok kiri atas semua perangkat.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {APP_FIELDS.map((field) => (
+          <div key={field.key} className="grid gap-2">
+            <Label htmlFor={field.key}>{field.label}</Label>
+            <Input
+              id={field.key}
+              type={"type" in field ? field.type : "text"}
+              value={form[field.key]}
+              placeholder={"placeholder" in field ? field.placeholder : ""}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
+              }
+            />
+          </div>
+        ))}
+      </div>
+      <div>
+        <Button
+          disabled={busy}
+          onClick={() =>
+            void post(
+              { action: "branding", ...form },
+              "Identitas aplikasi tersimpan.",
+            )
+          }
+        >
+          <Save className="size-4" /> Simpan identitas aplikasi
         </Button>
       </div>
     </div>
@@ -577,6 +664,8 @@ function ControlCenter() {
           <RefreshCw className="size-4" /> Muat ulang
         </Button>
       </div>
+
+      <AppIdentityPanel busy={busy} post={post} />
 
       <BrandingPanel busy={busy} post={post} />
 

@@ -36,6 +36,12 @@ const bodySchema = z.discriminatedUnion("action", [
     logo_url: z.string().max(400000).optional(),
     login_title: z.string().max(200).optional(),
     login_note: z.string().max(1000).optional(),
+    app_name: z.string().max(120).optional(),
+    app_version: z.string().max(40).optional(),
+    release_date: z.string().max(40).optional(),
+    developer_name: z.string().max(200).optional(),
+    developer_email: z.string().max(200).optional(),
+    developer_contact: z.string().max(60).optional(),
   }),
   z.object({
     action: z.literal("developer-account"),
@@ -164,7 +170,9 @@ export const Route = createFileRoute("/api/public/store-registry")({
           const { data, error } = await supabaseAdmin
             .from("app_branding")
             .upsert({ id: "default", ...values } as never, { onConflict: "id" })
-            .select("logo_url, login_title, login_note")
+            .select(
+              "logo_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact",
+            )
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ branding: data });

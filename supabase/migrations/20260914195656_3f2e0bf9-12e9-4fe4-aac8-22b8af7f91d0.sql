@@ -1,0 +1,1 @@
+GRANT SELECT (app_name, app_version, release_date, developer_name, developer_email, developer_contact) ON public.app_branding TO anon, authenticated;
