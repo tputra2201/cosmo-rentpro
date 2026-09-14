@@ -153,6 +153,8 @@ export function StationDialog({
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
   const [menuCategory, setMenuCategory] = useState("semua");
+  const [orderOpen, setOrderOpen] = useState(false);
+
   const [payment, setPayment] = useState("");
 
   const [customerName, setCustomerName] = useState("");
@@ -398,6 +400,39 @@ export function StationDialog({
   };
 
 
+  /** Cetak bill sementara sebelum tagihan dilunasi. */
+  const printBill = () => {
+    const printer = printerFor(printers, "receipt");
+    if (!printer) {
+      toast.error("Printer struk belum diatur di menu Printer");
+      return;
+    }
+    if (!session || !bill) return;
+    printReceipt({
+      record: {
+        id: `BILL-${station.id}-${Date.now()}`,
+        stationName: station.name,
+        console: station.console,
+        mode: session.mode,
+        startAt: session.startAt,
+        endAt: now,
+        minutes: Math.round(elapsedSeconds(session, now) / 60),
+        rentalTotal: bill.rental,
+        fnbTotal: bill.fnb,
+        total: bill.total,
+        ...(bill.discount ? { discount: bill.discount } : {}),
+        ...(bill.promoName ? { promoName: bill.promoName } : {}),
+        ...(session.customerName ? { customerName: session.customerName } : {}),
+        orders: session.orders ?? [],
+        ongoing: true,
+      },
+      store: storeInfo as PrintStore,
+      printer,
+      layout: { ...receiptLayout, showPayment: false },
+      kind: "bill",
+    });
+  };
+
   return (
     <>
     <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
@@ -430,20 +465,8 @@ export function StationDialog({
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <CustomerPicker
-                value={customerName}
-                onChange={setCustomerName}
-                onPick={(item) => {
-                  setCustomerName(item.name);
-                  setCustomerPhone(item.phone);
-                  setMember(item.member);
-                }}
-              />
 
-              <div className="space-y-1.5"><Label htmlFor="customer-phone">Nomor HP</Label><Input id="customer-phone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="08..." inputMode="tel" /></div>
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-border p-3"><div><p className="text-sm font-medium">Harga member</p><p className="text-xs text-muted-foreground">Tandai pelanggan sebagai member</p></div><Switch checked={member} onCheckedChange={setMember} aria-label="Status member" /></div>
+
             <div className="space-y-2">
               <p className="text-sm font-medium">Jenis konsol</p>
               <Select
@@ -513,6 +536,28 @@ export function StationDialog({
               <p className="text-sm text-muted-foreground">
                 Harga paket: {formatRupiah((rate * duration) / 60)}
               </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <CustomerPicker
+                  value={customerName}
+                  onChange={setCustomerName}
+                  onPick={(item) => {
+                    setCustomerName(item.name);
+                    setCustomerPhone(item.phone);
+                    setMember(item.member);
+                  }}
+                />
+                <div className="space-y-1.5">
+                  <Label htmlFor="customer-phone">Nomor HP</Label>
+                  <Input
+                    id="customer-phone"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="08..."
+                    inputMode="tel"
+                  />
+                </div>
+              </div>
+
               <Button
                 className="w-full"
                 onClick={() => {
@@ -726,44 +771,21 @@ export function StationDialog({
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  variant={menuCategory === "semua" ? "default" : "outline"}
-                  onClick={() => setMenuCategory("semua")}
+                  onClick={() => {
+                    if (!requireShift()) return;
+                    setOrderOpen(true);
+                  }}
                 >
-                  Semua
+                  <Plus className="size-4" /> Tambah Order
                 </Button>
-                {menuCategories.map((c) => (
-                  <Button
-                    key={c}
-                    size="sm"
-                    variant={menuCategory === c ? "default" : "outline"}
-                    onClick={() => setMenuCategory(c)}
-                  >
-                    {c}
+                {!isSettled && (
+                  <Button size="sm" variant="outline" onClick={printBill}>
+                    <PrinterIcon className="size-4" /> Cetak Bill
                   </Button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {menu
-                  .filter((item) => menuCategory === "semua" || item.category === menuCategory)
-                  .map((item) => (
-                  <Button
-                    key={item.id}
-                    size="sm"
-                    variant="secondary"
-                    className="justify-between"
-                    onClick={() => {
-                      if (!requireShift()) return;
-                      addOrder(station.id, item, 1);
-                      toast.success(`${item.name} ditambahkan`);
-                    }}
-                  >
-                    <span className="truncate">{item.name}</span>
-                    <Plus className="size-3.5 shrink-0" />
-                  </Button>
-                ))}
+                )}
               </div>
 
               {session.orders.length > 0 && (
@@ -809,6 +831,7 @@ export function StationDialog({
                 </ul>
               )}
             </div>
+
 
             {session && bill && (
               <div className="space-y-2 rounded-md border border-border p-3">
@@ -972,46 +995,8 @@ export function StationDialog({
                   </div>
                 </>
               )}
-              {!isSettled && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    const printer = printerFor(printers, "receipt");
-                    if (!printer) {
-                      toast.error("Printer struk belum diatur di menu Printer");
-                      return;
-                    }
-                    if (!bill) return;
-                    printReceipt({
-                      record: {
-                        id: `BILL-${station.id}-${Date.now()}`,
-                        stationName: station.name,
-                        console: station.console,
-                        mode: session.mode,
-                        startAt: session.startAt,
-                        endAt: now,
-                        minutes: Math.round(elapsedSeconds(session, now) / 60),
-                        rentalTotal: bill.rental,
-                        fnbTotal: bill.fnb,
-                        total: bill.total,
-                        ...(bill.discount ? { discount: bill.discount } : {}),
-                        ...(bill.promoName ? { promoName: bill.promoName } : {}),
-                        ...(session.customerName ? { customerName: session.customerName } : {}),
-                        orders: session.orders ?? [],
-                        ongoing: true,
-                      },
-                      store: storeInfo as PrintStore,
-                      printer,
-                      layout: { ...receiptLayout, showPayment: false },
-                      kind: "bill",
-                    });
-                  }}
-                >
-                  <PrinterIcon className="size-4" /> Cetak bill (belum lunas)
-                </Button>
-              )}
+              
+
               {session.orders.length > 0 && labelPrinters.length > 0 && (
                 <Button
                   variant="outline"
@@ -1302,6 +1287,97 @@ export function StationDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    {session && (
+      <Dialog open={orderOpen} onOpenChange={setOrderOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Tambah Order</DialogTitle>
+            <DialogDescription>
+              {station.name} · pesanan makanan &amp; minuman
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              size="sm"
+              variant={menuCategory === "semua" ? "default" : "outline"}
+              onClick={() => setMenuCategory("semua")}
+            >
+              Semua
+            </Button>
+            {menuCategories.map((c) => (
+              <Button
+                key={c}
+                size="sm"
+                variant={menuCategory === c ? "default" : "outline"}
+                onClick={() => setMenuCategory(c)}
+              >
+                {c}
+              </Button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {menu
+              .filter((item) => menuCategory === "semua" || item.category === menuCategory)
+              .map((item) => (
+                <Button
+                  key={item.id}
+                  size="sm"
+                  variant="secondary"
+                  className="justify-between"
+                  onClick={() => {
+                    if (!requireShift()) return;
+                    addOrder(station.id, item, 1);
+                    toast.success(`${item.name} ditambahkan`);
+                  }}
+                >
+                  <span className="truncate">{item.name}</span>
+                  <Plus className="size-3.5 shrink-0" />
+                </Button>
+              ))}
+          </div>
+
+          {session.orders.length > 0 && (
+            <ul className="space-y-1">
+              {session.orders.map((o) => (
+                <li
+                  key={o.id}
+                  className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
+                >
+                  <span>
+                    {o.name} × {o.qty}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {formatRupiah(o.price * o.qty)}
+                    <button
+                      type="button"
+                      onClick={() => removeOrder(station.id, o.id)}
+                      aria-label={`Hapus ${o.name}`}
+                      className="text-muted-foreground transition-colors hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-sm text-muted-foreground">Total pesanan</span>
+            <span className="font-display text-lg font-semibold text-accent">
+              {formatRupiah(fnbTotal(session))}
+            </span>
+          </div>
+          <Button className="w-full" onClick={() => setOrderOpen(false)}>
+            Selesai
+          </Button>
+        </DialogContent>
+      </Dialog>
+    )}
     </>
+
   );
 }
