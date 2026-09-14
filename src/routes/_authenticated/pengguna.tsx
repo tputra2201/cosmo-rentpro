@@ -92,8 +92,9 @@ function PenggunaPage() {
   const add = useMutation({
     mutationFn: (data: { email: string; fullName: string; role: AppRole }) =>
       addFn({ data: { ...data, redirectTo: redirectTo() } }),
-    onSuccess: () => {
+    onSuccess: (_res, vars) => {
       toast.success("Undangan terkirim ke email staf");
+      addLog("Undang pengguna baru", `${vars.email} · ${roleLabel[vars.role] ?? vars.role}`);
       setEmail("");
       setFullName("");
       setRole("kasir");
@@ -105,14 +106,20 @@ function PenggunaPage() {
   const resend = useMutation({
     mutationFn: (mail: string) =>
       resendFn({ data: { email: mail, redirectTo: redirectTo() } }),
-    onSuccess: () => toast.success("Undangan dikirim ulang"),
+    onSuccess: (_res, mail) => {
+      toast.success("Undangan dikirim ulang");
+      addLog("Kirim ulang undangan", mail);
+    },
     onError,
   });
 
   const reset = useMutation({
     mutationFn: (mail: string) =>
       resetFn({ data: { email: mail, redirectTo: redirectTo() } }),
-    onSuccess: () => toast.success("Tautan atur ulang sandi dikirim"),
+    onSuccess: (_res, mail) => {
+      toast.success("Tautan atur ulang sandi dikirim");
+      addLog("Kirim tautan atur ulang sandi", mail);
+    },
     onError,
   });
 
@@ -123,8 +130,14 @@ function PenggunaPage() {
       role?: AppRole;
       password?: string;
     }) => editFn({ data }),
-    onSuccess: () => {
+    onSuccess: (_res, vars) => {
       toast.success("Perubahan disimpan");
+      const parts = [
+        vars.fullName ? `nama: ${vars.fullName}` : "",
+        vars.role ? `level: ${roleLabel[vars.role] ?? vars.role}` : "",
+        vars.password ? "kata sandi diubah Admin" : "",
+      ].filter(Boolean);
+      addLog("Ubah data pengguna", parts.join(" · "));
       invalidate();
     },
     onError,
@@ -132,8 +145,9 @@ function PenggunaPage() {
 
   const remove = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
-    onSuccess: () => {
+    onSuccess: (_res, id) => {
       toast.success("Pengguna dihapus");
+      addLog("Hapus pengguna", id);
       invalidate();
     },
     onError,
