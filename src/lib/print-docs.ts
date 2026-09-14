@@ -1,6 +1,6 @@
 /** Perakit dokumen cetak: struk, invoice, label dapur/bar, dan laporan. */
 
-import { formatRupiah, type HistoryRecord, type OrderItem } from "./billing-store";
+import { addonAmount, formatRupiah, type HistoryRecord, type OrderItem } from "./billing-store";
 import {
   CHARS_PER_LINE,
   escapeHtml,
