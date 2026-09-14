@@ -1181,6 +1181,8 @@ type Ctx = State & {
   replaceAll: (data: unknown) => void;
 
   resetAll: () => void;
+  /** Catat satu aktivitas ke laporan Log Book. */
+  addLog: (action: string, detail?: string) => void;
   sync: SyncStatus;
 };
 
