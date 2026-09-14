@@ -98,7 +98,7 @@ export function useStoreSync(options: {
    * Mengikat data lokal ke satu store. Kalau perangkat sebelumnya memegang data
    * store lain, data itu dibuang dan state baru langsung bertanda store ini.
    */
-  bindStore: (storeId: string) => void;
+  bindStore: (storeId: string, keepLocal?: boolean) => void;
 }): SyncStatus {
   const { state, hydrated, enabled, applyRemote, bindStore } = options;
 
