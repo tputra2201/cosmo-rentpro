@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
@@ -104,6 +105,7 @@ export function StationDialog({
     history,
     receiptLayout,
   } = useBilling();
+  const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
@@ -315,6 +317,7 @@ export function StationDialog({
   };
 
   const handlePay = () => {
+    if (!requireShift()) return;
     if (isCardPayment) {
       if (!card) return;
       if (!chargeCard(card.id, cardCharge, `Pembayaran ${station.name}`)) {
@@ -400,6 +403,8 @@ export function StationDialog({
             {station.console} &middot; {formatRupiah(rate)} / jam
           </DialogDescription>
         </DialogHeader>
+
+        <ShiftLockedNotice />
 
         {!session ? (
           <div className="space-y-5">
@@ -503,6 +508,7 @@ export function StationDialog({
               <Button
                 className="w-full"
                 onClick={() => {
+                  if (!requireShift()) return;
                   startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
                   toast.success(`${station.name} mulai ${Math.max(0, duration + bonusMin)} menit`, bonusMin !== 0 ? { description: `${duration} menit + ekstra ${bonusMin} menit (tarif tetap)` } : undefined);
                 }}
@@ -517,6 +523,7 @@ export function StationDialog({
               variant="secondary"
               className="w-full"
               onClick={() => {
+                if (!requireShift()) return;
                 startSession(station.id, "open", 0, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: "Open Time", notes });
                 toast.success(`${station.name} mulai Main Sepuasnya`);
               }}
@@ -740,6 +747,7 @@ export function StationDialog({
                     variant="secondary"
                     className="justify-between"
                     onClick={() => {
+                      if (!requireShift()) return;
                       addOrder(station.id, item, 1);
                       toast.success(`${item.name} ditambahkan`);
                     }}
