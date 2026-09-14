@@ -372,6 +372,9 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                       {formatRupiah(h.rentalTotal)}
                     </TableCell>
                     <TableCell className="text-right">
+                      {formatRupiah(h.addonTotal ?? 0)}
+                    </TableCell>
+                    <TableCell className="text-right">
                       {formatRupiah(h.fnbTotal)}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
