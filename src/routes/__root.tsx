@@ -394,6 +394,30 @@ function AppShell() {
                         </Link>
                       ))}
                     </nav>
+                    {setups.length > 0 && (
+                      <>
+                        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Setup
+                        </p>
+                        <nav className="mt-2 grid grid-cols-2 gap-1.5">
+                          {setups.map(({ to, label, icon: Icon }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              onClick={() => setMenuOpen(false)}
+                              className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-secondary/25 px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                              activeProps={{
+                                className:
+                                  "bg-secondary text-primary border-primary/50 glow-primary",
+                              }}
+                            >
+                              <Icon className="size-4 shrink-0" />
+                              <span className="truncate">{label}</span>
+                            </Link>
+                          ))}
+                        </nav>
+                      </>
+                    )}
                   </SheetContent>
                 </Sheet>
               </div>
