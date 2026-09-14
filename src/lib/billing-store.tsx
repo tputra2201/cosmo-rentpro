@@ -2572,6 +2572,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [
       state,
       now,
+      activeShift,
+      shiftOpen,
       sync,
       startSessionWithRate,
       stopSession,
