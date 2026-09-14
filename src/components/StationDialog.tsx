@@ -774,6 +774,62 @@ export function StationDialog({
               </div>
             )}
 
+            {addonRentals.some((a) => a.active) && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Additional Rental</p>
+                <div className="flex flex-wrap gap-2">
+                  {addonRentals
+                    .filter((a) => a.active)
+                    .map((a) => (
+                      <Button
+                        key={a.id}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!requireShift()) return;
+                          addSessionAddon(station.id, a.id, 1);
+                          toast.success(`${a.name} ditambahkan`);
+                        }}
+                      >
+                        <Plus className="size-4" /> {a.name} · {formatRupiah(a.price)}
+                        {a.mode === "hourly" ? "/jam" : ""}
+                      </Button>
+                    ))}
+                </div>
+                {(session.addons ?? []).length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {(session.addons ?? []).map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
+                      >
+                        <span>
+                          {a.name} × {a.qty}
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {a.mode === "hourly" ? "per jam" : "sekali sewa"}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          {formatRupiah(
+                            addonAmount(a, rentalMinutes(session, now) / 60),
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeSessionAddon(station.id, a.id)}
+                            aria-label={`Hapus ${a.name}`}
+                            className="text-muted-foreground transition-colors hover:text-destructive"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
               <div className="flex flex-wrap gap-2">
