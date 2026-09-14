@@ -2681,7 +2681,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           openedAt: Date.now(),
           startCash: Math.max(0, Math.round(input.startCash)),
         };
-        update((prev) => ({ ...prev, shifts: [row, ...prev.shifts] }));
+        update((prev) =>
+          withLog(
+            { ...prev, shifts: [row, ...prev.shifts] },
+            "Buka shift kasir",
+            `${name} · kas awal ${formatRupiah(row.startCash)}`,
+          ),
+        );
         return row;
       },
       closeShift: (id, input) => {
@@ -2694,16 +2700,26 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           balanceNote: input.balanceNote?.trim() ?? "",
           nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
         };
-        update((prev) => ({
-          ...prev,
-          shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
-        }));
+        update((prev) =>
+          withLog(
+            { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
+            "Tutup shift kasir",
+            `${closed.cashierName} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+          ),
+        );
         return closed;
       },
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
-      replaceAll: (data) => setState(migrateState(data)),
-      resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
+      replaceAll: (data) => {
+        setState(migrateState(data));
+        update((prev) => withLog(prev, "Pulihkan data dari berkas cadangan"));
+      },
+      resetAll: () => {
+        setState(JSON.parse(JSON.stringify(defaultState)) as State);
+        update((prev) => withLog(prev, "Reset seluruh data aplikasi"));
+      },
+      addLog,
       sync,
     }),
     [
