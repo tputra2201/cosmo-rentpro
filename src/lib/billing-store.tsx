@@ -2662,7 +2662,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           }),
         })),
       removeCashEntry: (id) =>
-        update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
+        update((prev) => {
+          const target = prev.cashEntries.find((item) => item.id === id);
+          return withLog(
+            { ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) },
+            "Hapus catatan kas",
+            target ? `${target.categoryName} · ${formatRupiah(target.amount)}` : id,
+          );
+        }),
       openShift: (input) => {
         const name = input.cashierName.trim();
         if (!name) return null;
