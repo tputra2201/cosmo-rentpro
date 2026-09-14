@@ -100,6 +100,14 @@ function AkunPage() {
         <Button type="submit" disabled={busy}>
           <KeyRound className="size-4" /> Simpan kata sandi
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={resetBusy}
+          onClick={() => void sendReset()}
+        >
+          <MailQuestion className="size-4" /> Lupa password
+        </Button>
       </form>
     </div>
   );
