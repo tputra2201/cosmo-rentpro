@@ -28,6 +28,12 @@ export function IdleLogout() {
     if (!session || exempt) return;
 
     const logout = async () => {
+      // Saat internet mati, masuk kembali tidak mungkin dilakukan. Jangan
+      // keluarkan kasir: tunda sampai koneksi kembali.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        reset();
+        return;
+      }
       toast.info("Keluar otomatis", {
         description: "Tidak ada aktivitas selama 5 menit.",
       });
