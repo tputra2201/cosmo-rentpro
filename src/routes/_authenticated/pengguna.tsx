@@ -369,7 +369,7 @@ function UserRow({
 
 /** Pengaturan hak akses tiap level lewat centang. */
 function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
-  const { rolePermissions, setRolePermissions } = useBilling();
+  const { rolePermissions, setRolePermissions, addLog } = useBilling();
   void canInstaller;
   const editableRoles = ALL_ROLES.filter((r) => r !== "installer");
   const [active, setActive] = useState<AppRole>(editableRoles[0] ?? "manager");
@@ -380,6 +380,10 @@ function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
       ? [...new Set([...allowed, key])]
       : allowed.filter((k) => k !== key);
     setRolePermissions(active, next);
+    addLog(
+      "Ubah hak akses level",
+      `${roleLabel[active]} · ${on ? "aktifkan" : "matikan"} ${key}`,
+    );
   };
 
   const setGroup = (keys: string[], on: boolean) => {
@@ -387,6 +391,10 @@ function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
       ? [...new Set([...allowed, ...keys])]
       : allowed.filter((k) => !keys.includes(k));
     setRolePermissions(active, next);
+    addLog(
+      "Ubah hak akses level",
+      `${roleLabel[active]} · ${on ? "aktifkan" : "matikan"} ${keys.length} item`,
+    );
   };
 
   return (
