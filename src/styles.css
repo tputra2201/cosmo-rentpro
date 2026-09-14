@@ -260,62 +260,61 @@
 
 /* ============ Tema berwarna (cerah, biru Chelsea) ============ */
 .theme-berwarna {
-  color-scheme: light;
-  --tint-1: 12%;
-  --tint-2: 8%;
-  --background: oklch(0.985 0.012 264);
-  --foreground: oklch(0.22 0.07 264);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.07 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.07 264);
-  --primary: oklch(0.302 0.185 264);
-  --primary-foreground: oklch(0.99 0.005 264);
-  --primary-glow: oklch(0.5 0.17 264);
-  --secondary: oklch(0.94 0.03 264);
-  --secondary-foreground: oklch(0.3 0.09 264);
-  --muted: oklch(0.955 0.02 264);
-  --muted-foreground: oklch(0.5 0.05 264);
-  --accent: oklch(0.744 0.15 82);
-  --accent-foreground: oklch(0.22 0.07 264);
+  color-scheme: dark;
+  --tint-1: 22%;
+  --tint-2: 14%;
+  --background: oklch(0.302 0.185 264);
+  --foreground: oklch(0.98 0.01 264);
+  --card: oklch(0.35 0.17 264);
+  --card-foreground: oklch(0.98 0.01 264);
+  --popover: oklch(0.34 0.17 264);
+  --popover-foreground: oklch(0.98 0.01 264);
+  --primary: oklch(0.744 0.15 82);
+  --primary-foreground: oklch(0.24 0.09 264);
+  --primary-glow: oklch(0.85 0.13 88);
+  --secondary: oklch(0.4 0.15 264);
+  --secondary-foreground: oklch(0.98 0.01 264);
+  --muted: oklch(0.38 0.14 264);
+  --muted-foreground: oklch(0.82 0.05 268);
+  --accent: oklch(0.591 0.093 272);
+  --accent-foreground: oklch(0.99 0.005 264);
   --destructive: oklch(0.628 0.258 29);
   --destructive-foreground: oklch(0.99 0.005 264);
-  --success: oklch(0.58 0.16 155);
-  --success-foreground: oklch(0.99 0.005 264);
-  --warning: oklch(0.744 0.15 82);
-  --warning-foreground: oklch(0.22 0.07 264);
-  --border: oklch(0.87 0.03 264);
-  --input: oklch(0.87 0.03 264);
-  --ring: oklch(0.302 0.185 264);
-  --chart-1: oklch(0.302 0.185 264);
-  --chart-2: oklch(0.591 0.093 272);
-  --chart-3: oklch(0.744 0.15 82);
-  --chart-4: oklch(0.58 0.16 155);
+  --success: oklch(0.68 0.17 155);
+  --success-foreground: oklch(0.2 0.06 155);
+  --warning: oklch(0.8 0.15 85);
+  --warning-foreground: oklch(0.24 0.09 264);
+  --border: oklch(0.44 0.14 264);
+  --input: oklch(0.44 0.14 264);
+  --ring: oklch(0.744 0.15 82);
+  --chart-1: oklch(0.744 0.15 82);
+  --chart-2: oklch(0.72 0.11 272);
+  --chart-3: oklch(0.85 0.13 88);
+  --chart-4: oklch(0.68 0.17 155);
   --chart-5: oklch(0.628 0.258 29);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.22 0.07 264);
-  --sidebar-primary: oklch(0.302 0.185 264);
-  --sidebar-primary-foreground: oklch(0.99 0.005 264);
-  --sidebar-accent: oklch(0.94 0.03 264);
-  --sidebar-accent-foreground: oklch(0.3 0.09 264);
-  --sidebar-border: oklch(0.87 0.03 264);
-  --sidebar-ring: oklch(0.302 0.185 264);
+  --sidebar: oklch(0.27 0.17 264);
+  --sidebar-foreground: oklch(0.98 0.01 264);
+  --sidebar-primary: oklch(0.744 0.15 82);
+  --sidebar-primary-foreground: oklch(0.24 0.09 264);
+  --sidebar-accent: oklch(0.4 0.15 264);
+  --sidebar-accent-foreground: oklch(0.98 0.01 264);
+  --sidebar-border: oklch(0.42 0.14 264);
+  --sidebar-ring: oklch(0.744 0.15 82);
   --gradient-neon: linear-gradient(
     135deg,
-    var(--primary) 0%,
+    oklch(0.744 0.15 82) 0%,
     oklch(0.591 0.093 272) 100%
   );
   --gradient-surface: linear-gradient(
     160deg,
-    oklch(1 0 0) 0%,
-    oklch(0.975 0.018 264) 100%
+    oklch(0.35 0.17 264) 0%,
+    oklch(0.28 0.16 264) 100%
   );
-  --glow-primary: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
-    0 10px 24px -14px color-mix(in oklab, var(--primary) 50%, transparent);
+  --glow-primary: 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent),
+    0 10px 24px -14px color-mix(in oklab, var(--primary) 55%, transparent);
   --glow-accent: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent),
     0 10px 24px -14px color-mix(in oklab, var(--accent) 55%, transparent);
-}
-/* ============ Tema Cosmo (ungu pekat, aksen oranye & magenta) ============ */
+}/* ============ Tema Cosmo (ungu pekat, aksen oranye & magenta) ============ */
 .theme-cosmo {
   color-scheme: dark;
   --tint-1: 26%;
