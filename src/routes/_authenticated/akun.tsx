@@ -59,7 +59,7 @@ function AkunPage() {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <h1 className="font-display text-2xl font-bold text-neon">Akun Saya</h1>
+      <h1 className="font-display text-2xl font-bold text-neon">Password</h1>
 
       <form className="surface-panel mt-6 grid gap-4 p-6" onSubmit={submit}>
         <div className="grid gap-2">
