@@ -76,16 +76,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
+    // Pakai data tersimpan lebih dulu supaya saat internet mati level dan hak
+    // akses kasir tetap terbaca dan semua menu bisa dipakai.
+    const cached = readCache(userId);
+    if (cached) {
+      setRole(cached.role);
+      setFullName(cached.fullName);
+      setMustChangePassword(cached.mustChangePassword);
+    }
     (async () => {
-      const [{ data: roles }, { data: profileRow }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase
-          .from("profiles")
-          .select("full_name, must_change_password")
-          .eq("id", userId)
-          .maybeSingle(),
-      ]);
+      const [{ data: roles, error: roleError }, { data: profileRow, error: profileError }] =
+        await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", userId),
+          supabase
+            .from("profiles")
+            .select("full_name, must_change_password")
+            .eq("id", userId)
+            .maybeSingle(),
+        ]);
       if (cancelled) return;
+      if (roleError || profileError) {
+        // Tanpa koneksi: biarkan data tersimpan yang dipakai.
+        if (!cached) setRole("kasir");
+        return;
+      }
       const profile = profileRow as
         | { full_name: string | null; must_change_password: boolean | null }
         | null;
@@ -97,14 +111,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "finance",
         ...ALL_ROLES.filter((r) => r !== "installer" && r !== "manager" && r !== "finance"),
       ];
-      setRole(priority.find((r) => list.includes(r)) ?? "kasir");
-      setFullName(profile?.full_name ?? "");
-      setMustChangePassword(profile?.must_change_password === true);
+      const nextRole = priority.find((r) => list.includes(r)) ?? "kasir";
+      const nextName = profile?.full_name ?? "";
+      const nextMust = profile?.must_change_password === true;
+      setRole(nextRole);
+      setFullName(nextName);
+      setMustChangePassword(nextMust);
+      writeCache({ userId, role: nextRole, fullName: nextName, mustChangePassword: nextMust });
     })();
     return () => {
       cancelled = true;
     };
   }, [userId]);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
