@@ -312,6 +312,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_presence: {
+        Row: {
+          device: string
+          last_seen_at: string
+          store_id: string | null
+          user_id: string
+        }
+        Insert: {
+          device?: string
+          last_seen_at?: string
+          store_id?: string | null
+          user_id: string
+        }
+        Update: {
+          device?: string
+          last_seen_at?: string
+          store_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_presence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
