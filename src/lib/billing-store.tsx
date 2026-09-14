@@ -3003,8 +3003,52 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  // Catat perubahan pengaturan dan data induk ke Log Book tanpa perlu
+  // menyentuh setiap fungsi satu per satu.
+  const logChange = useCallback(
+    (info: LogInfo) => {
+      update((prev) => {
+        const last = prev.logEntries?.[0];
+        if (
+          info.coalesce &&
+          last &&
+          last.action === info.action &&
+          last.actor === actorRef.current.name &&
+          Date.now() - last.at < 120_000
+        ) {
+          return {
+            ...prev,
+            logEntries: [
+              { ...last, at: Date.now(), detail: info.detail ?? "" },
+              ...(prev.logEntries ?? []).slice(1),
+            ],
+          };
+        }
+        return withLog(prev, info.action, info.detail ?? "");
+      });
+    },
+    [update, withLog],
+  );
+
+  const loggedValue = useMemo<Ctx>(() => {
+    const out = { ...value } as Record<string, unknown>;
+    for (const [name, describe] of Object.entries(LOG_DESCRIBERS)) {
+      const fn = (value as unknown as Record<string, unknown>)[name];
+      if (typeof fn !== "function") continue;
+      out[name] = (...args: unknown[]) => {
+        const before = stateRef.current;
+        const result = (fn as (...a: unknown[]) => unknown)(...args);
+        const info = describe(args, before, result);
+        if (info) logChange(info);
+        return result;
+      };
+    }
+    return out as unknown as Ctx;
+  }, [value, logChange]);
+
   return (
-    <BillingContext.Provider value={value}>{children}</BillingContext.Provider>
+    <BillingContext.Provider value={loggedValue}>{children}</BillingContext.Provider>
+
   );
 }
 
