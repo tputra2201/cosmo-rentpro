@@ -129,9 +129,13 @@ function LaporanPage() {
       )}
       <div ref={reportRef}>
       <Tabs key={first} defaultValue={first}>
-        <TabsList>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-3 lg:grid-cols-5">
           {tabs.map((t) => (
-            <TabsTrigger key={t.value} value={t.value}>
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="w-full min-w-0 whitespace-normal px-2 py-2 text-center text-xs leading-tight sm:text-sm"
+            >
               {t.label}
             </TabsTrigger>
           ))}

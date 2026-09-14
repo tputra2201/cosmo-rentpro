@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type ThemeName = "gelap" | "terang" | "berwarna";
+export type ThemeName = "gelap" | "terang" | "berwarna" | "cosmo";
 
 const STORAGE_KEY = "billing-theme-v1";
 
@@ -8,12 +8,14 @@ export const themeOptions: { value: ThemeName; label: string; hint: string }[] =
   { value: "gelap", label: "Gelap", hint: "Latar gelap, nyaman untuk ruangan redup" },
   { value: "terang", label: "Putih", hint: "Latar putih bersih, terang dan tajam" },
   { value: "berwarna", label: "Berwarna", hint: "Latar biru lembut dengan aksen ungu" },
+  { value: "cosmo", label: "Cosmo", hint: "Ungu pekat dengan aksen oranye dan magenta" },
 ];
 
 const classFor: Record<ThemeName, string> = {
   gelap: "dark theme-gelap",
   terang: "theme-terang",
   berwarna: "theme-berwarna",
+  cosmo: "dark theme-cosmo",
 };
 
 type Ctx = { theme: ThemeName; setTheme: (t: ThemeName) => void };
