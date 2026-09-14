@@ -164,25 +164,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
-  { to: "/kasir", label: "Kasir", icon: Receipt },
-  { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
-  { to: "/tv", label: "Layar TV", icon: MonitorPlay },
-
-  { to: "/kafe", label: "Kafe", icon: Coffee },
-
+  { to: "/shift", label: "Kasir", icon: ClipboardCheck },
   { to: "/booking", label: "Reservasi", icon: CalendarDays },
-  { to: "/pelanggan", label: "Pelanggan", icon: Users },
-  { to: "/promo", label: "Promo", icon: Percent },
   { to: "/kartu", label: "Playing Card", icon: CreditCard },
-  { to: "/kas", label: "Kas & Biaya", icon: Coins },
-  { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
-  { to: "/tarif", label: "Tarif", icon: Settings2 },
-  { to: "/laporan", label: "Laporan", icon: BarChart3 },
-  { to: "/pengguna", label: "Pengguna", icon: UserCog },
-  { to: "/printer", label: "Printer", icon: Printer },
+  { to: "/kas", label: "Finance", icon: Coins },
+  { to: "/laporan", label: "Reports", icon: BarChart3 },
   { to: "/backup", label: "Backup", icon: DatabaseBackup },
+] as const;
+
+const setupItems = [
+  { to: "/tarif", label: "Pricing", icon: Settings2 },
+  { to: "/pelanggan", label: "Membership", icon: Users },
+  { to: "/kafe", label: "Kafe", icon: Coffee },
+  { to: "/promo", label: "Promo", icon: Percent },
+  { to: "/pembayaran", label: "Payment", icon: Wallet },
+  { to: "/pengguna", label: "User", icon: UserCog },
+  { to: "/printer", label: "Printer", icon: Printer },
+  { to: "/tv", label: "TV Connect", icon: MonitorPlay },
+  { to: "/akun", label: "Password", icon: KeyRound },
   { to: "/store", label: "Store", icon: Store },
-  { to: "/akun", label: "Akun", icon: KeyRound },
 ] as const;
 
 function RootComponent() {
