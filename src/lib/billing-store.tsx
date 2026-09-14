@@ -408,6 +408,19 @@ export type CashEntry = {
   createdAt: number;
 };
 
+/**
+ * Catatan log book: semua aktivitas selain nota transaksi pelanggan,
+ * misalnya menghapus nota, mengganti kata sandi, atau buka/tutup shift.
+ */
+export type LogEntry = {
+  id: string;
+  at: number;
+  actor: string;
+  role: string;
+  action: string;
+  detail: string;
+};
+
 export type PaymentSplit = { method: string; amount: number };
 
 /** Shift kasir: check-in sampai close out. */
