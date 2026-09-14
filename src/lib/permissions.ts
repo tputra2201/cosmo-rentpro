@@ -62,7 +62,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "menu.shift", label: "Shift Kasir" },
       { key: "menu.tv", label: "Layar TV" },
       { key: "menu.kafe", label: "Kafe" },
-      { key: "menu.booking", label: "Booking" },
+      { key: "menu.booking", label: "Reservasi" },
       { key: "menu.pelanggan", label: "Pelanggan" },
       { key: "menu.promo", label: "Promo" },
       { key: "menu.kartu", label: "Playing Card" },
