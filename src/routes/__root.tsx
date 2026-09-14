@@ -15,7 +15,6 @@ import {
   Settings2,
   BarChart3,
   Joystick,
-  Receipt,
   Coffee,
   Coins,
   CreditCard,
@@ -35,6 +34,8 @@ import {
   WifiOff,
   RefreshCw,
   ClipboardCheck,
+  Wrench,
+  ChevronDown,
 
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,6 +48,12 @@ import { AuthProvider, useAuth, roleLabel } from "@/lib/auth";
 import { can, MENU_PERMISSION } from "@/lib/permissions";
 import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
@@ -164,25 +171,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
-  { to: "/kasir", label: "Kasir", icon: Receipt },
-  { to: "/shift", label: "Shift Kasir", icon: ClipboardCheck },
-  { to: "/tv", label: "Layar TV", icon: MonitorPlay },
-
-  { to: "/kafe", label: "Kafe", icon: Coffee },
-
+  { to: "/shift", label: "Kasir", icon: ClipboardCheck },
   { to: "/booking", label: "Reservasi", icon: CalendarDays },
-  { to: "/pelanggan", label: "Pelanggan", icon: Users },
-  { to: "/promo", label: "Promo", icon: Percent },
   { to: "/kartu", label: "Playing Card", icon: CreditCard },
-  { to: "/kas", label: "Kas & Biaya", icon: Coins },
-  { to: "/pembayaran", label: "Pembayaran", icon: Wallet },
-  { to: "/tarif", label: "Tarif", icon: Settings2 },
-  { to: "/laporan", label: "Laporan", icon: BarChart3 },
-  { to: "/pengguna", label: "Pengguna", icon: UserCog },
-  { to: "/printer", label: "Printer", icon: Printer },
+  { to: "/kas", label: "Finance", icon: Coins },
+  { to: "/laporan", label: "Reports", icon: BarChart3 },
   { to: "/backup", label: "Backup", icon: DatabaseBackup },
+] as const;
+
+const setupItems = [
+  { to: "/tarif", label: "Pricing", icon: Settings2 },
+  { to: "/pelanggan", label: "Membership", icon: Users },
+  { to: "/kafe", label: "Kafe", icon: Coffee },
+  { to: "/promo", label: "Promo", icon: Percent },
+  { to: "/pembayaran", label: "Payment", icon: Wallet },
+  { to: "/pengguna", label: "User", icon: UserCog },
+  { to: "/printer", label: "Printer", icon: Printer },
+  { to: "/tv", label: "TV Connect", icon: MonitorPlay },
+  { to: "/akun", label: "Password", icon: KeyRound },
   { to: "/store", label: "Store", icon: Store },
-  { to: "/akun", label: "Akun", icon: KeyRound },
 ] as const;
 
 function RootComponent() {
@@ -281,6 +288,7 @@ function AppShell() {
     return can(role, key, rolePermissions);
   };
   const items = navItems.filter(({ to }) => allowed(to));
+  const setups = setupItems.filter(({ to }) => allowed(to));
   const blocked = session !== null && role !== null && !allowed(pathname);
 
   const handleSignOut = async () => {
@@ -393,6 +401,30 @@ function AppShell() {
                         </Link>
                       ))}
                     </nav>
+                    {setups.length > 0 && (
+                      <>
+                        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Setup
+                        </p>
+                        <nav className="mt-2 grid grid-cols-2 gap-1.5">
+                          {setups.map(({ to, label, icon: Icon }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              onClick={() => setMenuOpen(false)}
+                              className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-secondary/25 px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                              activeProps={{
+                                className:
+                                  "bg-secondary text-primary border-primary/50 glow-primary",
+                              }}
+                            >
+                              <Icon className="size-4 shrink-0" />
+                              <span className="truncate">{label}</span>
+                            </Link>
+                          ))}
+                        </nav>
+                      </>
+                    )}
                   </SheetContent>
                 </Sheet>
               </div>
@@ -413,6 +445,27 @@ function AppShell() {
                   {label}
                 </Link>
               ))}
+              {setups.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:px-3 lg:py-2 lg:text-sm">
+                      <Wrench className="size-4 shrink-0" />
+                      Setup
+                      <ChevronDown className="size-3.5 shrink-0" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {setups.map(({ to, label, icon: Icon }) => (
+                      <DropdownMenuItem key={to} asChild>
+                        <Link to={to} className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </nav>
           )}
         </div>
