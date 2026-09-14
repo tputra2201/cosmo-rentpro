@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { passwordSetupUrl } from "@/lib/app-url";
-import { useBranding } from "@/lib/branding";
+import { useBrandingRecord } from "@/lib/branding";
 import { toLogoDataUrl } from "@/lib/logo-image";
 import {
   ShieldCheck,
@@ -286,8 +286,8 @@ function AppIdentityPanel({
       developer_email: branding.developer_email,
       developer_contact: branding.developer_contact,
     });
-    if (branding.login_title) setReady(true);
-  }, [branding, ready]);
+    setReady(true);
+  }, [branding, loaded, ready]);
 
   return (
     <div className="surface-panel grid gap-4 p-5">
