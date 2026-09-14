@@ -280,6 +280,106 @@ function PenggunaPage() {
   );
 }
 
+/** Batas dianggap masih aktif: 3 menit tanpa denyut = sudah keluar. */
+const ONLINE_MS = 3 * 60_000;
+
+function sinceText(at: string) {
+  const diff = Date.now() - new Date(at).getTime();
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "baru saja";
+  if (min < 60) return `${min} menit lalu`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour} jam lalu`;
+  return `${Math.floor(hour / 24)} hari lalu`;
+}
+
+/** Siapa saja yang sedang memakai aplikasi, dikelompokkan per store. */
+function OnlineNow({
+  users,
+  presence,
+}: {
+  users: ManagedUser[];
+  presence: PresenceRow[];
+}) {
+  const rows = useMemo(() => {
+    const userById = new Map(users.map((u) => [u.id, u]));
+    const now = Date.now();
+    return presence
+      .filter((p) => now - new Date(p.lastSeenAt).getTime() <= ONLINE_MS)
+      .map((p) => ({ presence: p, user: userById.get(p.userId) }))
+      .filter((r) => Boolean(r.user))
+      .sort((a, b) =>
+        (a.user!.storeName || "").localeCompare(b.user!.storeName || ""),
+      );
+  }, [users, presence]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof rows>();
+    for (const row of rows) {
+      const key = row.user!.storeName || "Tanpa store";
+      map.set(key, [...(map.get(key) ?? []), row]);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [rows]);
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <Wifi className="size-5 text-primary" /> Sedang Masuk Saat Ini
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Pengguna yang aktif memakai aplikasi dalam 3 menit terakhir, per store.
+          Daftar diperbarui otomatis.
+        </p>
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Belum ada pengguna yang sedang memakai aplikasi.
+        </p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {groups.map(([storeName, list]) => (
+            <div
+              key={storeName}
+              className="rounded-lg border border-border bg-secondary/30 p-4"
+            >
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">{storeName}</h3>
+                <span className="text-xs text-muted-foreground">
+                  {list.length} sedang masuk
+                </span>
+              </div>
+              <div className="grid gap-2">
+                {list.map(({ user, presence: p }) => (
+                  <div
+                    key={p.userId}
+                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="font-medium">
+                        {user!.fullName || user!.email}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {roleLabel[user!.role]}
+                      </span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {p.device || "Perangkat"} · {sinceText(p.lastSeenAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UserRow({
   user,
   isSelf,
