@@ -2127,6 +2127,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const completed: HistoryRecord = {
             id: `cafe-${tableId}-${endAt}`,
             stationName: table.name,
+            ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
             console: "Kafe",
             mode: "prepaid",
             startAt: table.openedAt ?? endAt,
