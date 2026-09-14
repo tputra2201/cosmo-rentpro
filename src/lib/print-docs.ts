@@ -84,11 +84,12 @@ export function receiptBody(opts: {
   record: HistoryRecord;
   store: PrintStore;
   layout: DocLayout;
-  kind: "receipt" | "invoice";
+  kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
   const { record, store, layout, kind, cashier } = opts;
-  const title = kind === "invoice" ? "INVOICE" : "STRUK PEMBAYARAN";
+  const title =
+    kind === "invoice" ? "INVOICE" : kind === "bill" ? "BILL SEMENTARA" : "STRUK PEMBAYARAN";
   return `
     ${layout.headerText ? `<div class="center bold">${escapeHtml(layout.headerText)}</div>` : ""}
     ${storeBlock(store, layout)}
@@ -128,7 +129,7 @@ export function receiptText(opts: {
   store: PrintStore;
   printer: PrinterConfig;
   layout: DocLayout;
-  kind: "receipt" | "invoice";
+  kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
   const { record, store, printer, layout, kind, cashier } = opts;
@@ -142,7 +143,12 @@ export function receiptText(opts: {
     }
   }
   lines.push(textSep(w));
-  lines.push(textCenter(kind === "invoice" ? "INVOICE" : "STRUK PEMBAYARAN", w));
+  lines.push(
+    textCenter(
+      kind === "invoice" ? "INVOICE" : kind === "bill" ? "BILL SEMENTARA" : "STRUK PEMBAYARAN",
+      w,
+    ),
+  );
   lines.push(`No: ${record.id}`);
   lines.push(`Waktu: ${time(record.paidAt ?? record.endAt)}`);
   if (cashier) lines.push(`Kasir: ${cashier}`);
@@ -197,7 +203,7 @@ export function printReceipt(opts: {
   store: PrintStore;
   printer: PrinterConfig;
   layout: DocLayout;
-  kind: "receipt" | "invoice";
+  kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
   if (printMode(opts.printer) === "android") {
@@ -210,7 +216,7 @@ export function printReceipt(opts: {
   }
   const body = receiptBody(opts);
   printHtml(
-    opts.kind === "invoice" ? "Invoice" : "Struk",
+    opts.kind === "invoice" ? "Invoice" : opts.kind === "bill" ? "Bill" : "Struk",
     paperCss(opts.printer) + layoutCss(opts.layout),
     withCopies(opts.printer, body),
   );
