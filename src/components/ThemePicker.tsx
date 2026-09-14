@@ -14,7 +14,7 @@ export function ThemePicker() {
         Pilih latar aplikasi. Warna tulisan otomatis menyesuaikan agar tetap
         mudah dibaca.
       </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {themeOptions.map((opt) => (
           <button
             key={opt.value}
