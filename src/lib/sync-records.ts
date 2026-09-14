@@ -25,6 +25,7 @@ export const LIST_KINDS = {
   cash_entry: "cashEntries",
   shift: "shifts",
   log_entry: "logEntries",
+  addon_rental: "addonRentals",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
@@ -123,6 +124,7 @@ export function applyRecords(
     cashEntries: [...state.cashEntries],
     shifts: [...(state.shifts ?? [])],
     logEntries: [...(state.logEntries ?? [])],
+    addonRentals: [...(state.addonRentals ?? [])],
   };
 
 
@@ -150,7 +152,7 @@ export function applyRecords(
     else list.push(row);
   }
 
-  const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables", "cashCategories"] as const;
+  const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables", "cashCategories", "addonRentals"] as const;
   for (const listName of SORTED) {
     const list = next[listName] as unknown as ({ sort?: number } & AnyRow)[];
     list.sort((a, b) => (a.sort ?? Number.MAX_SAFE_INTEGER) - (b.sort ?? Number.MAX_SAFE_INTEGER));

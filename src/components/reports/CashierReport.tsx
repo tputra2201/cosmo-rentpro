@@ -14,6 +14,7 @@ type Row = {
   name: string;
   count: number;
   rental: number;
+  addon: number;
   fnb: number;
   discount: number;
   total: number;
@@ -41,6 +42,7 @@ export function CashierReport({ range }: { range: ReportRange }) {
           name: key,
           count: 0,
           rental: 0,
+          addon: 0,
           fnb: 0,
           discount: 0,
           total: 0,
@@ -61,6 +63,7 @@ export function CashierReport({ range }: { range: ReportRange }) {
       const row = bucket(h.cashierName ?? "");
       row.count += 1;
       row.rental += h.rentalTotal ?? 0;
+      row.addon += h.addonTotal ?? 0;
       row.fnb += h.fnbTotal ?? 0;
       row.discount += h.discount ?? 0;
       row.total += h.total ?? 0;
@@ -76,11 +79,12 @@ export function CashierReport({ range }: { range: ReportRange }) {
     (sum, r) => ({
       count: sum.count + r.count,
       rental: sum.rental + r.rental,
+      addon: sum.addon + r.addon,
       fnb: sum.fnb + r.fnb,
       discount: sum.discount + r.discount,
       total: sum.total + r.total,
     }),
-    { count: 0, rental: 0, fnb: 0, discount: 0, total: 0 },
+    { count: 0, rental: 0, addon: 0, fnb: 0, discount: 0, total: 0 },
   );
 
   return (
@@ -102,6 +106,7 @@ export function CashierReport({ range }: { range: ReportRange }) {
                 <TableHead>Kasir</TableHead>
                 <TableHead className="text-right">Nota</TableHead>
                 <TableHead className="text-right">Rental</TableHead>
+                <TableHead className="text-right">Additional Rental</TableHead>
                 <TableHead className="text-right">Kafe</TableHead>
                 <TableHead className="text-right">Diskon</TableHead>
                 <TableHead className="text-right">Total</TableHead>
@@ -114,6 +119,7 @@ export function CashierReport({ range }: { range: ReportRange }) {
                   <TableCell className="font-semibold">{r.name}</TableCell>
                   <TableCell className="text-right">{r.count}</TableCell>
                   <TableCell className="text-right">{formatRupiah(r.rental)}</TableCell>
+                  <TableCell className="text-right">{formatRupiah(r.addon)}</TableCell>
                   <TableCell className="text-right">{formatRupiah(r.fnb)}</TableCell>
                   <TableCell className="text-right">{formatRupiah(r.discount)}</TableCell>
                   <TableCell className="text-right font-semibold">
@@ -133,6 +139,9 @@ export function CashierReport({ range }: { range: ReportRange }) {
                 <TableCell className="text-right font-bold">{grand.count}</TableCell>
                 <TableCell className="text-right font-bold">
                   {formatRupiah(grand.rental)}
+                </TableCell>
+                <TableCell className="text-right font-bold">
+                  {formatRupiah(grand.addon)}
                 </TableCell>
                 <TableCell className="text-right font-bold">
                   {formatRupiah(grand.fnb)}

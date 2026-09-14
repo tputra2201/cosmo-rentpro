@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { addonAmount, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 type Row = { label: string; amount: number; qty?: number };
@@ -38,6 +38,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const cards = cardEntries.filter((e) => inRange(e.createdAt, range));
 
   const rentalGross = records.reduce((s, h) => s + h.rentalTotal, 0);
+  const addonGross = records.reduce((s, h) => s + (h.addonTotal ?? 0), 0);
   const fnbGross = records.reduce((s, h) => s + h.fnbTotal, 0);
   const discount = records.reduce((s, h) => s + (h.discount ?? 0), 0);
   const netSales = records.reduce((s, h) => s + h.total, 0);
@@ -66,6 +67,14 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     if (h.kind === "cafe" && h.tableName) bump(tables, h.tableName, h.total, 1);
   }
 
+  const addons = new Map<string, Row>();
+  for (const h of records) {
+    for (const a of h.addons ?? []) {
+      const hours = Math.max(0, h.minutes) / 60;
+      bump(addons, a.name, addonAmount(a, hours), a.qty);
+    }
+  }
+
   const consoles = new Map<string, Row>();
   for (const h of records) {
     if (h.rentalTotal > 0) bump(consoles, h.console || "Rental", h.rentalTotal, 1);
@@ -85,6 +94,11 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     if (h.rentalTotal > 0) {
       bump(categories, "Rental", h.rentalTotal, 1);
       bump(items, `Rental ${h.console}`, h.rentalTotal, 1);
+    }
+    for (const a of h.addons ?? []) {
+      const amount = addonAmount(a, Math.max(0, h.minutes) / 60);
+      bump(categories, "Additional Rental", amount, a.qty);
+      bump(items, a.name, amount, a.qty);
     }
   }
 
@@ -134,8 +148,12 @@ export function CompanyReport({ range }: { range: ReportRange }) {
 
       <Section title="Penjualan">
         <Line label="Rental" value={formatRupiah(rentalGross)} />
+        <Line label="Additional Rental" value={formatRupiah(addonGross)} />
         <Line label="Makanan &amp; minuman" value={formatRupiah(fnbGross)} />
-        <Line label="Penjualan kotor" value={formatRupiah(rentalGross + fnbGross)} />
+        <Line
+          label="Penjualan kotor"
+          value={formatRupiah(rentalGross + addonGross + fnbGross)}
+        />
         <Line label="Potongan harga" value={`- ${formatRupiah(discount)}`} />
         <Line label="Penjualan bersih" value={formatRupiah(netSales)} strong />
         <Line label="Jumlah nota" value={String(records.length)} />
@@ -158,6 +176,12 @@ export function CompanyReport({ range }: { range: ReportRange }) {
       {tables.size > 0 && (
         <Section title="Penjualan per meja">
           <Rows rows={sorted(tables)} countLabel="Nota" />
+        </Section>
+      )}
+
+      {addons.size > 0 && (
+        <Section title="Additional Rental">
+          <Rows rows={sorted(addons)} countLabel="Jumlah" />
         </Section>
       )}
 

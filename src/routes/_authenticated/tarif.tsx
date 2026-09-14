@@ -16,6 +16,7 @@ import {
 import {
   formatRupiah,
   useBilling,
+  type AddonMode,
   type ConsoleType,
   type RoundingRule,
   type StationAvailability,
@@ -71,7 +72,15 @@ function TarifPage() {
     reorderConsoleTypes,
     tvNotice,
     setTvNotice,
+    addonRentals,
+    addAddonRental,
+    updateAddonRental,
+    setAddonDiscount,
+    removeAddonRental,
   } = useBilling();
+  const [newAddon, setNewAddon] = useState("");
+  const [newAddonPrice, setNewAddonPrice] = useState("");
+  const [newAddonMode, setNewAddonMode] = useState<AddonMode>("hourly");
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
@@ -264,6 +273,125 @@ function TarifPage() {
           </Button>
         </form>
       </section>
+
+      <section className="surface-panel p-6">
+        <h2 className="text-xl font-semibold">Additional Rental</h2>
+        <p className="text-sm text-muted-foreground">
+          Sewa tambahan di luar konsol (stik ekstra, VR, kursi, dan lain-lain). Pilih
+          cara hitungnya: mengikuti lama pemakaian (per jam) atau sekali sewa. Item aktif
+          bisa dipilih di panel TV saat transaksi dan masuk kategori
+          “Additional Rental” di laporan.
+        </p>
+        <SortableArea
+          ids={addonRentals.map((item) => item.id)}
+          onReorder={(activeId, overId) => reorderList("addonRentals", activeId, overId)}
+          className="mt-4 space-y-2"
+        >
+          {addonRentals.map((item) => (
+            <SortableItem
+              key={item.id}
+              id={item.id}
+              label={`additional rental ${item.name}`}
+              className="rounded-lg bg-secondary/60 p-3"
+              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_140px_150px_auto_auto_auto]"
+            >
+              <Input
+                value={item.name}
+                aria-label={`Nama ${item.name}`}
+                onChange={(e) => updateAddonRental(item.id, { name: e.target.value })}
+              />
+              <Input
+                type="number"
+                min={0}
+                step={500}
+                value={item.price}
+                aria-label={`Harga ${item.name}`}
+                onChange={(e) =>
+                  updateAddonRental(item.id, { price: Number(e.target.value) || 0 })
+                }
+              />
+              <Select
+                value={item.mode}
+                onValueChange={(v) => updateAddonRental(item.id, { mode: v as AddonMode })}
+              >
+                <SelectTrigger aria-label={`Cara hitung ${item.name}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Per jam</SelectItem>
+                  <SelectItem value="once">Sekali sewa</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                {formatRupiah(item.price)}
+                {item.mode === "hourly" ? " / jam" : " / sewa"}
+              </span>
+              <Switch
+                checked={item.active}
+                onCheckedChange={(active) => updateAddonRental(item.id, { active })}
+                aria-label={`Aktifkan ${item.name}`}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Hapus ${item.name}`}
+                onClick={() => {
+                  removeAddonRental(item.id);
+                  toast.success(`${item.name} dihapus`);
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+              <DiscountFields
+                label={item.name}
+                unitHint={item.mode === "hourly" ? "Rp / jam" : "Rp / sewa"}
+                value={item.discount}
+                onChange={(patch) => setAddonDiscount(item.id, patch)}
+              />
+            </SortableItem>
+          ))}
+        </SortableArea>
+        <form
+          className="mt-4 grid gap-2 sm:grid-cols-[1fr_140px_150px_auto]"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!addAddonRental(newAddon, Number(newAddonPrice) || 0, newAddonMode)) {
+              toast.error("Nama item kosong");
+              return;
+            }
+            toast.success(`${newAddon.trim()} ditambahkan`);
+            setNewAddon("");
+            setNewAddonPrice("");
+          }}
+        >
+          <Input
+            placeholder="Nama item (mis. Stik Ekstra, VR)"
+            value={newAddon}
+            onChange={(e) => setNewAddon(e.target.value)}
+          />
+          <Input
+            type="number"
+            min={0}
+            step={500}
+            placeholder="Harga"
+            value={newAddonPrice}
+            onChange={(e) => setNewAddonPrice(e.target.value)}
+          />
+          <Select value={newAddonMode} onValueChange={(v) => setNewAddonMode(v as AddonMode)}>
+            <SelectTrigger aria-label="Cara hitung item baru">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hourly">Per jam</SelectItem>
+              <SelectItem value="once">Sekali sewa</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button type="submit">
+            <Plus className="size-4" /> Tambah
+          </Button>
+        </form>
+      </section>
+
 
       <section className="surface-panel p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

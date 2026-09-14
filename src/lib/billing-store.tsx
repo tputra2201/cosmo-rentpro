@@ -32,12 +32,49 @@ export type OrderItem = {
   qty: number;
 };
 
+/** Cara hitung sewa tambahan: per jam pemakaian atau sekali sewa. */
+export type AddonMode = "hourly" | "once";
+
+/** Item "Additional Rental": sewa tambahan selain konsol (stik, VR, kursi, dll). */
+export type AddonRental = {
+  id: string;
+  name: string;
+  price: number;
+  mode: AddonMode;
+  active: boolean;
+  discount?: ItemDiscount;
+  sort?: number;
+};
+
+/** Sewa tambahan yang dipakai pada satu sesi rental. */
+export type SessionAddon = {
+  id: string;
+  addonId: string;
+  name: string;
+  price: number;
+  mode: AddonMode;
+  qty: number;
+};
+
+/** Biaya satu sewa tambahan. Mode per jam dikali durasi sesi. */
+export function addonAmount(addon: SessionAddon, hours: number) {
+  const qty = Math.max(0, addon.qty);
+  if (addon.mode === "once") return Math.round(addon.price * qty);
+  return Math.round(addon.price * qty * Math.max(0, hours));
+}
+
+export function addonsTotal(addons: SessionAddon[] | undefined, hours: number) {
+  return (addons ?? []).reduce((sum, a) => sum + addonAmount(a, hours), 0);
+}
+
 export type Session = {
   mode: PlayMode;
   startAt: number;
   durationMin: number; // 0 for open time
   rate: number; // rupiah per hour, snapshot at start
   orders: OrderItem[];
+  /** Sewa tambahan (Additional Rental) yang dipakai sesi ini. */
+  addons?: SessionAddon[];
   customerName: string;
   customerPhone: string;
   member: boolean;
@@ -320,6 +357,8 @@ export function promoDiscountAmount(promo: Promotion | undefined, base: number) 
 
 export type BillBreakdown = {
   rental: number;
+  /** Total sewa tambahan (Additional Rental). */
+  addon: number;
   fnb: number;
   subtotal: number;
   itemDiscount: number;
@@ -335,6 +374,10 @@ export function computeBill(input: {
   rental: number;
   rentalHours: number;
   rentalDiscount?: ItemDiscount;
+  /** Total sewa tambahan yang sudah dihitung. */
+  addon?: number;
+  /** Potongan harga khusus sewa tambahan. */
+  addonDiscount?: number;
   orders: OrderItem[];
   menu: MenuItem[];
   ctx: DiscountContext;
@@ -346,9 +389,11 @@ export function computeBill(input: {
   const fallback = input.fallbackPercent ?? 0;
   const fnb = input.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
   const rental = Math.max(0, input.rental);
-  const subtotal = rental + fnb;
+  const addon = Math.max(0, input.addon ?? 0);
+  const subtotal = rental + addon + fnb;
   const itemDiscount =
     itemDiscountAmount(input.rentalDiscount, rental, input.rentalHours, input.ctx, fallback) +
+    Math.min(addon, Math.max(0, input.addonDiscount ?? 0)) +
     orderDiscountTotal(input.orders, input.menu, input.ctx, fallback);
   const afterItem = Math.max(0, subtotal - itemDiscount);
   const promo = activeGlobalPromo(input.promotions, input.now);
@@ -366,6 +411,7 @@ export function computeBill(input: {
   const discount = itemDiscount + promoDiscount + manualDiscount;
   return {
     rental,
+    addon,
     fnb,
     subtotal,
     itemDiscount,
@@ -446,6 +492,10 @@ export type HistoryRecord = {
   endAt: number;
   minutes: number;
   rentalTotal: number;
+  /** Total sewa tambahan (Additional Rental). */
+  addonTotal?: number;
+  /** Rincian sewa tambahan yang dipakai. */
+  addons?: SessionAddon[];
   fnbTotal: number;
   total: number;
   payment?: string;
@@ -500,6 +550,8 @@ type State = {
   consoleTypes: string[];
   rates: Rates;
   consoleDiscounts: Record<string, ItemDiscount>;
+  /** Sewa tambahan (Additional Rental) di luar konsol. */
+  addonRentals: AddonRental[];
   menu: MenuItem[];
   menuCategories: string[];
   cafeTables: CafeTable[];
@@ -557,6 +609,7 @@ const defaultState: State = {
   consoleTypes: ["PS3", "PS4", "PS5"],
   rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
   consoleDiscounts: {},
+  addonRentals: [],
   menu: [
     { id: "m1", name: "Air Mineral", price: 4000, category: "Minuman", printerId: "prt-bar" },
     { id: "m2", name: "Teh Botol", price: 6000, category: "Minuman", printerId: "prt-bar" },
@@ -815,11 +868,29 @@ export type PriceConfig = {
   promotions: Promotion[];
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
+  addonRentals?: AddonRental[];
 };
 
 function fallbackCardPercent(cfg: PriceConfig, ctx: DiscountContext) {
   if (!ctx.card) return 0;
   return ctx.member ? cfg.cardMemberDiscountPercent : cfg.cardDiscountPercent;
+}
+
+/** Potongan harga khusus item sewa tambahan. */
+export function addonDiscountTotal(
+  addons: SessionAddon[] | undefined,
+  hours: number,
+  catalog: AddonRental[] | undefined,
+  ctx: DiscountContext,
+  fallbackPercent = 0,
+) {
+  return (addons ?? []).reduce((sum, addon) => {
+    const base = addonAmount(addon, hours);
+    const item = (catalog ?? []).find((a) => a.id === addon.addonId);
+    const units =
+      addon.mode === "hourly" ? Math.max(0, addon.qty) * Math.max(0, hours) : Math.max(0, addon.qty);
+    return sum + itemDiscountAmount(item?.discount, base, units, ctx, fallbackPercent);
+  }, 0);
 }
 
 /** Tagihan satu sesi rental lengkap dengan semua potongan. */
@@ -832,20 +903,30 @@ export function sessionBill(
   manual?: { type: DiscountType; value: number },
 ): BillBreakdown {
   const minutes = rentalMinutes(session, now);
+  const hours = minutes / 60;
   const fallbackManual =
     session.discountType && session.discountValue
       ? { type: session.discountType, value: session.discountValue, max: session.discountMax }
       : undefined;
+  const fallbackPercent = fallbackCardPercent(cfg, ctx);
   return computeBill({
     rental: rentalTotal(session, now),
-    rentalHours: minutes / 60,
+    rentalHours: hours,
     ...(cfg.consoleDiscounts[consoleType] ? { rentalDiscount: cfg.consoleDiscounts[consoleType] } : {}),
+    addon: addonsTotal(session.addons, hours),
+    addonDiscount: addonDiscountTotal(
+      session.addons,
+      hours,
+      cfg.addonRentals,
+      ctx,
+      fallbackPercent,
+    ),
     orders: session.orders,
     menu: cfg.menu,
     ctx,
     promotions: cfg.promotions,
     now,
-    fallbackPercent: fallbackCardPercent(cfg, ctx),
+    fallbackPercent,
     ...(manual && manual.value ? { manual } : fallbackManual ? { manual: fallbackManual } : {}),
   });
 }
@@ -934,6 +1015,11 @@ function migrateState(raw: unknown): State {
     })),
     rates: parsed.rates ?? defaultState.rates,
     consoleDiscounts: parsed.consoleDiscounts ?? defaultState.consoleDiscounts,
+    addonRentals: (parsed.addonRentals ?? defaultState.addonRentals).map((item) => ({
+      ...item,
+      mode: item.mode === "once" ? ("once" as const) : ("hourly" as const),
+      active: item.active ?? true,
+    })),
     consoleTypes:
       parsed.consoleTypes && parsed.consoleTypes.length
         ? parsed.consoleTypes
@@ -1075,10 +1161,22 @@ type Ctx = State & {
   }) => void;
   removeStation: (stationId: string) => void;
   reorderList: (
-    list: "stations" | "cafeTables" | "menu" | "packages" | "paymentMethods",
+    list:
+      | "stations"
+      | "cafeTables"
+      | "menu"
+      | "packages"
+      | "paymentMethods"
+      | "addonRentals",
     activeId: string,
     overId: string,
   ) => void;
+  addAddonRental: (name: string, price: number, mode: AddonMode) => boolean;
+  updateAddonRental: (id: string, patch: Partial<Omit<AddonRental, "id">>) => void;
+  setAddonDiscount: (id: string, patch: Partial<ItemDiscount>) => void;
+  removeAddonRental: (id: string) => void;
+  addSessionAddon: (stationId: string, addonId: string, qty?: number) => void;
+  removeSessionAddon: (stationId: string, rowId: string) => void;
   reorderConsoleTypes: (activeName: string, overName: string) => void;
   reorderMenuCategories: (activeName: string, overName: string) => void;
   addMenuItem: (name: string, price: number, category?: string) => void;
@@ -1272,6 +1370,24 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
     coalesce: true,
   }),
   setRates: () => ({ action: "Ubah tarif per jam", coalesce: true }),
+
+  // Additional Rental
+  addAddonRental: (a, _s, r) =>
+    r === false ? null : { action: "Tambah additional rental", detail: `${txt(a[0])} · ${txt(a[1])}` },
+  updateAddonRental: (a, s) => ({
+    action: "Ubah additional rental",
+    detail: `${nameById(s.addonRentals, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  setAddonDiscount: (a, s) => ({
+    action: "Ubah potongan additional rental",
+    detail: `${nameById(s.addonRentals, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeAddonRental: (a, s) => ({
+    action: "Hapus additional rental",
+    detail: nameById(s.addonRentals, a[0]),
+  }),
 
   // Unit TV
   addStation: (a) => ({
@@ -1529,6 +1645,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ongoing: true,
           minutes: Math.ceil(elapsedSeconds(session, at) / 60),
           rentalTotal: bill.rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(session.addons?.length ? { addons: session.addons } : {}),
           fnbTotal: bill.fnb,
           total: bill.total,
           payment: Array.from(new Set(methods)).filter(Boolean).join(" + ") || "Cash",
@@ -1710,6 +1828,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(session.addons?.length ? { addons: session.addons } : {}),
           fnbTotal: fnb,
           total,
           payment: uniqueMethods.join(" + ") || "Cash",
@@ -1826,6 +1946,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(sess, at) / 60),
           rentalTotal: bill.rental,
+          ...(bill.addon ? { addonTotal: bill.addon } : {}),
+          ...(sess.addons?.length ? { addons: sess.addons } : {}),
           fnbTotal: bill.fnb,
           total: bill.total,
           payment: Array.from(new Set(allMethods)).filter(Boolean).join(" + ") || "Cash",
@@ -2096,6 +2218,87 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       },
       removeOrder,
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
+      addAddonRental: (name, price, mode) => {
+        const clean = name.trim();
+        if (!clean) return false;
+        update((prev) =>
+          prev.addonRentals.some((a) => a.name.trim().toLowerCase() === clean.toLowerCase())
+            ? prev
+            : {
+                ...prev,
+                addonRentals: [
+                  ...prev.addonRentals,
+                  {
+                    id: `add-${Date.now()}`,
+                    name: clean,
+                    price: Math.max(0, Math.round(price)),
+                    mode,
+                    active: true,
+                    sort: prev.addonRentals.length,
+                  },
+                ],
+              },
+        );
+        return true;
+      },
+      updateAddonRental: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+        })),
+      setAddonDiscount: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.map((a) =>
+            a.id === id
+              ? { ...a, discount: { ...emptyItemDiscount, ...a.discount, ...patch } }
+              : a,
+          ),
+        })),
+      removeAddonRental: (id) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.filter((a) => a.id !== id),
+        })),
+      addSessionAddon: (stationId, addonId, qty = 1) =>
+        update((prev) => {
+          const item = prev.addonRentals.find((a) => a.id === addonId);
+          if (!item) return prev;
+          return {
+            ...prev,
+            stations: prev.stations.map((s) => {
+              if (s.id !== stationId || !s.session) return s;
+              const addons = [...(s.session.addons ?? [])];
+              const index = addons.findIndex((a) => a.addonId === addonId);
+              const existing = addons[index];
+              if (existing) {
+                addons[index] = { ...existing, qty: existing.qty + Math.max(1, qty) };
+              } else {
+                addons.push({
+                  id: `sa-${addonId}-${Date.now()}`,
+                  addonId,
+                  name: item.name,
+                  price: item.price,
+                  mode: item.mode,
+                  qty: Math.max(1, qty),
+                });
+              }
+              return { ...s, session: { ...s.session, addons } };
+            }),
+          };
+        }),
+      removeSessionAddon: (stationId, rowId) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  addons: (s.session.addons ?? []).filter((a) => a.id !== rowId),
+                },
+              }
+            : s,
+        ),
       setConsoleDiscount: (name, patch) =>
         update((prev) => ({
           ...prev,
