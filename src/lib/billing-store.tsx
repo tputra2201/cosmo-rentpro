@@ -1501,10 +1501,31 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             s.id === stationId ? { ...s, session: null } : s,
           ),
         };
-      });
+      })(prevState);
+      return { record, next };
+    },
+    [],
+  );
+
+  const stopSession = useCallback<Ctx["stopSession"]>(
+    (stationId, payment, amountPaid, payments) => {
+      const endAt = Date.now();
+      const { record } = computeStop(
+        stateRef.current,
+        endAt,
+        stationId,
+        payment,
+        amountPaid,
+        payments,
+      );
+      if (!record) return null;
+      setState(
+        (prev) =>
+          computeStop(prev, endAt, stationId, payment, amountPaid, payments).next,
+      );
       return record;
     },
-    [setState],
+    [computeStop, setState],
   );
 
   const settleSession = useCallback<Ctx["settleSession"]>(
