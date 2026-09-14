@@ -1769,6 +1769,39 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       update((prev) => withLog(prev, action, detail ?? "")),
     [update, withLog],
   );
+
+  // Catat masuk dan keluar pengguna ke log book. Penanda di perangkat menjaga
+  // agar memuat ulang halaman tidak dianggap masuk lagi.
+  const LOGIN_MARK = "billing.logged-in-user";
+  useEffect(() => {
+    const uid = authSession?.user.id ?? null;
+    let previous: string | null = null;
+    try {
+      previous = localStorage.getItem(LOGIN_MARK);
+    } catch {
+      previous = null;
+    }
+    if (uid) {
+      if (previous !== uid) {
+        try {
+          localStorage.setItem(LOGIN_MARK, uid);
+        } catch {
+          /* penyimpanan tidak tersedia */
+        }
+        addLog("Masuk aplikasi", user?.email ?? "");
+      }
+      return;
+    }
+    if (previous) {
+      try {
+        localStorage.removeItem(LOGIN_MARK);
+      } catch {
+        /* penyimpanan tidak tersedia */
+      }
+      addLog("Keluar aplikasi", actorRef.current.name);
+    }
+  }, [authSession?.user.id, addLog, user?.email]);
+
   // Seluruh data di perangkat terikat ke satu store. Begitu store pengguna
   // diketahui, data lokal dari store lain dibuang sebelum satu baris pun
   // dikirim, dan data baru langsung bertanda store ini.
