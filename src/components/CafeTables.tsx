@@ -62,9 +62,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     printers,
   } = useBilling();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
-  const labelPrinters = printers.filter(
-    (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
-  );
+  const labelPrinters = printers.filter((p) => p.active);
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
@@ -295,7 +293,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           printLabels({
                             printer,
                             items,
-                            heading: printer.role === "bar" ? "BAR" : "DAPUR",
+                            heading:
+                              printer.role === "bar"
+                                ? "BAR"
+                                : printer.role === "kitchen"
+                                  ? "DAPUR"
+                                  : printer.name,
                             source: table.name,
                             ...(table.customerName ? { customerName: table.customerName } : {}),
                             ...(table.notes ? { note: table.notes } : {}),

@@ -117,9 +117,7 @@ export function StationDialog({
     setWantPrint(false);
     setPaidRecord(found);
   }, [wantPrint, paidHistoryId, history]);
-  const labelPrinters = printers.filter(
-    (p) => p.active && (p.role === "kitchen" || p.role === "bar"),
-  );
+  const labelPrinters = printers.filter((p) => p.active);
   const [cardNumber, setCardNumber] = useState("");
   const [editCustomer, setEditCustomer] = useState(false);
   const [editName, setEditName] = useState("");
@@ -744,7 +742,12 @@ export function StationDialog({
                         printLabels({
                           printer,
                           items,
-                          heading: printer.role === "bar" ? "BAR" : "DAPUR",
+                          heading:
+                            printer.role === "bar"
+                              ? "BAR"
+                              : printer.role === "kitchen"
+                                ? "DAPUR"
+                                : printer.name,
                           source: station.name,
                           ...(session.customerName ? { customerName: session.customerName } : {}),
                         });

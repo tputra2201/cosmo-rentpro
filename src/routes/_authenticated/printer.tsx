@@ -77,7 +77,7 @@ function PrinterPage() {
   const { store } = useStoreInfo(true);
   const canManage = can(role, "printer.kelola", rolePermissions);
 
-  const labelPrinters = printers.filter((p) => p.role === "kitchen" || p.role === "bar");
+  const labelPrinters = printers.filter((p) => p.active);
 
   useEffect(() => {
     if (androidApp) setPairedPrinters(pairedAndroidPrinters());
