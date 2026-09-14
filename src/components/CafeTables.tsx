@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import {
   CARD_PAYMENT_NAME,
   cafeBill,
