@@ -480,6 +480,8 @@ export type CashShift = {
   cashActual?: number;
   balanceNote?: string;
   nextStartCash?: number;
+  closedByName?: string;
+  closedById?: string;
 };
 
 
