@@ -616,6 +616,7 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  logEntries: [],
   tvNotice: defaultTvNotice,
   printers: defaultPrinters,
   receiptLayout: defaultReceiptLayout,
