@@ -1005,6 +1005,7 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    logEntries: parsed.logEntries ?? defaultState.logEntries,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
     printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
     receiptLayout: { ...defaultReceiptLayout, ...(parsed.receiptLayout ?? {}) },
