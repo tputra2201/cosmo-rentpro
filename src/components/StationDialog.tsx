@@ -463,7 +463,7 @@ export function StationDialog({
               <div className="flex items-start gap-2 rounded-md border border-warning/60 bg-warning/10 p-3 text-sm text-warning">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <p>
-                  TV ini telah dibooking oleh <strong>{upcomingBooking.customerName}</strong> yang akan Check-In pada jam{" "}
+                  TV ini telah direservasi oleh <strong>{upcomingBooking.customerName}</strong> yang akan Check-In pada jam{" "}
                   {new Date(upcomingBooking.startAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                   {upcomingBooking.customerPhone ? ` (${upcomingBooking.customerPhone})` : ""}.
                 </p>

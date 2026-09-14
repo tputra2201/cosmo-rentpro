@@ -100,7 +100,7 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
       customerPhone: item.customerPhone ?? "",
       ...(item.customerId ? { customerId: item.customerId } : {}),
       bookingId: item.id,
-      packageName: `Booking ${minutes} Menit`,
+      packageName: `Reservasi ${minutes} Menit`,
       notes: item.notes ?? "",
     });
     updateBooking(item.id, { status: "checked-in" });
