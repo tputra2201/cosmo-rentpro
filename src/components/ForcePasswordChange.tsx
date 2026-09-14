@@ -40,6 +40,7 @@ export function ForcePasswordChange() {
       await savePassword({ data: { password: next } });
       await markDone({});
       markPasswordChanged();
+      addLog("Ganti kata sandi", "Ganti kata sandi awal dari Admin");
       toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
       await signOut();
       navigate({ to: "/auth", replace: true });
