@@ -665,6 +665,8 @@ function ControlCenter() {
         </Button>
       </div>
 
+      <AppIdentityPanel busy={busy} post={post} />
+
       <BrandingPanel busy={busy} post={post} />
 
       <DeveloperPanel
