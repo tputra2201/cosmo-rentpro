@@ -373,6 +373,11 @@ export function StationDialog({
     resetPaymentForm();
   };
 
+  const leftMinutes =
+    session && session.mode !== "open"
+      ? Math.max(0, Math.ceil(remainingSeconds(session, now) / 60))
+      : 0;
+
   const handleEnd = () => {
     const record = stopSession(station.id);
     if (!record) {
