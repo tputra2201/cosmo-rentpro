@@ -241,6 +241,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
+        <Stat
+          label="Additional Rental"
+          value={formatRupiah(sum(today, "addonTotal"))}
+        />
         <Stat label="Makanan & minuman" value={formatRupiah(sum(today, "fnbTotal"))} />
         <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
         <Stat label="Pengeluaran" value={formatRupiah(expense)} />
