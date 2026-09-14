@@ -9,12 +9,14 @@ import {
 } from "@/lib/users.functions";
 
 import { useAuth } from "@/lib/auth";
+import { useBilling } from "@/lib/billing-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function ForcePasswordChange() {
   const { markPasswordChanged, signOut } = useAuth();
+  const { addLog } = useBilling();
   const markDone = useServerFn(markPasswordChangedFn);
   const savePassword = useServerFn(setOwnPasswordFn);
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ export function ForcePasswordChange() {
       await savePassword({ data: { password: next } });
       await markDone({});
       markPasswordChanged();
+      addLog("Ganti kata sandi", "Ganti kata sandi awal dari Admin");
       toast.success("Kata sandi baru tersimpan. Silakan masuk kembali.");
       await signOut();
       navigate({ to: "/auth", replace: true });

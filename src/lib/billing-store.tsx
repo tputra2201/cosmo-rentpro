@@ -408,6 +408,19 @@ export type CashEntry = {
   createdAt: number;
 };
 
+/**
+ * Catatan log book: semua aktivitas selain nota transaksi pelanggan,
+ * misalnya menghapus nota, mengganti kata sandi, atau buka/tutup shift.
+ */
+export type LogEntry = {
+  id: string;
+  at: number;
+  actor: string;
+  role: string;
+  action: string;
+  detail: string;
+};
+
 export type PaymentSplit = { method: string; amount: number };
 
 /** Shift kasir: check-in sampai close out. */
@@ -507,6 +520,8 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  /** Log book aktivitas non-transaksi. */
+  logEntries: LogEntry[];
   tvNotice: TvNotice;
   /** Daftar printer store (struk, invoice, dapur, bar, laporan). */
   printers: PrinterConfig[];
@@ -601,6 +616,7 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  logEntries: [],
   tvNotice: defaultTvNotice,
   printers: defaultPrinters,
   receiptLayout: defaultReceiptLayout,
@@ -989,6 +1005,7 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    logEntries: parsed.logEntries ?? defaultState.logEntries,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
     printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
     receiptLayout: { ...defaultReceiptLayout, ...(parsed.receiptLayout ?? {}) },
@@ -1164,6 +1181,8 @@ type Ctx = State & {
   replaceAll: (data: unknown) => void;
 
   resetAll: () => void;
+  /** Catat satu aktivitas ke laporan Log Book. */
+  addLog: (action: string, detail?: string) => void;
   sync: SyncStatus;
 };
 
@@ -1717,7 +1736,36 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [mapStation],
   );
 
-  const { session: authSession } = useAuth();
+  const { session: authSession, fullName, user, role: authRole } = useAuth();
+
+  // Siapa yang sedang memakai aplikasi, dipakai untuk mencatat log book.
+  const actorRef = useRef({ name: "", role: "" });
+  actorRef.current = {
+    name: fullName || user?.email || "Tanpa nama",
+    role: authRole ?? "",
+  };
+
+  /** Tambahkan satu baris log book ke state. */
+  const withLog = useCallback((prev: State, action: string, detail = ""): State => ({
+    ...prev,
+    logEntries: [
+      {
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        at: Date.now(),
+        actor: actorRef.current.name,
+        role: actorRef.current.role,
+        action,
+        detail,
+      },
+      ...(prev.logEntries ?? []),
+    ].slice(0, 2000),
+  }), []);
+
+  const addLog = useCallback(
+    (action: string, detail?: string) =>
+      update((prev) => withLog(prev, action, detail ?? "")),
+    [update, withLog],
+  );
   // Seluruh data di perangkat terikat ke satu store. Begitu store pengguna
   // diketahui, data lokal dari store lain dibuang sebelum satu baris pun
   // dikirim, dan data baru langsung bertanda store ini.
@@ -1905,10 +1953,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           return { ...prev, menuCategories: moveItem(prev.menuCategories, from, to) };
         }),
       removeStation: (stationId) =>
-        update((prev) => ({
-          ...prev,
-          stations: prev.stations.filter((s) => s.id !== stationId),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, stations: prev.stations.filter((s) => s.id !== stationId) },
+            "Hapus unit TV",
+            prev.stations.find((s) => s.id === stationId)?.name ?? stationId,
+          ),
+        ),
       updateStation: (stationId, patch) =>
         mapStation(stationId, (station) => ({ ...station, ...patch })),
       addMenuItem: (name, price, category) =>
@@ -1928,10 +1979,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           menu: prev.menu.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       removeMenuItem: (id) =>
-        update((prev) => ({
-          ...prev,
-          menu: prev.menu.filter((m) => m.id !== id),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, menu: prev.menu.filter((m) => m.id !== id) },
+            "Hapus item menu",
+            prev.menu.find((m) => m.id === id)?.name ?? id,
+          ),
+        ),
       addMenuCategory: (name) => {
         const clean = name.trim();
         if (!clean) return false;
@@ -2351,11 +2405,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }),
 
       removePlayingCard: (id) =>
-        update((prev) => ({
-          ...prev,
-          playingCards: prev.playingCards.filter((c) => c.id !== id),
-          cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
-        })),
+        update((prev) =>
+          withLog(
+            {
+              ...prev,
+              playingCards: prev.playingCards.filter((c) => c.id !== id),
+              cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
+            },
+            "Hapus playing card",
+            prev.playingCards.find((c) => c.id === id)?.cardNumber ?? id,
+          ),
+        ),
       topupCard: (id, amount, note, payment) => {
         if (!shiftOpen) return false;
         const value = Math.round(amount);
@@ -2476,22 +2536,51 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updatePromotion: (id, patch) => update((prev) => ({ ...prev, promotions: prev.promotions.map((item) => item.id === id ? { ...item, ...patch } : item) })),
       removePromotion: (id) => update((prev) => ({ ...prev, promotions: prev.promotions.filter((item) => item.id !== id) })),
       updateHistoryPayment: (id, patch) =>
-        update((prev) => ({
-          ...prev,
-          history: prev.history.map((item) => {
-            if (item.id !== id) return item;
-            const { payments: _old, ...rest } = item;
-            const next: HistoryRecord = { ...rest };
-            if (patch.payment !== undefined) next.payment = patch.payment;
-            if (patch.payments && patch.payments.length > 0) next.payments = patch.payments;
-            return next;
-          }),
-        })),
+        update((prev) => {
+          const target = prev.history.find((item) => item.id === id);
+          return withLog(
+            {
+              ...prev,
+              history: prev.history.map((item) => {
+                if (item.id !== id) return item;
+                const { payments: _old, ...rest } = item;
+                const next: HistoryRecord = { ...rest };
+                if (patch.payment !== undefined) next.payment = patch.payment;
+                if (patch.payments && patch.payments.length > 0) next.payments = patch.payments;
+                return next;
+              }),
+            },
+            "Ubah metode pembayaran nota",
+            `${target?.stationName ?? id} · ${target?.payment ?? "-"} → ${patch.payment ?? "-"}`,
+          );
+        }),
       removeHistory: (id) =>
-        update((prev) => ({ ...prev, history: prev.history.filter((item) => item.id !== id) })),
-      clearHistory: () => update((prev) => ({ ...prev, history: [] })),
+        update((prev) => {
+          const target = prev.history.find((item) => item.id === id);
+          return withLog(
+            { ...prev, history: prev.history.filter((item) => item.id !== id) },
+            "Hapus nota transaksi",
+            target
+              ? `${target.stationName} · ${target.customerName ?? "Umum"} · ${formatRupiah(target.total)}`
+              : id,
+          );
+        }),
+      clearHistory: () =>
+        update((prev) =>
+          withLog(
+            { ...prev, history: [] },
+            "Hapus seluruh riwayat nota",
+            `${prev.history.length} nota`,
+          ),
+        ),
       resetTransactions: () =>
-        update((prev) => ({ ...prev, history: [], pointEntries: [], cashEntries: [] })),
+        update((prev) =>
+          withLog(
+            { ...prev, history: [], pointEntries: [], cashEntries: [] },
+            "Reset data transaksi",
+            `${prev.history.length} nota · ${prev.cashEntries.length} catatan kas`,
+          ),
+        ),
       addCashCategory: (input) => {
         const name = input.name.trim();
         if (!name) return null;
@@ -2520,10 +2609,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       removeCashCategory: (id) =>
-        update((prev) => ({
-          ...prev,
-          cashCategories: prev.cashCategories.filter((item) => item.id !== id),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, cashCategories: prev.cashCategories.filter((item) => item.id !== id) },
+            "Hapus item kas",
+            prev.cashCategories.find((item) => item.id === id)?.name ?? id,
+          ),
+        ),
       addCashEntry: (input) => {
         if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
@@ -2570,7 +2662,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           }),
         })),
       removeCashEntry: (id) =>
-        update((prev) => ({ ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) })),
+        update((prev) => {
+          const target = prev.cashEntries.find((item) => item.id === id);
+          return withLog(
+            { ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) },
+            "Hapus catatan kas",
+            target ? `${target.categoryName} · ${formatRupiah(target.amount)}` : id,
+          );
+        }),
       openShift: (input) => {
         const name = input.cashierName.trim();
         if (!name) return null;
@@ -2582,7 +2681,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           openedAt: Date.now(),
           startCash: Math.max(0, Math.round(input.startCash)),
         };
-        update((prev) => ({ ...prev, shifts: [row, ...prev.shifts] }));
+        update((prev) =>
+          withLog(
+            { ...prev, shifts: [row, ...prev.shifts] },
+            "Buka shift kasir",
+            `${name} · kas awal ${formatRupiah(row.startCash)}`,
+          ),
+        );
         return row;
       },
       closeShift: (id, input) => {
@@ -2595,16 +2700,26 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           balanceNote: input.balanceNote?.trim() ?? "",
           nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
         };
-        update((prev) => ({
-          ...prev,
-          shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
-        }));
+        update((prev) =>
+          withLog(
+            { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
+            "Tutup shift kasir",
+            `${closed.cashierName} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+          ),
+        );
         return closed;
       },
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
-      replaceAll: (data) => setState(migrateState(data)),
-      resetAll: () => setState(JSON.parse(JSON.stringify(defaultState)) as State),
+      replaceAll: (data) => {
+        setState(migrateState(data));
+        update((prev) => withLog(prev, "Pulihkan data dari berkas cadangan"));
+      },
+      resetAll: () => {
+        setState(JSON.parse(JSON.stringify(defaultState)) as State);
+        update((prev) => withLog(prev, "Reset seluruh data aplikasi"));
+      },
+      addLog,
       sync,
     }),
     [
@@ -2623,6 +2738,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeOrder,
       update,
       mapStation,
+      withLog,
+      addLog,
     ],
   );
 

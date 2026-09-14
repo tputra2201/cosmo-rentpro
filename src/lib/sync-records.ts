@@ -23,6 +23,7 @@ export const LIST_KINDS = {
   card_entry: "cardEntries",
   cash_category: "cashCategories",
   cash_entry: "cashEntries",
+  log_entry: "logEntries",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
@@ -119,6 +120,7 @@ export function applyRecords(
     cardEntries: [...state.cardEntries],
     cashCategories: [...state.cashCategories],
     cashEntries: [...state.cashEntries],
+    logEntries: [...(state.logEntries ?? [])],
   };
 
 
