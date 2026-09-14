@@ -63,7 +63,7 @@ const selectableRoles = (canInstaller: boolean): AppRole[] =>
 
 function PenggunaPage() {
   const { user, role: myRole } = useAuth();
-  const { rolePermissions } = useBilling();
+  const { rolePermissions, addLog } = useBilling();
   const canInstaller = myRole === "installer";
   const canEditAccess = can(myRole, "pengguna.hakakses", rolePermissions);
   const qc = useQueryClient();
