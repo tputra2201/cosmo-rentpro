@@ -73,6 +73,8 @@ export type Session = {
   durationMin: number; // 0 for open time
   rate: number; // rupiah per hour, snapshot at start
   orders: OrderItem[];
+  /** Sewa tambahan (Additional Rental) yang dipakai sesi ini. */
+  addons?: SessionAddon[];
   customerName: string;
   customerPhone: string;
   member: boolean;
