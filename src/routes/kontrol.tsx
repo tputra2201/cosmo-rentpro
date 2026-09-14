@@ -128,7 +128,7 @@ function BrandingPanel({
   busy: boolean;
   post: (body: unknown, okMessage?: string) => Promise<unknown>;
 }) {
-  const branding = useBranding();
+  const { branding, loaded } = useBrandingRecord();
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [logo, setLogo] = useState("");
@@ -136,12 +136,12 @@ function BrandingPanel({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (ready) return;
+    if (ready || !loaded) return;
     setTitle(branding.login_title);
     setNote(branding.login_note);
     setLogo(branding.logo_url);
-    if (branding.login_title) setReady(true);
-  }, [branding, ready]);
+    setReady(true);
+  }, [branding, loaded, ready]);
 
   const pick = async (file: File | undefined) => {
     if (!file) return;
