@@ -233,6 +233,9 @@ function PenggunaPage() {
         </div>
       </form>
 
+      <OnlineNow users={users as ManagedUser[]} presence={presence} />
+
+
       <div className="grid gap-4">
         {isLoading && (
           <p className="text-sm text-muted-foreground">Memuat pengguna…</p>
