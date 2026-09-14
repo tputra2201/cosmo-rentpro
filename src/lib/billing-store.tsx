@@ -1965,11 +1965,28 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const { session: authSession, fullName, user, role: authRole } = useAuth();
 
   // Siapa yang sedang memakai aplikasi, dipakai untuk mencatat log book.
+  // Nama terakhir yang diketahui disimpan di perangkat supaya catatan tetap
+  // bernama walau profil belum termuat atau pengguna baru saja keluar.
+  const ACTOR_MARK = "billing.last-actor";
   const actorRef = useRef({ name: "", role: "" });
-  actorRef.current = {
-    name: fullName || user?.email || "Tanpa nama",
-    role: authRole ?? "",
-  };
+  const known = fullName.trim() || user?.email || "";
+  if (known) {
+    actorRef.current = { name: known, role: authRole || actorRef.current.role };
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(ACTOR_MARK, JSON.stringify(actorRef.current));
+      } catch {
+        /* penyimpanan tidak tersedia */
+      }
+    }
+  } else if (!actorRef.current.name && typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(ACTOR_MARK);
+      if (raw) actorRef.current = JSON.parse(raw) as { name: string; role: string };
+    } catch {
+      /* penanda rusak: biarkan kosong */
+    }
+  }
 
   /** Tambahkan satu baris log book ke state. */
   const withLog = useCallback((prev: State, action: string, detail = ""): State => ({
