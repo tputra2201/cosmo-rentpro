@@ -480,6 +480,8 @@ export type CashShift = {
   cashActual?: number;
   balanceNote?: string;
   nextStartCash?: number;
+  closedByName?: string;
+  closedById?: string;
 };
 
 
@@ -3179,12 +3181,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashActual: Math.max(0, Math.round(input.cashActual)),
           balanceNote: input.balanceNote?.trim() ?? "",
           nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
+          closedByName: actorRef.current.name || shift.cashierName,
+          ...(user?.id ? { closedById: user.id } : {}),
         };
         update((prev) =>
           withLog(
             { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
             "Tutup shift kasir",
-            `${closed.cashierName} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+            `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
           ),
         );
         return closed;

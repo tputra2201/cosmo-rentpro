@@ -81,6 +81,7 @@ export function ShiftReport({ range }: { range: ReportRange }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Kasir</TableHead>
+                  <TableHead>Close out oleh</TableHead>
                   <TableHead>Opening</TableHead>
                   <TableHead>Closing</TableHead>
                   <TableHead className="text-right">Start cash</TableHead>
@@ -105,6 +106,9 @@ export function ShiftReport({ range }: { range: ReportRange }) {
                           masih berjalan
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {shift.closedAt ? shift.closedByName || "-" : "-"}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{stamp(shift.openedAt)}</TableCell>
                     <TableCell className="whitespace-nowrap">{stamp(shift.closedAt)}</TableCell>
