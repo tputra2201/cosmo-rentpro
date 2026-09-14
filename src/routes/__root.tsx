@@ -438,6 +438,27 @@ function AppShell() {
                   {label}
                 </Link>
               ))}
+              {setups.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:px-3 lg:py-2 lg:text-sm">
+                      <Wrench className="size-4 shrink-0" />
+                      Setup
+                      <ChevronDown className="size-3.5 shrink-0" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {setups.map(({ to, label, icon: Icon }) => (
+                      <DropdownMenuItem key={to} asChild>
+                        <Link to={to} className="flex items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          {label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </nav>
           )}
         </div>
