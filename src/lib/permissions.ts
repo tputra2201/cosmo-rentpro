@@ -87,6 +87,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "laporan.membership", label: "Laporan Membership" },
       { key: "laporan.qris", label: "Pembayaran QRIS" },
       { key: "laporan.transfer", label: "Transfer Bank" },
+      { key: "laporan.kasir", label: "Laporan Transaksi per Kasir" },
       { key: "laporan.logbook", label: "Log Book Aktivitas" },
       { key: "laporan.hapus", label: "Hapus data laporan" },
       { key: "laporan.cetak", label: "Cetak laporan" },
