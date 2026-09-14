@@ -750,39 +750,6 @@ export function StationDialog({
                 ))}
               </div>
 
-              {session.orders.length > 0 && labelPrinters.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {labelPrinters.map((printer) => (
-                    <Button
-                      key={printer.id}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const items = labelItemsFor(session.orders, menu, printer.id);
-                        if (items.length === 0) {
-                          toast.error(`Tidak ada item untuk ${printer.name}`);
-                          return;
-                        }
-                        printLabels({
-                          printer,
-                          items,
-                          heading:
-                            printer.role === "bar"
-                              ? "BAR"
-                              : printer.role === "kitchen"
-                                ? "DAPUR"
-                                : printer.name,
-                          source: station.name,
-                          ...(session.customerName ? { customerName: session.customerName } : {}),
-                        });
-                      }}
-                    >
-                      <PrinterIcon className="size-4" /> {printer.name}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
               {session.orders.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {session.orders.map((o) => (
@@ -795,6 +762,23 @@ export function StationDialog({
                       </span>
                       <span className="flex items-center gap-2">
                         {formatRupiah(o.price * o.qty)}
+                        {labelPrinters.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              printOrderLabels(
+                                [o],
+                                station.name,
+                                session.customerName ?? undefined,
+                              )
+                            }
+                            aria-label={`Cetak label ${o.name}`}
+                            title="Cetak label"
+                            className="text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            <PrinterIcon className="size-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => removeOrder(station.id, o.id)}
