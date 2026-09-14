@@ -464,6 +464,7 @@ export type HistoryRecord = {
   tableName?: string;
   paidAt?: number; // waktu pembayaran lunas
   ongoing?: boolean; // sesi masih berjalan saat nota dibuat
+  cashierName?: string; // kasir yang memproses transaksi
 };
 
 
@@ -1483,6 +1484,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           endAt,
           paidAt: session.paidAt ?? endAt,
           ongoing: false,
+          ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
           fnbTotal: fnb,
@@ -1598,6 +1600,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           endAt: at,
           paidAt: at,
           ongoing: true,
+          ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
           minutes: Math.ceil(elapsedSeconds(sess, at) / 60),
           rentalTotal: bill.rental,
           fnbTotal: bill.fnb,
