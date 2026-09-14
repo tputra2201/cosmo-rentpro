@@ -1736,7 +1736,36 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     [mapStation],
   );
 
-  const { session: authSession } = useAuth();
+  const { session: authSession, fullName, user, role: authRole } = useAuth();
+
+  // Siapa yang sedang memakai aplikasi, dipakai untuk mencatat log book.
+  const actorRef = useRef({ name: "", role: "" });
+  actorRef.current = {
+    name: fullName || user?.email || "Tanpa nama",
+    role: authRole ?? "",
+  };
+
+  /** Tambahkan satu baris log book ke state. */
+  const withLog = useCallback((prev: State, action: string, detail = ""): State => ({
+    ...prev,
+    logEntries: [
+      {
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        at: Date.now(),
+        actor: actorRef.current.name,
+        role: actorRef.current.role,
+        action,
+        detail,
+      },
+      ...(prev.logEntries ?? []),
+    ].slice(0, 2000),
+  }), []);
+
+  const addLog = useCallback(
+    (action: string, detail?: string) =>
+      update((prev) => withLog(prev, action, detail ?? "")),
+    [update, withLog],
+  );
   // Seluruh data di perangkat terikat ke satu store. Begitu store pengguna
   // diketahui, data lokal dari store lain dibuang sebelum satu baris pun
   // dikirim, dan data baru langsung bertanda store ini.
