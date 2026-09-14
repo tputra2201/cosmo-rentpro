@@ -2319,6 +2319,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
         })),
       topupCard: (id, amount, note, payment) => {
+        if (!shiftOpen) return false;
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || value <= 0) return false;
