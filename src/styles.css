@@ -302,3 +302,61 @@
   --glow-accent: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent),
     0 10px 24px -14px color-mix(in oklab, var(--accent) 50%, transparent);
 }
+
+/* ============ Tema Cosmo (ungu pekat, aksen oranye & magenta) ============ */
+.theme-cosmo {
+  color-scheme: dark;
+  --tint-1: 26%;
+  --tint-2: 20%;
+  --background: oklch(0.19 0.11 305);
+  --foreground: oklch(0.97 0.01 300);
+  --card: oklch(0.25 0.13 305);
+  --card-foreground: oklch(0.97 0.01 300);
+  --popover: oklch(0.23 0.12 305);
+  --popover-foreground: oklch(0.97 0.01 300);
+  --primary: oklch(0.67 0.26 335);
+  --primary-foreground: oklch(0.99 0.01 320);
+  --primary-glow: oklch(0.75 0.2 300);
+  --secondary: oklch(0.31 0.13 302);
+  --secondary-foreground: oklch(0.97 0.01 300);
+  --muted: oklch(0.29 0.11 302);
+  --muted-foreground: oklch(0.8 0.05 305);
+  --accent: oklch(0.74 0.19 45);
+  --accent-foreground: oklch(0.2 0.09 40);
+  --destructive: oklch(0.6 0.25 22);
+  --destructive-foreground: oklch(0.98 0.01 20);
+  --success: oklch(0.75 0.18 160);
+  --success-foreground: oklch(0.18 0.06 160);
+  --warning: oklch(0.8 0.18 70);
+  --warning-foreground: oklch(0.2 0.06 70);
+  --border: oklch(0.37 0.14 305);
+  --input: oklch(0.35 0.13 305);
+  --ring: oklch(0.67 0.26 335);
+  --chart-1: oklch(0.67 0.26 335);
+  --chart-2: oklch(0.74 0.19 45);
+  --chart-3: oklch(0.7 0.2 255);
+  --chart-4: oklch(0.75 0.2 300);
+  --chart-5: oklch(0.6 0.25 22);
+  --sidebar: oklch(0.23 0.12 305);
+  --sidebar-foreground: oklch(0.97 0.01 300);
+  --sidebar-primary: oklch(0.67 0.26 335);
+  --sidebar-primary-foreground: oklch(0.99 0.01 320);
+  --sidebar-accent: oklch(0.31 0.13 302);
+  --sidebar-accent-foreground: oklch(0.97 0.01 300);
+  --sidebar-border: oklch(0.37 0.14 305);
+  --sidebar-ring: oklch(0.67 0.26 335);
+  --gradient-neon: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--accent) 100%
+  );
+  --gradient-surface: linear-gradient(
+    160deg,
+    oklch(0.27 0.14 305) 0%,
+    oklch(0.21 0.11 305) 100%
+  );
+  --glow-primary: 0 0 0 1px color-mix(in oklab, var(--primary) 45%, transparent),
+    0 0 26px -4px color-mix(in oklab, var(--primary) 55%, transparent);
+  --glow-accent: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent),
+    0 0 26px -4px color-mix(in oklab, var(--accent) 55%, transparent);
+}
