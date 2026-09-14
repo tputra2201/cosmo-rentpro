@@ -830,6 +830,19 @@ export function StationDialog({
                   ))}
                 </ul>
               )}
+
+              {session.orders.length > 0 && labelPrinters.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full"
+                  onClick={() =>
+                    printOrderLabels(session.orders, station.name, session.customerName ?? undefined)
+                  }
+                >
+                  <PrinterIcon className="size-4" /> Cetak semua label
+                </Button>
+              )}
             </div>
 
 
@@ -997,18 +1010,6 @@ export function StationDialog({
               )}
               
 
-              {session.orders.length > 0 && labelPrinters.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() =>
-                    printOrderLabels(session.orders, station.name, session.customerName ?? undefined)
-                  }
-                >
-                  <PrinterIcon className="size-4" /> Cetak semua label
-                </Button>
-              )}
               {isSettled && paidHistoryId && (
                 <Button
                   variant="outline"
