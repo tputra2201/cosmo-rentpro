@@ -996,6 +996,18 @@ export function StationDialog({
                   <PrinterIcon className="size-4" /> Cetak bill (belum lunas)
                 </Button>
               )}
+              {session.orders.length > 0 && labelPrinters.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() =>
+                    printOrderLabels(session.orders, station.name, session.customerName ?? undefined)
+                  }
+                >
+                  <PrinterIcon className="size-4" /> Cetak semua label
+                </Button>
+              )}
               {isSettled && paidHistoryId && (
                 <Button
                   variant="outline"
