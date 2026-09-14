@@ -121,6 +121,7 @@ export function applyRecords(
     cardEntries: [...state.cardEntries],
     cashCategories: [...state.cashCategories],
     cashEntries: [...state.cashEntries],
+    shifts: [...(state.shifts ?? [])],
     logEntries: [...(state.logEntries ?? [])],
   };
 
