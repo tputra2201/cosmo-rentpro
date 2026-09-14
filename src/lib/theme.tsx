@@ -8,6 +8,7 @@ export const themeOptions: { value: ThemeName; label: string; hint: string }[] =
   { value: "gelap", label: "Gelap", hint: "Latar gelap, nyaman untuk ruangan redup" },
   { value: "terang", label: "Putih", hint: "Latar putih bersih, terang dan tajam" },
   { value: "berwarna", label: "Berwarna", hint: "Latar biru lembut dengan aksen ungu" },
+  { value: "cosmo", label: "Cosmo", hint: "Ungu pekat dengan aksen oranye dan magenta" },
 ];
 
 const classFor: Record<ThemeName, string> = {
