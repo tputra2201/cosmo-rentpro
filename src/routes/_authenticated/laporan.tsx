@@ -204,8 +204,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
   const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
   const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
 
-  const sum = (arr: typeof history, key: "rentalTotal" | "fnbTotal" | "total") =>
-    arr.reduce((s, h) => s + h[key], 0);
+  const sum = (
+    arr: typeof history,
+    key: "rentalTotal" | "fnbTotal" | "total" | "addonTotal",
+  ) => arr.reduce((s, h) => s + (h[key] ?? 0), 0);
 
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
