@@ -2194,6 +2194,87 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       },
       removeOrder,
       setRates: (rates) => update((prev) => ({ ...prev, rates })),
+      addAddonRental: (name, price, mode) => {
+        const clean = name.trim();
+        if (!clean) return false;
+        update((prev) =>
+          prev.addonRentals.some((a) => a.name.trim().toLowerCase() === clean.toLowerCase())
+            ? prev
+            : {
+                ...prev,
+                addonRentals: [
+                  ...prev.addonRentals,
+                  {
+                    id: `add-${Date.now()}`,
+                    name: clean,
+                    price: Math.max(0, Math.round(price)),
+                    mode,
+                    active: true,
+                    sort: prev.addonRentals.length,
+                  },
+                ],
+              },
+        );
+        return true;
+      },
+      updateAddonRental: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+        })),
+      setAddonDiscount: (id, patch) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.map((a) =>
+            a.id === id
+              ? { ...a, discount: { ...emptyItemDiscount, ...a.discount, ...patch } }
+              : a,
+          ),
+        })),
+      removeAddonRental: (id) =>
+        update((prev) => ({
+          ...prev,
+          addonRentals: prev.addonRentals.filter((a) => a.id !== id),
+        })),
+      addSessionAddon: (stationId, addonId, qty = 1) =>
+        update((prev) => {
+          const item = prev.addonRentals.find((a) => a.id === addonId);
+          if (!item) return prev;
+          return {
+            ...prev,
+            stations: prev.stations.map((s) => {
+              if (s.id !== stationId || !s.session) return s;
+              const addons = [...(s.session.addons ?? [])];
+              const index = addons.findIndex((a) => a.addonId === addonId);
+              const existing = addons[index];
+              if (existing) {
+                addons[index] = { ...existing, qty: existing.qty + Math.max(1, qty) };
+              } else {
+                addons.push({
+                  id: `sa-${addonId}-${Date.now()}`,
+                  addonId,
+                  name: item.name,
+                  price: item.price,
+                  mode: item.mode,
+                  qty: Math.max(1, qty),
+                });
+              }
+              return { ...s, session: { ...s.session, addons } };
+            }),
+          };
+        }),
+      removeSessionAddon: (stationId, rowId) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  addons: (s.session.addons ?? []).filter((a) => a.id !== rowId),
+                },
+              }
+            : s,
+        ),
       setConsoleDiscount: (name, patch) =>
         update((prev) => ({
           ...prev,
