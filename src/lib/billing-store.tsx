@@ -3188,7 +3188,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           withLog(
             { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
             "Tutup shift kasir",
-            `${closed.cashierName} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+            `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
           ),
         );
         return closed;
