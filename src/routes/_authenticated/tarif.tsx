@@ -16,6 +16,7 @@ import {
 import {
   formatRupiah,
   useBilling,
+  type AddonMode,
   type ConsoleType,
   type RoundingRule,
   type StationAvailability,
@@ -71,7 +72,15 @@ function TarifPage() {
     reorderConsoleTypes,
     tvNotice,
     setTvNotice,
+    addonRentals,
+    addAddonRental,
+    updateAddonRental,
+    setAddonDiscount,
+    removeAddonRental,
   } = useBilling();
+  const [newAddon, setNewAddon] = useState("");
+  const [newAddonPrice, setNewAddonPrice] = useState("");
+  const [newAddonMode, setNewAddonMode] = useState<AddonMode>("hourly");
   const [packageName, setPackageName] = useState("");
   const [packageDuration, setPackageDuration] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
