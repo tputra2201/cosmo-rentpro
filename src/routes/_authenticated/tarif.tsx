@@ -542,7 +542,7 @@ function TarifPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="available">Tersedia</SelectItem>
-                    <SelectItem value="booked">Booking</SelectItem>
+                    <SelectItem value="booked">Reservasi</SelectItem>
                     <SelectItem value="maintenance">Maintenance</SelectItem>
                     <SelectItem value="offline">Offline</SelectItem>
                   </SelectContent>

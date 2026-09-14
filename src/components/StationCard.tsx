@@ -18,7 +18,7 @@ import {
 
 const statusLabel = {
   idle: "Tersedia",
-  booked: "Booking",
+  booked: "Reservasi",
   playing: "Sedang Main",
   timeup: "Waktu Habis",
   maintenance: "Maintenance",

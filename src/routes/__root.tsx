@@ -50,6 +50,7 @@ import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
+import { ReservationAlert } from "@/components/ReservationAlert";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
 import { useDeveloper } from "@/lib/developer";
@@ -169,7 +170,7 @@ const navItems = [
 
   { to: "/kafe", label: "Kafe", icon: Coffee },
 
-  { to: "/booking", label: "Booking", icon: CalendarDays },
+  { to: "/booking", label: "Reservasi", icon: CalendarDays },
   { to: "/pelanggan", label: "Pelanggan", icon: Users },
   { to: "/promo", label: "Promo", icon: Percent },
   { to: "/kartu", label: "Playing Card", icon: CreditCard },
@@ -194,6 +195,7 @@ function RootComponent() {
           <BillingProvider>
             <AppShell />
             <PresenceHeartbeat />
+            <ReservationAlert />
             <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
