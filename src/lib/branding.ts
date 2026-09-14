@@ -50,9 +50,10 @@ function readCache(): Branding | null {
   }
 }
 
-/** Tampilan halaman masuk yang diatur Developer dari pusat kontrol. */
-export function useBranding() {
+/** Tampilan halaman masuk yang diatur Developer, plus status selesai dimuat. */
+export function useBrandingRecord() {
   const [branding, setBranding] = useState<Branding>(defaultBranding);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const cached = readCache();
@@ -64,19 +65,27 @@ export function useBranding() {
         .select(COLUMNS)
         .eq("id", "default")
         .maybeSingle();
-      if (cancelled || !data) return;
-      const row = { ...defaultBranding, ...(data as Branding) };
-      setBranding(row);
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(row));
-      } catch {
-        /* penyimpanan penuh */
+      if (cancelled) return;
+      if (data) {
+        const row = { ...defaultBranding, ...(data as Branding) };
+        setBranding(row);
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(row));
+        } catch {
+          /* penyimpanan penuh */
+        }
       }
+      setLoaded(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return branding;
+  return { branding, loaded };
+}
+
+/** Tampilan halaman masuk yang diatur Developer dari pusat kontrol. */
+export function useBranding() {
+  return useBrandingRecord().branding;
 }
