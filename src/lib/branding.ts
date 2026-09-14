@@ -61,7 +61,7 @@ export function useBranding() {
     (async () => {
       const { data } = await supabase
         .from("app_branding")
-        .select("logo_url, login_title, login_note")
+        .select(COLUMNS)
         .eq("id", "default")
         .maybeSingle();
       if (cancelled || !data) return;
