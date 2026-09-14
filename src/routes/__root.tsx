@@ -281,6 +281,7 @@ function AppShell() {
     return can(role, key, rolePermissions);
   };
   const items = navItems.filter(({ to }) => allowed(to));
+  const setups = setupItems.filter(({ to }) => allowed(to));
   const blocked = session !== null && role !== null && !allowed(pathname);
 
   const handleSignOut = async () => {
