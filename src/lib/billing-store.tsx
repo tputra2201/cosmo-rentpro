@@ -1971,13 +1971,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const actorRef = useRef({ name: "", role: "" });
   const known = fullName.trim() || user?.email || "";
   if (known) {
-    actorRef.current = { name: known, role: authRole ?? actorRef.current.role };
-    try {
-      localStorage.setItem(ACTOR_MARK, JSON.stringify(actorRef.current));
-    } catch {
-      /* penyimpanan tidak tersedia */
+    actorRef.current = { name: known, role: authRole || actorRef.current.role };
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(ACTOR_MARK, JSON.stringify(actorRef.current));
+      } catch {
+        /* penyimpanan tidak tersedia */
+      }
     }
-  } else if (!actorRef.current.name) {
+  } else if (!actorRef.current.name && typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(ACTOR_MARK);
       if (raw) actorRef.current = JSON.parse(raw) as { name: string; role: string };
