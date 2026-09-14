@@ -1379,13 +1379,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
   void startSession;
 
-  const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId, payment, amountPaid, payments) => {
+  // Dihitung sebagai fungsi murni supaya hasilnya bisa dibaca langsung
+  // (setState di React 18 tidak berjalan seketika).
+  const computeStop = useCallback(
+    (
+      prevState: State,
+      endAt: number,
+      stationId: string,
+      payment?: string,
+      amountPaid?: number,
+      payments?: PaymentSplit[],
+    ): { record: HistoryRecord | null; next: State } => {
       let record: HistoryRecord | null = null;
-      setState((prev) => {
+      const next = ((prev: State): State => {
         const station = prev.stations.find((s) => s.id === stationId);
         if (!station?.session) return prev;
-        const endAt = Date.now();
         const session = station.session;
         const methodsUsed = [
           ...(session.settlements ?? []).flatMap((s) =>
