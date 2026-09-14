@@ -71,6 +71,68 @@ function TvScreen() {
             </Button>
           ))}
         </div>
+
+        <section className="surface-panel mt-8 p-6">
+          <h2 className="text-xl font-semibold">Notifikasi di Layar TV</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-warn-min">Peringatan muncul saat sisa (menit)</Label>
+              <Input
+                id="tv-warn-min"
+                type="number"
+                min={1}
+                value={tvNotice.warnMinutes}
+                onChange={(e) =>
+                  setTvNotice({ warnMinutes: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-count">Hitungan sebelum layar tertutup (detik)</Label>
+              <Input
+                id="tv-count"
+                type="number"
+                min={0}
+                value={tvNotice.countdownSec}
+                onChange={(e) =>
+                  setTvNotice({ countdownSec: Math.max(0, Number(e.target.value) || 0) })
+                }
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="tv-warn-text">Teks peringatan sisa waktu</Label>
+              <Input
+                id="tv-warn-text"
+                value={tvNotice.warnText}
+                onChange={(e) => setTvNotice({ warnText: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="tv-end-text">Teks saat waktu habis</Label>
+              <Input
+                id="tv-end-text"
+                value={tvNotice.endText}
+                onChange={(e) => setTvNotice({ endText: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-block-title">Judul peringatan besar</Label>
+              <Input
+                id="tv-block-title"
+                value={tvNotice.blockTitle}
+                onChange={(e) => setTvNotice({ blockTitle: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tv-block-text">Keterangan peringatan besar</Label>
+              <Input
+                id="tv-block-text"
+                value={tvNotice.blockText}
+                onChange={(e) => setTvNotice({ blockText: e.target.value })}
+              />
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
