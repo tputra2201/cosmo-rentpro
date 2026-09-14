@@ -42,6 +42,7 @@ import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
+import { LogBookReport } from "@/components/reports/LogBookReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
