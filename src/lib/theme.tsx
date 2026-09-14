@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type ThemeName = "gelap" | "terang" | "berwarna";
+export type ThemeName = "gelap" | "terang" | "berwarna" | "cosmo";
 
 const STORAGE_KEY = "billing-theme-v1";
 
