@@ -74,7 +74,7 @@ export const listPresence = createServerFn({ method: "GET" })
       .from("user_presence")
       .select("user_id, store_id, last_seen_at, device")
       .order("last_seen_at", { ascending: false });
-    if (!seeAll) query = query.eq("store_id", storeId);
+    if (!seeAll) query = query.eq("store_id", storeId ?? "");
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     return ((data ?? []) as {
