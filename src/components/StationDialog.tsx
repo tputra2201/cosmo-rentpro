@@ -373,6 +373,11 @@ export function StationDialog({
     resetPaymentForm();
   };
 
+  const leftMinutes =
+    session && session.mode !== "open"
+      ? Math.max(0, Math.ceil(remainingSeconds(session, now) / 60))
+      : 0;
+
   const handleEnd = () => {
     const record = stopSession(station.id);
     if (!record) {
@@ -1279,6 +1284,9 @@ export function StationDialog({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Akhiri sesi rental?</AlertDialogTitle>
                   <AlertDialogDescription>
+                    {leftMinutes > 0
+                      ? `Yakin akan mengakhiri sesi ini? Timer masih tersisa ${leftMinutes} menit. `
+                      : ""}
                     {station.name} akan dikosongkan dan transaksi masuk ke riwayat. Tindakan ini
                     tidak bisa dibatalkan.
                   </AlertDialogDescription>
