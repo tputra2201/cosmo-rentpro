@@ -277,7 +277,7 @@ function AppIdentityPanel({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (ready) return;
+    if (ready || !loaded) return;
     setForm({
       app_name: branding.app_name,
       app_version: branding.app_version,
