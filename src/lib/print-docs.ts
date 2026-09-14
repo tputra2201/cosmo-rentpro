@@ -87,7 +87,8 @@ export function receiptBody(opts: {
   kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
-  const { record, store, layout, kind, cashier } = opts;
+  const { record, store, layout, kind } = opts;
+  const cashier = opts.cashier || record.cashierName || "";
   const title =
     kind === "invoice" ? "INVOICE" : kind === "bill" ? "BILL SEMENTARA" : "STRUK PEMBAYARAN";
   return `
@@ -132,7 +133,8 @@ export function receiptText(opts: {
   kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
-  const { record, store, printer, layout, kind, cashier } = opts;
+  const { record, store, printer, layout, kind } = opts;
+  const cashier = opts.cashier || record.cashierName || "";
   const w = CHARS_PER_LINE[printer.paper];
   const lines: string[] = [];
   if (layout.headerText) lines.push(textCenter(layout.headerText, w));

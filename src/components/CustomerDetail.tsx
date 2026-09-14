@@ -287,6 +287,9 @@ export function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack?
         {record.pointsEarned ? (
           <Row label="Poin didapat" value={String(record.pointsEarned)} />
         ) : null}
+        {record.cashierName ? (
+          <Row label="Kasir" value={record.cashierName} />
+        ) : null}
       </div>
     </div>
   );

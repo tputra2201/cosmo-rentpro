@@ -322,6 +322,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                   <TableHead>Jam</TableHead>
                   <TableHead>TV</TableHead>
                   <TableHead>Pelanggan</TableHead>
+                  <TableHead>Kasir</TableHead>
                   <TableHead>Mode</TableHead>
                   <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Durasi</TableHead>
@@ -347,6 +348,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                       <span className="text-muted-foreground">({h.console})</span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{h.customerName ?? "Umum"}<span className="block text-xs text-muted-foreground">{h.packageName ?? "-"}</span></TableCell>
+                    <TableCell className="whitespace-nowrap">{h.cashierName ?? "-"}</TableCell>
                     <TableCell>
                       {h.mode === "open" ? "Sepuasnya" : "Per Jam"}
                     </TableCell>
