@@ -520,6 +520,8 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  /** Log book aktivitas non-transaksi. */
+  logEntries: LogEntry[];
   tvNotice: TvNotice;
   /** Daftar printer store (struk, invoice, dapur, bar, laporan). */
   printers: PrinterConfig[];
