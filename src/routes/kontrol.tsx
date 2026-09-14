@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { passwordSetupUrl } from "@/lib/app-url";
-import { useBranding } from "@/lib/branding";
+import { useBrandingRecord } from "@/lib/branding";
 import { toLogoDataUrl } from "@/lib/logo-image";
 import {
   ShieldCheck,
@@ -128,7 +128,7 @@ function BrandingPanel({
   busy: boolean;
   post: (body: unknown, okMessage?: string) => Promise<unknown>;
 }) {
-  const branding = useBranding();
+  const { branding, loaded } = useBrandingRecord();
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [logo, setLogo] = useState("");
@@ -136,12 +136,12 @@ function BrandingPanel({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (ready) return;
+    if (ready || !loaded) return;
     setTitle(branding.login_title);
     setNote(branding.login_note);
     setLogo(branding.logo_url);
-    if (branding.login_title) setReady(true);
-  }, [branding, ready]);
+    setReady(true);
+  }, [branding, loaded, ready]);
 
   const pick = async (file: File | undefined) => {
     if (!file) return;
@@ -265,7 +265,7 @@ function AppIdentityPanel({
   busy: boolean;
   post: (body: unknown, okMessage?: string) => Promise<unknown>;
 }) {
-  const branding = useBranding();
+  const { branding, loaded } = useBrandingRecord();
   const [form, setForm] = useState<Record<AppField, string>>({
     app_name: "",
     app_version: "",
@@ -277,7 +277,7 @@ function AppIdentityPanel({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (ready) return;
+    if (ready || !loaded) return;
     setForm({
       app_name: branding.app_name,
       app_version: branding.app_version,
@@ -286,8 +286,8 @@ function AppIdentityPanel({
       developer_email: branding.developer_email,
       developer_contact: branding.developer_contact,
     });
-    if (branding.login_title) setReady(true);
-  }, [branding, ready]);
+    setReady(true);
+  }, [branding, loaded, ready]);
 
   return (
     <div className="surface-panel grid gap-4 p-5">
