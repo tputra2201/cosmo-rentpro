@@ -441,9 +441,6 @@ function ReceiptDialog({
           >
             <Printer className="size-4" /> Cetak struk
           </Button>
-          <Button variant="outline" onClick={() => printDoc("invoice")}>
-            <Printer className="size-4" /> Cetak invoice
-          </Button>
         </div>
 
         <div className="space-y-2">
