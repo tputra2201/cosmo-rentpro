@@ -909,40 +909,6 @@ export function StationDialog({
 
             {session && bill && (
               <div className="space-y-2 rounded-md border border-border p-3">
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatRupiah(bill.subtotal)}</span>
-                  </div>
-                  {bill.addon > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Additional Rental</span>
-                      <span>{formatRupiah(bill.addon)}</span>
-                    </div>
-                  )}
-                  {bill.itemDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Potongan tarif &amp; menu</span>
-                      <span className="text-accent">-{formatRupiah(bill.itemDiscount)}</span>
-                    </div>
-                  )}
-                  {bill.promoDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{bill.promoName}</span>
-                      <span className="text-accent">-{formatRupiah(bill.promoDiscount)}</span>
-                    </div>
-                  )}
-                  {bill.manualDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Diskon transaksi</span>
-                      <span className="text-accent">-{formatRupiah(bill.manualDiscount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-semibold">
-                    <span>Total tagihan</span>
-                    <span className="text-neon">{formatRupiah(bill.total)}</span>
-                  </div>
-                </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Diskon transaksi</Label>
