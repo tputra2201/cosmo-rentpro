@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Monitor, Settings } from "lucide-react";
+import { LogOut, Monitor, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,7 @@ const PICK_KEY = "tv-display-station-v1";
 
 function TvScreen() {
   const { stations, now, tvNotice, setTvNotice } = useBilling();
+  const navigate = useNavigate();
   const [stationId, setStationId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -57,7 +58,12 @@ function TvScreen() {
   if (!station) {
     return (
       <div className="mx-auto max-w-2xl p-6">
-        <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">Pilih unit TV untuk layar ini</h1>
+          <Button variant="outline" onClick={() => navigate({ to: "/" })}>
+            <LogOut className="size-4" /> Exit
+          </Button>
+        </div>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stations.map((s) => (
             <Button
@@ -200,6 +206,17 @@ function TvScreen() {
         className="absolute bottom-3 left-3 z-40 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] text-white/60"
       >
         <Settings className="size-3" /> Ganti unit
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          choose(null);
+          navigate({ to: "/" });
+        }}
+        className="absolute bottom-3 left-28 z-40 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] text-white/60"
+      >
+        <LogOut className="size-3" /> Exit
       </button>
     </div>
   );
