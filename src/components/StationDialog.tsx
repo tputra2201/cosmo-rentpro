@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -909,40 +909,6 @@ export function StationDialog({
 
             {session && bill && (
               <div className="space-y-2 rounded-md border border-border p-3">
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatRupiah(bill.subtotal)}</span>
-                  </div>
-                  {bill.addon > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Additional Rental</span>
-                      <span>{formatRupiah(bill.addon)}</span>
-                    </div>
-                  )}
-                  {bill.itemDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Potongan tarif &amp; menu</span>
-                      <span className="text-accent">-{formatRupiah(bill.itemDiscount)}</span>
-                    </div>
-                  )}
-                  {bill.promoDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{bill.promoName}</span>
-                      <span className="text-accent">-{formatRupiah(bill.promoDiscount)}</span>
-                    </div>
-                  )}
-                  {bill.manualDiscount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Diskon transaksi</span>
-                      <span className="text-accent">-{formatRupiah(bill.manualDiscount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-semibold">
-                    <span>Total tagihan</span>
-                    <span className="text-neon">{formatRupiah(bill.total)}</span>
-                  </div>
-                </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Diskon transaksi</Label>
@@ -1014,52 +980,51 @@ export function StationDialog({
 
 
 
-            {!isSettled && !splitMode && selectedPayment === "Cash" && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="amount-paid">Uang diterima</Label>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                    onClick={() => setAmountPaid("")}
-                  >
-                    Uang pas
-                  </button>
-                </div>
-                <div className="relative">
-                  <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="amount-paid"
-                    className="pl-9"
-                    type="number"
-                    min={0}
-                    value={amountPaid === "" ? String(payTarget) : amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                  />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Kembalian</span>
-                  <span className="font-semibold text-accent">
-                    {formatRupiah(Math.max(0, cashReceived - payTarget))}
-                  </span>
-                </div>
-              </div>
-            )}
 
             <Separator />
 
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Rental</span>
-                <span>{formatRupiah(rentalTotal(session, now))}</span>
+                <span>{formatRupiah(bill?.rental ?? rentalTotal(session, now))}</span>
               </div>
+              {(bill?.addon ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Additional Rental</span>
+                  <span>{formatRupiah(bill!.addon)}</span>
+                </div>
+              )}
+              {fnbTotal(session) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Makanan &amp; minuman</span>
+                  <span>{formatRupiah(fnbTotal(session))}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Makanan &amp; minuman</span>
-                <span>{formatRupiah(fnbTotal(session))}</span>
+                <span className="text-muted-foreground">Sub Total</span>
+                <span>{formatRupiah(bill?.subtotal ?? sessionTotal)}</span>
               </div>
+              {bill && bill.itemDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Potongan tarif &amp; menu</span>
+                  <span className="text-accent">-{formatRupiah(bill.itemDiscount)}</span>
+                </div>
+              )}
+              {bill && bill.promoDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{bill.promoName}</span>
+                  <span className="text-accent">-{formatRupiah(bill.promoDiscount)}</span>
+                </div>
+              )}
+              {bill && bill.manualDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Diskon transaksi</span>
+                  <span className="text-accent">-{formatRupiah(bill.manualDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-display text-lg font-semibold">
-                <span>Total</span>
-                <span className="text-accent">{formatRupiah(sessionTotal)}</span>
+                <span>Total Tagihan</span>
+                <span className="text-accent">{formatRupiah(bill?.total ?? sessionTotal)}</span>
               </div>
               {alreadyPaid > 0 && (
                 <>
@@ -1068,13 +1033,14 @@ export function StationDialog({
                     <span>{formatRupiah(alreadyPaid)}</span>
                   </div>
                   <div className="flex justify-between font-semibold">
-                    <span>Sisa tagihan</span>
+                    <span>Sisa Tagihan</span>
                     <span className={dueAmount > 0 ? "text-destructive" : "text-accent"}>
                       {dueAmount > 0 ? formatRupiah(dueAmount) : "Lunas"}
                     </span>
                   </div>
                 </>
               )}
+              
               
 
               {isSettled && paidHistoryId && (
