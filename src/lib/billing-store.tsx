@@ -2738,6 +2738,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeOrder,
       update,
       mapStation,
+      withLog,
+      addLog,
     ],
   );
 
