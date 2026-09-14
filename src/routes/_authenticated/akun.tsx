@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { KeyRound, MailQuestion } from "lucide-react";
+import { passwordSetupUrl } from "@/lib/app-url";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, roleLabel } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
