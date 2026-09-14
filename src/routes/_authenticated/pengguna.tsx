@@ -412,9 +412,10 @@ function AccessMatrix({ canInstaller }: { canInstaller: boolean }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() =>
-            setRolePermissions(active, defaultRolePermissions[active] ?? [])
-          }
+          onClick={() => {
+            setRolePermissions(active, defaultRolePermissions[active] ?? []);
+            addLog("Kembalikan hak akses ke bawaan", roleLabel[active]);
+          }}
         >
           Kembalikan bawaan {roleLabel[active]}
         </Button>
