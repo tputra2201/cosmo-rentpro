@@ -65,6 +65,35 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   } = useBilling();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const labelPrinters = printers.filter((p) => p.active);
+  const labelHeading = (p: PrinterConfig) =>
+    p.role === "bar" ? "BAR" : p.role === "kitchen" ? "DAPUR" : p.name;
+  /** Cetak label untuk satu atau semua pesanan meja, sesuai printer per menu. */
+  const printOrderLabels = (
+    orders: OrderItem[],
+    source: string,
+    customerName?: string,
+    note?: string,
+  ) => {
+    let printed = 0;
+    for (const printer of labelPrinters) {
+      const items = labelItemsFor(orders, menu, printer.id);
+      if (items.length === 0) continue;
+      printLabels({
+        printer,
+        items,
+        heading: labelHeading(printer),
+        source,
+        ...(customerName ? { customerName } : {}),
+        ...(note ? { note } : {}),
+      });
+      printed += items.length;
+    }
+    if (printed === 0) {
+      toast.error("Label belum bisa dicetak", {
+        description: "Atur printer label untuk menu ini di menu Printer.",
+      });
+    }
+  };
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
