@@ -35,7 +35,7 @@ import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
-import { printerFor } from "@/lib/printing";
+import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
 import {
   CARD_PAYMENT_NAME,
