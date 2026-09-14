@@ -157,7 +157,8 @@ function toBase64(value: string) {
 export function printViaRawBt(text: string) {
   if (typeof window === "undefined") return;
   const body = text.endsWith("\n") ? text : `${text}\n`;
-  window.location.href = `rawbt:base64,${encodeURIComponent(toBase64(body))}`;
+  // RawBT membaca base64 apa adanya; jangan di-encode ulang (menyebabkan "wrong base64").
+  window.location.href = `rawbt:base64,${toBase64(body)}`;
 }
 
 /** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
