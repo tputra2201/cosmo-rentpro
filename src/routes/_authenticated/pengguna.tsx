@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { MailCheck, Send, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { MailCheck, Send, ShieldCheck, Trash2, UserPlus, Wifi } from "lucide-react";
+import { listPresence, type PresenceRow } from "@/lib/presence.functions";
 import {
   listUsers,
   inviteUser,
@@ -77,6 +78,13 @@ function PenggunaPage() {
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["managed-users"],
     queryFn: () => fetchUsers(),
+  });
+
+  const fetchPresence = useServerFn(listPresence);
+  const { data: presence = [] } = useQuery({
+    queryKey: ["user-presence"],
+    queryFn: () => fetchPresence(),
+    refetchInterval: 30_000,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["managed-users"] });
