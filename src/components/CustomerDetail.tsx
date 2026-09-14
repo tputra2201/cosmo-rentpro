@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   cardDiscountPercentFor,
+  addonAmount,
   formatRupiah,
   useBilling,
   type Customer,
@@ -260,9 +261,32 @@ export function ReceiptView({ record, onBack }: { record: HistoryRecord; onBack?
         </>
       )}
 
+      {record.addons && record.addons.length > 0 && (
+        <>
+          <Separator />
+          <p className="font-semibold">Additional Rental</p>
+          <ul className="space-y-1">
+            {record.addons.map((addon, index) => (
+              <li key={`${addon.name}-${index}`} className="flex justify-between gap-3">
+                <span className="truncate text-muted-foreground">
+                  {addon.name} × {addon.qty}
+                  {addon.mode === "hourly" ? " / jam" : ""}
+                </span>
+                <span>
+                  {formatRupiah(addonAmount(addon, Math.max(0, record.minutes) / 60))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <Separator />
       <div className="space-y-1">
         <Row label="Rental" value={formatRupiah(record.rentalTotal)} />
+        {record.addonTotal ? (
+          <Row label="Additional Rental" value={formatRupiah(record.addonTotal)} />
+        ) : null}
         <Row label="Makanan & minuman" value={formatRupiah(record.fnbTotal)} />
         {record.discount ? (
           <Row

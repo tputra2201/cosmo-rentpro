@@ -7,11 +7,11 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
 import {
-  fnbTotal,
+  CARD_PAYMENT_NAME,
   formatRupiah,
   paidTotal,
   playAlarm,
-  rentalTotal,
+  sessionBill,
   stationStatus,
   useBilling,
 } from "@/lib/billing-store";
@@ -37,7 +37,18 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
-  const { stations, now, bookings, reorderList } = useBilling();
+  const {
+    stations,
+    now,
+    bookings,
+    reorderList,
+    consoleDiscounts,
+    menu,
+    promotions,
+    addonRentals,
+    cardDiscountPercent,
+    cardMemberDiscountPercent,
+  } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const alerted = useRef<Set<string>>(new Set());
 
@@ -58,19 +69,32 @@ function Dashboard() {
 
   const active = stations.filter((s) => s.session);
   const available = stations.filter((s) => stationStatus(s, now, bookings) === "idle");
-  const openBill = active.reduce(
-    (sum, s) =>
-      sum +
-      (s.session
-        ? Math.max(
-            0,
-            rentalTotal(s.session, now) +
-              fnbTotal(s.session) -
-              paidTotal(s.session),
-          )
-        : 0),
-    0,
-  );
+  const openBill = active.reduce((sum, s) => {
+    const session = s.session;
+    if (!session) return sum;
+    const usedCard = Boolean(
+      session.settlements?.some(
+        (settlement) =>
+          settlement.payment === CARD_PAYMENT_NAME ||
+          settlement.payments?.some((row) => row.method === CARD_PAYMENT_NAME),
+      ),
+    );
+    const bill = sessionBill(
+      session,
+      now,
+      s.console,
+      {
+        consoleDiscounts,
+        menu,
+        promotions,
+        addonRentals,
+        cardDiscountPercent,
+        cardMemberDiscountPercent,
+      },
+      { member: Boolean(session.member), card: usedCard },
+    );
+    return sum + Math.max(0, bill.total - paidTotal(session));
+  }, 0);
   const selected = stations.find((s) => s.id === selectedId) ?? null;
 
   return (

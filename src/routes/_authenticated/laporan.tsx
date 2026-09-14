@@ -204,8 +204,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
   const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
   const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
 
-  const sum = (arr: typeof history, key: "rentalTotal" | "fnbTotal" | "total") =>
-    arr.reduce((s, h) => s + h[key], 0);
+  const sum = (
+    arr: typeof history,
+    key: "rentalTotal" | "fnbTotal" | "total" | "addonTotal",
+  ) => arr.reduce((s, h) => s + (h[key] ?? 0), 0);
 
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
@@ -216,8 +218,8 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
   const exportCsv = () => {
-    const header = ["Tanggal", "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "F&B", "Total"];
-    const rows = history.map((h) => [new Date(h.endAt).toLocaleString("id-ID"), h.stationName, h.customerName ?? "Umum", h.packageName ?? h.mode, h.payment ?? "Cash", h.minutes, h.rentalTotal, h.fnbTotal, h.total]);
+    const header = ["Tanggal", "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "Additional Rental", "F&B", "Total"];
+    const rows = history.map((h) => [new Date(h.endAt).toLocaleString("id-ID"), h.stationName, h.customerName ?? "Umum", h.packageName ?? h.mode, h.payment ?? "Cash", h.minutes, h.rentalTotal, h.addonTotal ?? 0, h.fnbTotal, h.total]);
     const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
@@ -239,6 +241,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
+        <Stat
+          label="Additional Rental"
+          value={formatRupiah(sum(today, "addonTotal"))}
+        />
         <Stat label="Makanan & minuman" value={formatRupiah(sum(today, "fnbTotal"))} />
         <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
         <Stat label="Pengeluaran" value={formatRupiah(expense)} />
@@ -332,6 +338,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                   <TableHead>Pembayaran</TableHead>
                   <TableHead className="text-right">Durasi</TableHead>
                   <TableHead className="text-right">Rental</TableHead>
+                  <TableHead className="text-right">Add. Rental</TableHead>
                   <TableHead className="text-right">F&amp;B</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Nota</TableHead>
@@ -363,6 +370,9 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                     <TableCell className="text-right">{h.minutes} mnt</TableCell>
                     <TableCell className="text-right">
                       {formatRupiah(h.rentalTotal)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatRupiah(h.addonTotal ?? 0)}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatRupiah(h.fnbTotal)}
