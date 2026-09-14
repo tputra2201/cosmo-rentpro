@@ -357,6 +357,8 @@ export function promoDiscountAmount(promo: Promotion | undefined, base: number) 
 
 export type BillBreakdown = {
   rental: number;
+  /** Total sewa tambahan (Additional Rental). */
+  addon: number;
   fnb: number;
   subtotal: number;
   itemDiscount: number;
@@ -372,6 +374,10 @@ export function computeBill(input: {
   rental: number;
   rentalHours: number;
   rentalDiscount?: ItemDiscount;
+  /** Total sewa tambahan yang sudah dihitung. */
+  addon?: number;
+  /** Potongan harga khusus sewa tambahan. */
+  addonDiscount?: number;
   orders: OrderItem[];
   menu: MenuItem[];
   ctx: DiscountContext;
@@ -383,9 +389,11 @@ export function computeBill(input: {
   const fallback = input.fallbackPercent ?? 0;
   const fnb = input.orders.reduce((sum, o) => sum + o.price * o.qty, 0);
   const rental = Math.max(0, input.rental);
-  const subtotal = rental + fnb;
+  const addon = Math.max(0, input.addon ?? 0);
+  const subtotal = rental + addon + fnb;
   const itemDiscount =
     itemDiscountAmount(input.rentalDiscount, rental, input.rentalHours, input.ctx, fallback) +
+    Math.min(addon, Math.max(0, input.addonDiscount ?? 0)) +
     orderDiscountTotal(input.orders, input.menu, input.ctx, fallback);
   const afterItem = Math.max(0, subtotal - itemDiscount);
   const promo = activeGlobalPromo(input.promotions, input.now);
@@ -403,6 +411,7 @@ export function computeBill(input: {
   const discount = itemDiscount + promoDiscount + manualDiscount;
   return {
     rental,
+    addon,
     fnb,
     subtotal,
     itemDiscount,
