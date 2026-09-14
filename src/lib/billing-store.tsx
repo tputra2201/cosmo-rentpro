@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -1172,6 +1173,8 @@ const BillingContext = createContext<Ctx | null>(null);
 
 export function BillingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaultState);
+  const stateRef = useRef<State>(state);
+  stateRef.current = state;
   const [now, setNow] = useState(() => Date.now());
   const [hydrated, setHydrated] = useState(false);
 
@@ -1379,13 +1382,21 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
   void startSession;
 
-  const stopSession = useCallback<Ctx["stopSession"]>(
-    (stationId, payment, amountPaid, payments) => {
+  // Dihitung sebagai fungsi murni supaya hasilnya bisa dibaca langsung
+  // (setState di React 18 tidak berjalan seketika).
+  const computeStop = useCallback(
+    (
+      prevState: State,
+      endAt: number,
+      stationId: string,
+      payment?: string,
+      amountPaid?: number,
+      payments?: PaymentSplit[],
+    ): { record: HistoryRecord | null; next: State } => {
       let record: HistoryRecord | null = null;
-      setState((prev) => {
+      const next = ((prev: State): State => {
         const station = prev.stations.find((s) => s.id === stationId);
         if (!station?.session) return prev;
-        const endAt = Date.now();
         const session = station.session;
         const methodsUsed = [
           ...(session.settlements ?? []).flatMap((s) =>
@@ -1493,10 +1504,31 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             s.id === stationId ? { ...s, session: null } : s,
           ),
         };
-      });
+      })(prevState);
+      return { record, next };
+    },
+    [],
+  );
+
+  const stopSession = useCallback<Ctx["stopSession"]>(
+    (stationId, payment, amountPaid, payments) => {
+      const endAt = Date.now();
+      const { record } = computeStop(
+        stateRef.current,
+        endAt,
+        stationId,
+        payment,
+        amountPaid,
+        payments,
+      );
+      if (!record) return null;
+      setState(
+        (prev) =>
+          computeStop(prev, endAt, stationId, payment, amountPaid, payments).next,
+      );
       return record;
     },
-    [setState],
+    [computeStop, setState],
   );
 
   const settleSession = useCallback<Ctx["settleSession"]>(
