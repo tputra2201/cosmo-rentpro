@@ -2386,6 +2386,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return true;
       },
       chargeCard: (id, amount, note) => {
+        if (!shiftOpen) return false;
         const value = Math.round(amount);
         const card = state.playingCards.find((c) => c.id === id);
         if (!card || !card.active || value <= 0) return false;
