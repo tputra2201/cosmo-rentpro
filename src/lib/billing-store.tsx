@@ -1956,7 +1956,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return true;
       },
       openCafeTable: (tableId, customerName, notes) =>
-        update((prev) => ({
+        !shiftOpen
+          ? undefined
+          : update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
             t.id === tableId
