@@ -372,7 +372,7 @@ function PrinterPage() {
         <div>
           <h2 className="text-xl font-semibold">Cetak Label per Menu</h2>
           <p className="text-sm text-muted-foreground">
-            Pilih menu mana yang dicetak sebagai label dan ke printer dapur atau bar mana. Satu
+            Pilih menu mana yang dicetak sebagai label dan ke printer mana pun yang aktif. Satu
             label dicetak untuk setiap item pesanan.
           </p>
         </div>
@@ -414,9 +414,7 @@ function PrinterPage() {
             </div>
           ))}
           {labelPrinters.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Tambahkan printer dengan jenis Kitchen atau Bar terlebih dahulu.
-            </p>
+            <p className="text-sm text-muted-foreground">Tambahkan printer aktif terlebih dahulu.</p>
           )}
         </div>
       </section>
