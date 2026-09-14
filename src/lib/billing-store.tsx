@@ -32,6 +32,41 @@ export type OrderItem = {
   qty: number;
 };
 
+/** Cara hitung sewa tambahan: per jam pemakaian atau sekali sewa. */
+export type AddonMode = "hourly" | "once";
+
+/** Item "Additional Rental": sewa tambahan selain konsol (stik, VR, kursi, dll). */
+export type AddonRental = {
+  id: string;
+  name: string;
+  price: number;
+  mode: AddonMode;
+  active: boolean;
+  discount?: ItemDiscount;
+  sort?: number;
+};
+
+/** Sewa tambahan yang dipakai pada satu sesi rental. */
+export type SessionAddon = {
+  id: string;
+  addonId: string;
+  name: string;
+  price: number;
+  mode: AddonMode;
+  qty: number;
+};
+
+/** Biaya satu sewa tambahan. Mode per jam dikali durasi sesi. */
+export function addonAmount(addon: SessionAddon, hours: number) {
+  const qty = Math.max(0, addon.qty);
+  if (addon.mode === "once") return Math.round(addon.price * qty);
+  return Math.round(addon.price * qty * Math.max(0, hours));
+}
+
+export function addonsTotal(addons: SessionAddon[] | undefined, hours: number) {
+  return (addons ?? []).reduce((sum, a) => sum + addonAmount(a, hours), 0);
+}
+
 export type Session = {
   mode: PlayMode;
   startAt: number;
