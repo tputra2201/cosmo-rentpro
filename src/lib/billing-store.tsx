@@ -2004,6 +2004,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       payCafeTable: (tableId, input) => {
+        if (!shiftOpen) return null;
         let record: HistoryRecord | null = null;
         setState((prev) => {
           const table = prev.cafeTables.find((t) => t.id === tableId);
