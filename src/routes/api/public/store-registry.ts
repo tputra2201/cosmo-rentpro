@@ -170,7 +170,9 @@ export const Route = createFileRoute("/api/public/store-registry")({
           const { data, error } = await supabaseAdmin
             .from("app_branding")
             .upsert({ id: "default", ...values } as never, { onConflict: "id" })
-            .select("logo_url, login_title, login_note")
+            .select(
+              "logo_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact",
+            )
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
           return Response.json({ branding: data });
