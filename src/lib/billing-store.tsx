@@ -2487,6 +2487,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashCategories: prev.cashCategories.filter((item) => item.id !== id),
         })),
       addCashEntry: (input) => {
+        if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
         const amount = Math.max(0, Math.round(input.amount));
         if (!category || amount <= 0) return null;
