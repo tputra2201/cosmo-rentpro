@@ -25,6 +25,7 @@ export const LIST_KINDS = {
   cash_entry: "cashEntries",
   shift: "shifts",
   log_entry: "logEntries",
+  addon_rental: "addonRentals",
 } as const;
 
 type ListKind = keyof typeof LIST_KINDS;
@@ -123,6 +124,7 @@ export function applyRecords(
     cashEntries: [...state.cashEntries],
     shifts: [...(state.shifts ?? [])],
     logEntries: [...(state.logEntries ?? [])],
+    addonRentals: [...(state.addonRentals ?? [])],
   };
 
 
