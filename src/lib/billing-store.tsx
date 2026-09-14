@@ -2169,9 +2169,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // Seluruh data di perangkat terikat ke satu store. Begitu store pengguna
   // diketahui, data lokal dari store lain dibuang sebelum satu baris pun
   // dikirim, dan data baru langsung bertanda store ini.
-  const bindStore = useCallback((id: string) => {
+  const bindStore = useCallback((id: string, keepLocal = false) => {
     setState((prev) => {
       if (prev.storeId === id) return prev;
+      // keepLocal: data di perangkat ini memang milik store ini (versi lama
+      // belum menandainya). Cukup diberi tanda, jangan dihapus, supaya
+      // transaksi yang belum terkirim tidak hilang.
+      if (keepLocal) return { ...prev, storeId: id };
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch {
