@@ -126,11 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signOut = async () => {
+    if (typeof window !== "undefined") localStorage.removeItem(CACHE_KEY);
     await supabase.auth.signOut();
     setSession(null);
     setRole(null);
     setMustChangePassword(false);
   };
+
 
   return (
     <Ctx.Provider
