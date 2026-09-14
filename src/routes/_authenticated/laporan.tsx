@@ -101,6 +101,7 @@ function LaporanPage() {
     { value: "member", label: "Laporan Membership", key: "laporan.membership" },
     { value: "qris", label: "Pembayaran QRIS", key: "laporan.qris" },
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
+    { value: "logbook", label: "Log Book", key: "laporan.logbook" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
   const reportRef = useRef<HTMLDivElement>(null);
