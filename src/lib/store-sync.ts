@@ -190,7 +190,17 @@ export function useStoreSync(options: {
           setError("Akun belum terhubung ke store. Hubungi Admin atau Developer.");
           return;
         }
-        if (stateRef.current.storeId !== id) {
+        const localStore = stateRef.current.storeId;
+        // Perangkat yang datanya belum bertanda store, tapi sudah pernah
+        // menyinkronkan store ini (versi aplikasi sebelumnya), datanya memang
+        // milik store ini. Jangan dihapus: bisa berisi transaksi saat internet
+        // mati yang belum terkirim.
+        const hasSyncHistory =
+          Object.keys(shadowRef.current).length > 0 ||
+          Object.keys(outboxRef.current).length > 0 ||
+          Boolean(localStorage.getItem(SINCE_KEY));
+        const adopt = !localStore && hasSyncHistory && (cached === null || cached === id);
+        if (localStore !== id && !adopt) {
           // Data lokal milik store lain (atau data bawaan yang belum bertanda
           // store): buang jejak sinkronisasi lama supaya tidak ikut terkirim.
           localStorage.removeItem(SHADOW_KEY);
@@ -205,7 +215,7 @@ export function useStoreSync(options: {
           setPending(0);
           setReadyStoreId(null);
         }
-        bindStore(id);
+        bindStore(id, adopt);
         localStorage.setItem(STORE_KEY, id);
         setStoreId(id);
         setError(null);
