@@ -363,8 +363,12 @@ function OnlineNow({
                         {user!.fullName || user!.email}
                       </span>
                       <span className="text-xs text-muted-foreground">
+                        {user!.email}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
                         {roleLabel[user!.role]}
                       </span>
+
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {p.device || "Perangkat"} · {sinceText(p.lastSeenAt)}
