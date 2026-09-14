@@ -3181,6 +3181,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashActual: Math.max(0, Math.round(input.cashActual)),
           balanceNote: input.balanceNote?.trim() ?? "",
           nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
+          closedByName: actorRef.current.name || shift.cashierName,
+          ...(user?.id ? { closedById: user.id } : {}),
         };
         update((prev) =>
           withLog(
