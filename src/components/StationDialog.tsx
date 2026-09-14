@@ -119,6 +119,29 @@ export function StationDialog({
     setPaidRecord(found);
   }, [wantPrint, paidHistoryId, history]);
   const labelPrinters = printers.filter((p) => p.active);
+  const labelHeading = (p: PrinterConfig) =>
+    p.role === "bar" ? "BAR" : p.role === "kitchen" ? "DAPUR" : p.name;
+  /** Cetak label untuk satu atau semua pesanan, sesuai printer yang diatur per menu. */
+  const printOrderLabels = (orders: OrderItem[], source: string, customerName?: string) => {
+    let printed = 0;
+    for (const printer of labelPrinters) {
+      const items = labelItemsFor(orders, menu, printer.id);
+      if (items.length === 0) continue;
+      printLabels({
+        printer,
+        items,
+        heading: labelHeading(printer),
+        source,
+        ...(customerName ? { customerName } : {}),
+      });
+      printed += items.length;
+    }
+    if (printed === 0) {
+      toast.error("Label belum bisa dicetak", {
+        description: "Atur printer label untuk menu ini di menu Printer.",
+      });
+    }
+  };
   const [cardNumber, setCardNumber] = useState("");
   const [editCustomer, setEditCustomer] = useState(false);
   const [editName, setEditName] = useState("");
