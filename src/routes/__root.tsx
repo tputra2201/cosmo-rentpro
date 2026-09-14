@@ -49,6 +49,7 @@ import { Toaster } from "../components/ui/sonner";
 import { Button } from "../components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../components/ui/sheet";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { appSignature } from "@/lib/app-info";
 import { useStoreInfo } from "@/lib/store-info";
 import { useDeveloper } from "@/lib/developer";
@@ -192,6 +193,7 @@ function RootComponent() {
         <AuthProvider>
           <BillingProvider>
             <AppShell />
+            <PresenceHeartbeat />
             <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
