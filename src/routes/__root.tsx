@@ -206,6 +206,7 @@ function RootComponent() {
             <AppShell />
             <PresenceHeartbeat />
             <ReservationAlert />
+            <IdleLogout />
             <AndroidPrintFeedback />
             <Toaster position="top-right" richColors />
           </BillingProvider>
