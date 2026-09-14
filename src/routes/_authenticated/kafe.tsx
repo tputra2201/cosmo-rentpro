@@ -15,6 +15,8 @@ import { emptyItemDiscount, formatRupiah, useBilling } from "@/lib/billing-store
 import { tableTotal } from "@/components/CafeTables";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { DiscountFields } from "@/components/DiscountFields";
+import { Switch } from "@/components/ui/switch";
+import { PRINTER_ROLE_LABEL } from "@/lib/printing";
 
 export const Route = createFileRoute("/_authenticated/kafe")({
   head: () => ({
@@ -53,7 +55,10 @@ function KafePage() {
     removeMenuCategory,
     reorderList,
     reorderMenuCategories,
+    printers,
   } = useBilling();
+
+  const labelPrinters = printers.filter((p) => p.active);
 
   const [newName, setNewName] = useState("");
   const [newArea, setNewArea] = useState("");
@@ -315,6 +320,37 @@ function KafePage() {
                   })
                 }
               />
+              <div className="grid items-center gap-2 sm:col-span-4 sm:grid-cols-[auto_1fr]">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={m.printEnabled !== false}
+                    onCheckedChange={(v) => updateMenuItem(m.id, { printEnabled: v })}
+                    aria-label={`Cetak label ${m.name}`}
+                  />
+                  Cetak label
+                </label>
+                <Select
+                  value={m.printerId ?? ""}
+                  onValueChange={(value) => updateMenuItem(m.id, { printerId: value })}
+                >
+                  <SelectTrigger aria-label={`Printer label ${m.name}`}>
+                    <SelectValue
+                      placeholder={
+                        labelPrinters.length === 0
+                          ? "Belum ada printer aktif"
+                          : "Pilih printer label"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {labelPrinters.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} · {PRINTER_ROLE_LABEL[p.role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </SortableItem>
           ))}
         </SortableArea>
