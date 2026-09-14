@@ -170,6 +170,9 @@ function LaporanPage() {
             emptyText="Belum ada pembayaran transfer bank pada periode ini."
           />
         </TabsContent>
+        <TabsContent value="logbook" className="mt-6">
+          <LogBookReport range={range} />
+        </TabsContent>
       </Tabs>
       </div>
     </div>
