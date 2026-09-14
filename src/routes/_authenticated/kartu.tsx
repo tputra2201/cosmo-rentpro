@@ -65,6 +65,7 @@ function KartuPage() {
         </p>
       </header>
 
+      <ShiftLockedNotice className="mb-3" />
       <Tabs defaultValue="beli">
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="beli">
