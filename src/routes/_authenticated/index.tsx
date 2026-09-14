@@ -7,11 +7,11 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
 import {
-  fnbTotal,
+  CARD_PAYMENT_NAME,
   formatRupiah,
   paidTotal,
   playAlarm,
-  rentalTotal,
+  sessionBill,
   stationStatus,
   useBilling,
 } from "@/lib/billing-store";
