@@ -995,7 +995,7 @@ export function StationDialog({
                   </div>
                 </>
               )}
-              {false && <span />}
+              
 
               {session.orders.length > 0 && labelPrinters.length > 0 && (
                 <Button
