@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Palette,
   Outlet,
   Link,
   createRootRouteWithContext,
@@ -38,6 +37,7 @@ import {
   Wrench,
   ChevronDown,
 
+  Palette,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
