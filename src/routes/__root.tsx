@@ -60,6 +60,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ReservationAlert } from "@/components/ReservationAlert";
 import { appSignature } from "@/lib/app-info";
+import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
 import { useDeveloper } from "@/lib/developer";
 import { DeveloperStoreSwitcher } from "@/components/DeveloperStoreSwitcher";
