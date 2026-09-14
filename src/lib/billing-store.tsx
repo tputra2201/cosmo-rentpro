@@ -492,6 +492,10 @@ export type HistoryRecord = {
   endAt: number;
   minutes: number;
   rentalTotal: number;
+  /** Total sewa tambahan (Additional Rental). */
+  addonTotal?: number;
+  /** Rincian sewa tambahan yang dipakai. */
+  addons?: SessionAddon[];
   fnbTotal: number;
   total: number;
   payment?: string;
@@ -861,11 +865,29 @@ export type PriceConfig = {
   promotions: Promotion[];
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
+  addonRentals?: AddonRental[];
 };
 
 function fallbackCardPercent(cfg: PriceConfig, ctx: DiscountContext) {
   if (!ctx.card) return 0;
   return ctx.member ? cfg.cardMemberDiscountPercent : cfg.cardDiscountPercent;
+}
+
+/** Potongan harga khusus item sewa tambahan. */
+export function addonDiscountTotal(
+  addons: SessionAddon[] | undefined,
+  hours: number,
+  catalog: AddonRental[] | undefined,
+  ctx: DiscountContext,
+  fallbackPercent = 0,
+) {
+  return (addons ?? []).reduce((sum, addon) => {
+    const base = addonAmount(addon, hours);
+    const item = (catalog ?? []).find((a) => a.id === addon.addonId);
+    const units =
+      addon.mode === "hourly" ? Math.max(0, addon.qty) * Math.max(0, hours) : Math.max(0, addon.qty);
+    return sum + itemDiscountAmount(item?.discount, base, units, ctx, fallbackPercent);
+  }, 0);
 }
 
 /** Tagihan satu sesi rental lengkap dengan semua potongan. */
@@ -878,20 +900,30 @@ export function sessionBill(
   manual?: { type: DiscountType; value: number },
 ): BillBreakdown {
   const minutes = rentalMinutes(session, now);
+  const hours = minutes / 60;
   const fallbackManual =
     session.discountType && session.discountValue
       ? { type: session.discountType, value: session.discountValue, max: session.discountMax }
       : undefined;
+  const fallbackPercent = fallbackCardPercent(cfg, ctx);
   return computeBill({
     rental: rentalTotal(session, now),
-    rentalHours: minutes / 60,
+    rentalHours: hours,
     ...(cfg.consoleDiscounts[consoleType] ? { rentalDiscount: cfg.consoleDiscounts[consoleType] } : {}),
+    addon: addonsTotal(session.addons, hours),
+    addonDiscount: addonDiscountTotal(
+      session.addons,
+      hours,
+      cfg.addonRentals,
+      ctx,
+      fallbackPercent,
+    ),
     orders: session.orders,
     menu: cfg.menu,
     ctx,
     promotions: cfg.promotions,
     now,
-    fallbackPercent: fallbackCardPercent(cfg, ctx),
+    fallbackPercent,
     ...(manual && manual.value ? { manual } : fallbackManual ? { manual: fallbackManual } : {}),
   });
 }
