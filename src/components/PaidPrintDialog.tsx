@@ -62,9 +62,6 @@ export function PaidPrintDialog({
           <Button variant="outline" onClick={() => print("receipt")}>
             <Printer className="size-4" /> Cetak struk
           </Button>
-          <Button variant="outline" onClick={() => print("invoice")}>
-            <Printer className="size-4" /> Cetak invoice
-          </Button>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
