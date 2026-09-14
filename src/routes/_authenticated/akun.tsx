@@ -33,6 +33,27 @@ function AkunPage() {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const sendReset = async () => {
+    const email = user?.email;
+    if (!email) {
+      toast.error("Email akun tidak ditemukan");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: passwordSetupUrl(),
+      });
+      if (error) throw error;
+      toast.success(`Tautan atur ulang sandi dikirim ke ${email}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengirim tautan");
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
