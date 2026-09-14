@@ -2609,10 +2609,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       removeCashCategory: (id) =>
-        update((prev) => ({
-          ...prev,
-          cashCategories: prev.cashCategories.filter((item) => item.id !== id),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, cashCategories: prev.cashCategories.filter((item) => item.id !== id) },
+            "Hapus item kas",
+            prev.cashCategories.find((item) => item.id === id)?.name ?? id,
+          ),
+        ),
       addCashEntry: (input) => {
         if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
