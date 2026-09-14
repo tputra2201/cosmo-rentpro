@@ -1979,10 +1979,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           menu: prev.menu.map((m) => (m.id === id ? { ...m, ...patch } : m)),
         })),
       removeMenuItem: (id) =>
-        update((prev) => ({
-          ...prev,
-          menu: prev.menu.filter((m) => m.id !== id),
-        })),
+        update((prev) =>
+          withLog(
+            { ...prev, menu: prev.menu.filter((m) => m.id !== id) },
+            "Hapus item menu",
+            prev.menu.find((m) => m.id === id)?.name ?? id,
+          ),
+        ),
       addMenuCategory: (name) => {
         const clean = name.trim();
         if (!clean) return false;
