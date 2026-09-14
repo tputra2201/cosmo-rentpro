@@ -15,6 +15,7 @@ const classFor: Record<ThemeName, string> = {
   gelap: "dark theme-gelap",
   terang: "theme-terang",
   berwarna: "theme-berwarna",
+  cosmo: "dark theme-cosmo",
 };
 
 type Ctx = { theme: ThemeName; setTheme: (t: ThemeName) => void };
