@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, Banknote, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
