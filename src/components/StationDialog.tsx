@@ -914,6 +914,12 @@ export function StationDialog({
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatRupiah(bill.subtotal)}</span>
                   </div>
+                  {bill.addon > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Additional Rental</span>
+                      <span>{formatRupiah(bill.addon)}</span>
+                    </div>
+                  )}
                   {bill.itemDiscount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Potongan tarif &amp; menu</span>
