@@ -43,6 +43,26 @@ function AuthPage() {
   const [devOpen, setDevOpen] = useState(false);
   const [devSecret, setDevSecret] = useState("");
   const [devBusy, setDevBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const sendReset = async () => {
+    if (!email.trim()) {
+      toast.error("Isi email akun dulu, lalu tekan Lupa password");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: passwordSetupUrl(),
+      });
+      if (error) throw error;
+      toast.success(`Tautan atur ulang sandi dikirim ke ${email.trim()}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengirim tautan");
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const openControlCenter = async () => {
     if (!devSecret) return;
