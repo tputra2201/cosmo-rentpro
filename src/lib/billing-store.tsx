@@ -1723,7 +1723,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!shiftOpen) return;
         startSessionWithRate(...args);
       },
-      stopSession: (...args) => (shiftOpen ? stopSession(...args) : null),
+      // Menutup sesi yang tagihannya sudah lunas tidak memindahkan uang,
+      // jadi tetap boleh walau shift belum/sudah tidak terbuka.
+      stopSession: (...args) => {
+        const withPayment = Boolean(args[1]) || Boolean(args[3]?.length);
+        if (!shiftOpen && withPayment) return null;
+        return stopSession(...args);
+      },
       settleSession: (...args) => (shiftOpen ? settleSession(...args) : null),
       removeSettlement,
 

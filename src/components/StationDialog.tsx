@@ -377,7 +377,10 @@ export function StationDialog({
     const record = stopSession(station.id);
     if (!record) {
       toast.error("Sesi belum bisa diakhiri", {
-        description: `Sisa tagihan ${formatRupiah(dueAmount)} harus dibayar dulu`,
+        description:
+          dueAmount > 0
+            ? `Sisa tagihan ${formatRupiah(dueAmount)} harus dibayar dulu`
+            : "Coba tutup lalu buka kembali kartu TV ini, atau muat ulang halaman.",
       });
       return;
     }
