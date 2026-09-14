@@ -1161,10 +1161,22 @@ type Ctx = State & {
   }) => void;
   removeStation: (stationId: string) => void;
   reorderList: (
-    list: "stations" | "cafeTables" | "menu" | "packages" | "paymentMethods",
+    list:
+      | "stations"
+      | "cafeTables"
+      | "menu"
+      | "packages"
+      | "paymentMethods"
+      | "addonRentals",
     activeId: string,
     overId: string,
   ) => void;
+  addAddonRental: (name: string, price: number, mode: AddonMode) => boolean;
+  updateAddonRental: (id: string, patch: Partial<Omit<AddonRental, "id">>) => void;
+  setAddonDiscount: (id: string, patch: Partial<ItemDiscount>) => void;
+  removeAddonRental: (id: string) => void;
+  addSessionAddon: (stationId: string, addonId: string, qty?: number) => void;
+  removeSessionAddon: (stationId: string, rowId: string) => void;
   reorderConsoleTypes: (activeName: string, overName: string) => void;
   reorderMenuCategories: (activeName: string, overName: string) => void;
   addMenuItem: (name: string, price: number, category?: string) => void;
