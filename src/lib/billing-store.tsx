@@ -2179,6 +2179,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       adjustPoints: (customerId, points, reason) => update((prev) => ({ ...prev, customers: prev.customers.map((item) => item.id === customerId ? { ...item, points: Math.max(0, item.points + points) } : item), pointEntries: [{ id: `point-${Date.now()}`, customerId, points, reason, createdAt: Date.now() }, ...prev.pointEntries] })),
       setPointsPerRupiah: (pointsPerRupiah) => update((prev) => ({ ...prev, pointsPerRupiah: Math.max(1, pointsPerRupiah) })),
       buyPlayingCard: (input) => {
+        if (!shiftOpen) return null;
         const cardNumber = input.cardNumber.trim();
         if (!cardNumber) return null;
         if (findCardByNumber(state.playingCards, cardNumber)) return null;
