@@ -265,7 +265,7 @@ function AppIdentityPanel({
   busy: boolean;
   post: (body: unknown, okMessage?: string) => Promise<unknown>;
 }) {
-  const branding = useBranding();
+  const { branding, loaded } = useBrandingRecord();
   const [form, setForm] = useState<Record<AppField, string>>({
     app_name: "",
     app_version: "",
