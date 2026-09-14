@@ -229,6 +229,8 @@ function EntryForm({ direction }: { direction: CashDirection }) {
         </h2>
       </div>
 
+      <ShiftLockedNotice />
+
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Belum ada item. Tambahkan dulu di tab Item &amp; kelompok.
