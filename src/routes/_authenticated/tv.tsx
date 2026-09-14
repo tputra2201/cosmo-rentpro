@@ -207,6 +207,17 @@ function TvScreen() {
       >
         <Settings className="size-3" /> Ganti unit
       </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          choose(null);
+          navigate({ to: "/" });
+        }}
+        className="absolute bottom-3 left-28 z-40 flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] text-white/60"
+      >
+        <LogOut className="size-3" /> Exit
+      </button>
     </div>
   );
 }
