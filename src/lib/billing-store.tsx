@@ -1972,7 +1972,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       addCafeOrder: (tableId, item, qty) =>
-        update((prev) => ({
+        !shiftOpen
+          ? undefined
+          : update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
             t.id === tableId
