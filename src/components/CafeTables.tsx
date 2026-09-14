@@ -152,6 +152,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   return (
     <>
+      <ShiftLockedNotice className="mb-3" />
       <SortableArea
         ids={cafeTables.map((t) => t.id)}
         onReorder={(activeId, overId) => reorderList("cafeTables", activeId, overId)}
