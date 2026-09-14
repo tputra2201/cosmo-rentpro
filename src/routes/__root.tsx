@@ -239,6 +239,7 @@ function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
+  const branding = useBranding();
   const { sync, shifts, rolePermissions } = useBilling();
   const needCheckIn = {
     done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
