@@ -28,7 +28,7 @@ export const defaultBranding: Branding = {
 const COLUMNS =
   "logo_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact";
 
-/** Contoh hasil: "RentalPro v1.0 - 081282284411" */
+/** Contoh hasil: "RenToPlay v1.0 - 081282284411" */
 export function brandingSignature(b: Branding) {
   const name = b.app_name.trim();
   const version = b.app_version.trim();

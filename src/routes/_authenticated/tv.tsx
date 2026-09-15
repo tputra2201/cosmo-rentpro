@@ -15,13 +15,13 @@ import {
 export const Route = createFileRoute("/_authenticated/tv")({
   head: () => ({
     meta: [
-      { title: "Layar TV Pelanggan — RentalPro" },
+      { title: "Layar TV Pelanggan — RenToPlay" },
       {
         name: "description",
         content:
           "Tampilan layar TV pelanggan: sisa waktu bermain, peringatan 5 menit terakhir, dan peringatan saat waktu habis.",
       },
-      { property: "og:title", content: "Layar TV Pelanggan — RentalPro" },
+      { property: "og:title", content: "Layar TV Pelanggan — RenToPlay" },
       {
         property: "og:description",
         content:

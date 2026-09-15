@@ -26,16 +26,16 @@ import { Textarea } from "@/components/ui/textarea";
 export const Route = createFileRoute("/kontrol")({
   head: () => ({
     meta: [
-      { title: "Pusat Kontrol Developer — RentalPro" },
+      { title: "Pusat Kontrol Developer — RenToPlay" },
       {
         name: "description",
         content:
           "Halaman Developer untuk membuat store baru, memantau masa aktif, dan mengubah data seluruh store dari satu tempat.",
       },
-      { property: "og:title", content: "Pusat Kontrol Developer — RentalPro" },
+      { property: "og:title", content: "Pusat Kontrol Developer — RenToPlay" },
       {
         property: "og:description",
-        content: "Kelola seluruh store RentalPro dan masa aktifnya dari satu halaman.",
+        content: "Kelola seluruh store RenToPlay dan masa aktifnya dari satu halaman.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -248,7 +248,7 @@ function BrandingPanel({
 }
 
 const APP_FIELDS = [
-  { key: "app_name", label: "Nama Aplikasi", placeholder: "RentalPro" },
+  { key: "app_name", label: "Nama Aplikasi", placeholder: "RenToPlay" },
   { key: "app_version", label: "Versi Aplikasi", placeholder: "v1.0" },
   { key: "release_date", label: "Tanggal Rilis", type: "date" },
   { key: "developer_name", label: "Nama Developer", placeholder: "Nama lengkap" },

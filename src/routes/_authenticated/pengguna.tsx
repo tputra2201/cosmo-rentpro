@@ -41,13 +41,13 @@ import {
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Pengguna — RentalPro" },
+      { title: "Pengaturan Pengguna — RenToPlay" },
       {
         name: "description",
         content:
           "Daftar pengguna setiap store, pengaturan level Manager, Finance, Kasir, Operator, dan hak akses tiap menu.",
       },
-      { property: "og:title", content: "Pengaturan Pengguna — RentalPro" },
+      { property: "og:title", content: "Pengaturan Pengguna — RenToPlay" },
       {
         property: "og:description",
         content:

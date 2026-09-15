@@ -19,13 +19,13 @@ import { activeGlobalPromo, formatRupiah, useBilling } from "@/lib/billing-store
 export const Route = createFileRoute("/_authenticated/promo")({
   head: () => ({
     meta: [
-      { title: "Promo — RentalPro" },
+      { title: "Promo — RenToPlay" },
       {
         name: "description",
         content:
           "Kelola promo dan happy hour rental PlayStation berdasarkan tanggal, jam, dan minimal transaksi.",
       },
-      { property: "og:title", content: "Promo — RentalPro" },
+      { property: "og:title", content: "Promo — RenToPlay" },
       {
         property: "og:description",
         content: "Atur diskon nominal atau persentase untuk transaksi rental dan kafe.",
