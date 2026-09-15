@@ -461,7 +461,8 @@ function ControlCenter() {
         return;
       }
       if (!res.ok) {
-        toast.error("Gagal memuat daftar store.");
+        const text = await res.text();
+        toast.error(text || "Gagal memuat daftar store.", { duration: 12000 });
         return;
       }
       const json = (await res.json()) as {
