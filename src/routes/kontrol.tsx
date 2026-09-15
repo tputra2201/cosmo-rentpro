@@ -452,8 +452,11 @@ function ControlCenter() {
       const res = await fetch("/api/public/store-registry", {
         headers: { "x-control-secret": provided ?? key() },
       });
-      if (res.status === 401) {
-        toast.error("Kunci Developer salah.");
+      if (res.status === 401 || res.status === 503) {
+        toast.error(
+          (await res.text()) || "Kunci Developer salah.",
+          res.status === 503 ? { duration: 12000 } : undefined,
+        );
         setUnlocked(false);
         return;
       }
