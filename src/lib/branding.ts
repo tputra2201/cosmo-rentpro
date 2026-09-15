@@ -16,6 +16,7 @@ export type Branding = {
 
 export const defaultBranding: Branding = {
   logo_url: "",
+  app_icon_url: "",
   login_title: "BILLING RENTAL PS",
   login_note: "",
   app_name: "",
@@ -27,7 +28,7 @@ export const defaultBranding: Branding = {
 };
 
 const COLUMNS =
-  "logo_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact";
+  "logo_url, app_icon_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact";
 
 /** Contoh hasil: "RenToPlay v1.0 - 081282284411" */
 export function brandingSignature(b: Branding) {
