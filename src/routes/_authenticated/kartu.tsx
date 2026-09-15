@@ -35,13 +35,13 @@ import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 export const Route = createFileRoute("/_authenticated/kartu")({
   head: () => ({
     meta: [
-      { title: "Playing Card — RentalPro" },
+      { title: "Playing Card — RenToPlay" },
       {
         name: "description",
         content:
           "Manajemen Playing Card rental PS: pembelian kartu baru, data pelanggan, top-up saldo, riwayat pemakaian, dan potongan harga khusus.",
       },
-      { property: "og:title", content: "Playing Card — RentalPro" },
+      { property: "og:title", content: "Playing Card — RenToPlay" },
       {
         property: "og:description",
         content:

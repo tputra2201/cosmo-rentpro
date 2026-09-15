@@ -33,13 +33,13 @@ import {
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
     meta: [
-      { title: "Kas Lain & Pengeluaran — RentalPro" },
+      { title: "Kas Lain & Pengeluaran — RenToPlay" },
       {
         name: "description",
         content:
           "Catat pendapatan lain, pengeluaran operasional, serta setoran dan pengambilan uang kas owner yang tidak dihitung sebagai untung atau biaya.",
       },
-      { property: "og:title", content: "Kas Lain & Pengeluaran — RentalPro" },
+      { property: "og:title", content: "Kas Lain & Pengeluaran — RenToPlay" },
       {
         property: "og:description",
         content:

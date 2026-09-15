@@ -22,13 +22,13 @@ import {
 export const Route = createFileRoute("/_authenticated/kasir")({
   head: () => ({
     meta: [
-      { title: "Layar Kasir — RentalPro" },
+      { title: "Layar Kasir — RenToPlay" },
       {
         name: "description",
         content:
           "Layar kasir untuk pelanggan: lihat tarif per jam tiap konsol dan total billing berjalan dari setiap TV yang sedang aktif.",
       },
-      { property: "og:title", content: "Layar Kasir — RentalPro" },
+      { property: "og:title", content: "Layar Kasir — RenToPlay" },
       {
         property: "og:description",
         content:

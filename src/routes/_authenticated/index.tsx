@@ -19,13 +19,13 @@ import {
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Dashboard TV — RentalPro" },
+      { title: "Dashboard TV — RenToPlay" },
       {
         name: "description",
         content:
           "Pantau semua TV rental PlayStation: status kosong, sedang main, atau waktu habis, lengkap dengan timer dan total tagihan.",
       },
-      { property: "og:title", content: "Dashboard TV — RentalPro" },
+      { property: "og:title", content: "Dashboard TV — RenToPlay" },
       {
         property: "og:description",
         content:

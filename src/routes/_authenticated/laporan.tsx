@@ -58,13 +58,13 @@ import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-stor
 export const Route = createFileRoute("/_authenticated/laporan")({
   head: () => ({
     meta: [
-      { title: "Riwayat & Laporan — RentalPro" },
+      { title: "Riwayat & Laporan — RenToPlay" },
       {
         name: "description",
         content:
           "Rekap pendapatan harian rental PlayStation dan penjualan makanan minuman beserta riwayat transaksi.",
       },
-      { property: "og:title", content: "Riwayat & Laporan — RentalPro" },
+      { property: "og:title", content: "Riwayat & Laporan — RenToPlay" },
       {
         property: "og:description",
         content: "Rekap pendapatan harian rental dan penjualan kasir.",

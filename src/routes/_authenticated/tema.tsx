@@ -4,13 +4,13 @@ import { ThemePicker } from "@/components/ThemePicker";
 export const Route = createFileRoute("/_authenticated/tema")({
   head: () => ({
     meta: [
-      { title: "Tema Tampilan — RentalPro" },
+      { title: "Tema Tampilan — RenToPlay" },
       {
         name: "description",
         content:
           "Pilih tema tampilan aplikasi billing rental PlayStation: gelap, terang, atau berwarna.",
       },
-      { property: "og:title", content: "Tema Tampilan — RentalPro" },
+      { property: "og:title", content: "Tema Tampilan — RenToPlay" },
       {
         property: "og:description",
         content: "Atur latar aplikasi agar nyaman dipakai di layar kasir maupun tablet.",

@@ -21,7 +21,7 @@ import { PRINTER_ROLE_LABEL } from "@/lib/printing";
 export const Route = createFileRoute("/_authenticated/kafe")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Meja Kafe — RentalPro" },
+      { title: "Pengaturan Meja Kafe — RenToPlay" },
       {
         name: "description",
         content:

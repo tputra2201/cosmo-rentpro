@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/_authenticated/akun")({
   head: () => ({
     meta: [
-      { title: "Akun Saya — RentalPro" },
+      { title: "Akun Saya — RenToPlay" },
       {
         name: "description",
         content: "Ubah kata sandi akun staf pada aplikasi billing rental PlayStation.",
       },
-      { property: "og:title", content: "Akun Saya — RentalPro" },
+      { property: "og:title", content: "Akun Saya — RenToPlay" },
       {
         property: "og:description",
         content: "Halaman ganti kata sandi untuk staf rental PlayStation.",
