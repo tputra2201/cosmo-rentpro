@@ -94,6 +94,25 @@ function denied(state: "wrong" | "unconfigured") {
   return new Response("Kunci Developer salah.", { status: 401 });
 }
 
+/**
+ * Ambil klien admin. Bila kunci akses penuh database belum tersedia
+ * (biasanya saat aplikasi dijalankan di PC lokal), kirim pesan jelas.
+ */
+async function loadAdmin() {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return { admin: supabaseAdmin, error: null as Response | null };
+  } catch {
+    return {
+      admin: null,
+      error: new Response(
+        "Kunci akses penuh database belum dipasang di aplikasi ini. Saat menjalankan di PC lokal, isi SUPABASE_SERVICE_ROLE_KEY di berkas .env.local, atau pakai aplikasi online untuk menu Developer.",
+        { status: 503 },
+      ),
+    };
+  }
+}
+
 const columns =
   "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url";
 
