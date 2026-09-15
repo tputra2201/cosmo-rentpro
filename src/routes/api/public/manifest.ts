@@ -22,19 +22,27 @@ async function readIdentity(): Promise<Identity> {
   const key =
     import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     process.env["SUPABASE_PUBLISHABLE_KEY"];
-  if (!url || !key) return null;
+  const empty: Identity = { name: "", version: "", icon: "" };
+  if (!url || !key) return empty;
   try {
     const supabase = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data } = await supabase
       .from("app_branding")
-      .select("app_version")
+      .select("app_name, app_version, app_icon_url")
       .eq("id", "default")
       .maybeSingle();
-    return data?.app_version ?? null;
+    const row = data as
+      | { app_name?: string; app_version?: string; app_icon_url?: string }
+      | null;
+    return {
+      name: row?.app_name ?? "",
+      version: row?.app_version ?? "",
+      icon: row?.app_icon_url ?? "",
+    };
   } catch {
-    return null;
+    return empty;
   }
 }
 
