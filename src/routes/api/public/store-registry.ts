@@ -70,12 +70,28 @@ function timingSafeEqual(a: string, b: string) {
   return diff === 0;
 }
 
-function authorize(request: Request) {
+/**
+ * Hasil pemeriksaan kunci: `ok`, `wrong` (kunci salah), atau `unconfigured`
+ * (kunci Developer belum dipasang di lingkungan ini — biasanya saat aplikasi
+ * dijalankan di PC lokal tanpa berkas .env.local).
+ */
+function authorize(request: Request): "ok" | "wrong" | "unconfigured" {
   const secret = process.env["DEVELOPER_CONTROL_SECRET"] ?? "";
+  if (secret.length === 0) return "unconfigured";
   const provided =
     request.headers.get("x-control-secret") ??
     (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  return secret.length > 0 && timingSafeEqual(secret, provided);
+  return timingSafeEqual(secret, provided) ? "ok" : "wrong";
+}
+
+function denied(state: "wrong" | "unconfigured") {
+  if (state === "unconfigured") {
+    return new Response(
+      "Kunci Developer belum dipasang di aplikasi ini. Saat menjalankan di PC lokal, isi DEVELOPER_CONTROL_SECRET dan SUPABASE_SERVICE_ROLE_KEY di berkas .env.local (lihat README).",
+      { status: 503 },
+    );
+  }
+  return new Response("Kunci Developer salah.", { status: 401 });
 }
 
 const columns =
