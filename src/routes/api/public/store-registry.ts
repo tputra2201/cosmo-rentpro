@@ -34,6 +34,7 @@ const bodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("branding"),
     logo_url: z.string().max(400000).optional(),
+    app_icon_url: z.string().max(400000).optional(),
     login_title: z.string().max(200).optional(),
     login_note: z.string().max(1000).optional(),
     app_name: z.string().max(120).optional(),
@@ -210,7 +211,7 @@ export const Route = createFileRoute("/api/public/store-registry")({
             .from("app_branding")
             .upsert({ id: "default", ...values } as never, { onConflict: "id" })
             .select(
-              "logo_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact",
+              "logo_url, app_icon_url, login_title, login_note, app_name, app_version, release_date, developer_name, developer_email, developer_contact",
             )
             .maybeSingle();
           if (error) return new Response(error.message, { status: 500 });
