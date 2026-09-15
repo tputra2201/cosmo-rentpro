@@ -385,7 +385,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      developer_is_developer: { Args: never; Returns: boolean }
+      developer_list_stores: {
+        Args: never
+        Returns: {
+          active: boolean
+          city: string
+          current_store_id: string
+          expires_at: string
+          id: string
+          store_code: string
+          store_name: string
+        }[]
+      }
+      developer_switch_store: { Args: { _store_id: string }; Returns: string }
     }
     Enums: {
       app_role:
