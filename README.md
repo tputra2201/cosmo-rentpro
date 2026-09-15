@@ -38,3 +38,24 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Menjalankan di PC lokal (termasuk menu Developer)
+
+Berpindah store lewat akun Developer sekarang berjalan penuh di PC lokal — cukup
+berkas `.env` yang sudah ada.
+
+Untuk membuka Pusat Kontrol Developer (`/kontrol`) di PC lokal, buat berkas
+`.env.local` di folder proyek (berkas ini tidak ikut ke repositori) dan isi:
+
+```sh
+DEVELOPER_CONTROL_SECRET="kunci-rahasia-buatan-sendiri"
+SUPABASE_SERVICE_ROLE_KEY="kunci-akses-penuh-database"
+```
+
+Lalu jalankan `bun run dev` (atau `npm run dev`). Masukkan kunci yang sama pada
+halaman `/kontrol`. Jika `DEVELOPER_CONTROL_SECRET` belum diisi, halaman
+`/kontrol` menampilkan pesan bahwa kuncinya belum dipasang — bukan lagi
+"kunci salah".
+
+Catatan: `SUPABASE_SERVICE_ROLE_KEY` hanya tersedia bila database dikelola
+sendiri. Pada aplikasi online, gunakan `/kontrol` di alamat resmi aplikasi.
