@@ -60,6 +60,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ReservationAlert } from "@/components/ReservationAlert";
 import { IdleLogout } from "@/components/IdleLogout";
+import { InstallAppTitle } from "@/components/InstallAppTitle";
 import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
@@ -135,8 +136,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#060f1e" },
+      { name: "apple-mobile-web-app-title", content: "RenToPlay" },
     ],
     links: [
+      { rel: "manifest", href: "/api/public/manifest" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
@@ -210,6 +214,7 @@ function RootComponent() {
             <ReservationAlert />
             <IdleLogout />
             <AndroidPrintFeedback />
+            <InstallAppTitle />
             <Toaster position="top-right" richColors />
           </BillingProvider>
         </AuthProvider>
