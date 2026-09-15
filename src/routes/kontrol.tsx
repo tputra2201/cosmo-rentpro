@@ -274,7 +274,9 @@ function AppIdentityPanel({
     developer_email: "",
     developer_contact: "",
   });
+  const [icon, setIcon] = useState("");
   const [ready, setReady] = useState(false);
+  const iconRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (ready || !loaded) return;
@@ -286,8 +288,29 @@ function AppIdentityPanel({
       developer_email: branding.developer_email,
       developer_contact: branding.developer_contact,
     });
+    setIcon(branding.app_icon_url);
     setReady(true);
   }, [branding, loaded, ready]);
+
+  const pickIcon = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran gambar maksimal 5 MB.");
+      return;
+    }
+    try {
+      const data = await toLogoDataUrl(file);
+      setIcon(data);
+      await post(
+        { action: "branding", app_icon_url: data },
+        "Ikon aplikasi tersimpan.",
+      );
+    } catch {
+      toast.error("Gambar tidak bisa dibaca.");
+    } finally {
+      if (iconRef.current) iconRef.current.value = "";
+    }
+  };
 
   return (
     <div className="surface-panel grid gap-4 p-5">
@@ -297,9 +320,50 @@ function AppIdentityPanel({
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Nama aplikasi, versi, dan nomor kontak developer tampil di bawah nama
-          store pada pojok kiri atas semua perangkat.
+          store pada pojok kiri atas semua perangkat. Nama dan ikon aplikasi
+          juga dipakai sebagai judul dan ikon website.
         </p>
       </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        {icon ? (
+          <img
+            src={icon}
+            alt="Ikon aplikasi"
+            className="size-16 rounded-xl border border-border object-contain"
+          />
+        ) : (
+          <div className="grid size-16 place-items-center rounded-xl border border-dashed border-border text-xs text-muted-foreground">
+            Kosong
+          </div>
+        )}
+        <input
+          ref={iconRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void pickIcon(e.target.files?.[0])}
+        />
+        <Button disabled={busy} onClick={() => iconRef.current?.click()}>
+          <ImageUp className="size-4" /> Unggah ikon aplikasi
+        </Button>
+        {icon && (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              setIcon("");
+              void post(
+                { action: "branding", app_icon_url: "" },
+                "Ikon aplikasi dihapus.",
+              );
+            }}
+          >
+            Hapus ikon
+          </Button>
+        )}
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         {APP_FIELDS.map((field) => (
           <div key={field.key} className="grid gap-2">
