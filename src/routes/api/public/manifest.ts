@@ -50,11 +50,12 @@ export const Route = createFileRoute("/api/public/manifest")({
   server: {
     handlers: {
       GET: async () => {
-        const version = await readAppVersion();
+        const identity = await readIdentity();
+        const customIcon = identity.icon.trim();
         const manifest = {
           id: "/",
-          name: formatName(version),
-          short_name: "RenToPlay",
+          name: formatName(identity),
+          short_name: identity.name.trim() || "RenToPlay",
           description:
             "Aplikasi kasir dan timer rental PlayStation: monitor TV, tarif, dan laporan.",
           start_url: "/",
