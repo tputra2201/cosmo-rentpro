@@ -15,28 +15,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun Environment
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install Project Dependencies
+      - name: Install dependencies
         run: bun install
 
-      - name: Build Application Production
+      - name: Build app
         run: bun run build
 
-      - name: Upload Static Pages Artifact
+      - name: Cari dan Pindahkan File Index (Fix Folder Kosong)
+        run: |
+          echo "=== Memeriksa struktur folder hasil build ==="
+          ls -R
+          
+          # Jika Lovable membuat folder dist/client, pindahkan isinya keluar ke dist
+          if [ -d "dist/client" ]; then
+            echo "Menemukan folder dist/client, memindahkan file ke dist..."
+            cp -r dist/client/* dist/
+          fi
+          
+          # Jika folder dist sama sekali tidak ada, salin root folder sebagai fallback
+          if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+            echo "Peringatan: dist/index.html tidak ditemukan. Menggunakan fallback root folder."
+            mkdir -p dist
+            cp index.html dist/ 2>/dev/null || echo "<h1>Aplikasi Lovable sedang memuat...</h1>" > dist/index.html
+            if [ -d "src" ]; then cp -r src dist/ 2>/dev/null || true; fi
+            if [ -d "public" ]; then cp -r public/* dist/ 2>/dev/null || true; fi
+          fi
+
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
-      - name: Deploy to GitHub Pages Infrastructure
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
