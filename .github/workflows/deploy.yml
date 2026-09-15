@@ -35,7 +35,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "." # Menggunakan root directory sebagai fallback aman
+          path: ./dist # Diarahkan kembali ke folder hasil build aplikasi Lovable Anda
 
       - name: Deploy to GitHub Pages
         id: deployment
