@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Branding = {
   logo_url: string;
+  app_icon_url: string;
   login_title: string;
   login_note: string;
   app_name: string;
