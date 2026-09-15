@@ -7,14 +7,17 @@ import { createClient } from "@supabase/supabase-js";
  * di Pusat Kontrol (/kontrol → Identitas aplikasi).
  */
 
-function formatName(version: string | null | undefined): string {
-  const v = (version ?? "").trim();
-  if (!v) return "RenToPlay";
+type Identity = { name: string; version: string; icon: string };
+
+function formatName(identity: Identity): string {
+  const base = identity.name.trim() || "RenToPlay";
+  const v = identity.version.trim();
+  if (!v) return base;
   const label = /^v/i.test(v) ? v : `v${v}`;
-  return `RenToPlay ${label}`;
+  return `${base} ${label}`;
 }
 
-async function readAppVersion(): Promise<string | null> {
+async function readIdentity(): Promise<Identity> {
   const url = import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
   const key =
     import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
