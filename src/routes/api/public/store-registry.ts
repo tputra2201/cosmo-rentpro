@@ -154,7 +154,8 @@ export const Route = createFileRoute("/api/public/store-registry")({
           return Response.json({ error: parsed.error.flatten() }, { status: 400 });
         }
         const body = parsed.data;
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { admin: supabaseAdmin, error: adminError } = await loadAdmin();
+        if (!supabaseAdmin) return adminError!;
 
         if (body.action === "create") {
           const { action: _a, ...values } = body;
