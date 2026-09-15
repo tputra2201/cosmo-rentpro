@@ -2,7 +2,7 @@ name: Deploy Lovable Vite App to Pages
 
 on:
   push:
-    branches: ["main"] # Sesuaikan jika branch utama Anda bernama master
+    branches: ["main", "master"] # Mendukung branch main maupun master
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
       url: ${{ steps:deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Node
@@ -31,7 +31,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build app
         run: npm run build
@@ -39,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist # Folder hasil build default dari Vite
+          path: ./dist
 
       - name: Deploy to GitHub Pages
         id: deployment
