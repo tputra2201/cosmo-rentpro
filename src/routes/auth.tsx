@@ -71,18 +71,18 @@ function AuthPage() {
       const res = await fetch("/api/public/store-registry", {
         headers: { "x-control-secret": devSecret },
       });
-      if (res.status === 401) {
-        toast.error("Kunci Developer salah.");
-        return;
-      }
       if (!res.ok) {
-        toast.error("Gagal membuka pusat kontrol.");
+        const text = (await res.text().catch(() => "")).trim();
+        toast.error(text || `Gagal membuka pusat kontrol (kode ${res.status}).`, {
+          duration: 12000,
+        });
         return;
       }
       sessionStorage.setItem("rentalpro-control-secret", devSecret);
       setDevOpen(false);
       setDevSecret("");
       navigate({ to: "/kontrol" });
+
     } catch {
       toast.error("Tidak bisa terhubung ke pusat kontrol.");
     } finally {
