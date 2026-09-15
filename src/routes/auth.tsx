@@ -126,8 +126,8 @@ function AuthPage() {
           <button
             type="button"
             onClick={() => setDevOpen(true)}
-            title="Akses Developer"
-            aria-label="Akses Developer"
+            aria-label="Buka akses lanjutan"
+
             className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {branding.logo_url ? (
