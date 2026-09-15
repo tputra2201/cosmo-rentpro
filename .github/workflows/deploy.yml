@@ -33,9 +33,9 @@ jobs:
         run: bun run build
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
-          path: ./dist # Diarahkan kembali ke folder hasil build aplikasi Lovable Anda
+          path: ./dist
 
       - name: Deploy to GitHub Pages
         id: deployment
