@@ -1711,6 +1711,15 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
     detail: `${nameById(s.cashCategories, a[0])} · ${patchText(a[1])}`,
     coalesce: true,
   }),
+  addCashGroup: (a, _s, r) =>
+    r === null ? null : { action: "Tambah kategori kas", detail: patchText(a[0]) },
+  updateCashGroup: (a, s) => ({
+    action: "Ubah nama kategori kas",
+    detail: `${nameById(s.cashGroups, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeCashGroup: (a, s, r) =>
+    r === false ? null : { action: "Hapus kategori kas", detail: nameById(s.cashGroups, a[0]) },
   updateCashEntry: (a) => ({
     action: "Ubah catatan kas",
     detail: patchText(a[1]),
