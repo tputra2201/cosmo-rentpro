@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Store, ImageUp, ShieldCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useStoreInfo } from "@/lib/store-info";
 import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
@@ -252,7 +253,9 @@ function DeviceAccessSection({
           Selain perangkat dengan kode terdaftar atau alamat IP yang diizinkan,
           pengguna hanya bisa melihat — kecuali level Manager, Installer, atau
           Developer. Bila kedua kolom dibiarkan kosong, semua perangkat boleh
-          bertransaksi.
+          bertransaksi. Alamat IP bisa ditulis dengan pola, contoh
+          <span className="font-mono"> 192.168.80.*</span> berarti semua alamat yang
+          dimulai seperti itu diizinkan.
         </p>
       </div>
 
@@ -289,24 +292,26 @@ function DeviceAccessSection({
             value={ips}
             rows={4}
             onChange={(e) => setIps(e.target.value)}
-            placeholder={"103.10.20.30\n112.215.44.5"}
+            placeholder={"192.168.80.*\n103.10.20.30"}
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="device-secret">Kunci Developer</Label>
-          <Input
-            id="device-secret"
-            type="password"
-            value={secret}
-            autoComplete="off"
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="Kunci Developer"
-          />
-        </div>
+        {!privileged && (
+          <div className="grid gap-2">
+            <Label htmlFor="device-secret">Kunci Developer</Label>
+            <Input
+              id="device-secret"
+              type="password"
+              value={secret}
+              autoComplete="off"
+              onChange={(e) => setSecret(e.target.value)}
+              placeholder="Kunci Developer"
+            />
+          </div>
+        )}
       </div>
 
       <div>
-        <Button disabled={busy || !storeId} onClick={() => void save()}>
+        <Button disabled={busy || (!privileged && !storeId)} onClick={() => void save()}>
           {busy ? "Menyimpan…" : "Simpan Perangkat & IP"}
         </Button>
       </div>
