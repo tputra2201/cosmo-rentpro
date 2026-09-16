@@ -28,14 +28,16 @@ export function CustomerPicker({
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const query = value.trim().toLowerCase();
+  // Daftar hanya muncul setelah kasir mengetik, dan hanya pelanggan terdaftar
+  // yang namanya dimulai seperti yang diketik (atau nomor HP-nya cocok).
   const options = useMemo(() => {
+    if (!query || query === "umum") return [];
     const sorted = [...customers].sort((a, b) => a.name.localeCompare(b.name));
-    if (!query) return sorted.slice(0, 50);
     const starts = sorted.filter((item) => item.name.toLowerCase().startsWith(query));
     const others = sorted.filter(
       (item) =>
         !item.name.toLowerCase().startsWith(query) &&
-        (item.name.toLowerCase().includes(query) || item.phone.replace(/\s/g, "").includes(query)),
+        item.phone.replace(/\s/g, "").includes(query),
     );
     return [...starts, ...others].slice(0, 50);
   }, [customers, query]);
