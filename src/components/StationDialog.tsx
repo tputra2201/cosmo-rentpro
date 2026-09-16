@@ -1415,155 +1415,16 @@ export function StationDialog({
     </Dialog>
 
     {session && (
-      <Dialog
+      <OrderDraftDialog
         open={orderOpen}
-        onOpenChange={(o) => {
-          setOrderOpen(o);
-          setMenuCategory(null);
+        onOpenChange={setOrderOpen}
+        sourceName={station.name}
+        onSend={(lines) => {
+          for (const line of lines) {
+            addOrder(station.id, line.item, line.qty, line.mods, line.priceAdd);
+          }
         }}
-      >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Tambah Order</DialogTitle>
-            <DialogDescription>
-              {station.name} · pesanan makanan &amp; minuman
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-wrap gap-1.5">
-            {menuCategories.map((c) => (
-              <Button
-                key={c}
-                size="sm"
-                variant={menuCategory === c ? "default" : "outline"}
-                onClick={() => setMenuCategory(menuCategory === c ? null : c)}
-              >
-                {c}
-              </Button>
-            ))}
-            <Button
-              size="sm"
-              variant={menuCategory === "semua" ? "default" : "outline"}
-              onClick={() => setMenuCategory(menuCategory === "semua" ? null : "semua")}
-            >
-              Semua
-            </Button>
-          </div>
-
-          {menuCategory === null && (
-            <p className="text-sm text-muted-foreground">
-              Pilih kategori untuk menampilkan menu.
-            </p>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            {menu
-              .filter(
-                (item) =>
-                  menuCategory !== null &&
-                  (menuCategory === "semua" || item.category === menuCategory),
-              )
-              .map((item) => {
-                const hasOptions = hasMenuOptions(item);
-                return (
-                  <div key={item.id} className="space-y-1">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full justify-between"
-                      onClick={() => {
-                        if (!requireShift()) return;
-                        addOrder(station.id, item, 1);
-                        toast.success(`${item.name} ditambahkan`);
-                      }}
-                    >
-                      <span className="truncate">{item.name}</span>
-                      <Plus className="size-3.5 shrink-0" />
-                    </Button>
-                    <div className="flex flex-wrap gap-1">
-                      {hasOptions && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-[11px]"
-                          onClick={() => {
-                            if (!requireShift()) return;
-                            setModNotesOnly(false);
-                            setModItem(item);
-                          }}
-                        >
-                          Modifier
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 px-2 text-[11px]"
-                        onClick={() => {
-                          if (!requireShift()) return;
-                          setModNotesOnly(true);
-                          setModItem(item);
-                        }}
-                      >
-                        Notes
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          <OrderModifierDialog
-            item={modItem}
-            notesOnly={modNotesOnly}
-            onOpenChange={(open) => {
-              if (!open) setModItem(null);
-            }}
-            onConfirm={(mods, priceAdd) => {
-              if (!modItem || !station) return;
-              addOrder(station.id, modItem, 1, mods, priceAdd);
-              toast.success(`${modItem.name} ditambahkan`);
-              setModItem(null);
-            }}
-          />
-
-
-          {session.orders.length > 0 && (
-            <ul className="space-y-1">
-              {session.orders.map((o) => (
-                <li
-                  key={o.id}
-                  className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
-                >
-                  <span>
-                    {orderLabel(o)} × {o.qty}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {formatRupiah(o.price * o.qty)}
-                    <button
-                      type="button"
-                      onClick={() => removeOrder(station.id, o.id)}
-                      aria-label={`Hapus ${o.name}`}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="flex items-center justify-between border-t border-border pt-3">
-            <span className="text-sm text-muted-foreground">Total pesanan</span>
-            <span className="font-display text-lg font-semibold text-accent">
-              {formatRupiah(fnbTotal(session))}
-            </span>
-          </div>
-          <Button className="w-full" onClick={() => setOrderOpen(false)}>
-            Selesai
-          </Button>
-        </DialogContent>
-      </Dialog>
+      />
     )}
     </>
 
