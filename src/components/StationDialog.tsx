@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
-import { OrderModifierDialog } from "@/components/OrderModifierDialog";
+import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {

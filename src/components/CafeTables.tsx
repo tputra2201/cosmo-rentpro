@@ -302,13 +302,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   )}
                   <div className="grid grid-cols-2 gap-2">
                     {visibleMenu.map((item) => {
-                      const chips = [
-                        { label: "Varian", on: (item.variants?.length ?? 0) > 0 },
-                        { label: "Ukuran", on: (item.sizes?.length ?? 0) > 0 },
-                        { label: "Topping", on: (item.toppings?.length ?? 0) > 0 },
-                        { label: "Opsi", on: (item.modifiers?.length ?? 0) > 0 },
-                        { label: "Notes", on: true },
-                      ].filter((c) => c.on);
+                      const hasOptions = hasMenuOptions(item);
                       return (
                         <div key={item.id} className="space-y-1">
                           <Button
@@ -329,24 +323,34 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             </span>
                             <Plus className="size-3.5 shrink-0" />
                           </Button>
-                          {chips.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {chips.map((c) => (
-                                <Button
-                                  key={c.label}
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-[11px]"
-                                  onClick={() => {
-                                    if (!requireShift()) return;
-                                    setModItem(item);
-                                  }}
-                                >
-                                  {c.label}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {hasOptions && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-[11px]"
+                                onClick={() => {
+                                  if (!requireShift()) return;
+                                  setModNotesOnly(false);
+                                  setModItem(item);
+                                }}
+                              >
+                                Modifier
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => {
+                                if (!requireShift()) return;
+                                setModNotesOnly(true);
+                                setModItem(item);
+                              }}
+                            >
+                              Notes
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
