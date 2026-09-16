@@ -20,6 +20,24 @@ import {
   type DocLayout,
   type PrinterConfig,
 } from "./printing";
+import {
+  DEFAULT_OPERATING_HOURS,
+  businessDate,
+  normalizeHours,
+  type OperatingHours,
+} from "./report-range";
+
+/** Tenggang penutupan otomatis setelah jam tutup operasional. */
+const AUTO_CLOSE_GRACE_MS = 60 * 60 * 1000;
+
+/** Waktu batas penutupan otomatis satu hari usaha. */
+function autoCloseAt(openedAt: number, hours?: OperatingHours) {
+  const { openHour, closeHour } = normalizeHours(hours);
+  const d = businessDate(openedAt, hours);
+  d.setDate(d.getDate() + (closeHour <= openHour ? 1 : 0));
+  d.setHours(closeHour, 0, 0, 0);
+  return d.getTime() + AUTO_CLOSE_GRACE_MS;
+}
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
