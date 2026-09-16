@@ -277,11 +277,13 @@ function BackupPage() {
       <AlertDialog open={confirmTrx} onOpenChange={setConfirmTrx}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus seluruh transaksi?</AlertDialogTitle>
+            <AlertDialogTitle>Reset semua transaksi?</AlertDialogTitle>
             <AlertDialogDescription>
-              Riwayat transaksi dan catatan poin akan dihapus. Pengaturan dan
-              data lain tidak berubah.
+              Seluruh transaksi, reservasi, playing card, uang masuk/keluar,
+              shift, dan riwayat terkait transaksi akan dihapus. Data di menu
+              Setup tidak berubah.
             </AlertDialogDescription>
+
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
