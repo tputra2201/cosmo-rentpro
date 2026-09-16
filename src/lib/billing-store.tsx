@@ -748,6 +748,8 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  businessDays: [],
+  operatingHours: DEFAULT_OPERATING_HOURS,
   logEntries: [],
   tvNotice: defaultTvNotice,
   printers: defaultPrinters,
