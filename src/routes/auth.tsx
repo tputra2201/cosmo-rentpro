@@ -229,6 +229,42 @@ function AuthPage() {
           </Button>
         </form>
 
+        <div className="mt-6 grid gap-1 rounded-lg border border-border p-3 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-2">
+            <span>
+              Kode perangkat:{" "}
+              <span className="font-mono font-bold text-foreground">{myCode || "-"}</span>
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => void copy(myCode, "Kode perangkat")}
+            >
+              <Copy className="size-3.5" /> Salin
+            </Button>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span>
+              Alamat IP:{" "}
+              <span className="font-mono font-bold text-foreground">
+                {myIp || "tidak diketahui"}
+              </span>
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={!myIp}
+              onClick={() => void copy(myIp, "Alamat IP")}
+            >
+              <Copy className="size-3.5" /> Salin
+            </Button>
+          </div>
+        </div>
+
         {branding.login_note.trim() && (
           <p className="mt-6 whitespace-pre-line text-center text-xs text-muted-foreground">
             {branding.login_note}
