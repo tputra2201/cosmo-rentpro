@@ -32,6 +32,7 @@ import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTarifRouteImport } from './routes/_authenticated/tarif'
 import { Route as AuthenticatedTemaRouteImport } from './routes/_authenticated/tema'
 import { Route as AuthenticatedTvRouteImport } from './routes/_authenticated/tv'
+import { Route as ApiPublicClientIpRouteImport } from './routes/api/public/client-ip'
 import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manifest'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
 
@@ -149,6 +150,11 @@ const AuthenticatedTvRoute = AuthenticatedTvRouteImport.update({
   path: '/tv',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicClientIpRoute = ApiPublicClientIpRouteImport.update({
+  id: '/api/public/client-ip',
+  path: '/api/public/client-ip',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicManifestRoute = ApiPublicManifestRouteImport.update({
   id: '/api/public/manifest',
   path: '/api/public/manifest',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/tarif': typeof AuthenticatedTarifRoute
   '/tema': typeof AuthenticatedTemaRoute
   '/tv': typeof AuthenticatedTvRoute
+  '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/tema': typeof AuthenticatedTemaRoute
   '/tv': typeof AuthenticatedTvRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/_authenticated/tema': typeof AuthenticatedTemaRoute
   '/_authenticated/tv': typeof AuthenticatedTvRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
 }
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/tarif'
     | '/tema'
     | '/tv'
+    | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
   fileRoutesByTo: FileRoutesByTo
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/tema'
     | '/tv'
     | '/'
+    | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
   id:
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tema'
     | '/_authenticated/tv'
     | '/_authenticated/'
+    | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
   fileRoutesById: FileRoutesById
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   AturSandiRoute: typeof AturSandiRoute
   AuthRoute: typeof AuthRoute
   KontrolRoute: typeof KontrolRoute
+  ApiPublicClientIpRoute: typeof ApiPublicClientIpRoute
   ApiPublicManifestRoute: typeof ApiPublicManifestRoute
   ApiPublicStoreRegistryRoute: typeof ApiPublicStoreRegistryRoute
 }
@@ -494,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTvRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/client-ip': {
+      id: '/api/public/client-ip'
+      path: '/api/public/client-ip'
+      fullPath: '/api/public/client-ip'
+      preLoaderRoute: typeof ApiPublicClientIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/manifest': {
       id: '/api/public/manifest'
       path: '/api/public/manifest'
@@ -563,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   AturSandiRoute: AturSandiRoute,
   AuthRoute: AuthRoute,
   KontrolRoute: KontrolRoute,
+  ApiPublicClientIpRoute: ApiPublicClientIpRoute,
   ApiPublicManifestRoute: ApiPublicManifestRoute,
   ApiPublicStoreRegistryRoute: ApiPublicStoreRegistryRoute,
 }
