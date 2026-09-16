@@ -121,6 +121,7 @@ export function applyRecords(
     promotions: [...state.promotions],
     pointEntries: [...state.pointEntries],
     history: [...state.history],
+    voids: [...(state.voids ?? [])],
     cafeTables: [...state.cafeTables],
     playingCards: [...state.playingCards],
     cardEntries: [...state.cardEntries],
