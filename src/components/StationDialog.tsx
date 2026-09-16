@@ -735,7 +735,51 @@ export function StationDialog({
                     Total jeda {formatClock(Math.floor(pausedMsTotal(session, now) / 1000))}
                   </p>
                 )}
+                <div className="mt-2 flex w-full flex-wrap items-center justify-center gap-2">
+                  <Select value={moveTo} onValueChange={setMoveTo}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Pindah ke unit…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {freeStations.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          Tidak ada unit kosong
+                        </SelectItem>
+                      ) : (
+                        freeStations.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} · {s.console}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!moveTo || moveTo === "none"}
+                    onClick={() => {
+                      const target = stations.find((s) => s.id === moveTo);
+                      if (!target) return;
+                      const ok = moveSession(station.id, moveTo);
+                      if (!ok) {
+                        toast.error("Gagal pindah unit", {
+                          description: "Unit tujuan sudah terpakai. Pilih unit lain.",
+                        });
+                        return;
+                      }
+                      setMoveTo("");
+                      onOpenChange(false);
+                      toast.success(`Sesi dipindah ke ${target.name}`, {
+                        description: "Waktu, pesanan, dan pembayaran ikut berpindah.",
+                      });
+                    }}
+                  >
+                    Pindah TV
+                  </Button>
+                </div>
               </div>
+
             </div>
 
 
