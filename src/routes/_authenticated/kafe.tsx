@@ -215,19 +215,36 @@ function KafePage() {
           title="Kategori Menu"
           description="Kategori bebas ditambah, diganti nama, atau dihapus (jika tidak ada menu di dalamnya)."
         />
-        <SortableArea
-          ids={menuCategories}
+        <SetupTable<string>
+          items={menuCategories}
+          getId={(c) => c}
+          getLabel={(c) => c}
           onReorder={reorderMenuCategories}
-          className="mt-4 space-y-2"
-        >
-          {menuCategories.map((c) => (
-            <SortableItem
-              key={c}
-              id={c}
-              label={`kategori ${c}`}
-              className="rounded-lg bg-secondary/60 p-3"
-              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_auto_auto]"
-            >
+          columns={[
+            {
+              key: "name",
+              header: "Nama Kategori",
+              render: (c) => <span className="font-bold text-foreground">{c}</span>,
+            },
+            {
+              key: "count",
+              header: "Jumlah Menu",
+              render: (c) => `${menu.filter((m) => m.category === c).length} menu`,
+            },
+          ]}
+          onRemove={(c) => {
+            if (!removeMenuCategory(c)) {
+              toast.error(
+                "Kategori masih dipakai menu atau minimal satu kategori harus ada",
+              );
+              return;
+            }
+            toast.success(`Kategori ${c} dihapus`);
+          }}
+          detailTitle={(c) => `Kategori ${c}`}
+          detailDescription={() => "Ubah nama kategori menu ini."}
+          renderDetail={(c) => (
+            <DetailField label="Nama kategori">
               <Input
                 defaultValue={c}
                 aria-label={`Nama kategori ${c}`}
@@ -243,28 +260,9 @@ function KafePage() {
                   }
                 }}
               />
-              <span className="text-xs text-muted-foreground">
-                {menu.filter((m) => m.category === c).length} menu
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Hapus kategori ${c}`}
-                onClick={() => {
-                  if (!removeMenuCategory(c)) {
-                    toast.error(
-                      "Kategori masih dipakai menu atau minimal satu kategori harus ada",
-                    );
-                    return;
-                  }
-                  toast.success(`Kategori ${c} dihapus`);
-                }}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </SortableItem>
-          ))}
-        </SortableArea>
+            </DetailField>
+          )}
+        />
         <form
           className="mt-4 flex flex-wrap gap-2"
           onSubmit={(e) => {

@@ -513,100 +513,112 @@ function TarifPage() {
         </form>
       </section>
 
-      <section className="surface-panel p-6">
-        <div className="flex items-center gap-2">
-          <Tv className="size-5 text-primary" />
-          <h2 className="text-xl font-semibold">
-            Pengaturan Unit TV ({stations.length})
-          </h2>
-        </div>
-        <SortableArea
-          ids={stations.map((s) => s.id)}
+      <section className="surface-panel p-4 sm:p-6">
+        <SetupHeading
+          title={`Pengaturan Unit TV (${stations.length})`}
+          right={<Tv className="size-5 text-primary" />}
+        />
+        <SetupTable
+          items={stations}
+          getId={(s) => s.id}
+          getLabel={(s) => s.name}
           onReorder={(activeId, overId) => reorderList("stations", activeId, overId)}
-          className="mt-4 grid gap-3 lg:grid-cols-2"
-        >
-          {stations.map((s) => (
-            <SortableItem
-              key={s.id}
-              id={s.id}
-              label={s.name}
-              className="rounded-lg bg-secondary/60 p-3"
-              contentClassName="grid items-end gap-2 sm:grid-cols-[1fr_1fr_110px_130px_auto]"
-            >
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Nomor TV</Label>
+          columns={[
+            {
+              key: "name",
+              header: "Nomor TV",
+              render: (s) => <span className="font-bold text-foreground">{s.name}</span>,
+            },
+            {
+              key: "booth",
+              header: "Room",
+              hideOnMobile: true,
+              render: (s) => s.booth || "—",
+            },
+            {
+              key: "console",
+              header: "Konsol",
+              render: (s) => s.console,
+            },
+            {
+              key: "status",
+              header: "Status",
+              hideOnMobile: true,
+              render: (s) =>
+                s.session ? (
+                  <span className="font-semibold text-accent">Dipakai</span>
+                ) : (
+                  STATION_STATUS_LABEL[s.availability]
+                ),
+            },
+          ]}
+          onRemove={(s) => {
+            if (s.session) {
+              toast.error(`${s.name} sedang dipakai`);
+              return;
+            }
+            removeStation(s.id);
+            toast.success(`${s.name} dihapus`);
+          }}
+          detailTitle={(s) => `Unit ${s.name}`}
+          detailDescription={() => "Ubah nomor TV, room, konsol, dan status unit ini."}
+          renderDetail={(s) => (
+            <>
+              <DetailField label="Nomor TV">
                 <Input
                   value={s.name}
                   onChange={(e) => updateStation(s.id, { name: e.target.value })}
                   aria-label={`Nama ${s.name}`}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Room</Label>
+              </DetailField>
+              <DetailField label="Room / Booth">
                 <Input
                   value={s.booth}
                   onChange={(e) => updateStation(s.id, { booth: e.target.value })}
                   aria-label={`Room ${s.name}`}
                 />
+              </DetailField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField label="Konsol">
+                  <Select
+                    value={s.console}
+                    onValueChange={(v) => setStationConsole(s.id, v as ConsoleType)}
+                  >
+                    <SelectTrigger aria-label={`Konsol ${s.name}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {consoleTypes.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </DetailField>
+                <DetailField label="Status">
+                  <Select
+                    value={s.availability}
+                    disabled={Boolean(s.session)}
+                    onValueChange={(v) =>
+                      updateStation(s.id, { availability: v as StationAvailability })
+                    }
+                  >
+                    <SelectTrigger aria-label={`Status ${s.name}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Tersedia</SelectItem>
+                      <SelectItem value="booked">Reservasi</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="offline">Offline</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </DetailField>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Konsol</Label>
-                <Select
-                  value={s.console}
-                  onValueChange={(v) => setStationConsole(s.id, v as ConsoleType)}
-                >
-                  <SelectTrigger aria-label={`Konsol ${s.name}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {consoleTypes.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                <Select
-                  value={s.availability}
-                  disabled={Boolean(s.session)}
-                  onValueChange={(v) =>
-                    updateStation(s.id, {
-                      availability: v as StationAvailability,
-                    })
-                  }
-                >
-                  <SelectTrigger aria-label={`Status ${s.name}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Tersedia</SelectItem>
-                    <SelectItem value="booked">Reservasi</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="offline">Offline</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Hapus ${s.name}`}
-                onClick={() => {
-                  if (s.session) {
-                    toast.error(`${s.name} sedang dipakai`);
-                    return;
-                  }
-                  removeStation(s.id);
-                  toast.success(`${s.name} dihapus`);
-                }}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </SortableItem>
-          ))}
-        </SortableArea>
+            </>
+          )}
+        />
       </section>
 
 
