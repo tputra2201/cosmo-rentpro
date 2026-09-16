@@ -3482,11 +3482,35 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       resetTransactions: () =>
         update((prev) =>
           withLog(
-            { ...prev, history: [], pointEntries: [], cashEntries: [] },
-            "Reset data transaksi",
-            `${prev.history.length} nota · ${prev.cashEntries.length} catatan kas`,
+            {
+              ...prev,
+              history: [],
+              voids: [],
+              pointEntries: [],
+              cashEntries: [],
+              shifts: [],
+              businessDays: [],
+              bookings: [],
+              playingCards: [],
+              cardEntries: [],
+              logEntries: [],
+              stations: prev.stations.map((station) => ({
+                ...station,
+                session: null,
+              })),
+              cafeTables: prev.cafeTables.map((table) => ({
+                ...table,
+                customerName: "",
+                notes: "",
+                openedAt: null,
+                orders: [],
+              })),
+            },
+            "Reset semua transaksi",
+            `${prev.history.length} nota · ${prev.cashEntries.length} catatan kas · ${prev.bookings.length} reservasi · ${prev.playingCards.length} playing card`,
           ),
         ),
+
       addCashCategory: (input) => {
         const name = input.name.trim();
         if (!name) return null;
