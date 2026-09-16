@@ -3340,20 +3340,38 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const name = input.cashierName.trim();
         if (!name) return null;
         if (state.shifts.some((s) => !s.closedAt)) return null;
+        const stamp = Date.now();
         const row: CashShift = {
-          id: `shift-${Date.now()}`,
+          id: `shift-${stamp}`,
           cashierName: name,
           ...(input.cashierId ? { cashierId: input.cashierId } : {}),
-          openedAt: Date.now(),
+          openedAt: stamp,
           startCash: Math.max(0, Math.round(input.startCash)),
         };
-        update((prev) =>
-          withLog(
-            { ...prev, shifts: [row, ...prev.shifts] },
+        // Shift pertama sekaligus membuka hari usaha baru.
+        const openDay = (state.businessDays ?? []).some((d) => !d.closedAt)
+          ? null
+          : ({ id: `bday-${stamp}`, openedAt: stamp } satisfies BusinessDay);
+        update((prev) => {
+          const next = withLog(
+            {
+              ...prev,
+              shifts: [row, ...prev.shifts],
+              ...(openDay
+                ? { businessDays: [openDay, ...(prev.businessDays ?? [])] }
+                : {}),
+            },
             "Buka shift kasir",
             `${name} · kas awal ${formatRupiah(row.startCash)}`,
-          ),
-        );
+          );
+          return openDay
+            ? withLog(
+                next,
+                "Buka hari usaha",
+                new Date(stamp).toLocaleString("id-ID"),
+              )
+            : next;
+        });
         return row;
       },
       closeShift: (id, input) => {
@@ -3377,6 +3395,41 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         );
         return closed;
       },
+      activeBusinessDay,
+      closeBusinessDay: (input) => {
+        const day = (state.businessDays ?? []).find((d) => !d.closedAt);
+        if (!day) return null;
+        if (state.shifts.some((s) => !s.closedAt)) return null;
+        const closed: BusinessDay = {
+          ...day,
+          closedAt: Date.now(),
+          closedByName: actorRef.current.name || "Kasir",
+          ...(user?.id ? { closedById: user.id } : {}),
+          ...(input?.note?.trim() ? { note: input.note.trim() } : {}),
+        };
+        update((prev) =>
+          withLog(
+            {
+              ...prev,
+              businessDays: (prev.businessDays ?? []).map((d) =>
+                d.id === day.id ? closed : d,
+              ),
+            },
+            "End of Day",
+            `Hari usaha ${new Date(day.openedAt).toLocaleDateString("id-ID")} ditutup oleh ${closed.closedByName}`,
+          ),
+        );
+        return closed;
+      },
+      setOperatingHours: (patch) =>
+        update((prev) => {
+          const hours = normalizeHours({ ...prev.operatingHours, ...patch });
+          return withLog(
+            { ...prev, operatingHours: hours },
+            "Ubah jam operasional store",
+            `Buka ${hours.openHour}:00 · Tutup ${hours.closeHour}:00`,
+          );
+        }),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
       replaceAll: (data) => {
