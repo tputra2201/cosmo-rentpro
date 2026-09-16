@@ -109,7 +109,10 @@ export function StationDialog({
     addonRentals,
     addSessionAddon,
     removeSessionAddon,
+    stations,
+    moveSession,
   } = useBilling();
+
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
