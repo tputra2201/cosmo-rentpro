@@ -44,6 +44,7 @@ import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { CashierReport } from "@/components/reports/CashierReport";
 import { LogBookReport } from "@/components/reports/LogBookReport";
+import { StatsReport } from "@/components/reports/StatsReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
@@ -105,6 +106,7 @@ function LaporanPage() {
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
     { value: "kasir", label: "Transaksi per Kasir", key: "laporan.kasir" },
     { value: "logbook", label: "Log Book", key: "laporan.logbook" },
+    { value: "statistik", label: "Statistik", key: "laporan.statistik" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
   const reportRef = useRef<HTMLDivElement>(null);
@@ -179,6 +181,9 @@ function LaporanPage() {
         </TabsContent>
         <TabsContent value="logbook" className="mt-6">
           <LogBookReport range={range} />
+        </TabsContent>
+        <TabsContent value="statistik" className="mt-6">
+          <StatsReport range={range} />
         </TabsContent>
       </Tabs>
       </div>
