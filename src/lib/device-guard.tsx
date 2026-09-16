@@ -127,3 +127,24 @@ export function useDeviceAccess() {
 
 export const DEVICE_BLOCKED_MESSAGE =
   "Perangkat ini tidak terdaftar di data store, jadi hanya bisa melihat. Minta Manager atau Installer mendaftarkan kode perangkat atau alamat IP-nya.";
+
+/** Alasan penolakan masuk, dibaca halaman masuk setelah perangkat dikeluarkan. */
+export const DEVICE_REJECT_KEY = "billing.device-rejected";
+
+export function setDeviceReject(code: string) {
+  try {
+    sessionStorage.setItem(DEVICE_REJECT_KEY, code);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function takeDeviceReject(): string | null {
+  try {
+    const value = sessionStorage.getItem(DEVICE_REJECT_KEY);
+    if (value !== null) sessionStorage.removeItem(DEVICE_REJECT_KEY);
+    return value;
+  } catch {
+    return null;
+  }
+}
