@@ -119,7 +119,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
   return (
     <div className="space-y-4">
       <div className="surface-panel p-4">
-        <h2 className="font-display text-lg font-bold">Statistik Terlaris &amp; Terramai</h2>
+        <h2 className="font-display text-lg font-bold">Statistik Penjualan</h2>
         <p className="text-xs text-muted-foreground">{rangeLabel(range)}</p>
         {!empty && (
           <p className="mt-2 text-sm text-muted-foreground">
@@ -135,32 +135,38 @@ export function StatsReport({ range }: { range: ReportRange }) {
       ) : (
         <>
           <StatTable
-            title="TV & Meja terlaris"
+            title="Statistik TV &amp; Meja"
             unit="Nota"
             rows={data.places}
             total={data.totalIncome}
           />
           <StatTable
-            title="Konsol terlaris"
+            title="Statistik Konsol"
             unit="Sesi"
             rows={data.consoles}
             emptyText="Belum ada sesi rental pada periode ini."
           />
           <StatTable
-            title="Menu terlaris"
+            title="Statistik Menu"
             unit="Nota"
             rows={data.menus}
             showQty
             emptyText="Belum ada penjualan menu pada periode ini."
           />
           <StatTable
-            title="Hari paling ramai sampai paling sepi"
+            title="Statistik Tanggal"
+            unit="Nota"
+            rows={data.dates}
+            total={data.totalIncome}
+          />
+          <StatTable
+            title="Statistik Hari"
             unit="Nota"
             rows={data.days}
             total={data.totalIncome}
           />
           <StatTable
-            title="Jam paling ramai sampai paling sepi"
+            title="Statistik Jam"
             unit="Nota"
             rows={data.hours}
             total={data.totalIncome}
