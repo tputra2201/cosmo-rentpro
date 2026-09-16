@@ -26,10 +26,13 @@ export function OrderModifierDialog({
   item,
   onOpenChange,
   onConfirm,
+  notesOnly = false,
 }: {
   item: MenuItem | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: (mods: string[], priceAdd: number) => void;
+  /** Hanya tampilkan kolom Notes (sembunyikan varian/ukuran/topping/opsi). */
+  notesOnly?: boolean;
 }) {
   const [variant, setVariant] = useState<MenuOption | null>(null);
   const [size, setSize] = useState<MenuOption | null>(null);
