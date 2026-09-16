@@ -1403,6 +1403,9 @@ type Ctx = State & {
   }) => CashCategory | null;
   updateCashCategory: (id: string, patch: Partial<Omit<CashCategory, "id">>) => void;
   removeCashCategory: (id: string) => void;
+  addCashGroup: (input: { name: string; direction: CashDirection }) => CashGroup | null;
+  updateCashGroup: (id: string, patch: Partial<Omit<CashGroup, "id" | "direction">>) => void;
+  removeCashGroup: (id: string) => boolean;
   addCashEntry: (input: {
     categoryId: string;
     amount: number;
