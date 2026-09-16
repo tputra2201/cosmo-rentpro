@@ -283,17 +283,15 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
               <div className="space-y-4">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cafe-customer">Nama pelanggan</Label>
-                    <Input
-                      id="cafe-customer"
-                      value={table.customerName}
-                      placeholder="Pelanggan Kafe"
-                      onChange={(e) =>
-                        updateCafeTable(table.id, { customerName: e.target.value })
-                      }
-                    />
-                  </div>
+                  <CustomerPicker
+                    id="cafe-customer"
+                    label="Nama pelanggan"
+                    value={table.customerName}
+                    onChange={(value) => updateCafeTable(table.id, { customerName: value })}
+                    onPick={(item) =>
+                      updateCafeTable(table.id, { customerName: item.name })
+                    }
+                  />
                   <div className="space-y-1.5">
                     <Label htmlFor="cafe-notes">Catatan</Label>
                     <Input
@@ -305,107 +303,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Menu</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {menuCategories.map((c) => (
-                      <Button
-                        key={c}
-                        size="sm"
-                        variant={category === c ? "default" : "outline"}
-                        onClick={() => setCategory(category === c ? null : c)}
-                      >
-                        {c}
-                      </Button>
-                    ))}
-                    <Button
-                      size="sm"
-                      variant={category === "semua" ? "default" : "outline"}
-                      onClick={() => setCategory(category === "semua" ? null : "semua")}
-                    >
-                      Semua
-                    </Button>
-                  </div>
-                  {category === null && (
-                    <p className="text-sm text-muted-foreground">
-                      Pilih kategori untuk menampilkan menu.
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2">
-                    {visibleMenu.map((item) => {
-                      const hasOptions = hasMenuOptions(item);
-                      return (
-                        <div key={item.id} className="space-y-1">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-auto w-full justify-between py-2"
-                            onClick={() => {
-                              if (!requireShift()) return;
-                              addCafeOrder(table.id, item, 1);
-                              toast.success(`${item.name} ditambahkan`);
-                            }}
-                          >
-                            <span className="flex flex-col items-start text-left">
-                              <span className="truncate">{item.name}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {formatRupiah(item.price)}
-                              </span>
-                            </span>
-                            <Plus className="size-3.5 shrink-0" />
-                          </Button>
-                          <div className="flex flex-wrap gap-1">
-                            {hasOptions && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-2 text-[11px]"
-                                onClick={() => {
-                                  if (!requireShift()) return;
-                                  setModNotesOnly(false);
-                                  setModItem(item);
-                                }}
-                              >
-                                Modifier
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-[11px]"
-                              onClick={() => {
-                                if (!requireShift()) return;
-                                setModNotesOnly(true);
-                                setModItem(item);
-                              }}
-                            >
-                              Notes
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {visibleMenu.length === 0 && category !== null && (
-                      <p className="col-span-2 text-sm text-muted-foreground">
-                        Tidak ada menu pada kategori ini.
-                      </p>
-                    )}
-                  </div>
-                  <OrderModifierDialog
-                    item={modItem}
-                    notesOnly={modNotesOnly}
-                    onOpenChange={(open) => {
-                      if (!open) setModItem(null);
-                    }}
-                    onConfirm={(mods, priceAdd) => {
-                      if (!modItem) return;
-                      addCafeOrder(table.id, modItem, 1, mods, priceAdd);
-                      toast.success(`${modItem.name} ditambahkan`);
-                      setModItem(null);
-                    }}
-                  />
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    if (!requireShift()) return;
+                    setOrderTableId(table.id);
+                  }}
+                >
+                  <Plus className="size-4" /> Tambah Order
+                </Button>
 
-                </div>
 
                 {table.orders.length > 0 && (
                   <ul className="space-y-1">
