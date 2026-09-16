@@ -312,19 +312,115 @@ function EntryForm({ direction }: { direction: CashDirection }) {
   );
 }
 
-function CategoryEditor({ direction }: { direction: CashDirection }) {
-  const { cashCategories, cashEntries, addCashCategory, updateCashCategory, removeCashCategory } =
+function GroupEditor({ direction }: { direction: CashDirection }) {
+  const { cashGroups, cashCategories, addCashGroup, updateCashGroup, removeCashGroup } =
     useBilling();
+  const rows = cashGroups.filter((g) => g.direction === direction);
+  const [name, setName] = useState("");
+
+  const add = () => {
+    const row = addCashGroup({ name, direction });
+    if (!row) {
+      toast.error("Nama kategori kosong atau sudah ada");
+      return;
+    }
+    setName("");
+    toast.success(`Kategori ${row.name} ditambahkan`);
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading
+        title={direction === "in" ? "Kategori uang masuk" : "Kategori uang keluar"}
+        as="h2"
+      />
+
+      <SetupTable<CashGroup>
+        items={rows}
+        getId={(g) => g.id}
+        getLabel={(g) => g.name}
+        columns={[
+          {
+            key: "name",
+            header: "Nama Kategori",
+            render: (g) => <span className="font-bold text-foreground">{g.name}</span>,
+          },
+          {
+            key: "count",
+            header: "Jumlah Item",
+            render: (g) =>
+              cashCategories.filter(
+                (c) => c.direction === direction && c.group === g.name,
+              ).length,
+          },
+        ]}
+        onRemove={(g) => {
+          if (!removeCashGroup(g.id)) {
+            toast.error("Kategori ini masih dipakai item, pindahkan itemnya dulu");
+            return;
+          }
+          toast.success(`Kategori ${g.name} dihapus`);
+        }}
+        detailTitle={(g) => g.name}
+        detailDescription={() => "Ubah nama kategori ini."}
+        emptyText="Belum ada kategori."
+        renderDetail={(g) => (
+          <DetailField
+            label="Nama kategori"
+            hint="Semua item yang memakai kategori ini ikut berubah."
+          >
+            <Input
+              value={g.name}
+              aria-label={`Nama kategori ${g.name}`}
+              onChange={(e) => updateCashGroup(g.id, { name: e.target.value })}
+            />
+          </DetailField>
+        )}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor={`grp-name-${direction}`}>
+            Nama kategori
+          </label>
+          <Input
+            id={`grp-name-${direction}`}
+            value={name}
+            placeholder={direction === "in" ? "Misal: Pendapatan Lain" : "Misal: Operasional"}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <Button onClick={add}>
+          <Plus className="size-4" /> Tambah kategori
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function CategoryEditor({ direction }: { direction: CashDirection }) {
+  const {
+    cashCategories,
+    cashGroups,
+    cashEntries,
+    addCashCategory,
+    updateCashCategory,
+    removeCashCategory,
+  } = useBilling();
   const rows = cashCategories.filter((c) => c.direction === direction);
   const groups = useMemo(
-    () => Array.from(new Set(rows.map((c) => c.group))).filter(Boolean),
-    [rows],
+    () => cashGroups.filter((g) => g.direction === direction && g.active),
+    [cashGroups, direction],
   );
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
   const [payout, setPayout] = useState(false);
 
   const add = () => {
+    if (!group) {
+      toast.error("Pilih kategori dulu");
+      return;
+    }
     const row = addCashCategory({ name, direction, payout, group });
     if (!row) {
       toast.error("Nama item kosong atau sudah ada");
