@@ -495,6 +495,15 @@ export type CashCategory = {
   sort?: number;
 };
 
+/** Kategori kas buatan pengguna, dipakai untuk mengelompokkan item kas. */
+export type CashGroup = {
+  id: string;
+  name: string;
+  direction: CashDirection;
+  active: boolean;
+  sort?: number;
+};
+
 export type CashEntry = {
   id: string;
   categoryId: string;
