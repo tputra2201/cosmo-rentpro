@@ -7,14 +7,21 @@ Rental PS buka jam 10 pagi sampai jam 2 pagi, jadi laporan berdasarkan tanggal k
 - Hari usaha terbuka otomatis saat shift pertama check-in.
 - Setelah kasir menutup shift terakhir (tidak ada shift lain yang masih berjalan), muncul langkah "End of Day" di halaman Kasir.
 - Kasir shift terakhir yang menjalankan End of Day. Sebelum ditutup, ditampilkan rekap Company Report untuk hari usaha itu, lalu tombol "Tutup Hari Usaha".
-- Jaring pengaman: kalau End of Day lupa dijalankan, sistem menutup hari usaha itu secara otomatis pada jam batas (default 08:00, bisa diubah di Setup → Store). Penutupan otomatis diberi tanda "ditutup otomatis" supaya terlihat bedanya.
+- Jaring pengaman: kalau End of Day lupa dijalankan, sistem menutup hari usaha itu otomatis pada jam tutup operasional (mis. 02:00) + tenggang, sesuai pengaturan di Setup → Store. Penutupan otomatis diberi tanda "ditutup otomatis".
 - Selama hari usaha masih terbuka, halaman Kasir menampilkan status: jam mulai, jumlah shift, dan lama berjalan.
+
+## Jam operasional di Setup → Store
+
+Dua field baru: Jam buka (default 10:00) dan Jam tutup (default 02:00, dianggap keesokan hari karena lebih kecil dari jam buka). Nilai ini dipakai untuk menentukan batas hari usaha pada laporan.
 
 ## Laporan & statistik
 
-- Pemilih periode laporan mendapat mode baru "Hari Usaha" dan menjadi pilihan default, dengan label jelas seperti "Hari Usaha 16 Sep · 10:00 – 02:35".
-- Mode Tanggal/Bulan/Tahun kalender tetap tersedia sebagai pilihan.
-- Semua tab laporan (Nota, Per Kasir, Metode, Kartu, Membership, Cash Close Out, Log Book, Statistik, Company) ikut mode hari usaha, termasuk Statistik Tanggal/Hari/Jam yang mengelompokkan berdasarkan hari usaha, bukan tanggal kalender.
+- Pemilih periode tetap memakai tanggal seperti sekarang, tapi tanggal itu dibaca sebagai hari usaha: pilih 16 September → laporan mencakup 16 Sep 10:00 sampai 17 Sep 02:00, sesuai jam operasional store.
+- Label periode menjelaskan rentangnya, mis. "16 September 2026 · 10:00 – 17 Sep 02:00".
+- Untuk hari usaha yang sudah ditutup lewat End of Day, batas akhir memakai waktu End of Day sebenarnya (jadi kalau tutup 02:35, transaksi sampai 02:35 tetap masuk). Hari yang masih berjalan memakai waktu sekarang.
+- Mode Bulan dan Tahun juga bergeser mengikuti jam operasional: bulan September = 1 Sep 10:00 sampai 1 Okt 02:00.
+- Semua tab laporan (Nota, Per Kasir, Metode, Kartu, Membership, Cash Close Out, Log Book, Statistik, Company) memakai batas ini, termasuk Statistik Tanggal/Hari yang mengelompokkan transaksi jam 00:00–02:00 ke tanggal hari usaha sebelumnya.
+
 
 ## Rekap End of Day
 
