@@ -533,23 +533,28 @@ function TarifPage() {
             {
               key: "name",
               header: "Nomor TV",
+              sortValue: (s) => s.name.toLowerCase(),
               render: (s) => <span className="font-bold text-foreground">{s.name}</span>,
             },
             {
               key: "booth",
               header: "Room",
               hideOnMobile: true,
+              sortValue: (s) => (s.booth || "").toLowerCase(),
               render: (s) => s.booth || "—",
             },
             {
               key: "console",
               header: "Konsol",
+              sortValue: (s) => s.console.toLowerCase(),
               render: (s) => s.console,
             },
             {
               key: "status",
               header: "Status",
               hideOnMobile: true,
+              sortValue: (s) =>
+                s.session ? "0 Dipakai" : `1 ${STATION_STATUS_LABEL[s.availability]}`,
               render: (s) =>
                 s.session ? (
                   <span className="font-semibold text-accent">Dipakai</span>
