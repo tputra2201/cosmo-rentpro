@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { OrderModifierDialog } from "@/components/OrderModifierDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,8 @@ import {
   type DiscountType,
   type Station,
   type OrderItem,
+  orderLabel,
+  type MenuItem,
 } from "@/lib/billing-store";
 
 
@@ -162,6 +165,7 @@ export function StationDialog({
   const [customDuration, setCustomDuration] = useState("");
   const [menuCategory, setMenuCategory] = useState("semua");
   const [orderOpen, setOrderOpen] = useState(false);
+  const [modItem, setModItem] = useState<MenuItem | null>(null);
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
@@ -930,7 +934,7 @@ export function StationDialog({
                       className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                     >
                       <span>
-                        {o.name} × {o.qty}
+                        {orderLabel(o)} × {o.qty}
                       </span>
                       <span className="flex items-center gap-2">
                         {formatRupiah(o.price * o.qty)}
@@ -1436,6 +1440,10 @@ export function StationDialog({
                   className="justify-between"
                   onClick={() => {
                     if (!requireShift()) return;
+                    if (item.modifiers && item.modifiers.length > 0) {
+                      setModItem(item);
+                      return;
+                    }
                     addOrder(station.id, item, 1);
                     toast.success(`${item.name} ditambahkan`);
                   }}
@@ -1454,7 +1462,7 @@ export function StationDialog({
                   className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                 >
                   <span>
-                    {o.name} × {o.qty}
+                    {orderLabel(o)} × {o.qty}
                   </span>
                   <span className="flex items-center gap-2">
                     {formatRupiah(o.price * o.qty)}
