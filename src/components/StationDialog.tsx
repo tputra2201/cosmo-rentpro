@@ -166,6 +166,7 @@ export function StationDialog({
   const [menuCategory, setMenuCategory] = useState<string | null>(null);
   const [orderOpen, setOrderOpen] = useState(false);
   const [modItem, setModItem] = useState<MenuItem | null>(null);
+  const [modNotesOnly, setModNotesOnly] = useState(false);
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
@@ -1499,6 +1500,7 @@ export function StationDialog({
 
           <OrderModifierDialog
             item={modItem}
+            notesOnly={modNotesOnly}
             onOpenChange={(open) => {
               if (!open) setModItem(null);
             }}
