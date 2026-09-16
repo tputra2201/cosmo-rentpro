@@ -50,6 +50,7 @@ const SETTINGS_KEYS = [
   "receiptLayout",
   "invoiceLayout",
   "rolePermissions",
+  "operatingHours",
 ] as const;
 
 
@@ -124,6 +125,7 @@ export function applyRecords(
     cashCategories: [...state.cashCategories],
     cashEntries: [...state.cashEntries],
     shifts: [...(state.shifts ?? [])],
+    businessDays: [...(state.businessDays ?? [])],
     logEntries: [...(state.logEntries ?? [])],
     addonRentals: [...(state.addonRentals ?? [])],
   };
