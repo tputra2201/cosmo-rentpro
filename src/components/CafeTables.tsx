@@ -53,7 +53,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     addCafeOrder,
     removeCafeOrder,
     clearCafeTable,
+    moveCafeTable,
     payCafeTable,
+
     reorderList,
     playingCards,
     cardDiscountPercent,
