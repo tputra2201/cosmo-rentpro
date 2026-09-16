@@ -131,7 +131,7 @@ export function OrderModifierDialog({
             </div>
           )}
 
-          {(item?.modifiers?.length ?? 0) > 0 && (
+          {!notesOnly && (item?.modifiers?.length ?? 0) > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Opsi lain</p>
               <div className="flex flex-wrap gap-2">
