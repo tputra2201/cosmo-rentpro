@@ -2316,6 +2316,33 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const activeShift = state.shifts.find((s) => !s.closedAt) ?? null;
   const shiftOpen = Boolean(activeShift);
 
+  // Hari usaha berjalan sejak kasir pertama check-in sampai End of Day.
+  const activeBusinessDay = (state.businessDays ?? []).find((d) => !d.closedAt) ?? null;
+
+  // Jaring pengaman: bila End of Day lupa dijalankan, hari usaha ditutup
+  // otomatis sesudah jam tutup operasional (plus tenggang satu jam).
+  useEffect(() => {
+    if (!activeBusinessDay || shiftOpen) return;
+    const limit = autoCloseAt(activeBusinessDay.openedAt, state.operatingHours);
+    if (now < limit) return;
+    update((prev) =>
+      withLog(
+        {
+          ...prev,
+          businessDays: (prev.businessDays ?? []).map((d) =>
+            d.id === activeBusinessDay.id
+              ? { ...d, closedAt: limit, autoClosed: true, closedByName: "Sistem" }
+              : d,
+          ),
+        },
+        "End of Day otomatis",
+        `Hari usaha ${new Date(activeBusinessDay.openedAt).toLocaleDateString("id-ID")} ditutup otomatis oleh sistem`,
+      ),
+    );
+  }, [activeBusinessDay, shiftOpen, now, state.operatingHours, update, withLog]);
+
+
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
