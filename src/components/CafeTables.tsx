@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
-import { OrderModifierDialog } from "@/components/OrderModifierDialog";
+import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [modItem, setModItem] = useState<MenuItem | null>(null);
+  const [modNotesOnly, setModNotesOnly] = useState(false);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -362,6 +363,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                   <OrderModifierDialog
                     item={modItem}
+                    notesOnly={modNotesOnly}
                     onOpenChange={(open) => {
                       if (!open) setModItem(null);
                     }}
