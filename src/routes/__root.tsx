@@ -212,6 +212,7 @@ function RootComponent() {
           <DeviceGuardProvider>
           <BillingProvider>
             <AppShell />
+            <DeviceGate />
             <PresenceHeartbeat />
             <ReservationAlert />
             <IdleLogout />
