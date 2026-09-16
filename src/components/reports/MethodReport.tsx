@@ -100,9 +100,9 @@ export function MethodReport({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {title} · Periode {rangeLabel(range)}
-      </p>
+      <h2 className="text-accent text-lg font-extrabold">
+        {title} <span className="font-normal text-muted-foreground text-sm">· Periode {rangeLabel(range)}</span>
+      </h2>
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Jumlah transaksi" value={String(rows.length)} note={title} />
@@ -112,7 +112,7 @@ export function MethodReport({
 
       {perMethod.length > 1 && (
         <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-          <h3 className="mb-4 text-lg font-semibold">Per metode</h3>
+          <h3 className="mb-4 text-accent text-base font-bold">Per metode</h3>
           <Table>
             <TableHeader>
               <TableRow>
@@ -137,7 +137,7 @@ export function MethodReport({
       )}
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Detail transaksi</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">Detail transaksi</h3>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{emptyText}</p>
         ) : (

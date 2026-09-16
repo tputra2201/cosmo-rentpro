@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { MailCheck, Send, ShieldCheck, Trash2, UserPlus, Wifi } from "lucide-react";
+import { MailCheck, Send, ShieldCheck, UserPlus, Wifi } from "lucide-react";
 import { listPresence, type PresenceRow } from "@/lib/presence.functions";
 import {
   listUsers,
@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
@@ -173,11 +174,7 @@ function PenggunaPage() {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-neon">
-          Pengaturan Pengguna
-        </h1>
-      </div>
+      <SetupHeading title="Pengaturan Pengguna" as="h1" />
 
       <form
         className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4"
@@ -243,16 +240,49 @@ function PenggunaPage() {
         )}
         {groups.map(([storeName, rows]) => (
           <div key={storeName} className="surface-panel p-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-lg font-semibold">{storeName}</h2>
-              <span className="text-xs text-muted-foreground">
-                {rows.length} pengguna
-              </span>
-            </div>
-            <div className="grid gap-3">
-              {rows.map((u) => (
-                <UserRow
-                  key={u.id}
+            <SetupHeading
+              as="h2"
+              title={storeName}
+              className="mb-1"
+              right={
+                <span className="text-xs text-muted-foreground">{rows.length} pengguna</span>
+              }
+            />
+            <SetupTable<ManagedUser>
+              items={rows}
+              getId={(u) => u.id}
+              getLabel={(u) => u.fullName || u.email}
+              columns={[
+                {
+                  key: "name",
+                  header: "Nama",
+                  render: (u) => (
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-foreground">
+                        {u.fullName || u.email}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {u.email}
+                        {u.id === user?.id && " · akun kamu"}
+                        {u.pending && (
+                          <span className="text-primary"> · menunggu buat sandi</span>
+                        )}
+                      </p>
+                    </div>
+                  ),
+                },
+                {
+                  key: "role",
+                  header: "Level",
+                  render: (u) => roleLabel[u.role],
+                },
+              ]}
+              onRemove={(u) => remove.mutate(u.id)}
+              removeDisabled={(u) => u.id === user?.id}
+              detailTitle={(u) => u.fullName || u.email}
+              detailDescription={(u) => u.email}
+              renderDetail={(u) => (
+                <UserDetail
                   user={u}
                   isSelf={u.id === user?.id}
                   canInstaller={canInstaller}
@@ -260,10 +290,9 @@ function PenggunaPage() {
                   onSave={(payload) => edit.mutate({ id: u.id, ...payload })}
                   onResend={() => resend.mutate(u.email)}
                   onReset={() => reset.mutate(u.email)}
-                  onDelete={() => remove.mutate(u.id)}
                 />
-              ))}
-            </div>
+              )}
+            />
           </div>
         ))}
         {!isLoading && groups.length === 0 && (
@@ -380,7 +409,7 @@ function OnlineNow({
   );
 }
 
-function UserRow({
+function UserDetail({
   user,
   isSelf,
   canInstaller,
@@ -388,7 +417,6 @@ function UserRow({
   onSave,
   onResend,
   onReset,
-  onDelete,
 }: {
   user: ManagedUser;
   isSelf: boolean;
@@ -397,27 +425,18 @@ function UserRow({
   onSave: (p: { fullName?: string; role?: AppRole }) => void;
   onResend: () => void;
   onReset: () => void;
-  onDelete: () => void;
 }) {
   const [name, setName] = useState(user.fullName);
   const [role, setRole] = useState<AppRole>(user.role);
   const options = selectableRoles(canInstaller);
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-secondary/30 p-4 lg:grid-cols-[1.2fr_1fr_auto_auto_auto] lg:items-end">
-      <div className="grid gap-1">
-        <Label className="text-xs text-muted-foreground">
-          {user.email} {isSelf && "· akun kamu"}{" "}
-          {user.pending && (
-            <span className="text-primary">· menunggu buat sandi</span>
-          )}
-        </Label>
+    <>
+      <DetailField label="Nama lengkap">
         <Input value={name} onChange={(e) => setName(e.target.value)} />
-      </div>
-      <div className="grid gap-1">
-        <Label className="text-xs text-muted-foreground">
-          Level saat ini: {roleLabel[user.role]}
-        </Label>
+      </DetailField>
+
+      <DetailField label={`Level saat ini: ${roleLabel[user.role]}`}>
         <Select
           value={role}
           onValueChange={(v) => setRole(v as AppRole)}
@@ -437,8 +456,10 @@ function UserRow({
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </DetailField>
+
       <Button
+        className="w-full"
         variant="outline"
         onClick={() => {
           const payload: { fullName?: string; role?: AppRole } = {};
@@ -450,31 +471,32 @@ function UserRow({
       >
         Simpan
       </Button>
-      <Button
-        variant="outline"
-        disabled={busy}
-        onClick={user.pending ? onResend : onReset}
-      >
-        {user.pending ? (
-          <>
-            <Send className="size-4" /> Kirim ulang undangan
-          </>
-        ) : (
-          <>
-            <MailCheck className="size-4" /> Tautan atur sandi
-          </>
-        )}
-      </Button>
-      <Button
-        variant="destructive"
-        size="icon"
-        aria-label="Hapus pengguna"
-        disabled={isSelf}
-        onClick={onDelete}
-      >
-        <Trash2 className="size-4" />
-      </Button>
-    </div>
+
+      <DetailField label="Akun">
+        <p className="text-xs text-muted-foreground">
+          {user.email} {isSelf && "· akun kamu"}
+          {user.pending && (
+            <span className="text-primary"> · menunggu buat sandi</span>
+          )}
+        </p>
+        <Button
+          className="w-full"
+          variant="outline"
+          disabled={busy}
+          onClick={user.pending ? onResend : onReset}
+        >
+          {user.pending ? (
+            <>
+              <Send className="size-4" /> Kirim ulang undangan
+            </>
+          ) : (
+            <>
+              <MailCheck className="size-4" /> Tautan atur sandi
+            </>
+          )}
+        </Button>
+      </DetailField>
+    </>
   );
 }
 

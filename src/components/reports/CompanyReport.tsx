@@ -137,7 +137,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     <div className="space-y-6" ref={printRef}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Company Report</h2>
+          <h2 className="text-accent text-xl font-extrabold tracking-tight">Company Report</h2>
           <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
         </div>
         <PrintReportButton
@@ -241,7 +241,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="surface-panel p-4 sm:p-6">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+      <h3 className="text-accent mb-3 text-sm font-bold uppercase tracking-wider">
         {title}
       </h3>
       <div className="space-y-1">{children}</div>

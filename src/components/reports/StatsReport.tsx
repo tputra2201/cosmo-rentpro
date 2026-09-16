@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SetupHeading } from "@/components/SetupTable";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { businessDate, inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
@@ -122,8 +123,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
   return (
     <div className="space-y-4">
       <div className="surface-panel p-4">
-        <h2 className="font-display text-lg font-bold">Statistik Penjualan</h2>
-        <p className="text-xs text-muted-foreground">{rangeLabel(range)}</p>
+        <SetupHeading title="Statistik Penjualan" description={rangeLabel(range)} />
         {!empty && (
           <p className="mt-2 text-sm text-muted-foreground">
             {data.totalCount} nota · {formatRupiah(data.totalIncome)}
@@ -201,7 +201,7 @@ function StatTable({
   return (
     <section className="surface-panel overflow-hidden">
       <div className="border-b border-border p-4">
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="text-accent text-base font-bold">{title}</h3>
       </div>
       {rows.length === 0 ? (
         <p className="p-6 text-sm text-muted-foreground">

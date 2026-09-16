@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Percent, Plus, Trash2 } from "lucide-react";
+import { Percent, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { activeGlobalPromo, formatRupiah, useBilling } from "@/lib/billing-store";
+import {
+  activeGlobalPromo,
+  formatRupiah,
+  useBilling,
+  type Promotion,
+} from "@/lib/billing-store";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
 export const Route = createFileRoute("/_authenticated/promo")({
   head: () => ({
@@ -183,62 +189,89 @@ function PromoPage() {
           </Button>
         </form>
 
-        <div className="space-y-3">
-          {promotions.length === 0 ? (
-            <div className="surface-panel p-10 text-center text-muted-foreground">
-              Belum ada promo.
-            </div>
-          ) : (
-            promotions.map((promo) => {
-              const current =
-                promo.active && promo.startsAt <= now && promo.endsAt >= now;
-              return (
-                <article
-                  key={promo.id}
-                  className="surface-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
-                >
+        <div className="surface-panel p-4 sm:p-6">
+          <SetupHeading title="Daftar Promo" description="Kelola status dan detail tiap promo." />
+          <SetupTable<Promotion>
+            items={promotions}
+            getId={(p) => p.id}
+            getLabel={(p) => p.name}
+            columns={[
+              {
+                key: "name",
+                header: "Nama Promo",
+                render: (promo) => (
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold">{promo.name}</h2>
-                      <Badge variant={current ? "default" : "secondary"}>
-                        {current ? "Berlaku" : promo.active ? "Di luar periode" : "Nonaktif"}
+                    <span className="font-bold text-foreground">{promo.name}</span>
+                    {promo.auto && (
+                      <Badge variant="outline" className="ml-2">
+                        Otomatis
                       </Badge>
-                      {promo.auto && <Badge variant="outline">Otomatis</Badge>}
-                    </div>
-                    <p className="mt-1 font-display text-xl text-accent">
-                      {promo.type === "percent" ? `${promo.value}%` : formatRupiah(promo.value)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Min. {formatRupiah(promo.minSpend)}
-                      {promo.maxDiscount > 0 ? ` · Maks. ${formatRupiah(promo.maxDiscount)}` : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(promo.startsAt).toLocaleDateString("id-ID")} –{" "}
-                      {new Date(promo.endsAt).toLocaleDateString("id-ID")}
-                      {promo.startTime || promo.endTime
-                        ? ` · ${promo.startTime || "00:00"} – ${promo.endTime || "23:59"}`
-                        : " · sepanjang hari"}
-                    </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                ),
+              },
+              {
+                key: "value",
+                header: "Nilai",
+                render: (promo) => (
+                  <span className="font-semibold text-accent">
+                    {promo.type === "percent" ? `${promo.value}%` : formatRupiah(promo.value)}
+                  </span>
+                ),
+              },
+              {
+                key: "status",
+                header: "Status",
+                hideOnMobile: true,
+                render: (promo) => {
+                  const current = promo.active && promo.startsAt <= now && promo.endsAt >= now;
+                  return (
+                    <Badge variant={current ? "default" : "secondary"}>
+                      {current ? "Berlaku" : promo.active ? "Di luar periode" : "Nonaktif"}
+                    </Badge>
+                  );
+                },
+              },
+            ]}
+            onRemove={(promo) => removePromotion(promo.id)}
+            detailTitle={(promo) => promo.name}
+            detailDescription={() => "Ubah nilai, periode, dan status promo."}
+            emptyText="Belum ada promo."
+            renderDetail={(promo) => (
+              <>
+                <DetailField label="Nilai promo">
+                  <p className="font-display text-xl text-accent">
+                    {promo.type === "percent" ? `${promo.value}%` : formatRupiah(promo.value)}
+                  </p>
+                </DetailField>
+                <DetailField label="Minimal transaksi & maks. diskon">
+                  <p className="text-sm text-muted-foreground">
+                    Min. {formatRupiah(promo.minSpend)}
+                    {promo.maxDiscount > 0 ? ` · Maks. ${formatRupiah(promo.maxDiscount)}` : ""}
+                  </p>
+                </DetailField>
+                <DetailField label="Periode berlaku">
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(promo.startsAt).toLocaleDateString("id-ID")} –{" "}
+                    {new Date(promo.endsAt).toLocaleDateString("id-ID")}
+                    {promo.startTime || promo.endTime
+                      ? ` · ${promo.startTime || "00:00"} – ${promo.endTime || "23:59"}`
+                      : " · sepanjang hari"}
+                  </p>
+                </DetailField>
+                <DetailField label="Status aktif">
+                  <label className="flex items-center gap-2 text-sm">
                     <Switch
                       checked={promo.active}
                       onCheckedChange={(active) => updatePromotion(promo.id, { active })}
                       aria-label={`Aktifkan ${promo.name}`}
                     />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removePromotion(promo.id)}
-                      aria-label={`Hapus ${promo.name}`}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </article>
-              );
-            })
-          )}
+                    {promo.active ? "Aktif" : "Nonaktif"}
+                  </label>
+                </DetailField>
+              </>
+            )}
+          />
         </div>
       </section>
     </div>

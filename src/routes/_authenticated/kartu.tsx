@@ -31,6 +31,7 @@ import {
   useBilling,
 } from "@/lib/billing-store";
 import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
 export const Route = createFileRoute("/_authenticated/kartu")({
   head: () => ({
@@ -164,7 +165,7 @@ function BuyCardPanel() {
 
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
-      <h2 className="font-display text-xl font-semibold">Pembelian kartu baru</h2>
+      <SetupHeading title="Pembelian Kartu Baru" description="Daftarkan kartu baru beserta pemegang dan saldo awal." />
       <CardScanInput value={cardNumber} onChange={setCardNumber} autoFocus />
 
       <div className="space-y-1.5">
@@ -275,45 +276,76 @@ function CardListPanel() {
     : playingCards;
 
   return (
-    <section className="space-y-4">
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading
+        title="Data dan Saldo"
+        description="Klik tombol detail untuk melihat data lengkap kartu dan riwayat transaksinya."
+      />
       <CardScanInput value={search} onChange={setSearch} label="Cari / scan kartu" id="card-search" />
 
-      {list.length === 0 && (
-        <p className="rounded-md bg-secondary px-3 py-6 text-center text-sm text-muted-foreground">
-          Belum ada kartu yang cocok.
-        </p>
-      )}
-
-      <ul className="space-y-3">
-        {list.map((card) => {
-          const usage = cardEntries.filter((e) => e.cardId === card.id).slice(0, 5);
+      <SetupTable<(typeof playingCards)[number]>
+        items={list}
+        getId={(c) => c.id}
+        getLabel={(c) => c.cardNumber}
+        detailWide
+        emptyText="Belum ada kartu yang cocok."
+        columns={[
+          {
+            key: "code",
+            header: "Kode Kartu",
+            render: (c) => (
+              <div className="min-w-0">
+                <span className="font-bold text-foreground">{c.cardCode?.trim() || "-"}</span>
+                <span className="block text-xs text-muted-foreground">{c.cardNumber}</span>
+              </div>
+            ),
+          },
+          {
+            key: "holder",
+            header: "Nama Pemegang",
+            render: (c) => (
+              <div className="min-w-0">
+                <span className="truncate">{c.customerName || "Umum"}</span>
+                {c.customerPhone && (
+                  <span className="block text-xs text-muted-foreground">{c.customerPhone}</span>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "balance",
+            header: "Saldo",
+            render: (c) => (
+              <span className="font-semibold text-accent">{formatRupiah(c.balance)}</span>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            hideOnMobile: true,
+            render: (c) =>
+              c.active ? (
+                <span className="font-semibold text-accent">Aktif</span>
+              ) : (
+                <span className="font-semibold text-destructive">Diblokir</span>
+              ),
+          },
+        ]}
+        onRemove={(c) => {
+          removePlayingCard(c.id);
+          toast.success(`Kartu ${c.cardNumber} dihapus`);
+        }}
+        detailTitle={(c) => `Kartu ${c.cardNumber}`}
+        detailDescription={(c) => `Kode: ${c.cardCode?.trim() || "-"}`}
+        renderDetail={(card) => {
+          const usage = cardEntries.filter((e) => e.cardId === card.id);
           const pct = cardDiscountPercentFor(card, {
             cardDiscountPercent,
             cardMemberDiscountPercent,
           });
           return (
-            <li key={card.id} className="surface-panel space-y-3 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-display text-lg font-semibold">{card.cardNumber}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    Kode: {card.cardCode?.trim() || "-"}
-                  </p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {card.customerName || "Umum"}
-                    {card.customerPhone ? ` · ${card.customerPhone}` : ""} ·{" "}
-                    {card.member ? "Member" : "Umum"} · potongan {pct}%
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Saldo</p>
-                  <p className="font-display text-xl font-semibold text-accent">
-                    {formatRupiah(card.balance)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
+            <>
+              <DetailField label="Kode Kartu">
                 <Input
                   value={card.cardCode ?? ""}
                   placeholder="Kode Kartu"
@@ -324,17 +356,33 @@ function CardListPanel() {
                     })
                   }
                 />
-                <Input
-                  value={card.customerName}
-                  aria-label={`Nama pemilik ${card.cardNumber}`}
-                  onChange={(e) => updatePlayingCard(card.id, { customerName: e.target.value })}
-                />
-                <Input
-                  value={card.customerPhone}
-                  aria-label={`Nomor HP ${card.cardNumber}`}
-                  onChange={(e) => updatePlayingCard(card.id, { customerPhone: e.target.value })}
-                />
+              </DetailField>
+              <DetailField label="Nomor Kartu">
+                <p className="text-sm text-muted-foreground">{card.cardNumber}</p>
+              </DetailField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField label="Nama pemegang">
+                  <Input
+                    value={card.customerName}
+                    aria-label={`Nama pemilik ${card.cardNumber}`}
+                    onChange={(e) => updatePlayingCard(card.id, { customerName: e.target.value })}
+                  />
+                </DetailField>
+                <DetailField label="Nomor HP">
+                  <Input
+                    value={card.customerPhone}
+                    aria-label={`Nomor HP ${card.cardNumber}`}
+                    onChange={(e) => updatePlayingCard(card.id, { customerPhone: e.target.value })}
+                  />
+                </DetailField>
               </div>
+
+              <DetailField label="Saldo saat ini">
+                <p className="font-display text-xl font-semibold text-accent">
+                  {formatRupiah(card.balance)}
+                </p>
+                <p className="text-xs text-muted-foreground">Potongan berlaku: {pct}%</p>
+              </DetailField>
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -355,84 +403,79 @@ function CardListPanel() {
                     {card.active ? "Aktif" : "Diblokir"}
                   </span>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Hapus kartu ${card.cardNumber}`}
-                  onClick={() => {
-                    removePlayingCard(card.id);
-                    toast.success(`Kartu ${card.cardNumber} dihapus`);
-                  }}
-                >
-                  <Trash2 className="size-4 text-destructive" />
-                </Button>
               </div>
 
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-40 flex-1 space-y-1.5">
-                  <Label htmlFor={`topup-${card.id}`}>Top-up saldo</Label>
-                  <Input
-                    id={`topup-${card.id}`}
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={topupValues[card.id] ?? ""}
-                    onChange={(e) =>
-                      setTopupValues((prev) => ({ ...prev, [card.id]: e.target.value }))
-                    }
-                  />
+              <DetailField label="Isi saldo">
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-40 flex-1 space-y-1.5">
+                    <Label htmlFor={`topup-${card.id}`}>Top-up saldo</Label>
+                    <Input
+                      id={`topup-${card.id}`}
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={topupValues[card.id] ?? ""}
+                      onChange={(e) =>
+                        setTopupValues((prev) => ({ ...prev, [card.id]: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="min-w-40">
+                    <CardFundingSelect
+                      id={`topup-pay-${card.id}`}
+                      value={payValues[card.id] ?? "Cash"}
+                      onChange={(value) =>
+                        setPayValues((prev) => ({ ...prev, [card.id]: value }))
+                      }
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
+                      const method = payValues[card.id] ?? "Cash";
+                      if (!topupCard(card.id, amount, "Top-up saldo", method)) {
+                        toast.error("Jumlah top-up harus lebih dari 0");
+                        return;
+                      }
+                      setTopupValues((prev) => ({ ...prev, [card.id]: "" }));
+                      toast.success(`Saldo ditambah ${formatRupiah(amount)} · ${method}`);
+                    }}
+                  >
+                    <Wallet className="size-4" /> Isi saldo
+                  </Button>
                 </div>
-                <div className="min-w-40">
-                  <CardFundingSelect
-                    id={`topup-pay-${card.id}`}
-                    value={payValues[card.id] ?? "Cash"}
-                    onChange={(value) =>
-                      setPayValues((prev) => ({ ...prev, [card.id]: value }))
-                    }
-                  />
-                </div>
-                <Button
-                  onClick={() => {
-                    if (!requireShift()) return;
-                    const amount = Math.max(0, Number(topupValues[card.id] ?? "") || 0);
-                    const method = payValues[card.id] ?? "Cash";
-                    if (!topupCard(card.id, amount, "Top-up saldo", method)) {
-                      toast.error("Jumlah top-up harus lebih dari 0");
-                      return;
-                    }
-                    setTopupValues((prev) => ({ ...prev, [card.id]: "" }));
-                    toast.success(`Saldo ditambah ${formatRupiah(amount)} · ${method}`);
-                  }}
-                >
-                  <Wallet className="size-4" /> Isi saldo
-                </Button>
-              </div>
+              </DetailField>
 
-              {usage.length > 0 && (
-                <ul className="space-y-1 rounded-md border border-border p-3 text-sm">
-                  {usage.map((entry) => (
-                    <li key={entry.id} className="flex justify-between gap-3">
-                      <span className="truncate text-muted-foreground">
-                        {new Date(entry.createdAt).toLocaleString("id-ID")} · {entry.note}
-                      </span>
-                      <span
-                        className={entry.amount < 0 ? "text-destructive" : "text-accent"}
-                      >
-                        {entry.amount < 0 ? "-" : "+"}
-                        {formatRupiah(Math.abs(entry.amount))}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
+              <DetailField label="Riwayat transaksi (pembelian, top up, pemakaian)">
+                {usage.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Belum ada transaksi untuk kartu ini.</p>
+                ) : (
+                  <ul className="max-h-72 space-y-1 overflow-y-auto rounded-md border border-border p-3 text-sm">
+                    {usage.map((entry) => (
+                      <li key={entry.id} className="flex justify-between gap-3">
+                        <span className="truncate text-muted-foreground">
+                          {TYPE_LABEL[entry.type] ?? entry.type} ·{" "}
+                          {new Date(entry.createdAt).toLocaleString("id-ID")} · {entry.note}
+                        </span>
+                        <span
+                          className={entry.amount < 0 ? "text-destructive" : "text-accent"}
+                        >
+                          {entry.amount < 0 ? "-" : "+"}
+                          {formatRupiah(Math.abs(entry.amount))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DetailField>
+            </>
           );
-        })}
-      </ul>
+        }}
+      />
     </section>
   );
 }
-
 const TYPE_LABEL: Record<string, string> = {
   purchase: "Pembelian kartu",
   topup: "Top-up",
@@ -447,7 +490,7 @@ function HistoryPanel() {
   const entries = cardEntries.filter((e) => e.cardId === selectedId);
   return (
     <section className="surface-panel space-y-3 p-4 sm:p-6">
-      <h2 className="font-display text-xl font-semibold">Riwayat pemakaian kartu</h2>
+      <SetupHeading title="Riwayat Pemakaian Kartu" description="Lihat riwayat transaksi tiap kartu." />
       {playingCards.length === 0 ? (
         <p className="text-sm text-muted-foreground">Belum ada kartu.</p>
       ) : (
@@ -513,7 +556,7 @@ function SettingsPanel() {
 
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
-      <h2 className="font-display text-xl font-semibold">Pengaturan Playing Card</h2>
+      <SetupHeading title="Pengaturan Playing Card" description="Harga kartu baru dan potongan harga default." />
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="set-price">Harga kartu baru</Label>

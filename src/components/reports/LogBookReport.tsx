@@ -1,6 +1,15 @@
 import { useMemo } from "react";
-import { useBilling } from "@/lib/billing-store";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
+import { useBilling, type LogEntry } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
+
+const timeShort = (at: number) =>
+  new Date(at).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 /** Catatan aktivitas non-transaksi: siapa, kapan, dan apa yang dilakukan. */
 export function LogBookReport({ range }: { range: ReportRange }) {
@@ -15,46 +24,60 @@ export function LogBookReport({ range }: { range: ReportRange }) {
   );
 
   return (
-    <div className="surface-panel overflow-hidden">
-      <div className="border-b border-border p-4">
-        <h2 className="font-display text-lg font-bold">Log Book Aktivitas</h2>
-        <p className="text-xs text-muted-foreground">{rangeLabel(range)}</p>
-      </div>
+    <div className="surface-panel p-4 sm:p-6">
+      <SetupHeading title="Log Book Aktivitas" description={rangeLabel(range)} />
 
-      {rows.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">
-          Belum ada aktivitas tercatat pada periode ini.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {rows.map((row) => (
-            <li key={row.id} className="flex flex-wrap items-start gap-x-4 gap-y-1 p-4">
-              <span className="w-32 shrink-0 text-xs text-muted-foreground">
-                {new Date(row.at).toLocaleString("id-ID", {
-                  day: "2-digit",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">{row.action}</span>
-                {row.detail ? (
-                  <span className="block break-words text-xs text-muted-foreground">
-                    {row.detail}
-                  </span>
-                ) : null}
-              </span>
-              <span className="shrink-0 text-right text-xs text-muted-foreground">
-                <span className="block font-semibold text-foreground">
-                  {row.actor || "Tanpa nama"}
+      <SetupTable<LogEntry>
+        items={rows}
+        getId={(r) => r.id}
+        getLabel={(r) => r.action}
+        emptyText="Belum ada aktivitas tercatat pada periode ini."
+        columns={[
+          {
+            key: "at",
+            header: "Waktu",
+            className: "whitespace-nowrap",
+            render: (r) => <span className="text-xs text-muted-foreground">{timeShort(r.at)}</span>,
+          },
+          {
+            key: "action",
+            header: "Aktivitas",
+            render: (r) => <span className="font-semibold">{r.action}</span>,
+          },
+          {
+            key: "actor",
+            header: "Petugas",
+            hideOnMobile: true,
+            render: (r) => (
+              <span className="text-sm">
+                {r.actor || "Tanpa nama"}
+                <span className="block text-xs uppercase tracking-wider text-muted-foreground">
+                  {r.role || "-"}
                 </span>
-                <span className="block uppercase tracking-wider">{row.role || "-"}</span>
               </span>
-            </li>
-          ))}
-        </ul>
-      )}
+            ),
+          },
+        ]}
+        renderDetail={(r) => (
+          <>
+            <DetailField label="Waktu">
+              <p className="text-sm">{timeShort(r.at)}</p>
+            </DetailField>
+            <DetailField label="Petugas">
+              <p className="text-sm">
+                {r.actor || "Tanpa nama"} · {r.role || "-"}
+              </p>
+            </DetailField>
+            <DetailField label="Detail">
+              <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                {r.detail || "-"}
+              </p>
+            </DetailField>
+          </>
+        )}
+        detailTitle={(r) => r.action}
+        detailDescription={(r) => timeShort(r.at)}
+      />
     </div>
   );
 }
