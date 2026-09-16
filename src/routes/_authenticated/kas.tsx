@@ -95,7 +95,7 @@ function KasPage() {
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="in">Uang masuk</TabsTrigger>
           <TabsTrigger value="out">Uang keluar</TabsTrigger>
-          <TabsTrigger value="kategori">Item &amp; kelompok</TabsTrigger>
+          <TabsTrigger value="kategori">Item &amp; Kategori</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
         </TabsList>
 
@@ -107,7 +107,9 @@ function KasPage() {
         </TabsContent>
 
         <TabsContent value="kategori" className="mt-4 space-y-6">
+          <GroupEditor direction="in" />
           <CategoryEditor direction="in" />
+          <GroupEditor direction="out" />
           <CategoryEditor direction="out" />
         </TabsContent>
 
@@ -123,7 +125,7 @@ function KasPage() {
                   <TableRow>
                     <TableHead>Waktu</TableHead>
                     <TableHead>Item</TableHead>
-                    <TableHead>Kelompok</TableHead>
+                    <TableHead>Kategori</TableHead>
                     <TableHead>Jenis</TableHead>
                     <TableHead>Metode</TableHead>
                     <TableHead>Catatan</TableHead>
@@ -231,7 +233,7 @@ function EntryForm({ direction }: { direction: CashDirection }) {
 
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Belum ada item. Tambahkan dulu di tab Item &amp; kelompok.
+          Belum ada item. Tambahkan dulu di tab Item &amp; Kategori.
         </p>
       ) : (
         <>
@@ -353,7 +355,7 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           },
           {
             key: "group",
-            header: "Kelompok",
+            header: "Kategori",
             hideOnMobile: true,
             render: (c) => c.group || "—",
           },
