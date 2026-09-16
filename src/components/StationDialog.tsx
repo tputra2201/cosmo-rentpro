@@ -453,6 +453,20 @@ export function StationDialog({
   return (
     <>
     <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+    <VoidDialog
+      open={confirmVoid}
+      onOpenChange={setConfirmVoid}
+      sourceName={station?.name ?? ""}
+      onConfirm={(reason) => {
+        if (!station) return;
+        const done = voidSession(station.id, reason);
+        setConfirmVoid(false);
+        if (done) {
+          toast.success(`Transaksi ${done.sourceName} di-VOID`);
+          onOpenChange(false);
+        }
+      }}
+    />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
