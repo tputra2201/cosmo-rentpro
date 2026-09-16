@@ -100,6 +100,32 @@ export function SetupTable<T>({
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailItem = items.find((i) => getId(i) === detailId) ?? null;
 
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const sortColumn = sort ? columns.find((c) => c.key === sort.key) : undefined;
+  const rows =
+    sort && sortColumn?.sortValue
+      ? [...items].sort((a, b) => {
+          const av = sortColumn.sortValue!(a);
+          const bv = sortColumn.sortValue!(b);
+          const cmp =
+            typeof av === "number" && typeof bv === "number"
+              ? av - bv
+              : String(av).localeCompare(String(bv), "id", { numeric: true });
+          return sort.dir === "asc" ? cmp : -cmp;
+        })
+      : items;
+
+  const toggleSort = (key: string) =>
+    setSort((prev) =>
+      prev?.key !== key
+        ? { key, dir: "asc" }
+        : prev.dir === "asc"
+          ? { key, dir: "desc" }
+          : null,
+    );
+
+  const dragEnabled = Boolean(onReorder) && !sort;
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
@@ -129,12 +155,33 @@ export function SetupTable<T>({
                   c.className,
                 )}
               >
-                {c.header}
+                {c.sortValue ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSort(c.key)}
+                    className="inline-flex items-center gap-1 uppercase hover:text-accent"
+                    aria-label={`Urutkan ${c.header}`}
+                  >
+                    {c.header}
+                    {sort?.key === c.key ? (
+                      sort.dir === "asc" ? (
+                        <ArrowUp className="size-3.5" />
+                      ) : (
+                        <ArrowDown className="size-3.5" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="size-3.5 opacity-50" />
+                    )}
+                  </button>
+                ) : (
+                  c.header
+                )}
               </th>
             ))}
             {hasActions && <th className="w-24 px-3 py-2.5" />}
           </tr>
         </thead>
+
         <tbody>
           {items.length === 0 && (
             <tr>
