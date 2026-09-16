@@ -22,6 +22,7 @@ export const LIST_KINDS = {
   playing_card: "playingCards",
   card_entry: "cardEntries",
   cash_category: "cashCategories",
+  cash_group: "cashGroups",
   cash_entry: "cashEntries",
   shift: "shifts",
   business_day: "businessDays",
@@ -123,6 +124,7 @@ export function applyRecords(
     playingCards: [...state.playingCards],
     cardEntries: [...state.cardEntries],
     cashCategories: [...state.cashCategories],
+    cashGroups: [...(state.cashGroups ?? [])],
     cashEntries: [...state.cashEntries],
     shifts: [...(state.shifts ?? [])],
     businessDays: [...(state.businessDays ?? [])],
@@ -155,7 +157,7 @@ export function applyRecords(
     else list.push(row);
   }
 
-  const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables", "cashCategories", "addonRentals"] as const;
+  const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables", "cashCategories", "cashGroups", "addonRentals"] as const;
   for (const listName of SORTED) {
     const list = next[listName] as unknown as ({ sort?: number } & AnyRow)[];
     list.sort((a, b) => (a.sort ?? Number.MAX_SAFE_INTEGER) - (b.sort ?? Number.MAX_SAFE_INTEGER));
