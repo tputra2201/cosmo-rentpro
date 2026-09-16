@@ -46,6 +46,10 @@ export type DeviceAccess = {
   restricted: boolean;
   /** Perangkat / level ini boleh bertransaksi & mengubah pengaturan */
   allowed: boolean;
+  /** Data store sudah terbaca, jadi keputusan di bawah bisa dipercaya */
+  checked: boolean;
+  /** Level tinggi (Manager / Installer / Developer) — selalu boleh */
+  privileged: boolean;
 };
 
 const Ctx = createContext<DeviceAccess>({
@@ -53,6 +57,8 @@ const Ctx = createContext<DeviceAccess>({
   ip: "",
   restricted: false,
   allowed: true,
+  checked: false,
+  privileged: false,
 });
 
 export function DeviceGuardProvider({ children }: { children: ReactNode }) {
@@ -108,8 +114,8 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
   }, [allowed, ip, restricted]);
 
   const value = useMemo<DeviceAccess>(
-    () => ({ code, ip, restricted, allowed }),
-    [code, ip, restricted, allowed],
+    () => ({ code, ip, restricted, allowed, checked: Boolean(store), privileged }),
+    [code, ip, restricted, allowed, store, privileged],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -121,3 +127,24 @@ export function useDeviceAccess() {
 
 export const DEVICE_BLOCKED_MESSAGE =
   "Perangkat ini tidak terdaftar di data store, jadi hanya bisa melihat. Minta Manager atau Installer mendaftarkan kode perangkat atau alamat IP-nya.";
+
+/** Alasan penolakan masuk, dibaca halaman masuk setelah perangkat dikeluarkan. */
+export const DEVICE_REJECT_KEY = "billing.device-rejected";
+
+export function setDeviceReject(code: string) {
+  try {
+    sessionStorage.setItem(DEVICE_REJECT_KEY, code);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function takeDeviceReject(): string | null {
+  try {
+    const value = sessionStorage.getItem(DEVICE_REJECT_KEY);
+    if (value !== null) sessionStorage.removeItem(DEVICE_REJECT_KEY);
+    return value;
+  } catch {
+    return null;
+  }
+}
