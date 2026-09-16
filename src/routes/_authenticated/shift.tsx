@@ -49,7 +49,17 @@ function clock(ts?: number) {
 }
 
 function ShiftPage() {
-  const { shifts, history, cashEntries, now, openShift, closeShift } = useBilling();
+  const {
+    shifts,
+    history,
+    cashEntries,
+    now,
+    openShift,
+    closeShift,
+    activeBusinessDay,
+    closeBusinessDay,
+    operatingHours,
+  } = useBilling();
   const { fullName, user, role } = useAuth();
 
   const active = shifts.find((s) => !s.closedAt) ?? null;
@@ -58,11 +68,42 @@ function ShiftPage() {
 
   const cashierName = fullName.trim() || user?.email || "Kasir";
 
+  // Rentang laporan untuk hari usaha yang sedang berjalan.
+  const dayRange = useMemo<ReportRange | null>(() => {
+    if (!activeBusinessDay) return null;
+    const key = businessDateKey(activeBusinessDay.openedAt, operatingHours);
+    return {
+      mode: "day",
+      from: key,
+      to: key,
+      hours: operatingHours,
+      endOverride: now,
+    };
+  }, [activeBusinessDay, operatingHours, now]);
+
+  const dayShifts = activeBusinessDay
+    ? shifts.filter((s) => s.openedAt >= activeBusinessDay.openedAt)
+    : [];
+
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Shift Kasir</h1>
       </header>
+
+      {activeBusinessDay && (
+        <section className="surface-panel grid gap-4 p-4 sm:grid-cols-3 sm:p-6">
+          <Field label="Hari usaha dibuka" value={clock(activeBusinessDay.openedAt)} />
+          <Field label="Jumlah shift hari ini" value={`${dayShifts.length} shift`} />
+          <Field
+            label="Berjalan selama"
+            value={`${Math.floor((now - activeBusinessDay.openedAt) / 3_600_000)} jam ${Math.floor(
+              ((now - activeBusinessDay.openedAt) % 3_600_000) / 60_000,
+            )} menit`}
+            highlight
+          />
+        </section>
+      )}
 
       {active ? (
         <CloseOutForm
@@ -90,6 +131,35 @@ function ShiftPage() {
           }}
         />
       )}
+
+      {!active && activeBusinessDay && dayRange && (
+        <section className="surface-panel space-y-4 p-4 sm:p-6">
+          <div className="flex items-center gap-2">
+            <CalendarCheck className="size-5 text-primary" />
+            <h2 className="text-lg font-semibold">End of Day</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Shift terakhir sudah ditutup. Periksa rekap di bawah, lalu tutup hari
+            usaha agar siklus laporan hari ini selesai.
+          </p>
+
+          <CompanyReport range={dayRange} />
+
+          <Button
+            onClick={() => {
+              const row = closeBusinessDay();
+              if (!row) {
+                toast.error("End of Day gagal, pastikan semua shift sudah ditutup");
+                return;
+              }
+              toast.success("Hari usaha ditutup. Selamat beristirahat!");
+            }}
+          >
+            <CalendarCheck className="size-4" /> Tutup Hari Usaha
+          </Button>
+        </section>
+      )}
+
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold">Riwayat shift</h2>
