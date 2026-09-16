@@ -1454,6 +1454,19 @@ export function StationDialog({
               ))}
           </div>
 
+          <OrderModifierDialog
+            item={modItem}
+            onOpenChange={(open) => {
+              if (!open) setModItem(null);
+            }}
+            onConfirm={(mods) => {
+              if (!modItem || !station) return;
+              addOrder(station.id, modItem, 1, mods);
+              toast.success(`${modItem.name} ditambahkan`);
+              setModItem(null);
+            }}
+          />
+
           {session.orders.length > 0 && (
             <ul className="space-y-1">
               {session.orders.map((o) => (

@@ -106,6 +106,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
+  const [modItem, setModItem] = useState<MenuItem | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -321,6 +322,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       </p>
                     )}
                   </div>
+                  <OrderModifierDialog
+                    item={modItem}
+                    onOpenChange={(open) => {
+                      if (!open) setModItem(null);
+                    }}
+                    onConfirm={(mods) => {
+                      if (!modItem) return;
+                      addCafeOrder(table.id, modItem, 1, mods);
+                      toast.success(`${modItem.name} ditambahkan`);
+                      setModItem(null);
+                    }}
+                  />
                 </div>
 
                 {table.orders.length > 0 && (
