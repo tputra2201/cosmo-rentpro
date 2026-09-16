@@ -102,10 +102,10 @@ export function OrderModifierDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {single("Varian", item?.variants ?? [], variant, setVariant)}
-          {single("Ukuran", item?.sizes ?? [], size, setSize)}
+          {!notesOnly && single("Varian", item?.variants ?? [], variant, setVariant)}
+          {!notesOnly && single("Ukuran", item?.sizes ?? [], size, setSize)}
 
-          {(item?.toppings?.length ?? 0) > 0 && (
+          {!notesOnly && (item?.toppings?.length ?? 0) > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Topping</p>
               <div className="flex flex-wrap gap-2">
