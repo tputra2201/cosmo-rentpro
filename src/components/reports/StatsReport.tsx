@@ -16,6 +16,17 @@ const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
 
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
+const dateFormat = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+const dateKeyOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+
 function bucketOf(map: Map<string, Row>, name: string) {
   const key = name || "-";
   let row = map.get(key);
@@ -38,6 +49,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
     const menus = new Map<string, Row>();
     const days = new Map<string, Row>();
     const hours = new Map<string, Row>();
+    const dates = new Map<string, Row>();
     let totalIncome = 0;
     let totalCount = 0;
 
@@ -79,6 +91,10 @@ export function StatsReport({ range }: { range: ReportRange }) {
       );
       hour.count += 1;
       hour.income += total;
+
+      const dateRow = bucketOf(dates, dateKeyOf(date));
+      dateRow.count += 1;
+      dateRow.income += total;
     }
 
     return {
@@ -87,6 +103,12 @@ export function StatsReport({ range }: { range: ReportRange }) {
       menus: [...menus.values()].sort((a, b) => (b.qty ?? 0) - (a.qty ?? 0) || b.income - a.income),
       days: [...days.values()].sort(byIncome),
       hours: [...hours.values()].sort(byIncome),
+      dates: [...dates.values()]
+        .map((r) => ({
+          ...r,
+          name: dateFormat.format(new Date(`${r.name}T00:00:00`)),
+        }))
+        .sort((a, b) => b.income - a.income),
       totalIncome,
       totalCount,
     };
