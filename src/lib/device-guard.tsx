@@ -46,6 +46,10 @@ export type DeviceAccess = {
   restricted: boolean;
   /** Perangkat / level ini boleh bertransaksi & mengubah pengaturan */
   allowed: boolean;
+  /** Data store sudah terbaca, jadi keputusan di bawah bisa dipercaya */
+  checked: boolean;
+  /** Level tinggi (Manager / Installer / Developer) — selalu boleh */
+  privileged: boolean;
 };
 
 const Ctx = createContext<DeviceAccess>({
@@ -53,6 +57,8 @@ const Ctx = createContext<DeviceAccess>({
   ip: "",
   restricted: false,
   allowed: true,
+  checked: false,
+  privileged: false,
 });
 
 export function DeviceGuardProvider({ children }: { children: ReactNode }) {
