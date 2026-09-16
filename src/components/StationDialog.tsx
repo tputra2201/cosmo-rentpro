@@ -169,6 +169,7 @@ export function StationDialog({
   const [modNotesOnly, setModNotesOnly] = useState(false);
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
+  const [addonPick, setAddonPick] = useState("");
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
 
 
