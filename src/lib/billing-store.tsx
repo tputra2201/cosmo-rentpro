@@ -1136,6 +1136,11 @@ type Ctx = State & {
   ) => void;
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
+  /** Pindahkan sesi (beserta pesanan & pembayaran) ke unit TV lain yang kosong. */
+  moveSession: (fromStationId: string, toStationId: string) => boolean;
+  /** Pindahkan isi meja kafe (pesanan & pelanggan) ke meja lain yang kosong. */
+  moveCafeTable: (fromTableId: string, toTableId: string) => boolean;
+
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
   addPrinter: (init?: Partial<Omit<PrinterConfig, "id">>) => void;
