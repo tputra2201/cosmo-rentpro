@@ -182,6 +182,13 @@ function AuthPage() {
           )}
         </div>
 
+        {rejected !== null && (
+          <div className="mt-6 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm">
+            Perangkat ini belum terdaftar di store. Minta Manager atau Installer
+            mendaftarkan kode perangkat di bawah ini.
+          </div>
+        )}
+
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
