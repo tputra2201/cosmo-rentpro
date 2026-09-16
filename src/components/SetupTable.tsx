@@ -152,7 +152,7 @@ export function SetupTable<T>({
       <table className="w-full caption-bottom text-sm">
         <thead className="bg-secondary/70">
           <tr className="border-b border-border">
-            {onReorder && <th className="w-8" />}
+            {dragEnabled && <th className="w-8" />}
             {columns.map((c) => (
               <th
                 key={c.key}
@@ -193,7 +193,7 @@ export function SetupTable<T>({
           {rows.length === 0 && (
             <tr>
               <td
-                colSpan={columns.length + (onReorder ? 1 : 0) + (hasActions ? 1 : 0)}
+                colSpan={columns.length + (dragEnabled ? 1 : 0) + (hasActions ? 1 : 0)}
                 className="px-3 py-8 text-center text-sm text-muted-foreground"
               >
                 {emptyText}
