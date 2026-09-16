@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -47,7 +47,12 @@ import { LogBookReport } from "@/components/reports/LogBookReport";
 import { StatsReport } from "@/components/reports/StatsReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
-import { defaultRange, inRange, type ReportRange } from "@/lib/report-range";
+import {
+  businessDateKey,
+  defaultRange,
+  inRange,
+  type ReportRange,
+} from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { useStoreInfo } from "@/lib/store-info";
