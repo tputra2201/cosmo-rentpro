@@ -1172,6 +1172,8 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    businessDays: parsed.businessDays ?? defaultState.businessDays,
+    operatingHours: normalizeHours(parsed.operatingHours),
     logEntries: parsed.logEntries ?? defaultState.logEntries,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
     printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
