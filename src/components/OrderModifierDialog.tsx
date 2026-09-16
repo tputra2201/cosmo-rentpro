@@ -58,6 +58,7 @@ export function OrderModifierDialog({
     ...(size ? [optionLabel(size)] : []),
     ...toppings.map(optionLabel),
     ...mods,
+    ...(note.trim() ? [`Notes: ${note.trim()}`] : []),
   ];
 
   const single = (
