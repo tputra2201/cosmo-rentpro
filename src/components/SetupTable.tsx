@@ -62,8 +62,11 @@ export type SetupColumn<T> = {
   className?: string;
   /** Sembunyikan kolom di layar kecil. */
   hideOnMobile?: boolean;
+  /** Kalau ada, judul kolom bisa diklik untuk mengurutkan. */
+  sortValue?: (item: T) => string | number;
   render: (item: T) => ReactNode;
 };
+
 
 export function SetupTable<T>({
   items,
