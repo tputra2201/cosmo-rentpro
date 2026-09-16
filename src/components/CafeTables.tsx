@@ -196,21 +196,51 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 </Badge>
               </div>
 
-              <p className="mt-3 font-display text-2xl font-extrabold text-neon">
-                {formatRupiah(tableTotal(t))}
+              <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
+                {t.customerName?.trim() || "Umum"}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {t.orders.length} item{t.customerName ? ` · ${t.customerName}` : ""}
-              </p>
+
+              {t.orders.length > 0 && (
+                <>
+                  <ul className="mt-2 space-y-0.5 text-[11px]">
+                    {t.orders.map((o) => (
+                      <li key={o.id} className="flex items-start justify-between gap-2">
+                        <span className="min-w-0 truncate">
+                          {orderLabel(o)} × {o.qty}
+                        </span>
+                        <span className="shrink-0">{formatRupiah(o.price * o.qty)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 font-display text-2xl font-extrabold text-neon">
+                    {formatRupiah(tableTotal(t))}
+                  </p>
+                </>
+              )}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   onClick={() => {
+                    if (!requireShift()) return;
+                    if (!t.customerName?.trim()) {
+                      updateCafeTable(t.id, { customerName: "Umum" });
+                    }
+                    setOrderTableId(t.id);
+                  }}
+                >
+                  <Plus className="size-4" /> Tambah Order
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
                     setOpenId(t.id);
-                    setCategory("semua");
                     setPayMethod(activeMethods[0]?.name ?? "");
                     setReceived("");
+                    if (!t.customerName?.trim()) {
+                      updateCafeTable(t.id, { customerName: "Umum" });
+                    }
                   }}
                 >
                   <Utensils className="size-4" /> Pesanan
