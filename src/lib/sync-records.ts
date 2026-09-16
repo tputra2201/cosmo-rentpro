@@ -24,6 +24,7 @@ export const LIST_KINDS = {
   cash_category: "cashCategories",
   cash_entry: "cashEntries",
   shift: "shifts",
+  business_day: "businessDays",
   log_entry: "logEntries",
   addon_rental: "addonRentals",
 } as const;
@@ -49,6 +50,7 @@ const SETTINGS_KEYS = [
   "receiptLayout",
   "invoiceLayout",
   "rolePermissions",
+  "operatingHours",
 ] as const;
 
 
@@ -123,6 +125,7 @@ export function applyRecords(
     cashCategories: [...state.cashCategories],
     cashEntries: [...state.cashEntries],
     shifts: [...(state.shifts ?? [])],
+    businessDays: [...(state.businessDays ?? [])],
     logEntries: [...(state.logEntries ?? [])],
     addonRentals: [...(state.addonRentals ?? [])],
   };

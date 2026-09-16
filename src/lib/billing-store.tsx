@@ -20,6 +20,24 @@ import {
   type DocLayout,
   type PrinterConfig,
 } from "./printing";
+import {
+  DEFAULT_OPERATING_HOURS,
+  businessDate,
+  normalizeHours,
+  type OperatingHours,
+} from "./report-range";
+
+/** Tenggang penutupan otomatis setelah jam tutup operasional. */
+const AUTO_CLOSE_GRACE_MS = 60 * 60 * 1000;
+
+/** Waktu batas penutupan otomatis satu hari usaha. */
+function autoCloseAt(openedAt: number, hours?: OperatingHours) {
+  const { openHour, closeHour } = normalizeHours(hours);
+  const d = businessDate(openedAt, hours);
+  d.setDate(d.getDate() + (closeHour <= openHour ? 1 : 0));
+  d.setHours(closeHour, 0, 0, 0);
+  return d.getTime() + AUTO_CLOSE_GRACE_MS;
+}
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
@@ -523,6 +541,21 @@ export type CashShift = {
   closedById?: string;
 };
 
+/**
+ * Hari usaha (siklus akuntansi harian): terbuka saat kasir pertama check-in,
+ * ditutup lewat proses End of Day setelah shift terakhir selesai closing.
+ */
+export type BusinessDay = {
+  id: string;
+  openedAt: number;
+  closedAt?: number;
+  closedByName?: string;
+  closedById?: string;
+  /** True bila ditutup otomatis oleh sistem karena End of Day tidak dijalankan. */
+  autoClosed?: boolean;
+  note?: string;
+};
+
 
 export type HistoryRecord = {
   id: string;
@@ -614,6 +647,10 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  /** Riwayat hari usaha (End of Day). */
+  businessDays: BusinessDay[];
+  /** Jam buka dan tutup operasional store, dipakai untuk batas hari usaha. */
+  operatingHours: OperatingHours;
   /** Log book aktivitas non-transaksi. */
   logEntries: LogEntry[];
   tvNotice: TvNotice;
@@ -711,6 +748,8 @@ const defaultState: State = {
   ],
   cashEntries: [],
   shifts: [],
+  businessDays: [],
+  operatingHours: DEFAULT_OPERATING_HOURS,
   logEntries: [],
   tvNotice: defaultTvNotice,
   printers: defaultPrinters,
@@ -1133,6 +1172,8 @@ function migrateState(raw: unknown): State {
     })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
+    businessDays: parsed.businessDays ?? defaultState.businessDays,
+    operatingHours: normalizeHours(parsed.operatingHours),
     logEntries: parsed.logEntries ?? defaultState.logEntries,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
     printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
@@ -1335,6 +1376,12 @@ type Ctx = State & {
     id: string,
     input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
   ) => CashShift | null;
+  /** Hari usaha yang sedang berjalan (null bila belum ada check-in). */
+  activeBusinessDay: BusinessDay | null;
+  /** Jalankan End of Day untuk menutup hari usaha yang sedang berjalan. */
+  closeBusinessDay: (input?: { note?: string }) => BusinessDay | null;
+  /** Ubah jam buka/tutup operasional store. */
+  setOperatingHours: (patch: Partial<OperatingHours>) => void;
   replaceAll: (data: unknown) => void;
 
   resetAll: () => void;
@@ -2268,6 +2315,33 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // Kasir wajib check-in shift sebelum ada uang masuk atau keluar.
   const activeShift = state.shifts.find((s) => !s.closedAt) ?? null;
   const shiftOpen = Boolean(activeShift);
+
+  // Hari usaha berjalan sejak kasir pertama check-in sampai End of Day.
+  const activeBusinessDay = (state.businessDays ?? []).find((d) => !d.closedAt) ?? null;
+
+  // Jaring pengaman: bila End of Day lupa dijalankan, hari usaha ditutup
+  // otomatis sesudah jam tutup operasional (plus tenggang satu jam).
+  useEffect(() => {
+    if (!activeBusinessDay || shiftOpen) return;
+    const limit = autoCloseAt(activeBusinessDay.openedAt, state.operatingHours);
+    if (now < limit) return;
+    update((prev) =>
+      withLog(
+        {
+          ...prev,
+          businessDays: (prev.businessDays ?? []).map((d) =>
+            d.id === activeBusinessDay.id
+              ? { ...d, closedAt: limit, autoClosed: true, closedByName: "Sistem" }
+              : d,
+          ),
+        },
+        "End of Day otomatis",
+        `Hari usaha ${new Date(activeBusinessDay.openedAt).toLocaleDateString("id-ID")} ditutup otomatis oleh sistem`,
+      ),
+    );
+  }, [activeBusinessDay, shiftOpen, now, state.operatingHours, update, withLog]);
+
+
 
   const value = useMemo<Ctx>(
     () => ({
@@ -3293,20 +3367,38 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const name = input.cashierName.trim();
         if (!name) return null;
         if (state.shifts.some((s) => !s.closedAt)) return null;
+        const stamp = Date.now();
         const row: CashShift = {
-          id: `shift-${Date.now()}`,
+          id: `shift-${stamp}`,
           cashierName: name,
           ...(input.cashierId ? { cashierId: input.cashierId } : {}),
-          openedAt: Date.now(),
+          openedAt: stamp,
           startCash: Math.max(0, Math.round(input.startCash)),
         };
-        update((prev) =>
-          withLog(
-            { ...prev, shifts: [row, ...prev.shifts] },
+        // Shift pertama sekaligus membuka hari usaha baru.
+        const openDay = (state.businessDays ?? []).some((d) => !d.closedAt)
+          ? null
+          : ({ id: `bday-${stamp}`, openedAt: stamp } satisfies BusinessDay);
+        update((prev) => {
+          const next = withLog(
+            {
+              ...prev,
+              shifts: [row, ...prev.shifts],
+              ...(openDay
+                ? { businessDays: [openDay, ...(prev.businessDays ?? [])] }
+                : {}),
+            },
             "Buka shift kasir",
             `${name} · kas awal ${formatRupiah(row.startCash)}`,
-          ),
-        );
+          );
+          return openDay
+            ? withLog(
+                next,
+                "Buka hari usaha",
+                new Date(stamp).toLocaleString("id-ID"),
+              )
+            : next;
+        });
         return row;
       },
       closeShift: (id, input) => {
@@ -3330,6 +3422,41 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         );
         return closed;
       },
+      activeBusinessDay,
+      closeBusinessDay: (input) => {
+        const day = (state.businessDays ?? []).find((d) => !d.closedAt);
+        if (!day) return null;
+        if (state.shifts.some((s) => !s.closedAt)) return null;
+        const closed: BusinessDay = {
+          ...day,
+          closedAt: Date.now(),
+          closedByName: actorRef.current.name || "Kasir",
+          ...(user?.id ? { closedById: user.id } : {}),
+          ...(input?.note?.trim() ? { note: input.note.trim() } : {}),
+        };
+        update((prev) =>
+          withLog(
+            {
+              ...prev,
+              businessDays: (prev.businessDays ?? []).map((d) =>
+                d.id === day.id ? closed : d,
+              ),
+            },
+            "End of Day",
+            `Hari usaha ${new Date(day.openedAt).toLocaleDateString("id-ID")} ditutup oleh ${closed.closedByName}`,
+          ),
+        );
+        return closed;
+      },
+      setOperatingHours: (patch) =>
+        update((prev) => {
+          const hours = normalizeHours({ ...prev.operatingHours, ...patch });
+          return withLog(
+            { ...prev, operatingHours: hours },
+            "Ubah jam operasional store",
+            `Buka ${hours.openHour}:00 · Tutup ${hours.closeHour}:00`,
+          );
+        }),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
       replaceAll: (data) => {
@@ -3347,6 +3474,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       state,
       now,
       activeShift,
+      activeBusinessDay,
       shiftOpen,
       sync,
       startSessionWithRate,

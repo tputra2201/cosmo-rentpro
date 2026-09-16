@@ -15,7 +15,7 @@ import {
 } from "@/lib/report-range";
 
 const modeLabels: Record<RangeMode, string> = {
-  day: "Rentang tanggal",
+  day: "Hari usaha (tanggal)",
   month: "Rentang bulan",
   year: "Rentang tahun",
 };
