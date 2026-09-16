@@ -163,6 +163,7 @@ export function StationDialog({
   const [menuCategory, setMenuCategory] = useState("semua");
   const [orderOpen, setOrderOpen] = useState(false);
   const [moveTo, setMoveTo] = useState("");
+  const [moveConsole, setMoveConsole] = useState("");
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
 
 
@@ -754,6 +755,23 @@ export function StationDialog({
                       )}
                     </SelectContent>
                   </Select>
+                  <Select value={moveConsole} onValueChange={setMoveConsole}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Ganti konsol (opsional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tetap">
+                        Tetap {station.console} · {formatRupiah(session.rate)}/jam
+                      </SelectItem>
+                      {consoleTypes
+                        .filter((c) => c !== station.console)
+                        .map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c} · {formatRupiah(rates[c] ?? 0)}/jam
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     size="sm"
                     variant="outline"
@@ -761,7 +779,9 @@ export function StationDialog({
                     onClick={() => {
                       const target = stations.find((s) => s.id === moveTo);
                       if (!target) return;
-                      const ok = moveSession(station.id, moveTo);
+                      const newConsole =
+                        moveConsole && moveConsole !== "tetap" ? moveConsole : undefined;
+                      const ok = moveSession(station.id, moveTo, newConsole);
                       if (!ok) {
                         toast.error("Gagal pindah unit", {
                           description: "Unit tujuan sudah terpakai. Pilih unit lain.",
@@ -769,9 +789,12 @@ export function StationDialog({
                         return;
                       }
                       setMoveTo("");
+                      setMoveConsole("");
                       onOpenChange(false);
                       toast.success(`Sesi dipindah ke ${target.name}`, {
-                        description: "Waktu, pesanan, dan pembayaran ikut berpindah.",
+                        description: newConsole
+                          ? `Konsol diganti ke ${newConsole} — tarif mengikuti harga baru.`
+                          : "Waktu, pesanan, dan pembayaran ikut berpindah.",
                       });
                     }}
                   >
