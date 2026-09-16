@@ -855,24 +855,37 @@ export function StationDialog({
             {addonRentals.some((a) => a.active) && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Additional Rental</p>
-                <div className="flex flex-wrap gap-2">
-                  {addonRentals
-                    .filter((a) => a.active)
-                    .map((a) => (
-                      <Button
-                        key={a.id}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (!requireShift()) return;
-                          addSessionAddon(station.id, a.id, 1);
-                          toast.success(`${a.name} ditambahkan`);
-                        }}
-                      >
-                        <Plus className="size-4" /> {a.name} · {formatRupiah(a.price)}
-                        {a.mode === "hourly" ? "/jam" : ""}
-                      </Button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={addonPick} onValueChange={setAddonPick}>
+                    <SelectTrigger className="w-56" aria-label="Pilih additional rental">
+                      <SelectValue placeholder="Pilih additional rental…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addonRentals
+                        .filter((a) => a.active)
+                        .map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} · {formatRupiah(a.price)}
+                            {a.mode === "hourly" ? "/jam" : ""}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!addonPick}
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      const picked = addonRentals.find((a) => a.id === addonPick);
+                      if (!picked) return;
+                      addSessionAddon(station.id, picked.id, 1);
+                      setAddonPick("");
+                      toast.success(`${picked.name} ditambahkan`);
+                    }}
+                  >
+                    <Plus className="size-4" /> Tambah
+                  </Button>
                 </div>
                 {(session.addons ?? []).length > 0 && (
                   <ul className="mt-2 space-y-1">
