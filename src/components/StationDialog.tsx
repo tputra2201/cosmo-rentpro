@@ -60,7 +60,6 @@ import {
   type Station,
   type OrderItem,
   orderLabel,
-  type MenuItem,
 } from "@/lib/billing-store";
 
 
