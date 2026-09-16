@@ -6,3 +6,5 @@
 - [x] 4. Playing Card: tabel Data & Saldo + panel detail berisi riwayat transaksi
 - [x] 5. Panel pembayaran TV: Additional Rental jadi dropdown
 - [x] 6. Card TV & meja kafe: nama default Umum, picker hanya pelanggan terdaftar, draft order + tombol Sent Order, hapus order tercatat di Log Book
+- [x] Pengaturan Unit TV & Kategori Menu Kafe jadi tabel + panel detail
+- [x] Ekspor laporan ke Excel (unduh lokal + Google Drive akun pemilik, folder per store)
