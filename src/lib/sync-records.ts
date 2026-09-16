@@ -157,6 +157,25 @@ export function applyRecords(
     else list.push(row);
   }
 
+  if (!next.cashGroups.length) {
+    const seen = new Set<string>();
+    const derived: BillingSnapshot["cashGroups"] = [];
+    for (const item of next.cashCategories) {
+      const name = item.group?.trim() ? item.group.trim() : "Lainnya";
+      const key = `${item.direction}::${name.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      derived.push({
+        id: `cash-group-${derived.length}-${item.direction}`,
+        name,
+        direction: item.direction,
+        active: true,
+        sort: derived.length,
+      });
+    }
+    next.cashGroups = derived;
+  }
+
   const SORTED = ["stations", "menu", "packages", "paymentMethods", "cafeTables", "cashCategories", "cashGroups", "addonRentals"] as const;
   for (const listName of SORTED) {
     const list = next[listName] as unknown as ({ sort?: number } & AnyRow)[];
