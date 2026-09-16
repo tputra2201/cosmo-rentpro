@@ -151,6 +151,16 @@ export function OrderModifierDialog({
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Notes</p>
+            <Textarea
+              value={note}
+              aria-label="Notes pesanan"
+              placeholder="mis. mie setengah matang, tambahkan cabe rawit"
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
         </div>
 
         <DialogFooter>
