@@ -95,7 +95,7 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
   const allowed = useMemo(() => {
     if (!store || !restricted || privileged) return true;
     if (registered && code && registered === code) return true;
-    if (ip) return allowedIps.includes(ip);
+    if (ip) return allowedIps.some((pattern) => ipMatches(ip, pattern));
     // Tanpa koneksi: pakai keputusan terakhir yang tersimpan di perangkat.
     if (typeof window === "undefined") return false;
     return localStorage.getItem(VERDICT_KEY) === "yes";
