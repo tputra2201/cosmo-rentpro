@@ -45,6 +45,38 @@ function AuthPage() {
   const [devSecret, setDevSecret] = useState("");
   const [devBusy, setDevBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [myCode, setMyCode] = useState("");
+  const [myIp, setMyIp] = useState("");
+  const [rejected, setRejected] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMyCode(deviceCode());
+    setRejected(takeDeviceReject());
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/public/client-ip");
+        if (!res.ok) return;
+        const body = (await res.json()) as { ip?: string };
+        if (!cancelled) setMyIp(body.ip ?? "");
+      } catch {
+        /* luring */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const copy = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} disalin`);
+    } catch {
+      toast.error(`Tidak bisa menyalin ${label.toLowerCase()}`);
+    }
+  };
 
   const sendReset = async () => {
     if (!email.trim()) {
