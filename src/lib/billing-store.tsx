@@ -2754,6 +2754,55 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             session: { ...rest, pausedMs: (s.session.pausedMs ?? 0) + extra },
           };
         }),
+      moveSession: (fromStationId, toStationId) => {
+        if (fromStationId === toStationId) return false;
+        let moved = false;
+        update((prev) => {
+          const from = prev.stations.find((s) => s.id === fromStationId);
+          const to = prev.stations.find((s) => s.id === toStationId);
+          if (!from?.session || !to || to.session) return prev;
+          moved = true;
+          return {
+            ...prev,
+            stations: prev.stations.map((s) => {
+              if (s.id === fromStationId) return { ...s, session: null };
+              if (s.id === toStationId) return { ...s, session: from.session };
+              return s;
+            }),
+          };
+        });
+        return moved;
+      },
+      moveCafeTable: (fromTableId, toTableId) => {
+        if (fromTableId === toTableId) return false;
+        let moved = false;
+        update((prev) => {
+          const from = prev.cafeTables.find((t) => t.id === fromTableId);
+          const to = prev.cafeTables.find((t) => t.id === toTableId);
+          if (!from || !to) return prev;
+          if (!from.openedAt && from.orders.length === 0) return prev;
+          if (to.openedAt || to.orders.length > 0) return prev;
+          moved = true;
+          return {
+            ...prev,
+            cafeTables: prev.cafeTables.map((t) => {
+              if (t.id === fromTableId)
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+              if (t.id === toTableId)
+                return {
+                  ...t,
+                  orders: from.orders,
+                  openedAt: from.openedAt,
+                  customerName: from.customerName,
+                  notes: from.notes,
+                };
+              return t;
+            }),
+          };
+        });
+        return moved;
+      },
+
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
         update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
