@@ -653,6 +653,7 @@ type State = {
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
   cashCategories: CashCategory[];
+  cashGroups: CashGroup[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
   /** Riwayat hari usaha (End of Day). */
