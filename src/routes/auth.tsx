@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Joystick, LockKeyhole, LogIn, MailQuestion } from "lucide-react";
+import { Copy, Joystick, LockKeyhole, LogIn, MailQuestion } from "lucide-react";
 import { passwordSetupUrl } from "@/lib/app-url";
+import { deviceCode, takeDeviceReject } from "@/lib/device-guard";
 import {
   Dialog,
   DialogContent,
