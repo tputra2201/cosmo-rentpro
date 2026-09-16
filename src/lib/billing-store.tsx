@@ -3401,6 +3401,55 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             prev.cashCategories.find((item) => item.id === id)?.name ?? id,
           ),
         ),
+      addCashGroup: (input) => {
+        const name = input.name.trim();
+        if (!name) return null;
+        const exists = state.cashGroups.some(
+          (row) =>
+            row.direction === input.direction &&
+            row.name.trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (exists) return null;
+        const row: CashGroup = {
+          id: `cash-group-${Date.now()}`,
+          name,
+          direction: input.direction,
+          active: true,
+          sort: state.cashGroups.length,
+        };
+        update((prev) => ({ ...prev, cashGroups: [...prev.cashGroups, row] }));
+        return row;
+      },
+      updateCashGroup: (id, patch) =>
+        update((prev) => {
+          const current = prev.cashGroups.find((row) => row.id === id);
+          if (!current) return prev;
+          const nextName = patch.name?.trim() ? patch.name.trim() : current.name;
+          return {
+            ...prev,
+            cashGroups: prev.cashGroups.map((row) =>
+              row.id === id ? { ...row, ...patch, name: nextName } : row,
+            ),
+            cashCategories: prev.cashCategories.map((item) =>
+              item.direction === current.direction && item.group === current.name
+                ? { ...item, group: nextName }
+                : item,
+            ),
+          };
+        }),
+      removeCashGroup: (id) => {
+        const row = state.cashGroups.find((g) => g.id === id);
+        if (!row) return false;
+        const used = state.cashCategories.some(
+          (item) => item.direction === row.direction && item.group === row.name,
+        );
+        if (used) return false;
+        update((prev) => ({
+          ...prev,
+          cashGroups: prev.cashGroups.filter((g) => g.id !== id),
+        }));
+        return true;
+      },
       addCashEntry: (input) => {
         if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
