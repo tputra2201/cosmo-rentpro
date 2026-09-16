@@ -302,6 +302,7 @@ function KafePage() {
             {
               key: "name",
               header: "Nama Menu",
+              sortValue: (m) => m.name.toLowerCase(),
               render: (m) => (
                 <span className="font-bold text-foreground">{m.name}</span>
               ),
@@ -310,17 +311,20 @@ function KafePage() {
               key: "category",
               header: "Kategori",
               hideOnMobile: true,
+              sortValue: (m) => (m.category || "").toLowerCase(),
               render: (m) => m.category || "—",
             },
             {
               key: "price",
               header: "Harga",
+              sortValue: (m) => m.price,
               render: (m) => formatRupiah(m.price),
             },
             {
               key: "label",
               header: "Label",
               hideOnMobile: true,
+              sortValue: (m) => (m.printEnabled !== false ? 0 : 1),
               render: (m) =>
                 m.printEnabled !== false ? (
                   <span className="text-accent">Cetak</span>

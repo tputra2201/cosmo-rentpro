@@ -16,7 +16,14 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  GripVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -62,8 +69,11 @@ export type SetupColumn<T> = {
   className?: string;
   /** Sembunyikan kolom di layar kecil. */
   hideOnMobile?: boolean;
+  /** Kalau ada, judul kolom bisa diklik untuk mengurutkan. */
+  sortValue?: (item: T) => string | number;
   render: (item: T) => ReactNode;
 };
+
 
 export function SetupTable<T>({
   items,
@@ -97,6 +107,32 @@ export function SetupTable<T>({
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailItem = items.find((i) => getId(i) === detailId) ?? null;
 
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const sortColumn = sort ? columns.find((c) => c.key === sort.key) : undefined;
+  const rows =
+    sort && sortColumn?.sortValue
+      ? [...items].sort((a, b) => {
+          const av = sortColumn.sortValue!(a);
+          const bv = sortColumn.sortValue!(b);
+          const cmp =
+            typeof av === "number" && typeof bv === "number"
+              ? av - bv
+              : String(av).localeCompare(String(bv), "id", { numeric: true });
+          return sort.dir === "asc" ? cmp : -cmp;
+        })
+      : items;
+
+  const toggleSort = (key: string) =>
+    setSort((prev) =>
+      prev?.key !== key
+        ? { key, dir: "asc" }
+        : prev.dir === "asc"
+          ? { key, dir: "desc" }
+          : null,
+    );
+
+  const dragEnabled = Boolean(onReorder) && !sort;
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
@@ -126,14 +162,35 @@ export function SetupTable<T>({
                   c.className,
                 )}
               >
-                {c.header}
+                {c.sortValue ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSort(c.key)}
+                    className="inline-flex items-center gap-1 uppercase hover:text-accent"
+                    aria-label={`Urutkan ${c.header}`}
+                  >
+                    {c.header}
+                    {sort?.key === c.key ? (
+                      sort.dir === "asc" ? (
+                        <ArrowUp className="size-3.5" />
+                      ) : (
+                        <ArrowDown className="size-3.5" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="size-3.5 opacity-50" />
+                    )}
+                  </button>
+                ) : (
+                  c.header
+                )}
               </th>
             ))}
             {hasActions && <th className="w-24 px-3 py-2.5" />}
           </tr>
         </thead>
+
         <tbody>
-          {items.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
                 colSpan={columns.length + (onReorder ? 1 : 0) + (hasActions ? 1 : 0)}
@@ -143,11 +200,11 @@ export function SetupTable<T>({
               </td>
             </tr>
           )}
-          {items.map((item) => {
+          {rows.map((item) => {
             const id = getId(item);
             const label = getLabel(item);
             return (
-              <SetupRow key={id} id={id} label={label} draggable={Boolean(onReorder)}>
+              <SetupRow key={id} id={id} label={label} draggable={dragEnabled}>
                 {columns.map((c) => (
                   <td
                     key={c.key}
@@ -198,14 +255,14 @@ export function SetupTable<T>({
 
   return (
     <>
-      {onReorder ? (
+      {dragEnabled ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleEnd}
         >
           <SortableContext
-            items={items.map(getId)}
+            items={rows.map(getId)}
             strategy={verticalListSortingStrategy}
           >
             {body}
