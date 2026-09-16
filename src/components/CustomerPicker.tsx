@@ -64,7 +64,7 @@ export function CustomerPicker({
             onChange(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          
           onBlur={() => {
             blurTimer.current = setTimeout(() => setOpen(false), 120);
           }}
