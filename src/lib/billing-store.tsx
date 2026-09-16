@@ -136,9 +136,38 @@ export type MenuItem = {
   printEnabled?: boolean;
   /** Printer label tujuan (Kitchen / Bar). */
   printerId?: string;
-  /** Opsi modifikasi yang bisa dipilih saat memesan (mis. Less sugar, Iced, Pedas). */
+  /** Opsi modifikasi sederhana tanpa tambahan harga (mis. Less sugar, Iced). */
   modifiers?: string[];
+  /** Varian rasa/jenis dengan tambahan harga (mis. Pedas, Soto, Goreng). */
+  variants?: MenuOption[];
+  /** Ukuran dengan tambahan harga (mis. Small, Medium, Large). */
+  sizes?: MenuOption[];
+  /** Topping tambahan dengan harga (mis. Telur, Keju, Kornet). */
+  toppings?: MenuOption[];
 };
+
+/** Pilihan menu tambahan: nama + tambahan harga (0 = gratis). */
+export type MenuOption = { name: string; price: number };
+
+/** Label pilihan beserta tambahan harganya. */
+export const optionLabel = (o: MenuOption) =>
+  o.price > 0 ? `${o.name} +${formatRupiah(o.price)}` : o.name;
+
+/** Ubah teks "Pedas:5000, Manis" menjadi daftar pilihan. */
+export const parseMenuOptions = (text: string): MenuOption[] =>
+  text
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [name, price] = part.split(":");
+      return { name: (name ?? "").trim(), price: Number((price ?? "").trim()) || 0 };
+    })
+    .filter((o) => o.name.length > 0);
+
+/** Ubah daftar pilihan menjadi teks "Pedas:5000, Manis". */
+export const menuOptionsText = (list?: MenuOption[]) =>
+  (list ?? []).map((o) => (o.price > 0 ? `${o.name}:${o.price}` : o.name)).join(", ");
 
 export type CafeTable = {
   id: string;
@@ -1157,7 +1186,13 @@ type Ctx = State & {
   setReceiptLayout: (patch: Partial<DocLayout>) => void;
   setInvoiceLayout: (patch: Partial<DocLayout>) => void;
   setRolePermissions: (role: string, keys: string[]) => void;
-  addOrder: (stationId: string, item: MenuItem, qty: number, mods?: string[]) => void;
+  addOrder: (
+    stationId: string,
+    item: MenuItem,
+    qty: number,
+    mods?: string[],
+    priceAdd?: number,
+  ) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
@@ -1206,7 +1241,13 @@ type Ctx = State & {
   updateCafeTable: (tableId: string, patch: Partial<Omit<CafeTable, "id" | "orders">>) => void;
   removeCafeTable: (tableId: string) => boolean;
   openCafeTable: (tableId: string, customerName?: string, notes?: string) => void;
-  addCafeOrder: (tableId: string, item: MenuItem, qty: number, mods?: string[]) => void;
+  addCafeOrder: (
+    tableId: string,
+    item: MenuItem,
+    qty: number,
+    mods?: string[],
+    priceAdd?: number,
+  ) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
   clearCafeTable: (tableId: string) => void;
   payCafeTable: (
@@ -2076,7 +2117,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const addOrder = useCallback<Ctx["addOrder"]>(
-    (stationId, item, qty, mods) =>
+    (stationId, item, qty, mods, priceAdd) =>
       mapStation(stationId, (s) =>
         s.session
           ? {
@@ -2089,7 +2130,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     id: `${item.id}-${Date.now()}`,
                     menuId: item.id,
                     name: item.name,
-                    price: item.price,
+                    price: item.price + (priceAdd ?? 0),
                     qty,
                     ...(mods && mods.length > 0 ? { mods } : {}),
                   },
@@ -2579,7 +2620,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               : t,
           ),
         })),
-      addCafeOrder: (tableId, item, qty, mods) =>
+      addCafeOrder: (tableId, item, qty, mods, priceAdd) =>
         !shiftOpen
           ? undefined
           : update((prev) => ({
@@ -2595,7 +2636,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                       id: `${item.id}-${Date.now()}`,
                       menuId: item.id,
                       name: item.name,
-                      price: item.price,
+                      price: item.price + (priceAdd ?? 0),
                       qty,
                       ...(mods && mods.length > 0 ? { mods } : {}),
                     },
