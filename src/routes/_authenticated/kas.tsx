@@ -29,6 +29,7 @@ import {
   type CashCategory,
   type CashDirection,
   type CashEntry,
+  type CashGroup,
 } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
@@ -486,7 +487,7 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           toast.success(`${c.name} dihapus`);
         }}
         detailTitle={(c) => c.name}
-        detailDescription={() => "Ubah nama, kelompok, dan status item ini."}
+        detailDescription={() => "Ubah nama, kategori, dan status item ini."}
         emptyText="Belum ada item."
         renderDetail={(c) => (
           <>
