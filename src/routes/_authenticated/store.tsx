@@ -398,6 +398,8 @@ function StorePage() {
         </p>
       </div>
 
+      <OperatingHoursSection />
+
       <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
 
       <DeviceAccessSection
