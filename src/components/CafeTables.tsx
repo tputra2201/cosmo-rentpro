@@ -528,7 +528,58 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 </div>
               </div>
 
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
+                <span className="text-sm font-semibold">Pindah meja</span>
+                <Select value={tableMoveTo} onValueChange={setTableMoveTo}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Pilih meja kosong…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cafeTables.filter(
+                      (t) => t.id !== table.id && !t.openedAt && t.orders.length === 0,
+                    ).length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        Tidak ada meja kosong
+                      </SelectItem>
+                    ) : (
+                      cafeTables
+                        .filter((t) => t.id !== table.id && !t.openedAt && t.orders.length === 0)
+                        .map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                            {t.area ? ` · ${t.area}` : ""}
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!tableMoveTo || tableMoveTo === "none"}
+                  onClick={() => {
+                    const target = cafeTables.find((t) => t.id === tableMoveTo);
+                    if (!target) return;
+                    const ok = moveCafeTable(table.id, tableMoveTo);
+                    if (!ok) {
+                      toast.error("Gagal pindah meja", {
+                        description: "Meja tujuan sudah terpakai. Pilih meja lain.",
+                      });
+                      return;
+                    }
+                    setTableMoveTo("");
+                    setOpenId(null);
+                    toast.success(`Pesanan dipindah ke ${target.name}`, {
+                      description: "Semua pesanan dan data pelanggan ikut berpindah.",
+                    });
+                  }}
+                >
+                  Pindahkan
+                </Button>
+              </div>
+
               <DialogFooter className="flex-col gap-2 sm:flex-row">
+
                 <Button
                   variant="outline"
                   onClick={() => {
