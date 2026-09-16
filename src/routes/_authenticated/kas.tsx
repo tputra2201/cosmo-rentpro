@@ -29,6 +29,7 @@ import {
   type CashCategory,
   type CashDirection,
   type CashEntry,
+  type CashGroup,
 } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
@@ -95,7 +96,7 @@ function KasPage() {
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="in">Uang masuk</TabsTrigger>
           <TabsTrigger value="out">Uang keluar</TabsTrigger>
-          <TabsTrigger value="kategori">Item &amp; kelompok</TabsTrigger>
+          <TabsTrigger value="kategori">Item &amp; Kategori</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
         </TabsList>
 
@@ -107,7 +108,9 @@ function KasPage() {
         </TabsContent>
 
         <TabsContent value="kategori" className="mt-4 space-y-6">
+          <GroupEditor direction="in" />
           <CategoryEditor direction="in" />
+          <GroupEditor direction="out" />
           <CategoryEditor direction="out" />
         </TabsContent>
 
@@ -123,7 +126,7 @@ function KasPage() {
                   <TableRow>
                     <TableHead>Waktu</TableHead>
                     <TableHead>Item</TableHead>
-                    <TableHead>Kelompok</TableHead>
+                    <TableHead>Kategori</TableHead>
                     <TableHead>Jenis</TableHead>
                     <TableHead>Metode</TableHead>
                     <TableHead>Catatan</TableHead>
@@ -231,7 +234,7 @@ function EntryForm({ direction }: { direction: CashDirection }) {
 
       {options.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Belum ada item. Tambahkan dulu di tab Item &amp; kelompok.
+          Belum ada item. Tambahkan dulu di tab Item &amp; Kategori.
         </p>
       ) : (
         <>
@@ -310,19 +313,115 @@ function EntryForm({ direction }: { direction: CashDirection }) {
   );
 }
 
-function CategoryEditor({ direction }: { direction: CashDirection }) {
-  const { cashCategories, cashEntries, addCashCategory, updateCashCategory, removeCashCategory } =
+function GroupEditor({ direction }: { direction: CashDirection }) {
+  const { cashGroups, cashCategories, addCashGroup, updateCashGroup, removeCashGroup } =
     useBilling();
+  const rows = cashGroups.filter((g) => g.direction === direction);
+  const [name, setName] = useState("");
+
+  const add = () => {
+    const row = addCashGroup({ name, direction });
+    if (!row) {
+      toast.error("Nama kategori kosong atau sudah ada");
+      return;
+    }
+    setName("");
+    toast.success(`Kategori ${row.name} ditambahkan`);
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading
+        title={direction === "in" ? "Kategori uang masuk" : "Kategori uang keluar"}
+        as="h2"
+      />
+
+      <SetupTable<CashGroup>
+        items={rows}
+        getId={(g) => g.id}
+        getLabel={(g) => g.name}
+        columns={[
+          {
+            key: "name",
+            header: "Nama Kategori",
+            render: (g) => <span className="font-bold text-foreground">{g.name}</span>,
+          },
+          {
+            key: "count",
+            header: "Jumlah Item",
+            render: (g) =>
+              cashCategories.filter(
+                (c) => c.direction === direction && c.group === g.name,
+              ).length,
+          },
+        ]}
+        onRemove={(g) => {
+          if (!removeCashGroup(g.id)) {
+            toast.error("Kategori ini masih dipakai item, pindahkan itemnya dulu");
+            return;
+          }
+          toast.success(`Kategori ${g.name} dihapus`);
+        }}
+        detailTitle={(g) => g.name}
+        detailDescription={() => "Ubah nama kategori ini."}
+        emptyText="Belum ada kategori."
+        renderDetail={(g) => (
+          <DetailField
+            label="Nama kategori"
+            hint="Semua item yang memakai kategori ini ikut berubah."
+          >
+            <Input
+              value={g.name}
+              aria-label={`Nama kategori ${g.name}`}
+              onChange={(e) => updateCashGroup(g.id, { name: e.target.value })}
+            />
+          </DetailField>
+        )}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor={`grp-name-${direction}`}>
+            Nama kategori
+          </label>
+          <Input
+            id={`grp-name-${direction}`}
+            value={name}
+            placeholder={direction === "in" ? "Misal: Pendapatan Lain" : "Misal: Operasional"}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <Button onClick={add}>
+          <Plus className="size-4" /> Tambah kategori
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function CategoryEditor({ direction }: { direction: CashDirection }) {
+  const {
+    cashCategories,
+    cashGroups,
+    cashEntries,
+    addCashCategory,
+    updateCashCategory,
+    removeCashCategory,
+  } = useBilling();
   const rows = cashCategories.filter((c) => c.direction === direction);
   const groups = useMemo(
-    () => Array.from(new Set(rows.map((c) => c.group))).filter(Boolean),
-    [rows],
+    () => cashGroups.filter((g) => g.direction === direction && g.active),
+    [cashGroups, direction],
   );
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
   const [payout, setPayout] = useState(false);
 
   const add = () => {
+    if (!group) {
+      toast.error("Pilih kategori dulu");
+      return;
+    }
     const row = addCashCategory({ name, direction, payout, group });
     if (!row) {
       toast.error("Nama item kosong atau sudah ada");
@@ -353,7 +452,7 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           },
           {
             key: "group",
-            header: "Kelompok",
+            header: "Kategori",
             hideOnMobile: true,
             render: (c) => c.group || "—",
           },
@@ -388,7 +487,7 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           toast.success(`${c.name} dihapus`);
         }}
         detailTitle={(c) => c.name}
-        detailDescription={() => "Ubah nama, kelompok, dan status item ini."}
+        detailDescription={() => "Ubah nama, kategori, dan status item ini."}
         emptyText="Belum ada item."
         renderDetail={(c) => (
           <>
@@ -399,12 +498,22 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
                 onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
               />
             </DetailField>
-            <DetailField label="Kelompok">
-              <Input
+            <DetailField label="Kategori">
+              <Select
                 value={c.group}
-                aria-label={`Kelompok ${c.name}`}
-                onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
-              />
+                onValueChange={(v) => updateCashCategory(c.id, { group: v })}
+              >
+                <SelectTrigger aria-label={`Kategori ${c.name}`}>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.name}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </DetailField>
             <DetailField label="Perpindahan uang kas saja" hint={`Tidak dihitung sebagai ${direction === "in" ? "pendapatan" : "biaya"} di laporan.`}>
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -443,21 +552,21 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor={`cat-group-${direction}`}>
-            Kelompok
-          </label>
-          <Input
-            id={`cat-group-${direction}`}
-            value={group}
-            placeholder={groups[0] ?? "Operasional"}
-            onChange={(e) => setGroup(e.target.value)}
-            list={`cat-groups-${direction}`}
-          />
-          <datalist id={`cat-groups-${direction}`}>
-            {groups.map((g) => (
-              <option key={g} value={g} />
-            ))}
-          </datalist>
+          <label className="text-sm font-medium">Kategori</label>
+          <Select value={group} onValueChange={setGroup} disabled={groups.length === 0}>
+            <SelectTrigger aria-label={`Kategori item ${direction}`}>
+              <SelectValue
+                placeholder={groups.length === 0 ? "Buat kategori dulu" : "Pilih kategori"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.name}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={add}>
           <Plus className="size-4" /> Tambah

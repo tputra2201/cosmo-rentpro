@@ -54,6 +54,7 @@ const SHEETS: { sheet: string; key: string }[] = [
   { sheet: "Playing Card", key: "playingCards" },
   { sheet: "Transaksi Kartu", key: "cardEntries" },
   { sheet: "Item Kas", key: "cashCategories" },
+  { sheet: "Kategori Kas", key: "cashGroups" },
   { sheet: "Kas & Biaya", key: "cashEntries" },
   { sheet: "Transaksi", key: "history" },
   { sheet: "Pengaturan", key: "settings" },

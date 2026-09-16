@@ -495,6 +495,15 @@ export type CashCategory = {
   sort?: number;
 };
 
+/** Kategori kas buatan pengguna, dipakai untuk mengelompokkan item kas. */
+export type CashGroup = {
+  id: string;
+  name: string;
+  direction: CashDirection;
+  active: boolean;
+  sort?: number;
+};
+
 export type CashEntry = {
   id: string;
   categoryId: string;
@@ -644,6 +653,7 @@ type State = {
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
   cashCategories: CashCategory[];
+  cashGroups: CashGroup[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
   /** Riwayat hari usaha (End of Day). */
@@ -745,6 +755,14 @@ const defaultState: State = {
     { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-gaji", name: "Gaji Karyawan", direction: "out", payout: false, group: "Gaji", active: true },
     { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
+  ],
+  cashGroups: [
+    { id: "cg-in-lain", name: "Pendapatan Lain", direction: "in", active: true, sort: 0 },
+    { id: "cg-in-owner", name: "Kas Owner", direction: "in", active: true, sort: 1 },
+    { id: "cg-in-card", name: "Playing Card", direction: "in", active: true, sort: 2 },
+    { id: "cg-out-ops", name: "Operasional", direction: "out", active: true, sort: 0 },
+    { id: "cg-out-gaji", name: "Gaji", direction: "out", active: true, sort: 1 },
+    { id: "cg-out-owner", name: "Kas Owner", direction: "out", active: true, sort: 2 },
   ],
   cashEntries: [],
   shifts: [],
@@ -1170,6 +1188,35 @@ function migrateState(raw: unknown): State {
       }
       return list;
     })(),
+    cashGroups: (() => {
+      if (parsed.cashGroups?.length) {
+        return parsed.cashGroups.map((row, index) => ({
+          ...row,
+          name: row.name?.trim() ? row.name.trim() : "Lainnya",
+          active: row.active ?? true,
+          sort: row.sort ?? index,
+        }));
+      }
+      const source = parsed.cashCategories?.length
+        ? parsed.cashCategories
+        : defaultState.cashCategories;
+      const rows: CashGroup[] = [];
+      const seen = new Set<string>();
+      for (const item of [...defaultState.cashCategories, ...source]) {
+        const name = item.group?.trim() ? item.group.trim() : "Lainnya";
+        const key = `${item.direction}::${name.toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push({
+          id: `cash-group-${rows.length}-${item.direction}`,
+          name,
+          direction: item.direction,
+          active: true,
+          sort: rows.length,
+        });
+      }
+      return rows;
+    })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
     businessDays: parsed.businessDays ?? defaultState.businessDays,
@@ -1260,7 +1307,8 @@ type Ctx = State & {
       | "menu"
       | "packages"
       | "paymentMethods"
-      | "addonRentals",
+      | "addonRentals"
+      | "cashGroups",
     activeId: string,
     overId: string,
     orderedIds?: string[],
@@ -1355,6 +1403,9 @@ type Ctx = State & {
   }) => CashCategory | null;
   updateCashCategory: (id: string, patch: Partial<Omit<CashCategory, "id">>) => void;
   removeCashCategory: (id: string) => void;
+  addCashGroup: (input: { name: string; direction: CashDirection }) => CashGroup | null;
+  updateCashGroup: (id: string, patch: Partial<Omit<CashGroup, "id" | "direction">>) => void;
+  removeCashGroup: (id: string) => boolean;
   addCashEntry: (input: {
     categoryId: string;
     amount: number;
@@ -1660,6 +1711,15 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
     detail: `${nameById(s.cashCategories, a[0])} · ${patchText(a[1])}`,
     coalesce: true,
   }),
+  addCashGroup: (a, _s, r) =>
+    r === null ? null : { action: "Tambah kategori kas", detail: patchText(a[0]) },
+  updateCashGroup: (a, s) => ({
+    action: "Ubah nama kategori kas",
+    detail: `${nameById(s.cashGroups, a[0])} · ${patchText(a[1])}`,
+    coalesce: true,
+  }),
+  removeCashGroup: (a, s, r) =>
+    r === false ? null : { action: "Hapus kategori kas", detail: nameById(s.cashGroups, a[0]) },
   updateCashEntry: (a) => ({
     action: "Ubah catatan kas",
     detail: patchText(a[1]),
@@ -3341,6 +3401,55 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             prev.cashCategories.find((item) => item.id === id)?.name ?? id,
           ),
         ),
+      addCashGroup: (input) => {
+        const name = input.name.trim();
+        if (!name) return null;
+        const exists = state.cashGroups.some(
+          (row) =>
+            row.direction === input.direction &&
+            row.name.trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (exists) return null;
+        const row: CashGroup = {
+          id: `cash-group-${Date.now()}`,
+          name,
+          direction: input.direction,
+          active: true,
+          sort: state.cashGroups.length,
+        };
+        update((prev) => ({ ...prev, cashGroups: [...prev.cashGroups, row] }));
+        return row;
+      },
+      updateCashGroup: (id, patch) =>
+        update((prev) => {
+          const current = prev.cashGroups.find((row) => row.id === id);
+          if (!current) return prev;
+          const nextName = patch.name?.trim() ? patch.name.trim() : current.name;
+          return {
+            ...prev,
+            cashGroups: prev.cashGroups.map((row) =>
+              row.id === id ? { ...row, ...patch, name: nextName } : row,
+            ),
+            cashCategories: prev.cashCategories.map((item) =>
+              item.direction === current.direction && item.group === current.name
+                ? { ...item, group: nextName }
+                : item,
+            ),
+          };
+        }),
+      removeCashGroup: (id) => {
+        const row = state.cashGroups.find((g) => g.id === id);
+        if (!row) return false;
+        const used = state.cashCategories.some(
+          (item) => item.direction === row.direction && item.group === row.name,
+        );
+        if (used) return false;
+        update((prev) => ({
+          ...prev,
+          cashGroups: prev.cashGroups.filter((g) => g.id !== id),
+        }));
+        return true;
+      },
       addCashEntry: (input) => {
         if (!shiftOpen) return null;
         const category = state.cashCategories.find((item) => item.id === input.categoryId);
