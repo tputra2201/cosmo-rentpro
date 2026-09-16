@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardCheck, LogIn, Wallet } from "lucide-react";
+import { CalendarCheck, ClipboardCheck, LogIn, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { formatRupiah, shiftSummary, useBilling } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
+import { CompanyReport } from "@/components/reports/CompanyReport";
+import { businessDateKey, type ReportRange } from "@/lib/report-range";
 
 export const Route = createFileRoute("/_authenticated/shift")({
   head: () => ({
