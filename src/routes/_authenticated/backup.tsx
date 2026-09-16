@@ -245,16 +245,17 @@ function BackupPage() {
 
       <section className="surface-panel space-y-4 p-6">
         <div>
-          <h2 className="text-lg font-semibold">Reset transaksi saja</h2>
+          <h2 className="text-lg font-semibold">Reset Semua Transaksi</h2>
           <p className="text-sm text-muted-foreground">
-            Menghapus seluruh riwayat transaksi dan catatan poin. Pengaturan,
-            unit TV, tarif, menu, paket, pelanggan, booking, dan promo tetap
-            tersimpan.
+            Menghapus seluruh transaksi, sesi berjalan, pesanan meja, reservasi,
+            playing card, uang masuk/keluar, shift, hari usaha, poin, dan log
+            aktivitas. Semua data di menu Setup tetap tersimpan.
           </p>
         </div>
         <Button variant="outline" onClick={() => setConfirmTrx(true)}>
-          <Eraser className="size-4" /> Reset transaksi
+          <Eraser className="size-4" /> Reset Semua Transaksi
         </Button>
+
       </section>
 
       <section className="surface-panel space-y-4 border-destructive/40 p-6">
@@ -276,21 +277,24 @@ function BackupPage() {
       <AlertDialog open={confirmTrx} onOpenChange={setConfirmTrx}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus seluruh transaksi?</AlertDialogTitle>
+            <AlertDialogTitle>Reset semua transaksi?</AlertDialogTitle>
             <AlertDialogDescription>
-              Riwayat transaksi dan catatan poin akan dihapus. Pengaturan dan
-              data lain tidak berubah.
+              Seluruh transaksi, reservasi, playing card, uang masuk/keluar,
+              shift, dan riwayat terkait transaksi akan dihapus. Data di menu
+              Setup tidak berubah.
             </AlertDialogDescription>
+
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 resetTransactions();
-                toast.success("Seluruh transaksi sudah dihapus");
+                toast.success("Semua transaksi sudah dihapus");
               }}
             >
-              Ya, hapus transaksi
+              Ya, reset semua transaksi
+
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
