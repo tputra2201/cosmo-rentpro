@@ -351,11 +351,35 @@ function KafePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="sm:col-span-4">
+              <div className="grid gap-2 sm:col-span-4 sm:grid-cols-2">
+                <Input
+                  defaultValue={menuOptionsText(m.variants)}
+                  aria-label={`Varian ${m.name}`}
+                  placeholder="Varian, mis. Pedas:5000, Soto, Goreng:3000"
+                  onBlur={(e) =>
+                    updateMenuItem(m.id, { variants: parseMenuOptions(e.target.value) })
+                  }
+                />
+                <Input
+                  defaultValue={menuOptionsText(m.sizes)}
+                  aria-label={`Ukuran ${m.name}`}
+                  placeholder="Ukuran, mis. Small, Medium:3000, Large:6000"
+                  onBlur={(e) =>
+                    updateMenuItem(m.id, { sizes: parseMenuOptions(e.target.value) })
+                  }
+                />
+                <Input
+                  defaultValue={menuOptionsText(m.toppings)}
+                  aria-label={`Topping ${m.name}`}
+                  placeholder="Topping, mis. Telur:5000, Keju:7000, Kornet:8000"
+                  onBlur={(e) =>
+                    updateMenuItem(m.id, { toppings: parseMenuOptions(e.target.value) })
+                  }
+                />
                 <Input
                   defaultValue={(m.modifiers ?? []).join(", ")}
-                  aria-label={`Opsi modified ${m.name}`}
-                  placeholder="Opsi modified, pisahkan dengan koma (mis. Less sugar, Iced, Pedas)"
+                  aria-label={`Opsi lain ${m.name}`}
+                  placeholder="Opsi lain tanpa biaya, mis. Less sugar, Iced"
                   onBlur={(e) =>
                     updateMenuItem(m.id, {
                       modifiers: e.target.value
@@ -366,6 +390,10 @@ function KafePage() {
                   }
                 />
               </div>
+              <p className="text-xs text-muted-foreground sm:col-span-4">
+                Tulis pilihan dipisah koma. Tambahkan harga dengan tanda titik dua, mis.
+                “Keju:7000”.
+              </p>
             </SortableItem>
           ))}
         </SortableArea>
