@@ -378,14 +378,15 @@ function AppShell() {
                       : "Tersinkron"
                     : "Mode luring"}
                 </span>
-                <div className="hidden text-right sm:block">
-                  <p className="text-sm font-medium leading-tight">
+                <div className="min-w-0 max-w-[9rem] text-right sm:max-w-none">
+                  <p className="truncate text-sm font-medium leading-tight">
                     {fullName || user?.email}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {role ? roleLabel[role] : "Memuat…"}
                   </p>
                 </div>
+
                 <Button
                   variant="outline"
                   size="icon"
