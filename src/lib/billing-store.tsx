@@ -27,16 +27,13 @@ import {
   type OperatingHours,
 } from "./report-range";
 
-/** Tenggang penutupan otomatis setelah jam tutup operasional. */
-const AUTO_CLOSE_GRACE_MS = 60 * 60 * 1000;
-
-/** Waktu batas penutupan otomatis satu hari usaha. */
+/** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
   const { openHour, closeHour } = normalizeHours(hours);
   const d = businessDate(openedAt, hours);
   d.setDate(d.getDate() + (closeHour <= openHour ? 1 : 0));
   d.setHours(closeHour, 0, 0, 0);
-  return d.getTime() + AUTO_CLOSE_GRACE_MS;
+  return d.getTime();
 }
 
 export type ConsoleType = string;
@@ -2320,7 +2317,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const activeBusinessDay = (state.businessDays ?? []).find((d) => !d.closedAt) ?? null;
 
   // Jaring pengaman: bila End of Day lupa dijalankan, hari usaha ditutup
-  // otomatis sesudah jam tutup operasional (plus tenggang satu jam).
+  // otomatis tepat pada jam tutup operasional yang diatur di Setup → Store.
   useEffect(() => {
     if (!activeBusinessDay || shiftOpen) return;
     const limit = autoCloseAt(activeBusinessDay.openedAt, state.operatingHours);
