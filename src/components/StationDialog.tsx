@@ -162,6 +162,9 @@ export function StationDialog({
   const [customDuration, setCustomDuration] = useState("");
   const [menuCategory, setMenuCategory] = useState("semua");
   const [orderOpen, setOrderOpen] = useState(false);
+  const [moveTo, setMoveTo] = useState("");
+  const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
+
 
   const [payment, setPayment] = useState("");
 
