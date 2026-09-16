@@ -6,9 +6,9 @@ import { cardsOfCustomer } from "@/components/CustomerDetail";
 import { cardLabel, formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
 
 /**
- * Kolom nama pelanggan dengan saran otomatis.
- * Klik kolom: semua pelanggan muncul. Mengetik huruf: hanya pelanggan yang
- * namanya dimulai huruf itu (atau nomor HP-nya cocok) yang tampil.
+ * Kolom nama pelanggan dengan saran otomatis. Daftar hanya muncul saat kasir
+ * mengetik, berisi pelanggan terdaftar yang namanya dimulai seperti yang
+ * diketik (atau nomor HP-nya cocok). Pelanggan baru dibuat di menu Membership.
  */
 export function CustomerPicker({
   id = "customer-name",
