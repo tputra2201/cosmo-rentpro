@@ -290,10 +290,11 @@ function BackupPage() {
             <AlertDialogAction
               onClick={() => {
                 resetTransactions();
-                toast.success("Seluruh transaksi sudah dihapus");
+                toast.success("Semua transaksi sudah dihapus");
               }}
             >
-              Ya, hapus transaksi
+              Ya, reset semua transaksi
+
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
