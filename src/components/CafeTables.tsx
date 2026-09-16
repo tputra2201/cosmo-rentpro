@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
-import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
+import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,9 +106,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   };
 
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
-  const [modItem, setModItem] = useState<MenuItem | null>(null);
-  const [modNotesOnly, setModNotesOnly] = useState(false);
+  const [orderTableId, setOrderTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -118,7 +117,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
-    setCategory(null);
     setPayMethod("");
     setReceived("");
     setCardNumber("");
@@ -132,15 +130,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
-  const visibleMenu = useMemo(
-    () =>
-      category === null
-        ? []
-        : category === "semua"
-          ? menu
-          : menu.filter((m) => m.category === category),
-    [menu, category],
-  );
 
   const isCardPayment = payMethod === CARD_PAYMENT_NAME;
   const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
