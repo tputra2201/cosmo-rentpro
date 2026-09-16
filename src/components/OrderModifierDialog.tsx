@@ -26,10 +26,13 @@ export function OrderModifierDialog({
   item,
   onOpenChange,
   onConfirm,
+  notesOnly = false,
 }: {
   item: MenuItem | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: (mods: string[], priceAdd: number) => void;
+  /** Hanya tampilkan kolom Notes (sembunyikan varian/ukuran/topping/opsi). */
+  notesOnly?: boolean;
 }) {
   const [variant, setVariant] = useState<MenuOption | null>(null);
   const [size, setSize] = useState<MenuOption | null>(null);
@@ -99,10 +102,10 @@ export function OrderModifierDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {single("Varian", item?.variants ?? [], variant, setVariant)}
-          {single("Ukuran", item?.sizes ?? [], size, setSize)}
+          {!notesOnly && single("Varian", item?.variants ?? [], variant, setVariant)}
+          {!notesOnly && single("Ukuran", item?.sizes ?? [], size, setSize)}
 
-          {(item?.toppings?.length ?? 0) > 0 && (
+          {!notesOnly && (item?.toppings?.length ?? 0) > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Topping</p>
               <div className="flex flex-wrap gap-2">
@@ -128,7 +131,7 @@ export function OrderModifierDialog({
             </div>
           )}
 
-          {(item?.modifiers?.length ?? 0) > 0 && (
+          {!notesOnly && (item?.modifiers?.length ?? 0) > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Opsi lain</p>
               <div className="flex flex-wrap gap-2">
