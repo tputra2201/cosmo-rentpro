@@ -16,7 +16,14 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  GripVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -183,7 +190,7 @@ export function SetupTable<T>({
         </thead>
 
         <tbody>
-          {items.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
                 colSpan={columns.length + (onReorder ? 1 : 0) + (hasActions ? 1 : 0)}
@@ -193,11 +200,11 @@ export function SetupTable<T>({
               </td>
             </tr>
           )}
-          {items.map((item) => {
+          {rows.map((item) => {
             const id = getId(item);
             const label = getLabel(item);
             return (
-              <SetupRow key={id} id={id} label={label} draggable={Boolean(onReorder)}>
+              <SetupRow key={id} id={id} label={label} draggable={dragEnabled}>
                 {columns.map((c) => (
                   <td
                     key={c.key}
@@ -248,14 +255,14 @@ export function SetupTable<T>({
 
   return (
     <>
-      {onReorder ? (
+      {dragEnabled ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleEnd}
         >
           <SortableContext
-            items={items.map(getId)}
+            items={rows.map(getId)}
             strategy={verticalListSortingStrategy}
           >
             {body}
