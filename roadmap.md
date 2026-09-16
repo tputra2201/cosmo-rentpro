@@ -8,3 +8,4 @@
 - [x] 6. Card TV & meja kafe: nama default Umum, picker hanya pelanggan terdaftar, draft order + tombol Sent Order, hapus order tercatat di Log Book
 - [x] Pengaturan Unit TV & Kategori Menu Kafe jadi tabel + panel detail
 - [x] Ekspor laporan ke Excel (unduh lokal + Google Drive akun pemilik, folder per store)
+- [x] Menu Kafe: urutan awal Kategori lalu Nama Menu, drag tetap aktif dan menyimpan urutan manual
