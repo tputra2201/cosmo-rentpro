@@ -114,8 +114,8 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
   }, [allowed, ip, restricted]);
 
   const value = useMemo<DeviceAccess>(
-    () => ({ code, ip, restricted, allowed }),
-    [code, ip, restricted, allowed],
+    () => ({ code, ip, restricted, allowed, checked: Boolean(store), privileged }),
+    [code, ip, restricted, allowed, store, privileged],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
