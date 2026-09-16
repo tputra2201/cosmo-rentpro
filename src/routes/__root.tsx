@@ -318,10 +318,10 @@ function AppShell() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
           <Link to={session ? "/" : "/auth"} className="flex items-center gap-2.5">
-            {store?.logo_url || branding.app_icon_url.trim() ? (
+            {branding.app_icon_url.trim() || store?.logo_url ? (
               <img
-                src={store?.logo_url || branding.app_icon_url}
-                alt={storeName ? `Logo ${storeName}` : "Logo aplikasi"}
+                src={branding.app_icon_url.trim() || store?.logo_url}
+                alt={branding.app_name.trim() ? `Ikon ${branding.app_name.trim()}` : "Ikon aplikasi"}
                 className="size-9 shrink-0 rounded-lg object-contain"
               />
             ) : (
@@ -331,7 +331,7 @@ function AppShell() {
             )}
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="truncate font-display text-lg font-bold tracking-wide text-neon">
-                {storeName || branding.app_name.trim() || "BILLING RENTAL PS"}
+                {branding.app_name.trim() || storeName || "BILLING RENTAL PS"}
               </span>
 
               <span className="truncate font-mono text-[11px] tracking-wide text-muted-foreground">
