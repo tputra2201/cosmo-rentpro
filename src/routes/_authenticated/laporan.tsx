@@ -121,6 +121,9 @@ function LaporanPage() {
     return { ...base, endOverride: day.closedAt ?? now };
   }, [pickedRange, operatingHours, businessDays, now]);
 
+  const { store } = useStoreInfo(true);
+  const storeName = store?.store_name?.trim() || "RenToPlay";
+
   const allow = (key: string) => can(role, key, rolePermissions);
 
   const tabs = [
@@ -152,8 +155,9 @@ function LaporanPage() {
           )}
           <ExportExcelButton
             targetRef={reportRef}
-            title="Laporan RenToPlay"
+            title={`Laporan ${storeName}`}
             periodText={`Periode: ${rangeLabel(range)}`}
+            folderName={storeName}
           />
         </div>
       </div>
