@@ -192,6 +192,12 @@ function EntryForm({ direction }: { direction: CashDirection }) {
   const { cashCategories, paymentMethods, addCashEntry } = useBilling();
   const { requireShift } = useShiftGate();
   const options = cashCategories.filter((c) => c.direction === direction && c.active);
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((c) => `${c.name} ${c.group}`.toLowerCase().includes(q));
+  }, [options, search]);
   const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
   const [amount, setAmount] = useState("");
   const [payment, setPayment] = useState("Cash");
@@ -238,6 +244,17 @@ function EntryForm({ direction }: { direction: CashDirection }) {
         </p>
       ) : (
         <>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium" htmlFor={`kas-search-${direction}`}>
+              Cari item
+            </label>
+            <Input
+              id={`kas-search-${direction}`}
+              value={search}
+              placeholder="Ketik huruf awal nama item…"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Item</label>
@@ -246,11 +263,17 @@ function EntryForm({ direction }: { direction: CashDirection }) {
                   <SelectValue placeholder="Pilih item" />
                 </SelectTrigger>
                 <SelectContent>
-                  {options.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} · {c.group}
-                    </SelectItem>
-                  ))}
+                  {filtered.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada item yang cocok
+                    </div>
+                  ) : (
+                    filtered.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} · {c.group}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
