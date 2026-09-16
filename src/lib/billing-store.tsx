@@ -1188,6 +1188,35 @@ function migrateState(raw: unknown): State {
       }
       return list;
     })(),
+    cashGroups: (() => {
+      if (parsed.cashGroups?.length) {
+        return parsed.cashGroups.map((row, index) => ({
+          ...row,
+          name: row.name?.trim() ? row.name.trim() : "Lainnya",
+          active: row.active ?? true,
+          sort: row.sort ?? index,
+        }));
+      }
+      const source = parsed.cashCategories?.length
+        ? parsed.cashCategories
+        : defaultState.cashCategories;
+      const rows: CashGroup[] = [];
+      const seen = new Set<string>();
+      for (const item of [...defaultState.cashCategories, ...source]) {
+        const name = item.group?.trim() ? item.group.trim() : "Lainnya";
+        const key = `${item.direction}::${name.toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push({
+          id: `cash-group-${rows.length}-${item.direction}`,
+          name,
+          direction: item.direction,
+          active: true,
+          sort: rows.length,
+        });
+      }
+      return rows;
+    })(),
     cashEntries: parsed.cashEntries ?? defaultState.cashEntries,
     shifts: parsed.shifts ?? defaultState.shifts,
     businessDays: parsed.businessDays ?? defaultState.businessDays,
