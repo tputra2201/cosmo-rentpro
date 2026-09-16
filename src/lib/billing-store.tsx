@@ -624,6 +624,8 @@ type State = {
   /** Sewa tambahan (Additional Rental) di luar konsol. */
   addonRentals: AddonRental[];
   menu: MenuItem[];
+  /** Urutan menu baru menjadi manual setelah pengguna menggeser baris. */
+  menuOrderMode: "auto-category-name" | "manual";
   menuCategories: string[];
   cafeTables: CafeTable[];
   paymentMethods: PaymentMethod[];
@@ -695,6 +697,7 @@ const defaultState: State = {
     { id: "m7", name: "Snack Ringan", price: 7000, category: "Snack", printerId: "prt-kitchen" },
     { id: "m8", name: "Nasi Goreng", price: 15000, category: "Main Course", printerId: "prt-kitchen" },
   ],
+  menuOrderMode: "auto-category-name",
   menuCategories: ["Coffee", "Juice", "Minuman", "Snack", "Main Course"],
   cafeTables: [
     { id: "meja-1", name: "Meja 01", area: "Indoor", seats: 2, customerName: "", notes: "", openedAt: null, orders: [] },
@@ -2592,7 +2595,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const to = rows.findIndex((r) => r.id === overId);
           if (from < 0 || to < 0 || from === to) return prev;
           const next = moveItem(rows, from, to).map((row, index) => ({ ...row, sort: index }));
-          return { ...prev, [list]: next } as State;
+          return {
+            ...prev,
+            [list]: next,
+            ...(list === "menu" ? { menuOrderMode: "manual" as const } : {}),
+          } as State;
         }),
       reorderConsoleTypes: (activeName, overName) =>
         update((prev) => {

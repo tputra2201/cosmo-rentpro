@@ -54,6 +54,7 @@ function KafePage() {
     updateCafeTable,
     removeCafeTable,
     menu,
+    menuOrderMode,
     menuCategories,
     addMenuItem,
     updateMenuItem,
@@ -79,9 +80,8 @@ function KafePage() {
   const openTables = cafeTables.filter((t) => t.orders.length > 0 || t.openedAt);
   const grandTotal = openTables.reduce((sum, t) => sum + tableTotal(t), 0);
   const orderedMenu = useMemo(() => {
-    const hasManualOrder = menu.some((item) => Number.isFinite(item.sort));
     return [...menu].sort((a, b) => {
-      if (hasManualOrder) {
+      if (menuOrderMode === "manual") {
         const byManualOrder = (a.sort ?? Number.MAX_SAFE_INTEGER) -
           (b.sort ?? Number.MAX_SAFE_INTEGER);
         if (byManualOrder !== 0) return byManualOrder;
@@ -91,7 +91,7 @@ function KafePage() {
       });
       return byCategory || a.name.localeCompare(b.name, "id", { numeric: true });
     });
-  }, [menu]);
+  }, [menu, menuOrderMode]);
 
   return (
     <div className="space-y-8">
