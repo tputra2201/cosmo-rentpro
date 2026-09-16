@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Store, ImageUp, ShieldCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useStoreInfo } from "@/lib/store-info";
 import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
@@ -163,7 +164,7 @@ function DeviceAccessSection({
   deviceCodeSaved: string;
   allowedIpsSaved: string[];
 }) {
-  const { code, ip, allowed } = useDeviceAccess();
+  const { code, ip, allowed, privileged } = useDeviceAccess();
   const [secret, setSecret] = useState("");
   const [device, setDevice] = useState(deviceCodeSaved);
   const [ips, setIps] = useState(allowedIpsSaved.join("\n"));
@@ -176,7 +177,37 @@ function DeviceAccessSection({
     setSeeded(true);
   }
 
+  const ipList = () =>
+    ips
+      .split(/[\n,;\s]+/)
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+  /** Manager / Installer menyimpan langsung tanpa Kunci Developer. */
+  const saveAsManager = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("store_set_device_access", {
+        _device_code: device.trim(),
+        _allowed_ips: ipList(),
+      });
+      if (error) {
+        toast.error(error.message, { duration: 10000 });
+        return;
+      }
+      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
+    } catch {
+      toast.error("Tidak ada koneksi ke server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const save = async () => {
+    if (privileged) {
+      await saveAsManager();
+      return;
+    }
     if (!storeId) return;
     if (!secret.trim()) {
       toast.error("Masukkan Kunci Developer terlebih dahulu.");
@@ -222,7 +253,9 @@ function DeviceAccessSection({
           Selain perangkat dengan kode terdaftar atau alamat IP yang diizinkan,
           pengguna hanya bisa melihat — kecuali level Manager, Installer, atau
           Developer. Bila kedua kolom dibiarkan kosong, semua perangkat boleh
-          bertransaksi.
+          bertransaksi. Alamat IP bisa ditulis dengan pola, contoh
+          <span className="font-mono"> 192.168.80.*</span> berarti semua alamat yang
+          dimulai seperti itu diizinkan.
         </p>
       </div>
 
@@ -259,24 +292,26 @@ function DeviceAccessSection({
             value={ips}
             rows={4}
             onChange={(e) => setIps(e.target.value)}
-            placeholder={"103.10.20.30\n112.215.44.5"}
+            placeholder={"192.168.80.*\n103.10.20.30"}
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="device-secret">Kunci Developer</Label>
-          <Input
-            id="device-secret"
-            type="password"
-            value={secret}
-            autoComplete="off"
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="Kunci Developer"
-          />
-        </div>
+        {!privileged && (
+          <div className="grid gap-2">
+            <Label htmlFor="device-secret">Kunci Developer</Label>
+            <Input
+              id="device-secret"
+              type="password"
+              value={secret}
+              autoComplete="off"
+              onChange={(e) => setSecret(e.target.value)}
+              placeholder="Kunci Developer"
+            />
+          </div>
+        )}
       </div>
 
       <div>
-        <Button disabled={busy || !storeId} onClick={() => void save()}>
+        <Button disabled={busy || (!privileged && !storeId)} onClick={() => void save()}>
           {busy ? "Menyimpan…" : "Simpan Perangkat & IP"}
         </Button>
       </div>
@@ -398,11 +433,7 @@ const fields: {
   { key: "city", label: "Kota" },
   { key: "owner_name", label: "Nama pemilik" },
   { key: "phone", label: "Nomor HP", type: "tel" },
-  {
-    key: "app_version",
-    label: "Versi aplikasi",
-    hint: "Tampil di pojok kiri atas, contoh: v1.0",
-  },
+  { key: "app_version", label: "Versi aplikasi" },
   {
     key: "dev_contact",
     label: "Nomor kontak developer",

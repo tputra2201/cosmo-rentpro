@@ -6,9 +6,9 @@ import { cardsOfCustomer } from "@/components/CustomerDetail";
 import { cardLabel, formatRupiah, useBilling, type Customer } from "@/lib/billing-store";
 
 /**
- * Kolom nama pelanggan dengan saran otomatis.
- * Klik kolom: semua pelanggan muncul. Mengetik huruf: hanya pelanggan yang
- * namanya dimulai huruf itu (atau nomor HP-nya cocok) yang tampil.
+ * Kolom nama pelanggan dengan saran otomatis. Daftar hanya muncul saat kasir
+ * mengetik, berisi pelanggan terdaftar yang namanya dimulai seperti yang
+ * diketik (atau nomor HP-nya cocok). Pelanggan baru dibuat di menu Membership.
  */
 export function CustomerPicker({
   id = "customer-name",
@@ -28,14 +28,16 @@ export function CustomerPicker({
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const query = value.trim().toLowerCase();
+  // Daftar hanya muncul setelah kasir mengetik, dan hanya pelanggan terdaftar
+  // yang namanya dimulai seperti yang diketik (atau nomor HP-nya cocok).
   const options = useMemo(() => {
+    if (!query || query === "umum") return [];
     const sorted = [...customers].sort((a, b) => a.name.localeCompare(b.name));
-    if (!query) return sorted.slice(0, 50);
     const starts = sorted.filter((item) => item.name.toLowerCase().startsWith(query));
     const others = sorted.filter(
       (item) =>
         !item.name.toLowerCase().startsWith(query) &&
-        (item.name.toLowerCase().includes(query) || item.phone.replace(/\s/g, "").includes(query)),
+        item.phone.replace(/\s/g, "").includes(query),
     );
     return [...starts, ...others].slice(0, 50);
   }, [customers, query]);
@@ -62,7 +64,7 @@ export function CustomerPicker({
             onChange(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          
           onBlur={() => {
             blurTimer.current = setTimeout(() => setOpen(false), 120);
           }}

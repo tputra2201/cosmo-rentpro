@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
-import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
+import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +60,6 @@ import {
   type Station,
   type OrderItem,
   orderLabel,
-  type MenuItem,
 } from "@/lib/billing-store";
 
 
@@ -163,18 +162,16 @@ export function StationDialog({
   const [editCustomerId, setEditCustomerId] = useState("");
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
-  const [menuCategory, setMenuCategory] = useState<string | null>(null);
   const [orderOpen, setOrderOpen] = useState(false);
-  const [modItem, setModItem] = useState<MenuItem | null>(null);
-  const [modNotesOnly, setModNotesOnly] = useState(false);
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
+  const [addonPick, setAddonPick] = useState("");
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
 
 
   const [payment, setPayment] = useState("");
 
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState("Umum");
   const [customerPhone, setCustomerPhone] = useState("");
   const [member, setMember] = useState(false);
   const [packageId, setPackageId] = useState("");
@@ -855,24 +852,37 @@ export function StationDialog({
             {addonRentals.some((a) => a.active) && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Additional Rental</p>
-                <div className="flex flex-wrap gap-2">
-                  {addonRentals
-                    .filter((a) => a.active)
-                    .map((a) => (
-                      <Button
-                        key={a.id}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (!requireShift()) return;
-                          addSessionAddon(station.id, a.id, 1);
-                          toast.success(`${a.name} ditambahkan`);
-                        }}
-                      >
-                        <Plus className="size-4" /> {a.name} · {formatRupiah(a.price)}
-                        {a.mode === "hourly" ? "/jam" : ""}
-                      </Button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={addonPick} onValueChange={setAddonPick}>
+                    <SelectTrigger className="w-56" aria-label="Pilih additional rental">
+                      <SelectValue placeholder="Pilih additional rental…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addonRentals
+                        .filter((a) => a.active)
+                        .map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} · {formatRupiah(a.price)}
+                            {a.mode === "hourly" ? "/jam" : ""}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!addonPick}
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      const picked = addonRentals.find((a) => a.id === addonPick);
+                      if (!picked) return;
+                      addSessionAddon(station.id, picked.id, 1);
+                      setAddonPick("");
+                      toast.success(`${picked.name} ditambahkan`);
+                    }}
+                  >
+                    <Plus className="size-4" /> Tambah
+                  </Button>
                 </div>
                 {(session.addons ?? []).length > 0 && (
                   <ul className="mt-2 space-y-1">
@@ -1401,155 +1411,16 @@ export function StationDialog({
     </Dialog>
 
     {session && (
-      <Dialog
+      <OrderDraftDialog
         open={orderOpen}
-        onOpenChange={(o) => {
-          setOrderOpen(o);
-          setMenuCategory(null);
+        onOpenChange={setOrderOpen}
+        sourceName={station.name}
+        onSend={(lines) => {
+          for (const line of lines) {
+            addOrder(station.id, line.item, line.qty, line.mods, line.priceAdd);
+          }
         }}
-      >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl">Tambah Order</DialogTitle>
-            <DialogDescription>
-              {station.name} · pesanan makanan &amp; minuman
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-wrap gap-1.5">
-            {menuCategories.map((c) => (
-              <Button
-                key={c}
-                size="sm"
-                variant={menuCategory === c ? "default" : "outline"}
-                onClick={() => setMenuCategory(menuCategory === c ? null : c)}
-              >
-                {c}
-              </Button>
-            ))}
-            <Button
-              size="sm"
-              variant={menuCategory === "semua" ? "default" : "outline"}
-              onClick={() => setMenuCategory(menuCategory === "semua" ? null : "semua")}
-            >
-              Semua
-            </Button>
-          </div>
-
-          {menuCategory === null && (
-            <p className="text-sm text-muted-foreground">
-              Pilih kategori untuk menampilkan menu.
-            </p>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            {menu
-              .filter(
-                (item) =>
-                  menuCategory !== null &&
-                  (menuCategory === "semua" || item.category === menuCategory),
-              )
-              .map((item) => {
-                const hasOptions = hasMenuOptions(item);
-                return (
-                  <div key={item.id} className="space-y-1">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full justify-between"
-                      onClick={() => {
-                        if (!requireShift()) return;
-                        addOrder(station.id, item, 1);
-                        toast.success(`${item.name} ditambahkan`);
-                      }}
-                    >
-                      <span className="truncate">{item.name}</span>
-                      <Plus className="size-3.5 shrink-0" />
-                    </Button>
-                    <div className="flex flex-wrap gap-1">
-                      {hasOptions && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-[11px]"
-                          onClick={() => {
-                            if (!requireShift()) return;
-                            setModNotesOnly(false);
-                            setModItem(item);
-                          }}
-                        >
-                          Modifier
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 px-2 text-[11px]"
-                        onClick={() => {
-                          if (!requireShift()) return;
-                          setModNotesOnly(true);
-                          setModItem(item);
-                        }}
-                      >
-                        Notes
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          <OrderModifierDialog
-            item={modItem}
-            notesOnly={modNotesOnly}
-            onOpenChange={(open) => {
-              if (!open) setModItem(null);
-            }}
-            onConfirm={(mods, priceAdd) => {
-              if (!modItem || !station) return;
-              addOrder(station.id, modItem, 1, mods, priceAdd);
-              toast.success(`${modItem.name} ditambahkan`);
-              setModItem(null);
-            }}
-          />
-
-
-          {session.orders.length > 0 && (
-            <ul className="space-y-1">
-              {session.orders.map((o) => (
-                <li
-                  key={o.id}
-                  className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
-                >
-                  <span>
-                    {orderLabel(o)} × {o.qty}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {formatRupiah(o.price * o.qty)}
-                    <button
-                      type="button"
-                      onClick={() => removeOrder(station.id, o.id)}
-                      aria-label={`Hapus ${o.name}`}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="flex items-center justify-between border-t border-border pt-3">
-            <span className="text-sm text-muted-foreground">Total pesanan</span>
-            <span className="font-display text-lg font-semibold text-accent">
-              {formatRupiah(fnbTotal(session))}
-            </span>
-          </div>
-          <Button className="w-full" onClick={() => setOrderOpen(false)}>
-            Selesai
-          </Button>
-        </DialogContent>
-      </Dialog>
+      />
     )}
     </>
 

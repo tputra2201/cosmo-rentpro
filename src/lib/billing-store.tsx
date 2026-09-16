@@ -1436,7 +1436,26 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
           action: "Pindah meja kafe",
           detail: `${nameById(s.cafeTables, a[0])} → ${nameById(s.cafeTables, a[1])}`,
         },
+  // Pesanan yang dihapus kasir
+  removeOrder: (a, s) => {
+    const station = s.stations.find((row) => row.id === a[0]);
+    const order = station?.session?.orders.find((o) => o.id === a[1]);
+    return {
+      action: "Hapus order",
+      detail: `${station?.name ?? "-"} · ${order ? `${order.name} × ${order.qty}` : txt(a[1])}`,
+    };
+  },
+  removeCafeOrder: (a, s) => {
+    const table = s.cafeTables.find((row) => row.id === a[0]);
+    const order = table?.orders.find((o) => o.id === a[1]);
+    return {
+      action: "Hapus order meja kafe",
+      detail: `${table?.name ?? "-"} · ${order ? `${order.name} × ${order.qty}` : txt(a[1])}`,
+    };
+  },
+
   // Menu kafe & kategorinya
+
 
   addMenuItem: (a) => ({ action: "Tambah menu kafe", detail: `${txt(a[0])} · ${txt(a[1])}` }),
   updateMenuItem: (a, s) => ({

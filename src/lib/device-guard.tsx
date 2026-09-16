@@ -31,6 +31,18 @@ export function deviceCode(): string {
 }
 
 /**
+ * Cocokkan alamat IP dengan pola yang diizinkan.
+ * Pola boleh memakai bintang, contoh `192.168.80.*` atau `192.168.*`.
+ */
+export function ipMatches(ip: string, pattern: string) {
+  const p = pattern.trim();
+  if (!p) return false;
+  if (!p.includes("*")) return p === ip;
+  const escaped = p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`).test(ip);
+}
+
+/**
  * Penanda global: perangkat ini boleh menyimpan transaksi / pengaturan.
  * Dipakai penyimpan data (billing-store) yang berada di luar React context.
  */
@@ -95,7 +107,7 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
   const allowed = useMemo(() => {
     if (!store || !restricted || privileged) return true;
     if (registered && code && registered === code) return true;
-    if (ip) return allowedIps.includes(ip);
+    if (ip) return allowedIps.some((pattern) => ipMatches(ip, pattern));
     // Tanpa koneksi: pakai keputusan terakhir yang tersimpan di perangkat.
     if (typeof window === "undefined") return false;
     return localStorage.getItem(VERDICT_KEY) === "yes";

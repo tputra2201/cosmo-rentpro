@@ -408,6 +408,10 @@ export type Database = {
         }[]
       }
       developer_switch_store: { Args: { _store_id: string }; Returns: string }
+      store_set_device_access: {
+        Args: { _allowed_ips: string[]; _device_code: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
-import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
+import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,6 @@ import {
   type HistoryRecord,
   type OrderItem,
   orderLabel,
-  type MenuItem,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
@@ -49,7 +49,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const {
     cafeTables,
     menu,
-    menuCategories,
     paymentMethods,
     updateCafeTable,
     removeCafeTable,
@@ -105,9 +104,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   };
 
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
-  const [modItem, setModItem] = useState<MenuItem | null>(null);
-  const [modNotesOnly, setModNotesOnly] = useState(false);
+  const [orderTableId, setOrderTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -118,7 +115,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
-    setCategory(null);
     setPayMethod("");
     setReceived("");
     setCardNumber("");
@@ -132,15 +128,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
-  const visibleMenu = useMemo(
-    () =>
-      category === null
-        ? []
-        : category === "semua"
-          ? menu
-          : menu.filter((m) => m.category === category),
-    [menu, category],
-  );
 
   const isCardPayment = payMethod === CARD_PAYMENT_NAME;
   const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
@@ -196,21 +183,51 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 </Badge>
               </div>
 
-              <p className="mt-3 font-display text-2xl font-extrabold text-neon">
-                {formatRupiah(tableTotal(t))}
+              <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
+                {t.customerName?.trim() || "Umum"}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {t.orders.length} item{t.customerName ? ` · ${t.customerName}` : ""}
-              </p>
+
+              {t.orders.length > 0 && (
+                <>
+                  <ul className="mt-2 space-y-0.5 text-[11px]">
+                    {t.orders.map((o) => (
+                      <li key={o.id} className="flex items-start justify-between gap-2">
+                        <span className="min-w-0 truncate">
+                          {orderLabel(o)} × {o.qty}
+                        </span>
+                        <span className="shrink-0">{formatRupiah(o.price * o.qty)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 font-display text-2xl font-extrabold text-neon">
+                    {formatRupiah(tableTotal(t))}
+                  </p>
+                </>
+              )}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   onClick={() => {
+                    if (!requireShift()) return;
+                    if (!t.customerName?.trim()) {
+                      updateCafeTable(t.id, { customerName: "Umum" });
+                    }
+                    setOrderTableId(t.id);
+                  }}
+                >
+                  <Plus className="size-4" /> Tambah Order
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
                     setOpenId(t.id);
-                    setCategory("semua");
                     setPayMethod(activeMethods[0]?.name ?? "");
                     setReceived("");
+                    if (!t.customerName?.trim()) {
+                      updateCafeTable(t.id, { customerName: "Umum" });
+                    }
                   }}
                 >
                   <Utensils className="size-4" /> Pesanan
@@ -237,6 +254,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
         })}
       </SortableArea>
 
+      <OrderDraftDialog
+        open={Boolean(orderTableId)}
+        onOpenChange={(open) => {
+          if (!open) setOrderTableId(null);
+        }}
+        sourceName={cafeTables.find((t) => t.id === orderTableId)?.name ?? ""}
+        onSend={(lines) => {
+          if (!orderTableId) return;
+          for (const line of lines) {
+            addCafeOrder(orderTableId, line.item, line.qty, line.mods, line.priceAdd);
+          }
+        }}
+      />
+
       <Dialog open={Boolean(table)} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           {table && (
@@ -253,17 +284,15 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
               <div className="space-y-4">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cafe-customer">Nama pelanggan</Label>
-                    <Input
-                      id="cafe-customer"
-                      value={table.customerName}
-                      placeholder="Pelanggan Kafe"
-                      onChange={(e) =>
-                        updateCafeTable(table.id, { customerName: e.target.value })
-                      }
-                    />
-                  </div>
+                  <CustomerPicker
+                    id="cafe-customer"
+                    label="Nama pelanggan"
+                    value={table.customerName}
+                    onChange={(value) => updateCafeTable(table.id, { customerName: value })}
+                    onPick={(item) =>
+                      updateCafeTable(table.id, { customerName: item.name })
+                    }
+                  />
                   <div className="space-y-1.5">
                     <Label htmlFor="cafe-notes">Catatan</Label>
                     <Input
@@ -275,107 +304,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Menu</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {menuCategories.map((c) => (
-                      <Button
-                        key={c}
-                        size="sm"
-                        variant={category === c ? "default" : "outline"}
-                        onClick={() => setCategory(category === c ? null : c)}
-                      >
-                        {c}
-                      </Button>
-                    ))}
-                    <Button
-                      size="sm"
-                      variant={category === "semua" ? "default" : "outline"}
-                      onClick={() => setCategory(category === "semua" ? null : "semua")}
-                    >
-                      Semua
-                    </Button>
-                  </div>
-                  {category === null && (
-                    <p className="text-sm text-muted-foreground">
-                      Pilih kategori untuk menampilkan menu.
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2">
-                    {visibleMenu.map((item) => {
-                      const hasOptions = hasMenuOptions(item);
-                      return (
-                        <div key={item.id} className="space-y-1">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-auto w-full justify-between py-2"
-                            onClick={() => {
-                              if (!requireShift()) return;
-                              addCafeOrder(table.id, item, 1);
-                              toast.success(`${item.name} ditambahkan`);
-                            }}
-                          >
-                            <span className="flex flex-col items-start text-left">
-                              <span className="truncate">{item.name}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {formatRupiah(item.price)}
-                              </span>
-                            </span>
-                            <Plus className="size-3.5 shrink-0" />
-                          </Button>
-                          <div className="flex flex-wrap gap-1">
-                            {hasOptions && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-2 text-[11px]"
-                                onClick={() => {
-                                  if (!requireShift()) return;
-                                  setModNotesOnly(false);
-                                  setModItem(item);
-                                }}
-                              >
-                                Modifier
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-[11px]"
-                              onClick={() => {
-                                if (!requireShift()) return;
-                                setModNotesOnly(true);
-                                setModItem(item);
-                              }}
-                            >
-                              Notes
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {visibleMenu.length === 0 && category !== null && (
-                      <p className="col-span-2 text-sm text-muted-foreground">
-                        Tidak ada menu pada kategori ini.
-                      </p>
-                    )}
-                  </div>
-                  <OrderModifierDialog
-                    item={modItem}
-                    notesOnly={modNotesOnly}
-                    onOpenChange={(open) => {
-                      if (!open) setModItem(null);
-                    }}
-                    onConfirm={(mods, priceAdd) => {
-                      if (!modItem) return;
-                      addCafeOrder(table.id, modItem, 1, mods, priceAdd);
-                      toast.success(`${modItem.name} ditambahkan`);
-                      setModItem(null);
-                    }}
-                  />
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    if (!requireShift()) return;
+                    setOrderTableId(table.id);
+                  }}
+                >
+                  <Plus className="size-4" /> Tambah Order
+                </Button>
 
-                </div>
 
                 {table.orders.length > 0 && (
                   <ul className="space-y-1">

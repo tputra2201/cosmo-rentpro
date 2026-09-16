@@ -1,7 +1,8 @@
+# Roadmap
 
-## Active
-- [x] Stop cross-store TV and cafe-table synchronization.
-- [x] Restore Cosmo DT's exact 19-TV list after identifying the 10 copied TS units by shared IDs and timestamps.
-- [x] Restore Cosmo DT cafe table names from Meja 01–04 to Zero 01–04.
-- [x] Android printing without a system printer: RawBT mode for Kassen MT-300 VL (Bluetooth thermal 80mm, ESC/POS).
-- [x] Add a dedicated Android app bridge for direct Bluetooth Classic ESC/POS printing without RawBT.
+- [ ] 1. Data Store: hapus hint versi, Manager/Installer boleh ubah perangkat, wildcard IP `192.168.80.*`
+- [ ] 2. Judul Setup & Report lebih tebal + warna aksen
+- [ ] 3. Setup berbentuk tabel + panel detail (Kafe menu, Membership, Playing Card, User)
+- [ ] 4. Playing Card: tabel Data & Saldo + panel detail berisi riwayat transaksi
+- [ ] 5. Panel pembayaran TV: Additional Rental jadi dropdown
+- [ ] 6. Card TV & meja kafe: nama default Umum, picker hanya pelanggan terdaftar, draft order + tombol Sent Order, hapus order tercatat di Log Book
