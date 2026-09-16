@@ -598,6 +598,31 @@ export type HistoryRecord = {
 };
 
 
+/** Transaksi yang dibatalkan (VOID) sebelum dibayar, lengkap dengan pelakunya. */
+export type VoidRecord = {
+  id: string;
+  at: number;
+  kind: "rental" | "cafe";
+  /** Nama unit TV atau meja kafe. */
+  sourceName: string;
+  console?: ConsoleType;
+  customerName?: string;
+  customerPhone?: string;
+  minutes?: number;
+  rentalTotal: number;
+  addonTotal?: number;
+  fnbTotal: number;
+  discount?: number;
+  total: number;
+  /** Jumlah yang sudah dibayar sebelum transaksi di-void. */
+  paidBefore?: number;
+  orders?: OrderItem[];
+  reason: string;
+  actorName?: string;
+  actorRole?: string;
+};
+
+
 export type Rates = Record<string, number>;
 
 /** Pengaturan notifikasi yang tampil di layar TV pelanggan. */
@@ -642,6 +667,8 @@ type State = {
   roundingRule: RoundingRule;
   defaultBonusMin: number;
   history: HistoryRecord[];
+  /** Transaksi yang dibatalkan (VOID). */
+  voids: VoidRecord[];
   customers: Customer[];
   bookings: Booking[];
   promotions: Promotion[];
