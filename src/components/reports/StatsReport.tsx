@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
-import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
+import { businessDate, inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 type Row = { name: string; count: number; qty?: number; income: number };
 
