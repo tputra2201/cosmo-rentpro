@@ -339,10 +339,17 @@ function AppShell() {
                 {branding.app_name.trim() || storeName || "BILLING RENTAL PS"}
               </span>
 
+              {session && storeName && (
+                <span className="truncate text-xs font-semibold text-foreground">
+                  {storeName}
+                </span>
+              )}
+
               <span className="truncate font-mono text-[11px] tracking-wide text-muted-foreground">
                 {signature}
               </span>
             </span>
+
           </Link>
           {session && !isAuthPage && (
             <>
