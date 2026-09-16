@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ import {
 } from "@/lib/billing-store";
 import { tableTotal } from "@/components/CafeTables";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
-import { SortableArea, SortableItem } from "@/components/Sortable";
 import { DiscountFields } from "@/components/DiscountFields";
 import { Switch } from "@/components/ui/switch";
 import { PRINTER_ROLE_LABEL } from "@/lib/printing";

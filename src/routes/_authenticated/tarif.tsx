@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Tv } from "lucide-react";
+import { Plus, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,9 +24,15 @@ import {
   type StationAvailability,
 } from "@/lib/billing-store";
 import { DiscountFields } from "@/components/DiscountFields";
-import { SortableArea, SortableItem } from "@/components/Sortable";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
+
+const STATION_STATUS_LABEL: Record<StationAvailability, string> = {
+  available: "Tersedia",
+  booked: "Reservasi",
+  maintenance: "Maintenance",
+  offline: "Offline",
+};
 
 export const Route = createFileRoute("/_authenticated/tarif")({
   head: () => ({
