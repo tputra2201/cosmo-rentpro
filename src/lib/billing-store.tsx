@@ -1376,6 +1376,12 @@ type Ctx = State & {
     id: string,
     input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
   ) => CashShift | null;
+  /** Hari usaha yang sedang berjalan (null bila belum ada check-in). */
+  activeBusinessDay: BusinessDay | null;
+  /** Jalankan End of Day untuk menutup hari usaha yang sedang berjalan. */
+  closeBusinessDay: (input?: { note?: string }) => BusinessDay | null;
+  /** Ubah jam buka/tutup operasional store. */
+  setOperatingHours: (patch: Partial<OperatingHours>) => void;
   replaceAll: (data: unknown) => void;
 
   resetAll: () => void;
