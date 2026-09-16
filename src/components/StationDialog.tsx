@@ -1432,26 +1432,49 @@ export function StationDialog({
           <div className="grid grid-cols-2 gap-2">
             {menu
               .filter((item) => menuCategory === "semua" || item.category === menuCategory)
-              .map((item) => (
-                <Button
-                  key={item.id}
-                  size="sm"
-                  variant="secondary"
-                  className="justify-between"
-                  onClick={() => {
-                    if (!requireShift()) return;
-                    if (item.modifiers && item.modifiers.length > 0) {
-                      setModItem(item);
-                      return;
-                    }
-                    addOrder(station.id, item, 1);
-                    toast.success(`${item.name} ditambahkan`);
-                  }}
-                >
-                  <span className="truncate">{item.name}</span>
-                  <Plus className="size-3.5 shrink-0" />
-                </Button>
-              ))}
+              .map((item) => {
+                const chips = [
+                  { label: "Varian", on: (item.variants?.length ?? 0) > 0 },
+                  { label: "Ukuran", on: (item.sizes?.length ?? 0) > 0 },
+                  { label: "Topping", on: (item.toppings?.length ?? 0) > 0 },
+                  { label: "Opsi", on: (item.modifiers?.length ?? 0) > 0 },
+                ].filter((c) => c.on);
+                return (
+                  <div key={item.id} className="space-y-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full justify-between"
+                      onClick={() => {
+                        if (!requireShift()) return;
+                        addOrder(station.id, item, 1);
+                        toast.success(`${item.name} ditambahkan`);
+                      }}
+                    >
+                      <span className="truncate">{item.name}</span>
+                      <Plus className="size-3.5 shrink-0" />
+                    </Button>
+                    {chips.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {chips.map((c) => (
+                          <Button
+                            key={c.label}
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-[11px]"
+                            onClick={() => {
+                              if (!requireShift()) return;
+                              setModItem(item);
+                            }}
+                          >
+                            {c.label}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
 
           <OrderModifierDialog
@@ -1459,13 +1482,14 @@ export function StationDialog({
             onOpenChange={(open) => {
               if (!open) setModItem(null);
             }}
-            onConfirm={(mods) => {
+            onConfirm={(mods, priceAdd) => {
               if (!modItem || !station) return;
-              addOrder(station.id, modItem, 1, mods);
+              addOrder(station.id, modItem, 1, mods, priceAdd);
               toast.success(`${modItem.name} ditambahkan`);
               setModItem(null);
             }}
           />
+
 
           {session.orders.length > 0 && (
             <ul className="space-y-1">
