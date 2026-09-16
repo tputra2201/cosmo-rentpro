@@ -761,6 +761,7 @@ const defaultState: State = {
   roundingRule: "minute",
   defaultBonusMin: 0,
   history: [],
+  voids: [],
   customers: [],
   bookings: [],
   promotions: [],
@@ -1367,6 +1368,10 @@ type Ctx = State & {
   ) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
   clearCafeTable: (tableId: string) => void;
+  /** Batalkan (VOID) sesi rental yang sedang berjalan beserta pesanannya. */
+  voidSession: (stationId: string, reason: string) => VoidRecord | null;
+  /** Batalkan (VOID) seluruh pesanan satu meja kafe. */
+  voidCafeTable: (tableId: string, reason: string) => VoidRecord | null;
   payCafeTable: (
     tableId: string,
     input: {
