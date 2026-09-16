@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { VoidDialog } from "@/components/VoidDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -1355,6 +1356,16 @@ export function StationDialog({
                 onClick={() => setConfirmEnd(true)}
               >
                 <Square className="size-4" /> Akhiri Sesi
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full sm:col-span-2"
+                onClick={() => {
+                  if (!requireShift()) return;
+                  setConfirmVoid(true);
+                }}
+              >
+                <Ban className="size-4" /> VOID Transaksi
               </Button>
             </div>
             {!isSettled && (
