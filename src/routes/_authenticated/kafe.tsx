@@ -351,6 +351,21 @@ function KafePage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="sm:col-span-4">
+                <Input
+                  defaultValue={(m.modifiers ?? []).join(", ")}
+                  aria-label={`Opsi modified ${m.name}`}
+                  placeholder="Opsi modified, pisahkan dengan koma (mis. Less sugar, Iced, Pedas)"
+                  onBlur={(e) =>
+                    updateMenuItem(m.id, {
+                      modifiers: e.target.value
+                        .split(",")
+                        .map((v) => v.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+              </div>
             </SortableItem>
           ))}
         </SortableArea>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
+import { OrderModifierDialog } from "@/components/OrderModifierDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,8 @@ import {
   type DiscountType,
   type HistoryRecord,
   type OrderItem,
+  orderLabel,
+  type MenuItem,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
@@ -103,6 +106,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("semua");
+  const [modItem, setModItem] = useState<MenuItem | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -295,6 +299,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         className="h-auto justify-between py-2"
                         onClick={() => {
                           if (!requireShift()) return;
+                          if (item.modifiers && item.modifiers.length > 0) {
+                            setModItem(item);
+                            return;
+                          }
                           addCafeOrder(table.id, item, 1);
                           toast.success(`${item.name} ditambahkan`);
                         }}
@@ -314,6 +322,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       </p>
                     )}
                   </div>
+                  <OrderModifierDialog
+                    item={modItem}
+                    onOpenChange={(open) => {
+                      if (!open) setModItem(null);
+                    }}
+                    onConfirm={(mods) => {
+                      if (!modItem) return;
+                      addCafeOrder(table.id, modItem, 1, mods);
+                      toast.success(`${modItem.name} ditambahkan`);
+                      setModItem(null);
+                    }}
+                  />
                 </div>
 
                 {table.orders.length > 0 && (
@@ -324,7 +344,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                       >
                         <span>
-                          {o.name} × {o.qty}
+                          {orderLabel(o)} × {o.qty}
                         </span>
                         <span className="flex items-center gap-2">
                           {formatRupiah(o.price * o.qty)}

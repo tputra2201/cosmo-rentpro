@@ -32,7 +32,13 @@ export type OrderItem = {
   name: string;
   price: number;
   qty: number;
+  /** Opsi modifikasi yang dipilih (mis. "Less sugar", "Iced", "Pedas"). */
+  mods?: string[];
 };
+
+/** Nama pesanan lengkap dengan opsi modifikasi. */
+export const orderLabel = (o: OrderItem) =>
+  o.mods && o.mods.length > 0 ? `${o.name} (${o.mods.join(", ")})` : o.name;
 
 /** Cara hitung sewa tambahan: per jam pemakaian atau sekali sewa. */
 export type AddonMode = "hourly" | "once";
@@ -130,6 +136,8 @@ export type MenuItem = {
   printEnabled?: boolean;
   /** Printer label tujuan (Kitchen / Bar). */
   printerId?: string;
+  /** Opsi modifikasi yang bisa dipilih saat memesan (mis. Less sugar, Iced, Pedas). */
+  modifiers?: string[];
 };
 
 export type CafeTable = {
@@ -1149,7 +1157,7 @@ type Ctx = State & {
   setReceiptLayout: (patch: Partial<DocLayout>) => void;
   setInvoiceLayout: (patch: Partial<DocLayout>) => void;
   setRolePermissions: (role: string, keys: string[]) => void;
-  addOrder: (stationId: string, item: MenuItem, qty: number) => void;
+  addOrder: (stationId: string, item: MenuItem, qty: number, mods?: string[]) => void;
   removeOrder: (stationId: string, orderId: string) => void;
   setRates: (rates: Rates) => void;
   setStationConsole: (stationId: string, console: ConsoleType) => void;
@@ -1198,7 +1206,7 @@ type Ctx = State & {
   updateCafeTable: (tableId: string, patch: Partial<Omit<CafeTable, "id" | "orders">>) => void;
   removeCafeTable: (tableId: string) => boolean;
   openCafeTable: (tableId: string, customerName?: string, notes?: string) => void;
-  addCafeOrder: (tableId: string, item: MenuItem, qty: number) => void;
+  addCafeOrder: (tableId: string, item: MenuItem, qty: number, mods?: string[]) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
   clearCafeTable: (tableId: string) => void;
   payCafeTable: (
@@ -2068,7 +2076,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const addOrder = useCallback<Ctx["addOrder"]>(
-    (stationId, item, qty) =>
+    (stationId, item, qty, mods) =>
       mapStation(stationId, (s) =>
         s.session
           ? {
@@ -2083,6 +2091,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     name: item.name,
                     price: item.price,
                     qty,
+                    ...(mods && mods.length > 0 ? { mods } : {}),
                   },
                 ],
               },
@@ -2570,7 +2579,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               : t,
           ),
         })),
-      addCafeOrder: (tableId, item, qty) =>
+      addCafeOrder: (tableId, item, qty, mods) =>
         !shiftOpen
           ? undefined
           : update((prev) => ({
@@ -2582,7 +2591,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   openedAt: t.openedAt ?? Date.now(),
                   orders: [
                     ...t.orders,
-                    { id: `${item.id}-${Date.now()}`, menuId: item.id, name: item.name, price: item.price, qty },
+                    {
+                      id: `${item.id}-${Date.now()}`,
+                      menuId: item.id,
+                      name: item.name,
+                      price: item.price,
+                      qty,
+                      ...(mods && mods.length > 0 ? { mods } : {}),
+                    },
                   ],
                 }
               : t,

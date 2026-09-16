@@ -66,7 +66,7 @@ function itemRows(record: HistoryRecord) {
   }
   for (const o of record.orders ?? []) {
     rows.push(
-      `<tr><td>${escapeHtml(o.name)} × ${o.qty}</td><td class="right">${formatRupiah(
+      `<tr><td>${escapeHtml(orderName(o))} × ${o.qty}</td><td class="right">${formatRupiah(
         o.price * o.qty,
       )}</td></tr>`,
     );
@@ -187,7 +187,7 @@ export function receiptText(opts: {
       );
     }
     for (const o of record.orders ?? []) {
-      lines.push(textRow(`${o.name} x${o.qty}`, formatRupiah(o.price * o.qty), w));
+      lines.push(textRow(`${orderName(o)} x${o.qty}`, formatRupiah(o.price * o.qty), w));
     }
     lines.push(textSep(w));
   }
@@ -362,6 +362,10 @@ export function printReport(printer: PrinterConfig, title: string, innerHtml: st
   );
 }
 
+/** Nama pesanan beserta opsi modifikasinya. */
+const orderName = (o: OrderItem) =>
+  o.mods && o.mods.length > 0 ? `${o.name} (${o.mods.join(", ")})` : o.name;
+
 /** Kelompokkan order menjadi item label sesuai pengaturan cetak tiap menu. */
 export function labelItemsFor(
   orders: OrderItem[],
@@ -377,7 +381,7 @@ export function labelItemsFor(
     if (!item) continue;
     if (item.printEnabled === false) continue;
     if (item.printerId !== printerId) continue;
-    out.push({ name: o.name, qty: o.qty });
+    out.push({ name: orderName(o), qty: o.qty });
   }
   return out;
 }
