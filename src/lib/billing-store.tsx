@@ -1,4 +1,5 @@
 import {
+import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
   createContext,
   useCallback,
   useContext,
@@ -3264,6 +3265,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       const fn = (value as unknown as Record<string, unknown>)[name];
       if (typeof fn !== "function") continue;
       out[name] = (...args: unknown[]) => {
+        if (!deviceWriteAllowed()) {
+          toast.error("Perangkat tidak terdaftar", {
+            description: DEVICE_BLOCKED_MESSAGE,
+            duration: 10000,
+          });
+          return undefined;
+        }
         const before = stateRef.current;
         const result = (fn as (...a: unknown[]) => unknown)(...args);
         const info = describe(args, before, result);

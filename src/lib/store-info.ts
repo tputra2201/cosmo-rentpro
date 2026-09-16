@@ -15,12 +15,14 @@ export type StoreInfo = {
   expires_at: string | null;
   active: boolean;
   logo_url: string;
+  device_code: string;
+  allowed_ips: string[];
 };
 
 const CACHE_KEY = "billing-store-info-v1";
 
 const COLUMNS =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url, device_code, allowed_ips";
 
 function readCache(): StoreInfo | null {
   if (typeof window === "undefined") return null;

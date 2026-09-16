@@ -64,6 +64,7 @@ import { InstallAppTitle } from "@/components/InstallAppTitle";
 import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
+import { DeviceGuardProvider } from "@/lib/device-guard";
 import { useDeveloper } from "@/lib/developer";
 import { DeveloperStoreSwitcher } from "@/components/DeveloperStoreSwitcher";
 import { ThemeProvider } from "@/lib/theme";
@@ -208,6 +209,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <DeviceGuardProvider>
           <BillingProvider>
             <AppShell />
             <PresenceHeartbeat />
@@ -217,6 +219,7 @@ function RootComponent() {
             <InstallAppTitle />
             <Toaster position="top-right" richColors />
           </BillingProvider>
+          </DeviceGuardProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
