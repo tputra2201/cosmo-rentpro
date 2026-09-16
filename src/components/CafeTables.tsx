@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
+import { Ban, Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     addCafeOrder,
     removeCafeOrder,
     clearCafeTable,
+    voidCafeTable,
     moveCafeTable,
     payCafeTable,
 
@@ -105,6 +107,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [orderTableId, setOrderTableId] = useState<string | null>(null);
+  const [voidTableId, setVoidTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
