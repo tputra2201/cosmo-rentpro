@@ -24,6 +24,7 @@ export const LIST_KINDS = {
   cash_category: "cashCategories",
   cash_entry: "cashEntries",
   shift: "shifts",
+  business_day: "businessDays",
   log_entry: "logEntries",
   addon_rental: "addonRentals",
 } as const;
