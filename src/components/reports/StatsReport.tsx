@@ -81,7 +81,10 @@ export function StatsReport({ range }: { range: ReportRange }) {
       }
 
       const date = new Date(at);
-      const day = bucketOf(days, DAYS[date.getDay()] ?? "-");
+      // Tanggal dan hari memakai hari usaha: transaksi jam 00:00–02:00
+      // dihitung ke tanggal operasional sebelumnya.
+      const bDate = businessDate(at, range.hours);
+      const day = bucketOf(days, DAYS[bDate.getDay()] ?? "-");
       day.count += 1;
       day.income += total;
 
@@ -92,7 +95,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
       hour.count += 1;
       hour.income += total;
 
-      const dateRow = bucketOf(dates, dateKeyOf(date));
+      const dateRow = bucketOf(dates, dateKeyOf(bDate));
       dateRow.count += 1;
       dateRow.income += total;
     }
