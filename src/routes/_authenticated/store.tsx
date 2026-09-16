@@ -163,7 +163,7 @@ function DeviceAccessSection({
   deviceCodeSaved: string;
   allowedIpsSaved: string[];
 }) {
-  const { code, ip, allowed } = useDeviceAccess();
+  const { code, ip, allowed, privileged } = useDeviceAccess();
   const [secret, setSecret] = useState("");
   const [device, setDevice] = useState(deviceCodeSaved);
   const [ips, setIps] = useState(allowedIpsSaved.join("\n"));
@@ -176,7 +176,37 @@ function DeviceAccessSection({
     setSeeded(true);
   }
 
+  const ipList = () =>
+    ips
+      .split(/[\n,;\s]+/)
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+  /** Manager / Installer menyimpan langsung tanpa Kunci Developer. */
+  const saveAsManager = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("store_set_device_access", {
+        _device_code: device.trim(),
+        _allowed_ips: ipList(),
+      });
+      if (error) {
+        toast.error(error.message, { duration: 10000 });
+        return;
+      }
+      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
+    } catch {
+      toast.error("Tidak ada koneksi ke server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const save = async () => {
+    if (privileged) {
+      await saveAsManager();
+      return;
+    }
     if (!storeId) return;
     if (!secret.trim()) {
       toast.error("Masukkan Kunci Developer terlebih dahulu.");
