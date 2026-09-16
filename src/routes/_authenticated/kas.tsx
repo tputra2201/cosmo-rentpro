@@ -497,12 +497,22 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
                 onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
               />
             </DetailField>
-            <DetailField label="Kelompok">
-              <Input
+            <DetailField label="Kategori">
+              <Select
                 value={c.group}
-                aria-label={`Kelompok ${c.name}`}
-                onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
-              />
+                onValueChange={(v) => updateCashCategory(c.id, { group: v })}
+              >
+                <SelectTrigger aria-label={`Kategori ${c.name}`}>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.name}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </DetailField>
             <DetailField label="Perpindahan uang kas saja" hint={`Tidak dihitung sebagai ${direction === "in" ? "pendapatan" : "biaya"} di laporan.`}>
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
