@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { VoidDialog } from "@/components/VoidDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -113,6 +114,7 @@ export function StationDialog({
     removeSessionAddon,
     stations,
     moveSession,
+    voidSession,
   } = useBilling();
 
   const { requireShift } = useShiftGate();
@@ -183,6 +185,7 @@ export function StationDialog({
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
   const [confirmPay, setConfirmPay] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmVoid, setConfirmVoid] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
 
   const matchedCustomer =
@@ -450,6 +453,20 @@ export function StationDialog({
   return (
     <>
     <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+    <VoidDialog
+      open={confirmVoid}
+      onOpenChange={setConfirmVoid}
+      sourceName={station?.name ?? ""}
+      onConfirm={(reason) => {
+        if (!station) return;
+        const done = voidSession(station.id, reason);
+        setConfirmVoid(false);
+        if (done) {
+          toast.success(`Transaksi ${done.sourceName} di-VOID`);
+          onOpenChange(false);
+        }
+      }}
+    />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
@@ -1355,6 +1372,16 @@ export function StationDialog({
                 onClick={() => setConfirmEnd(true)}
               >
                 <Square className="size-4" /> Akhiri Sesi
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full sm:col-span-2"
+                onClick={() => {
+                  if (!requireShift()) return;
+                  setConfirmVoid(true);
+                }}
+              >
+                <Ban className="size-4" /> VOID Transaksi
               </Button>
             </div>
             {!isSettled && (

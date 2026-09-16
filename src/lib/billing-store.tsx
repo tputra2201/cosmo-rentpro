@@ -598,6 +598,31 @@ export type HistoryRecord = {
 };
 
 
+/** Transaksi yang dibatalkan (VOID) sebelum dibayar, lengkap dengan pelakunya. */
+export type VoidRecord = {
+  id: string;
+  at: number;
+  kind: "rental" | "cafe";
+  /** Nama unit TV atau meja kafe. */
+  sourceName: string;
+  console?: ConsoleType;
+  customerName?: string;
+  customerPhone?: string;
+  minutes?: number;
+  rentalTotal: number;
+  addonTotal?: number;
+  fnbTotal: number;
+  discount?: number;
+  total: number;
+  /** Jumlah yang sudah dibayar sebelum transaksi di-void. */
+  paidBefore?: number;
+  orders?: OrderItem[];
+  reason: string;
+  actorName?: string;
+  actorRole?: string;
+};
+
+
 export type Rates = Record<string, number>;
 
 /** Pengaturan notifikasi yang tampil di layar TV pelanggan. */
@@ -642,6 +667,8 @@ type State = {
   roundingRule: RoundingRule;
   defaultBonusMin: number;
   history: HistoryRecord[];
+  /** Transaksi yang dibatalkan (VOID). */
+  voids: VoidRecord[];
   customers: Customer[];
   bookings: Booking[];
   promotions: Promotion[];
@@ -734,6 +761,7 @@ const defaultState: State = {
   roundingRule: "minute",
   defaultBonusMin: 0,
   history: [],
+  voids: [],
   customers: [],
   bookings: [],
   promotions: [],
@@ -1340,6 +1368,10 @@ type Ctx = State & {
   ) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
   clearCafeTable: (tableId: string) => void;
+  /** Batalkan (VOID) sesi rental yang sedang berjalan beserta pesanannya. */
+  voidSession: (stationId: string, reason: string) => VoidRecord | null;
+  /** Batalkan (VOID) seluruh pesanan satu meja kafe. */
+  voidCafeTable: (tableId: string, reason: string) => VoidRecord | null;
   payCafeTable: (
     tableId: string,
     input: {
@@ -2825,6 +2857,95 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
           ),
         })),
+      voidSession: (stationId, reason) => {
+        let record: VoidRecord | null = null;
+        setState((prev) => {
+          const station = prev.stations.find((s) => s.id === stationId);
+          const session = station?.session;
+          if (!station || !session) return prev;
+          const at = Date.now();
+          const bill = sessionBill(session, at, station.console, prev, {
+            member: Boolean(session.member),
+            card: false,
+          });
+          const made: VoidRecord = {
+            id: `void-${at}-${Math.random().toString(36).slice(2, 7)}`,
+            at,
+            kind: "rental",
+            sourceName: station.name,
+            console: station.console,
+            customerName: session.customerName || "Umum",
+            customerPhone: session.customerPhone ?? "",
+            minutes: Math.ceil(elapsedSeconds(session, at) / 60),
+            rentalTotal: bill.rental,
+            ...(bill.addon ? { addonTotal: bill.addon } : {}),
+            fnbTotal: bill.fnb,
+            discount: bill.discount,
+            total: bill.total,
+            paidBefore: paidTotal(session),
+            orders: session.orders,
+            reason: reason.trim(),
+            actorName: actorRef.current.name,
+            actorRole: actorRef.current.role,
+          };
+          record = made;
+          const historyId = session.historyId;
+          return withLog(
+            {
+              ...prev,
+              voids: [made, ...(prev.voids ?? [])],
+              history: historyId
+                ? prev.history.filter((h) => !(h.id === historyId && h.ongoing))
+                : prev.history,
+              stations: prev.stations.map((s) =>
+                s.id === stationId ? { ...s, session: null } : s,
+              ),
+            },
+            "VOID transaksi rental",
+            `${station.name} · ${made.customerName} · ${formatRupiah(made.total)} · alasan: ${made.reason || "-"}`,
+          );
+        });
+        return record;
+      },
+      voidCafeTable: (tableId, reason) => {
+        let record: VoidRecord | null = null;
+        setState((prev) => {
+          const table = prev.cafeTables.find((t) => t.id === tableId);
+          if (!table || table.orders.length === 0) return prev;
+          const at = Date.now();
+          const bill = cafeBill(table.orders, at, prev, { member: false, card: false });
+          const made: VoidRecord = {
+            id: `void-${at}-${Math.random().toString(36).slice(2, 7)}`,
+            at,
+            kind: "cafe",
+            sourceName: table.name,
+            customerName: table.customerName || "Umum",
+            rentalTotal: 0,
+            fnbTotal: bill.fnb,
+            discount: bill.discount,
+            total: bill.total,
+            orders: table.orders,
+            reason: reason.trim(),
+            actorName: actorRef.current.name,
+            actorRole: actorRef.current.role,
+          };
+          record = made;
+          return withLog(
+            {
+              ...prev,
+              voids: [made, ...(prev.voids ?? [])],
+              cafeTables: prev.cafeTables.map((t) =>
+                t.id === tableId
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  : t,
+              ),
+            },
+            "VOID pesanan meja kafe",
+            `${table.name} · ${made.customerName} · ${formatRupiah(made.total)} · alasan: ${made.reason || "-"}`,
+          );
+        });
+        return record;
+      },
       payCafeTable: (tableId, input) => {
         if (!shiftOpen) return null;
         let record: HistoryRecord | null = null;

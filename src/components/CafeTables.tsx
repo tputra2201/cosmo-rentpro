@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
+import { Ban, Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
+import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     addCafeOrder,
     removeCafeOrder,
     clearCafeTable,
+    voidCafeTable,
     moveCafeTable,
     payCafeTable,
 
@@ -105,6 +107,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [orderTableId, setOrderTableId] = useState<string | null>(null);
+  const [voidTableId, setVoidTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -232,6 +235,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 >
                   <Utensils className="size-4" /> Pesanan
                 </Button>
+                {t.orders.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      setVoidTableId(t.id);
+                    }}
+                  >
+                    <Ban className="size-4" /> VOID
+                  </Button>
+                )}
                 {allowDelete && (
                   <Button
                     size="icon"
@@ -267,6 +282,23 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
           }
         }}
       />
+
+      <VoidDialog
+        open={Boolean(voidTableId)}
+        onOpenChange={(open) => {
+          if (!open) setVoidTableId(null);
+        }}
+        sourceName={cafeTables.find((t) => t.id === voidTableId)?.name ?? ""}
+        onConfirm={(reason) => {
+          if (!voidTableId) return;
+          const done = voidCafeTable(voidTableId, reason);
+          setVoidTableId(null);
+          setOpenId(null);
+          if (done) toast.success(`Pesanan ${done.sourceName} di-VOID`);
+        }}
+      />
+
+
 
       <Dialog open={Boolean(table)} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

@@ -9,3 +9,4 @@
 - [x] Pengaturan Unit TV & Kategori Menu Kafe jadi tabel + panel detail
 - [x] Ekspor laporan ke Excel (unduh lokal + Google Drive akun pemilik, folder per store)
 - [x] Menu Kafe: urutan awal Kategori lalu Nama Menu, drag tetap aktif dan menyimpan urutan manual
+- [x] Tombol VOID di card TV & meja kafe + Laporan VOID (waktu, sumber, nilai, alasan, pelaku)
