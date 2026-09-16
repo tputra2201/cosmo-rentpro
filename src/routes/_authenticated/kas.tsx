@@ -551,21 +551,21 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor={`cat-group-${direction}`}>
-            Kelompok
-          </label>
-          <Input
-            id={`cat-group-${direction}`}
-            value={group}
-            placeholder={groups[0] ?? "Operasional"}
-            onChange={(e) => setGroup(e.target.value)}
-            list={`cat-groups-${direction}`}
-          />
-          <datalist id={`cat-groups-${direction}`}>
-            {groups.map((g) => (
-              <option key={g} value={g} />
-            ))}
-          </datalist>
+          <label className="text-sm font-medium">Kategori</label>
+          <Select value={group} onValueChange={setGroup} disabled={groups.length === 0}>
+            <SelectTrigger aria-label={`Kategori item ${direction}`}>
+              <SelectValue
+                placeholder={groups.length === 0 ? "Buat kategori dulu" : "Pilih kategori"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.name}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={add}>
           <Plus className="size-4" /> Tambah
