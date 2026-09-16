@@ -1260,6 +1260,7 @@ type Ctx = State & {
       | "addonRentals",
     activeId: string,
     overId: string,
+    orderedIds?: string[],
   ) => void;
   addAddonRental: (name: string, price: number, mode: AddonMode) => boolean;
   updateAddonRental: (id: string, patch: Partial<Omit<AddonRental, "id">>) => void;
@@ -2576,9 +2577,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ],
           };
         }),
-      reorderList: (list, activeId, overId) =>
+      reorderList: (list, activeId, overId, orderedIds) =>
         update((prev) => {
-          const rows = prev[list] as { id: string; sort?: number }[];
+          const storedRows = prev[list] as { id: string; sort?: number }[];
+          const byId = new Map(storedRows.map((row) => [row.id, row]));
+          const visibleRows = orderedIds
+            ?.map((id) => byId.get(id))
+            .filter((row): row is { id: string; sort?: number } => Boolean(row));
+          const visibleIds = new Set(visibleRows?.map((row) => row.id) ?? []);
+          const rows = visibleRows
+            ? [...visibleRows, ...storedRows.filter((row) => !visibleIds.has(row.id))]
+            : storedRows;
           const from = rows.findIndex((r) => r.id === activeId);
           const to = rows.findIndex((r) => r.id === overId);
           if (from < 0 || to < 0 || from === to) return prev;

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,20 @@ function KafePage() {
 
   const openTables = cafeTables.filter((t) => t.orders.length > 0 || t.openedAt);
   const grandTotal = openTables.reduce((sum, t) => sum + tableTotal(t), 0);
+  const orderedMenu = useMemo(() => {
+    const hasManualOrder = menu.some((item) => Number.isFinite(item.sort));
+    return [...menu].sort((a, b) => {
+      if (hasManualOrder) {
+        const byManualOrder = (a.sort ?? Number.MAX_SAFE_INTEGER) -
+          (b.sort ?? Number.MAX_SAFE_INTEGER);
+        if (byManualOrder !== 0) return byManualOrder;
+      }
+      const byCategory = (a.category || "").localeCompare(b.category || "", "id", {
+        numeric: true,
+      });
+      return byCategory || a.name.localeCompare(b.name, "id", { numeric: true });
+    });
+  }, [menu]);
 
   return (
     <div className="space-y-8">
@@ -293,16 +307,15 @@ function KafePage() {
         />
 
         <SetupTable<MenuItem>
-          items={menu}
+          items={orderedMenu}
           getId={(m) => m.id}
           getLabel={(m) => m.name}
           detailWide
-          onReorder={(a, b) => reorderList("menu", a, b)}
+          onReorder={(a, b, orderedIds) => reorderList("menu", a, b, orderedIds)}
           columns={[
             {
               key: "name",
               header: "Nama Menu",
-              sortValue: (m) => m.name.toLowerCase(),
               render: (m) => (
                 <span className="font-bold text-foreground">{m.name}</span>
               ),
@@ -311,20 +324,17 @@ function KafePage() {
               key: "category",
               header: "Kategori",
               hideOnMobile: true,
-              sortValue: (m) => (m.category || "").toLowerCase(),
               render: (m) => m.category || "—",
             },
             {
               key: "price",
               header: "Harga",
-              sortValue: (m) => m.price,
               render: (m) => formatRupiah(m.price),
             },
             {
               key: "label",
               header: "Label",
               hideOnMobile: true,
-              sortValue: (m) => (m.printEnabled !== false ? 0 : 1),
               render: (m) =>
                 m.printEnabled !== false ? (
                   <span className="text-accent">Cetak</span>

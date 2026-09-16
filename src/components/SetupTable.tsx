@@ -94,7 +94,7 @@ export function SetupTable<T>({
   columns: SetupColumn<T>[];
   getId: (item: T) => string;
   getLabel: (item: T) => string;
-  onReorder?: ((activeId: string, overId: string) => void) | undefined;
+  onReorder?: ((activeId: string, overId: string, orderedIds: string[]) => void) | undefined;
   onRemove?: ((item: T) => void) | undefined;
   removeDisabled?: ((item: T) => boolean) | undefined;
   detailTitle?: ((item: T) => string) | undefined;
@@ -142,7 +142,7 @@ export function SetupTable<T>({
   const handleEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !onReorder) return;
-    onReorder(String(active.id), String(over.id));
+    onReorder(String(active.id), String(over.id), rows.map(getId));
   };
 
   const hasActions = Boolean(renderDetail || onRemove);
