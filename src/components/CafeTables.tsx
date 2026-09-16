@@ -350,9 +350,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         </div>
                       );
                     })}
-                    {visibleMenu.length === 0 && (
+                    {visibleMenu.length === 0 && category !== null && (
                       <p className="col-span-2 text-sm text-muted-foreground">
-                        Belum ada menu pada kategori ini.
+                        Tidak ada menu pada kategori ini.
                       </p>
                     )}
                   </div>
