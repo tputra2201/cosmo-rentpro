@@ -647,6 +647,10 @@ type State = {
   cashCategories: CashCategory[];
   cashEntries: CashEntry[];
   shifts: CashShift[];
+  /** Riwayat hari usaha (End of Day). */
+  businessDays: BusinessDay[];
+  /** Jam buka dan tutup operasional store, dipakai untuk batas hari usaha. */
+  operatingHours: OperatingHours;
   /** Log book aktivitas non-transaksi. */
   logEntries: LogEntry[];
   tvNotice: TvNotice;
