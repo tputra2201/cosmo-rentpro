@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatRupiah,
   optionLabel,
@@ -34,12 +35,14 @@ export function OrderModifierDialog({
   const [size, setSize] = useState<MenuOption | null>(null);
   const [toppings, setToppings] = useState<MenuOption[]>([]);
   const [mods, setMods] = useState<string[]>([]);
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     setVariant(null);
     setSize(null);
     setToppings([]);
     setMods([]);
+    setNote("");
   }, [item?.id]);
 
   const priceAdd = useMemo(
