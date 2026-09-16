@@ -1136,6 +1136,11 @@ type Ctx = State & {
   ) => void;
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
+  /** Pindahkan sesi (beserta pesanan & pembayaran) ke unit TV lain yang kosong. */
+  moveSession: (fromStationId: string, toStationId: string) => boolean;
+  /** Pindahkan isi meja kafe (pesanan & pelanggan) ke meja lain yang kosong. */
+  moveCafeTable: (fromTableId: string, toTableId: string) => boolean;
+
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
   addPrinter: (init?: Partial<Omit<PrinterConfig, "id">>) => void;
@@ -1324,7 +1329,22 @@ const nameById = (
  * untuk kolom angka/teks yang berubah tiap ketikan agar log tidak membanjir.
  */
 const LOG_DESCRIBERS: Record<string, LogDescriber> = {
+  moveSession: (a, s, r) =>
+    r === false
+      ? null
+      : {
+          action: "Pindah unit TV",
+          detail: `${nameById(s.stations, a[0])} → ${nameById(s.stations, a[1])}`,
+        },
+  moveCafeTable: (a, s, r) =>
+    r === false
+      ? null
+      : {
+          action: "Pindah meja kafe",
+          detail: `${nameById(s.cafeTables, a[0])} → ${nameById(s.cafeTables, a[1])}`,
+        },
   // Menu kafe & kategorinya
+
   addMenuItem: (a) => ({ action: "Tambah menu kafe", detail: `${txt(a[0])} · ${txt(a[1])}` }),
   updateMenuItem: (a, s) => ({
     action: "Ubah menu kafe",
@@ -2749,6 +2769,55 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             session: { ...rest, pausedMs: (s.session.pausedMs ?? 0) + extra },
           };
         }),
+      moveSession: (fromStationId, toStationId) => {
+        if (fromStationId === toStationId) return false;
+        let moved = false;
+        update((prev) => {
+          const from = prev.stations.find((s) => s.id === fromStationId);
+          const to = prev.stations.find((s) => s.id === toStationId);
+          if (!from?.session || !to || to.session) return prev;
+          moved = true;
+          return {
+            ...prev,
+            stations: prev.stations.map((s) => {
+              if (s.id === fromStationId) return { ...s, session: null };
+              if (s.id === toStationId) return { ...s, session: from.session };
+              return s;
+            }),
+          };
+        });
+        return moved;
+      },
+      moveCafeTable: (fromTableId, toTableId) => {
+        if (fromTableId === toTableId) return false;
+        let moved = false;
+        update((prev) => {
+          const from = prev.cafeTables.find((t) => t.id === fromTableId);
+          const to = prev.cafeTables.find((t) => t.id === toTableId);
+          if (!from || !to) return prev;
+          if (!from.openedAt && from.orders.length === 0) return prev;
+          if (to.openedAt || to.orders.length > 0) return prev;
+          moved = true;
+          return {
+            ...prev,
+            cafeTables: prev.cafeTables.map((t) => {
+              if (t.id === fromTableId)
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+              if (t.id === toTableId)
+                return {
+                  ...t,
+                  orders: from.orders,
+                  openedAt: from.openedAt,
+                  customerName: from.customerName,
+                  notes: from.notes,
+                };
+              return t;
+            }),
+          };
+        });
+        return moved;
+      },
+
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
         update((prev) => ({ ...prev, customers: [customer, ...prev.customers] }));
