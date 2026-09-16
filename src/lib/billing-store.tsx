@@ -541,6 +541,21 @@ export type CashShift = {
   closedById?: string;
 };
 
+/**
+ * Hari usaha (siklus akuntansi harian): terbuka saat kasir pertama check-in,
+ * ditutup lewat proses End of Day setelah shift terakhir selesai closing.
+ */
+export type BusinessDay = {
+  id: string;
+  openedAt: number;
+  closedAt?: number;
+  closedByName?: string;
+  closedById?: string;
+  /** True bila ditutup otomatis oleh sistem karena End of Day tidak dijalankan. */
+  autoClosed?: boolean;
+  note?: string;
+};
+
 
 export type HistoryRecord = {
   id: string;
