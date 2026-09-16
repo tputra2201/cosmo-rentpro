@@ -1137,7 +1137,7 @@ type Ctx = State & {
   pauseSession: (stationId: string) => void;
   resumeSession: (stationId: string) => void;
   /** Pindahkan sesi (beserta pesanan & pembayaran) ke unit TV lain yang kosong. */
-  moveSession: (fromStationId: string, toStationId: string) => boolean;
+  moveSession: (fromStationId: string, toStationId: string, newConsole?: string) => boolean;
   /** Pindahkan isi meja kafe (pesanan & pelanggan) ke meja lain yang kosong. */
   moveCafeTable: (fromTableId: string, toTableId: string) => boolean;
 
@@ -1334,7 +1334,7 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
       ? null
       : {
           action: "Pindah unit TV",
-          detail: `${nameById(s.stations, a[0])} → ${nameById(s.stations, a[1])}`,
+          detail: `${nameById(s.stations, a[0])} → ${nameById(s.stations, a[1])}${a[2] ? ` · konsol diganti ${txt(a[2])}` : ""}`,
         },
   moveCafeTable: (a, s, r) =>
     r === false
@@ -2769,19 +2769,24 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             session: { ...rest, pausedMs: (s.session.pausedMs ?? 0) + extra },
           };
         }),
-      moveSession: (fromStationId, toStationId) => {
+      moveSession: (fromStationId, toStationId, newConsole) => {
         if (fromStationId === toStationId) return false;
         let moved = false;
         update((prev) => {
           const from = prev.stations.find((s) => s.id === fromStationId);
           const to = prev.stations.find((s) => s.id === toStationId);
           if (!from?.session || !to || to.session) return prev;
+          const nextRate = newConsole ? prev.rates[newConsole] : undefined;
+          const session =
+            newConsole && typeof nextRate === "number"
+              ? { ...from.session, console: newConsole, rate: nextRate }
+              : from.session;
           moved = true;
           return {
             ...prev,
             stations: prev.stations.map((s) => {
               if (s.id === fromStationId) return { ...s, session: null };
-              if (s.id === toStationId) return { ...s, session: from.session };
+              if (s.id === toStationId) return { ...s, session };
               return s;
             }),
           };
