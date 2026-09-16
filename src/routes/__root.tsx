@@ -65,6 +65,7 @@ import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
 import { DeviceGuardProvider } from "@/lib/device-guard";
+import { DeviceGate } from "@/components/DeviceGate";
 import { useDeveloper } from "@/lib/developer";
 import { DeveloperStoreSwitcher } from "@/components/DeveloperStoreSwitcher";
 import { ThemeProvider } from "@/lib/theme";
