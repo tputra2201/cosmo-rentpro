@@ -105,7 +105,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   };
 
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>("semua");
+  const [category, setCategory] = useState<string | null>(null);
   const [modItem, setModItem] = useState<MenuItem | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
@@ -117,7 +117,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
-    setCategory("semua");
+    setCategory(null);
     setPayMethod("");
     setReceived("");
     setCardNumber("");
@@ -132,7 +132,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
   const visibleMenu = useMemo(
-    () => (category === "semua" ? menu : menu.filter((m) => m.category === category)),
+    () =>
+      category === null
+        ? []
+        : category === "semua"
+          ? menu
+          : menu.filter((m) => m.category === category),
     [menu, category],
   );
 
@@ -277,7 +282,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         key={c}
                         size="sm"
                         variant={category === c ? "default" : "outline"}
-                        onClick={() => setCategory(c)}
+                        onClick={() => setCategory(category === c ? null : c)}
                       >
                         {c}
                       </Button>
@@ -285,11 +290,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Button
                       size="sm"
                       variant={category === "semua" ? "default" : "outline"}
-                      onClick={() => setCategory("semua")}
+                      onClick={() => setCategory(category === "semua" ? null : "semua")}
                     >
                       Semua
                     </Button>
                   </div>
+                  {category === null && (
+                    <p className="text-sm text-muted-foreground">
+                      Pilih kategori untuk menampilkan menu.
+                    </p>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     {visibleMenu.map((item) => {
                       const chips = [
@@ -340,9 +350,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         </div>
                       );
                     })}
-                    {visibleMenu.length === 0 && (
+                    {visibleMenu.length === 0 && category !== null && (
                       <p className="col-span-2 text-sm text-muted-foreground">
-                        Belum ada menu pada kategori ini.
+                        Tidak ada menu pada kategori ini.
                       </p>
                     )}
                   </div>
