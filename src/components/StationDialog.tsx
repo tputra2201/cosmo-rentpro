@@ -1421,7 +1421,7 @@ export function StationDialog({
                 key={c}
                 size="sm"
                 variant={menuCategory === c ? "default" : "outline"}
-                onClick={() => setMenuCategory(c)}
+                onClick={() => setMenuCategory(menuCategory === c ? null : c)}
               >
                 {c}
               </Button>
@@ -1429,15 +1429,24 @@ export function StationDialog({
             <Button
               size="sm"
               variant={menuCategory === "semua" ? "default" : "outline"}
-              onClick={() => setMenuCategory("semua")}
+              onClick={() => setMenuCategory(menuCategory === "semua" ? null : "semua")}
             >
               Semua
             </Button>
           </div>
 
+          {menuCategory === null && (
+            <p className="text-sm text-muted-foreground">
+              Pilih kategori untuk menampilkan menu.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-2">
             {menu
-              .filter((item) => menuCategory === "semua" || item.category === menuCategory)
+              .filter(
+                (item) =>
+                  menuCategory !== null &&
+                  (menuCategory === "semua" || item.category === menuCategory),
+              )
               .map((item) => {
                 const chips = [
                   { label: "Varian", on: (item.variants?.length ?? 0) > 0 },
