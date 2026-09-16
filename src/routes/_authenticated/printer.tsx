@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Printer as PrinterIcon, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, Printer as PrinterIcon, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { useBilling } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { useStoreInfo } from "@/lib/store-info";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
 import {
   PAPER_LABEL,
@@ -138,35 +139,81 @@ function PrinterPage() {
       </section>
 
       <section className="surface-panel space-y-4 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xl font-semibold">Daftar Printer</h2>
-            <p className="text-sm text-muted-foreground">
-              Kertas 40 mm dan 80 mm untuk printer thermal, A4 untuk printer laporan.
-            </p>
-          </div>
-          {canManage && (
-            <Button onClick={() => addPrinter()}>
-              <Plus className="size-4" /> Tambah printer
-            </Button>
-          )}
-        </div>
+        <SetupHeading
+          title="Daftar Printer"
+          description="Kertas 40 mm dan 80 mm untuk printer thermal, A4 untuk printer laporan."
+          right={
+            canManage && (
+              <Button onClick={() => addPrinter()}>
+                <Plus className="size-4" /> Tambah printer
+              </Button>
+            )
+          }
+        />
 
-        <div className="space-y-3">
-          {printers.map((p) => (
-            <div key={p.id} className="rounded-lg bg-secondary/60 p-3">
-              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr]">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`name-${p.id}`}>Nama printer</Label>
-                  <Input
-                    id={`name-${p.id}`}
-                    value={p.name}
-                    disabled={!canManage}
-                    onChange={(e) => updatePrinter(p.id, { name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Jenis dokumen</Label>
+        <SetupTable<PrinterConfig>
+          items={printers}
+          getId={(p) => p.id}
+          getLabel={(p) => p.name}
+          detailWide
+          columns={[
+            {
+              key: "name",
+              header: "Nama Printer",
+              render: (p) => <span className="font-bold text-foreground">{p.name}</span>,
+            },
+            {
+              key: "role",
+              header: "Jenis Dokumen",
+              render: (p) => PRINTER_ROLE_LABEL[p.role],
+            },
+            {
+              key: "paper",
+              header: "Kertas",
+              hideOnMobile: true,
+              render: (p) => PAPER_LABEL[p.paper],
+            },
+            {
+              key: "active",
+              header: "Status",
+              hideOnMobile: true,
+              render: (p) =>
+                p.active ? (
+                  <span className="font-semibold text-accent">Aktif</span>
+                ) : (
+                  <span className="text-muted-foreground">Nonaktif</span>
+                ),
+            },
+            {
+              key: "test",
+              header: "Uji",
+              render: (p) => (
+                <Button size="sm" variant="outline" onClick={() => testPrint(p)}>
+                  <PrinterIcon className="size-4" /> Uji cetak
+                </Button>
+              ),
+            },
+          ]}
+          onRemove={(p) => {
+            if (!canManage) return;
+            removePrinter(p.id);
+            toast.success(`${p.name} dihapus`);
+          }}
+          removeDisabled={() => !canManage}
+          detailTitle={(p) => p.name}
+          detailDescription={() => "Semua pengaturan printer ini."}
+          emptyText="Belum ada printer."
+          renderDetail={(p) => (
+            <>
+              <DetailField label="Nama printer">
+                <Input
+                  value={p.name}
+                  disabled={!canManage}
+                  onChange={(e) => updatePrinter(p.id, { name: e.target.value })}
+                />
+              </DetailField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField label="Jenis dokumen">
                   <Select
                     value={p.role}
                     disabled={!canManage}
@@ -183,9 +230,8 @@ function PrinterPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Ukuran kertas</Label>
+                </DetailField>
+                <DetailField label="Ukuran kertas">
                   <Select
                     value={p.paper}
                     disabled={!canManage}
@@ -202,68 +248,66 @@ function PrinterPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label>Cara mencetak</Label>
+                </DetailField>
+              </div>
+
+              <DetailField
+                label="Cara mencetak"
+                hint="Gunakan Bluetooth langsung di aplikasi Android, atau dialog cetak di komputer."
+              >
+                <Select
+                  value={p.mode ?? "system"}
+                  disabled={!canManage}
+                  onValueChange={(value) => updatePrinter(p.id, { mode: value as PrintMode })}
+                >
+                  <SelectTrigger aria-label={`Cara mencetak ${p.name}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRINT_MODES.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {PRINT_MODE_LABEL[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </DetailField>
+
+              {p.mode === "android" && (
+                <DetailField label="Printer Bluetooth">
+                  <div className="flex items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Muat ulang printer Bluetooth"
+                      onClick={() => setPairedPrinters(pairedAndroidPrinters())}
+                    >
+                      <RefreshCw className="size-4" />
+                    </Button>
+                  </div>
                   <Select
-                    value={p.mode ?? "system"}
-                    disabled={!canManage}
-                    onValueChange={(value) => updatePrinter(p.id, { mode: value as PrintMode })}
+                    value={p.bluetoothAddress ?? ""}
+                    disabled={!canManage || !androidApp}
+                    onValueChange={(value) => updatePrinter(p.id, { bluetoothAddress: value })}
                   >
-                    <SelectTrigger aria-label={`Cara mencetak ${p.name}`}>
-                      <SelectValue />
+                    <SelectTrigger aria-label={`Printer Bluetooth ${p.name}`}>
+                      <SelectValue placeholder="Pilih printer yang dipasangkan" />
                     </SelectTrigger>
                     <SelectContent>
-                      {PRINT_MODES.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {PRINT_MODE_LABEL[m]}
+                      {pairedPrinters.map((device) => (
+                        <SelectItem key={device.address} value={device.address}>
+                          {device.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Gunakan Bluetooth langsung di aplikasi Android, atau dialog cetak di komputer.
-                  </p>
-                </div>
-                {p.mode === "android" && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <Label>Printer Bluetooth</Label>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Muat ulang printer Bluetooth"
-                        onClick={() => setPairedPrinters(pairedAndroidPrinters())}
-                      >
-                        <RefreshCw className="size-4" />
-                      </Button>
-                    </div>
-                    <Select
-                      value={p.bluetoothAddress ?? ""}
-                      disabled={!canManage || !androidApp}
-                      onValueChange={(value) => updatePrinter(p.id, { bluetoothAddress: value })}
-                    >
-                      <SelectTrigger aria-label={`Printer Bluetooth ${p.name}`}>
-                        <SelectValue placeholder="Pilih printer yang dipasangkan" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pairedPrinters.map((device) => (
-                          <SelectItem key={device.address} value={device.address}>
-                            {device.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+                </DetailField>
+              )}
 
-              <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`font-${p.id}`}>Ukuran huruf (pt)</Label>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <DetailField label="Ukuran huruf (pt)">
                   <Input
-                    id={`font-${p.id}`}
                     type="number"
                     min={6}
                     max={20}
@@ -273,11 +317,9 @@ function PrinterPage() {
                       updatePrinter(p.id, { fontSizePt: Number(e.target.value) || 9 })
                     }
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor={`margin-${p.id}`}>Margin (mm)</Label>
+                </DetailField>
+                <DetailField label="Margin (mm)">
                   <Input
-                    id={`margin-${p.id}`}
                     type="number"
                     min={0}
                     max={25}
@@ -285,11 +327,9 @@ function PrinterPage() {
                     disabled={!canManage}
                     onChange={(e) => updatePrinter(p.id, { marginMm: Number(e.target.value) || 0 })}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor={`copies-${p.id}`}>Salinan</Label>
+                </DetailField>
+                <DetailField label="Salinan">
                   <Input
-                    id={`copies-${p.id}`}
                     type="number"
                     min={1}
                     max={5}
@@ -297,53 +337,36 @@ function PrinterPage() {
                     disabled={!canManage}
                     onChange={(e) => updatePrinter(p.id, { copies: Number(e.target.value) || 1 })}
                   />
-                </div>
-                <div className="flex items-end gap-4">
-                  <label className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={p.bold}
-                      disabled={!canManage}
-                      onCheckedChange={(v) => updatePrinter(p.id, { bold: v })}
-                      aria-label={`Huruf tebal ${p.name}`}
-                    />
-                    Tebal
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={p.active}
-                      disabled={!canManage}
-                      onCheckedChange={(v) => updatePrinter(p.id, { active: v })}
-                      aria-label={`Aktif ${p.name}`}
-                    />
-                    Aktif
-                  </label>
-                </div>
+                </DetailField>
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => testPrint(p)}>
-                  <PrinterIcon className="size-4" /> Uji cetak
-                </Button>
-                {canManage && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Hapus ${p.name}`}
-                    onClick={() => {
-                      removePrinter(p.id);
-                      toast.success(`${p.name} dihapus`);
-                    }}
-                  >
-                    <Trash2 className="size-4" /> Hapus
-                  </Button>
-                )}
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={p.bold}
+                    disabled={!canManage}
+                    onCheckedChange={(v) => updatePrinter(p.id, { bold: v })}
+                    aria-label={`Huruf tebal ${p.name}`}
+                  />
+                  Tebal
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={p.active}
+                    disabled={!canManage}
+                    onCheckedChange={(v) => updatePrinter(p.id, { active: v })}
+                    aria-label={`Aktif ${p.name}`}
+                  />
+                  Aktif
+                </label>
               </div>
-            </div>
-          ))}
-          {printers.length === 0 && (
-            <p className="text-sm text-muted-foreground">Belum ada printer.</p>
+
+              <Button size="sm" variant="outline" onClick={() => testPrint(p)}>
+                <PrinterIcon className="size-4" /> Uji cetak
+              </Button>
+            </>
           )}
-        </div>
+        />
       </section>
 
       <LayoutForm

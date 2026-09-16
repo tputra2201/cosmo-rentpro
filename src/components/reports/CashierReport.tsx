@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SetupHeading } from "@/components/SetupTable";
 import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
@@ -90,8 +91,7 @@ export function CashierReport({ range }: { range: ReportRange }) {
   return (
     <div className="surface-panel overflow-hidden">
       <div className="border-b border-border p-4">
-        <h2 className="font-display text-lg font-bold">Laporan Transaksi per Kasir</h2>
-        <p className="text-xs text-muted-foreground">{rangeLabel(range)}</p>
+        <SetupHeading title="Laporan Transaksi per Kasir" description={rangeLabel(range)} />
       </div>
 
       {rows.length === 0 ? (

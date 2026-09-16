@@ -126,7 +126,7 @@ export function MembershipReport({ range }: { range: ReportRange }) {
       </section>
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Ringkasan per member</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">Ringkasan per member</h3>
         {perMember.length === 0 ? (
           <p className="text-sm text-muted-foreground">Belum ada transaksi member pada periode ini.</p>
         ) : (
@@ -168,7 +168,7 @@ export function MembershipReport({ range }: { range: ReportRange }) {
       </section>
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Detail transaksi</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">Detail transaksi</h3>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Tidak ada transaksi pada periode ini.</p>
         ) : (

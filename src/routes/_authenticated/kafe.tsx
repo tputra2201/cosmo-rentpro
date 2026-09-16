@@ -17,8 +17,11 @@ import {
   menuOptionsText,
   parseMenuOptions,
   useBilling,
+  type MenuItem,
+  type CafeTable,
 } from "@/lib/billing-store";
 import { tableTotal } from "@/components/CafeTables";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { DiscountFields } from "@/components/DiscountFields";
 import { Switch } from "@/components/ui/switch";
@@ -80,20 +83,95 @@ function KafePage() {
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Pengaturan Meja Kafe</h1>
-        </div>
+        <h1 className="text-neon text-3xl font-extrabold sm:text-4xl">
+          Pengaturan Meja Kafe
+        </h1>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">{openTables.length} meja terisi</p>
           <p className="text-xl font-bold text-neon">{formatRupiah(grandTotal)}</p>
         </div>
       </header>
 
-      <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Tambah Meja</h2>
-        <p className="text-sm text-muted-foreground">
-          Nomor meja, area, dan jumlah kursi bisa diubah kapan saja.
-        </p>
+      <section className="surface-panel p-4 sm:p-6">
+        <SetupHeading
+          title="Nomor Meja"
+          description="Nomor meja, area, dan jumlah kursi bisa diubah kapan saja."
+        />
+
+        <SetupTable<CafeTable>
+          items={cafeTables}
+          getId={(t) => t.id}
+          getLabel={(t) => t.name}
+          onReorder={(a, b) => reorderList("cafeTables", a, b)}
+          columns={[
+            {
+              key: "name",
+              header: "Nomor Meja",
+              render: (t) => (
+                <span className="font-bold text-foreground">{t.name}</span>
+              ),
+            },
+            {
+              key: "area",
+              header: "Area",
+              hideOnMobile: true,
+              render: (t) => t.area || "—",
+            },
+            {
+              key: "seats",
+              header: "Kursi",
+              render: (t) => t.seats,
+            },
+            {
+              key: "status",
+              header: "Status",
+              hideOnMobile: true,
+              render: (t) =>
+                t.orders.length > 0 || t.openedAt ? (
+                  <span className="font-semibold text-accent">Terisi</span>
+                ) : (
+                  <span className="text-muted-foreground">Kosong</span>
+                ),
+            },
+          ]}
+          onRemove={(t) => {
+            if (!removeCafeTable(t.id)) {
+              toast.error(`${t.name} masih terisi`);
+              return;
+            }
+            toast.success(`${t.name} dihapus`);
+          }}
+          detailTitle={(t) => `Meja ${t.name}`}
+          detailDescription={() => "Ubah nomor meja, area, dan jumlah kursi."}
+          renderDetail={(t) => (
+            <>
+              <DetailField label="Nomor meja">
+                <Input
+                  value={t.name}
+                  onChange={(e) => updateCafeTable(t.id, { name: e.target.value })}
+                />
+              </DetailField>
+              <DetailField label="Area">
+                <Input
+                  value={t.area}
+                  placeholder="Indoor / Outdoor"
+                  onChange={(e) => updateCafeTable(t.id, { area: e.target.value })}
+                />
+              </DetailField>
+              <DetailField label="Jumlah kursi">
+                <Input
+                  type="number"
+                  min={1}
+                  value={t.seats}
+                  onChange={(e) =>
+                    updateCafeTable(t.id, { seats: Number(e.target.value) || 1 })
+                  }
+                />
+              </DetailField>
+            </>
+          )}
+        />
+
         <form
           className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_120px_auto]"
           onSubmit={(e) => {
@@ -130,62 +208,13 @@ function KafePage() {
             <Plus className="size-4" /> Tambah
           </Button>
         </form>
-
-        <SortableArea
-          ids={cafeTables.map((t) => t.id)}
-          onReorder={(activeId, overId) => reorderList("cafeTables", activeId, overId)}
-          className="mt-4 space-y-2"
-        >
-          {cafeTables.map((t) => (
-            <SortableItem
-              key={t.id}
-              id={t.id}
-              label={t.name}
-              className="rounded-lg bg-secondary/60 p-3"
-              contentClassName="grid gap-2 sm:grid-cols-[1fr_1fr_120px_auto]"
-            >
-              <Input
-                value={t.name}
-                aria-label={`Nomor ${t.name}`}
-                onChange={(e) => updateCafeTable(t.id, { name: e.target.value })}
-              />
-              <Input
-                value={t.area}
-                aria-label={`Area ${t.name}`}
-                onChange={(e) => updateCafeTable(t.id, { area: e.target.value })}
-              />
-              <Input
-                type="number"
-                min={1}
-                value={t.seats}
-                aria-label={`Kursi ${t.name}`}
-                onChange={(e) =>
-                  updateCafeTable(t.id, { seats: Number(e.target.value) || 1 })
-                }
-              />
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (!removeCafeTable(t.id)) {
-                    toast.error(`${t.name} masih terisi`);
-                    return;
-                  }
-                  toast.success(`${t.name} dihapus`);
-                }}
-              >
-                Hapus
-              </Button>
-            </SortableItem>
-          ))}
-        </SortableArea>
       </section>
 
-      <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Kategori Menu</h2>
-        <p className="text-sm text-muted-foreground">
-          Kategori bebas ditambah, diganti nama, atau dihapus (jika tidak ada menu di
-          dalamnya).
-        </p>
+      <section className="surface-panel p-4 sm:p-6">
+        <SetupHeading
+          title="Kategori Menu"
+          description="Kategori bebas ditambah, diganti nama, atau dihapus (jika tidak ada menu di dalamnya)."
+        />
         <SortableArea
           ids={menuCategories}
           onReorder={reorderMenuCategories}
@@ -260,73 +289,109 @@ function KafePage() {
         </form>
       </section>
 
-      <section className="surface-panel p-6">
-        <h2 className="text-xl font-semibold">Menu Makanan &amp; Minuman</h2>
-        <p className="text-sm text-muted-foreground">
-          Setiap menu bisa punya potongan harga sendiri untuk pembayaran Playing Card
-          maupun pelanggan member.
-        </p>
-        <SortableArea
-          ids={menu.map((m) => m.id)}
-          onReorder={(activeId, overId) => reorderList("menu", activeId, overId)}
-          className="mt-4 space-y-2"
-        >
-          {menu.map((m) => (
-            <SortableItem
-              key={m.id}
-              id={m.id}
-              label={`menu ${m.name}`}
-              className="rounded-lg bg-secondary/60 p-3"
-              contentClassName="grid items-center gap-2 sm:grid-cols-[1fr_180px_140px_auto]"
-            >
-              <Input
-                value={m.name}
-                aria-label={`Nama ${m.name}`}
-                onChange={(e) => updateMenuItem(m.id, { name: e.target.value })}
-              />
-              <Select
-                value={menuCategories.includes(m.category) ? m.category : ""}
-                onValueChange={(value) => updateMenuItem(m.id, { category: value })}
-              >
-                <SelectTrigger aria-label={`Kategori ${m.name}`}>
-                  <SelectValue placeholder="Pilih kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  {menuCategories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                min={0}
-                value={m.price}
-                aria-label={`Harga ${m.name}`}
-                onChange={(e) =>
-                  updateMenuItem(m.id, { price: Number(e.target.value) || 0 })
-                }
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Hapus ${m.name}`}
-                onClick={() => removeMenuItem(m.id)}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-              <DiscountFields
-                label={m.name}
-                unitHint="Rp / item"
-                value={m.discount}
-                onChange={(patch) =>
-                  updateMenuItem(m.id, {
-                    discount: { ...emptyItemDiscount, ...m.discount, ...patch },
-                  })
-                }
-              />
-              <div className="grid items-center gap-2 sm:col-span-4 sm:grid-cols-[auto_1fr]">
+      <section className="surface-panel p-4 sm:p-6">
+        <SetupHeading
+          title="Menu Makanan & Minuman"
+          description="Klik tombol detail untuk mengatur harga, diskon, printer label, dan modifier tiap menu."
+        />
+
+        <SetupTable<MenuItem>
+          items={menu}
+          getId={(m) => m.id}
+          getLabel={(m) => m.name}
+          detailWide
+          onReorder={(a, b) => reorderList("menu", a, b)}
+          columns={[
+            {
+              key: "name",
+              header: "Nama Menu",
+              render: (m) => (
+                <span className="font-bold text-foreground">{m.name}</span>
+              ),
+            },
+            {
+              key: "category",
+              header: "Kategori",
+              hideOnMobile: true,
+              render: (m) => m.category || "—",
+            },
+            {
+              key: "price",
+              header: "Harga",
+              render: (m) => formatRupiah(m.price),
+            },
+            {
+              key: "label",
+              header: "Label",
+              hideOnMobile: true,
+              render: (m) =>
+                m.printEnabled !== false ? (
+                  <span className="text-accent">Cetak</span>
+                ) : (
+                  <span className="text-muted-foreground">Tidak</span>
+                ),
+            },
+          ]}
+          onRemove={(m) => {
+            removeMenuItem(m.id);
+            toast.success(`${m.name} dihapus`);
+          }}
+          detailTitle={(m) => m.name}
+          detailDescription={() => "Semua pengaturan menu ini."}
+          renderDetail={(m) => (
+            <>
+              <DetailField label="Nama menu">
+                <Input
+                  value={m.name}
+                  onChange={(e) => updateMenuItem(m.id, { name: e.target.value })}
+                />
+              </DetailField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField label="Kategori">
+                  <Select
+                    value={menuCategories.includes(m.category) ? m.category : ""}
+                    onValueChange={(value) => updateMenuItem(m.id, { category: value })}
+                  >
+                    <SelectTrigger aria-label={`Kategori ${m.name}`}>
+                      <SelectValue placeholder="Pilih kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {menuCategories.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </DetailField>
+                <DetailField label="Harga">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={m.price}
+                    onChange={(e) =>
+                      updateMenuItem(m.id, { price: Number(e.target.value) || 0 })
+                    }
+                  />
+                </DetailField>
+              </div>
+
+              <DetailField label="Potongan harga">
+                <div className="grid gap-2">
+                  <DiscountFields
+                    label={m.name}
+                    unitHint="Rp / item"
+                    value={m.discount}
+                    onChange={(patch) =>
+                      updateMenuItem(m.id, {
+                        discount: { ...emptyItemDiscount, ...m.discount, ...patch },
+                      })
+                    }
+                  />
+                </div>
+              </DetailField>
+
+              <DetailField label="Label dapur">
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
                     checked={m.printEnabled !== false}
@@ -356,8 +421,12 @@ function KafePage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid gap-2 sm:col-span-4 sm:grid-cols-2">
+              </DetailField>
+
+              <DetailField
+                label="Modifier"
+                hint="Tulis pilihan dipisah koma. Tambahkan harga dengan tanda titik dua, mis. “Keju:7000”."
+              >
                 <Input
                   defaultValue={menuOptionsText(m.variants)}
                   aria-label={`Varian ${m.name}`}
@@ -395,14 +464,10 @@ function KafePage() {
                     })
                   }
                 />
-              </div>
-              <p className="text-xs text-muted-foreground sm:col-span-4">
-                Tulis pilihan dipisah koma. Tambahkan harga dengan tanda titik dua, mis.
-                “Keju:7000”.
-              </p>
-            </SortableItem>
-          ))}
-        </SortableArea>
+              </DetailField>
+            </>
+          )}
+        />
 
         <form
           className="mt-4 grid gap-2 sm:grid-cols-[1fr_180px_140px_auto]"

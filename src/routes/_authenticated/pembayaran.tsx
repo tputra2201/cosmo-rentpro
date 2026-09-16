@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, Wallet } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { formatRupiah, useBilling } from "@/lib/billing-store";
+import { formatRupiah, useBilling, type PaymentMethod } from "@/lib/billing-store";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
 export const Route = createFileRoute("/_authenticated/pembayaran")({
   head: () => ({
@@ -46,7 +47,7 @@ function PembayaranPage() {
   const today = history.filter(
     (h) => new Date(h.endAt).toDateString() === todayKey,
   );
-  const perMethod = paymentMethods.map((p) => ({
+  const perMethod: (PaymentMethod & { total: number })[] = paymentMethods.map((p) => ({
     ...p,
     total: today
       .filter((h) => (h.payment ?? "Cash") === p.name)
@@ -74,6 +75,11 @@ function PembayaranPage() {
       </header>
 
       <section className="surface-panel space-y-4 p-4 sm:p-6">
+        <SetupHeading
+          title="Tipe Pembayaran"
+          description="Klik detail untuk mengubah nama atau status tipe pembayaran."
+        />
+
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-52 flex-1 space-y-1.5">
             <label htmlFor="pm-name" className="text-sm font-medium">
@@ -94,55 +100,64 @@ function PembayaranPage() {
           </Button>
         </div>
 
-        <ul className="space-y-2">
-          {paymentMethods.length === 0 && (
-            <li className="rounded-md bg-secondary px-3 py-6 text-center text-sm text-muted-foreground">
-              Belum ada tipe pembayaran.
-            </li>
-          )}
-          {perMethod.map((p) => (
-            <li
-              key={p.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/50 px-3 py-2.5"
-            >
-              <Wallet className="size-4 shrink-0 text-primary" />
-              <Input
-                value={p.name}
-                onChange={(e) =>
-                  updatePaymentMethod(p.id, { name: e.target.value })
-                }
-                className="h-9 min-w-40 flex-1"
-                aria-label={`Nama tipe pembayaran ${p.name}`}
-              />
-              <span className="text-sm text-muted-foreground">
-                Hari ini: {formatRupiah(p.total)}
-              </span>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={p.active}
-                  onCheckedChange={(v) =>
-                    updatePaymentMethod(p.id, { active: v })
-                  }
-                  aria-label={`Aktifkan ${p.name}`}
+        <SetupTable<PaymentMethod & { total: number }>
+          items={perMethod}
+          getId={(p) => p.id}
+          getLabel={(p) => p.name}
+          columns={[
+            {
+              key: "name",
+              header: "Nama",
+              render: (p) => <span className="font-bold text-foreground">{p.name}</span>,
+            },
+            {
+              key: "total",
+              header: "Hari Ini",
+              render: (p) => formatRupiah(p.total),
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (p) =>
+                p.active ? (
+                  <span className="font-semibold text-accent">Aktif</span>
+                ) : (
+                  <span className="text-muted-foreground">Nonaktif</span>
+                ),
+            },
+          ]}
+          onRemove={(p) => {
+            removePaymentMethod(p.id);
+            toast.success(`${p.name} dihapus`);
+          }}
+          detailTitle={(p) => p.name}
+          detailDescription={() => "Ubah nama dan status tipe pembayaran ini."}
+          emptyText="Belum ada tipe pembayaran."
+          renderDetail={(p) => (
+            <>
+              <DetailField label="Nama tipe pembayaran">
+                <Input
+                  value={p.name}
+                  onChange={(e) => updatePaymentMethod(p.id, { name: e.target.value })}
+                  aria-label={`Nama tipe pembayaran ${p.name}`}
                 />
-                <span className="w-16 text-sm text-muted-foreground">
+              </DetailField>
+              <DetailField label="Total hari ini">
+                <p className="text-sm text-muted-foreground">{formatRupiah(p.total)}</p>
+              </DetailField>
+              <DetailField label="Status aktif">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={p.active}
+                    onCheckedChange={(v) => updatePaymentMethod(p.id, { active: v })}
+                    aria-label={`Aktifkan ${p.name}`}
+                  />
                   {p.active ? "Aktif" : "Nonaktif"}
-                </span>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Hapus ${p.name}`}
-                onClick={() => {
-                  removePaymentMethod(p.id);
-                  toast.success(`${p.name} dihapus`);
-                }}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            </li>
-          ))}
-        </ul>
+                </label>
+              </DetailField>
+            </>
+          )}
+        />
       </section>
     </div>
   );

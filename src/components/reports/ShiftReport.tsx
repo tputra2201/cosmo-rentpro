@@ -53,7 +53,7 @@ export function ShiftReport({ range }: { range: ReportRange }) {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Riwayat Cash Close Out</h2>
+          <h2 className="text-accent text-xl font-extrabold tracking-tight">Riwayat Cash Close Out</h2>
           <p className="text-sm text-muted-foreground">
             Berdasarkan tanggal check-in kasir · {rangeLabel(range)}
           </p>

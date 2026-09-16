@@ -26,9 +26,11 @@ import {
 import {
   formatRupiah,
   useBilling,
+  type CashCategory,
   type CashDirection,
   type CashEntry,
 } from "@/lib/billing-store";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
@@ -334,9 +336,99 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
 
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold">
-        {direction === "in" ? "Item uang masuk" : "Item uang keluar"}
-      </h2>
+      <SetupHeading
+        title={direction === "in" ? "Item uang masuk" : "Item uang keluar"}
+        as="h2"
+      />
+
+      <SetupTable<CashCategory>
+        items={rows}
+        getId={(c) => c.id}
+        getLabel={(c) => c.name}
+        columns={[
+          {
+            key: "name",
+            header: "Nama Item",
+            render: (c) => <span className="font-bold text-foreground">{c.name}</span>,
+          },
+          {
+            key: "group",
+            header: "Kelompok",
+            hideOnMobile: true,
+            render: (c) => c.group || "—",
+          },
+          {
+            key: "payout",
+            header: "Perpindahan Kas",
+            hideOnMobile: true,
+            render: (c) =>
+              c.payout ? (
+                <span className="text-accent">Ya</span>
+              ) : (
+                <span className="text-muted-foreground">Tidak</span>
+              ),
+          },
+          {
+            key: "active",
+            header: "Status",
+            render: (c) =>
+              c.active ? (
+                <span className="font-semibold text-accent">Aktif</span>
+              ) : (
+                <span className="text-muted-foreground">Nonaktif</span>
+              ),
+          },
+        ]}
+        onRemove={(c) => {
+          if (cashEntries.some((e) => e.categoryId === c.id)) {
+            toast.error("Item ini sudah dipakai, nonaktifkan saja");
+            return;
+          }
+          removeCashCategory(c.id);
+          toast.success(`${c.name} dihapus`);
+        }}
+        detailTitle={(c) => c.name}
+        detailDescription={() => "Ubah nama, kelompok, dan status item ini."}
+        emptyText="Belum ada item."
+        renderDetail={(c) => (
+          <>
+            <DetailField label="Nama item">
+              <Input
+                value={c.name}
+                aria-label={`Nama item ${c.name}`}
+                onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
+              />
+            </DetailField>
+            <DetailField label="Kelompok">
+              <Input
+                value={c.group}
+                aria-label={`Kelompok ${c.name}`}
+                onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
+              />
+            </DetailField>
+            <DetailField label="Perpindahan uang kas saja" hint={`Tidak dihitung sebagai ${direction === "in" ? "pendapatan" : "biaya"} di laporan.`}>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={c.payout}
+                  onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
+                  aria-label={`Perpindahan kas ${c.name}`}
+                />
+                Perpindahan kas
+              </label>
+            </DetailField>
+            <DetailField label="Status">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={c.active}
+                  onCheckedChange={(v) => updateCashCategory(c.id, { active: v })}
+                  aria-label={`Aktifkan ${c.name}`}
+                />
+                {c.active ? "Aktif" : "Nonaktif"}
+              </label>
+            </DetailField>
+          </>
+        )}
+      />
 
       <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
         <div className="space-y-1.5 sm:col-span-2">
@@ -377,64 +469,6 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
         Perpindahan uang kas saja (tidak dihitung{" "}
         {direction === "in" ? "pendapatan" : "biaya"})
       </label>
-
-      <ul className="space-y-2">
-        {rows.length === 0 && (
-          <li className="rounded-md bg-secondary px-3 py-6 text-center text-sm text-muted-foreground">
-            Belum ada item.
-          </li>
-        )}
-        {rows.map((c) => (
-          <li
-            key={c.id}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/50 px-3 py-2.5"
-          >
-            <Input
-              value={c.name}
-              className="h-9 min-w-40 flex-1"
-              aria-label={`Nama item ${c.name}`}
-              onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
-            />
-            <Input
-              value={c.group}
-              className="h-9 w-40"
-              aria-label={`Kelompok ${c.name}`}
-              onChange={(e) => updateCashCategory(c.id, { group: e.target.value })}
-            />
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Switch
-                checked={c.payout}
-                onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
-                aria-label={`Perpindahan kas ${c.name}`}
-              />
-              Perpindahan kas
-            </label>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Switch
-                checked={c.active}
-                onCheckedChange={(v) => updateCashCategory(c.id, { active: v })}
-                aria-label={`Aktifkan ${c.name}`}
-              />
-              {c.active ? "Aktif" : "Nonaktif"}
-            </label>
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label={`Hapus ${c.name}`}
-              onClick={() => {
-                if (cashEntries.some((e) => e.categoryId === c.id)) {
-                  toast.error("Item ini sudah dipakai, nonaktifkan saja");
-                  return;
-                }
-                removeCashCategory(c.id);
-                toast.success(`${c.name} dihapus`);
-              }}
-            >
-              <Trash2 className="size-4 text-destructive" />
-            </Button>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }

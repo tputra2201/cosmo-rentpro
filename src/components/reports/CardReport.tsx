@@ -130,7 +130,7 @@ export function CardReport({ range }: { range: ReportRange }) {
       </section>
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Ringkasan per kartu</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">Ringkasan per kartu</h3>
         {perCard.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Belum ada transaksi kartu pada periode ini.
@@ -170,7 +170,7 @@ export function CardReport({ range }: { range: ReportRange }) {
       </section>
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold">Detail transaksi kartu</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">Detail transaksi kartu</h3>
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Belum ada transaksi kartu pada periode ini.
