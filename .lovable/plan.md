@@ -35,7 +35,7 @@ Tercatat: hari usaha dibuka, End of Day dijalankan (oleh siapa, dengan total pen
 
 - Tipe baru `BusinessDay` di `src/lib/billing-store.tsx`: `id`, `openedAt`, `closedAt`, `closedByName/Id`, `autoClosed`, `sequence`, `note`. Disimpan lewat mekanisme sync/offline yang sudah ada (store-scoped, aman saat internet mati) sama seperti `shifts`.
 - `openShift` membuka hari usaha bila belum ada yang terbuka; `closeShift` tidak menutup hari usaha, hanya membuat End of Day tersedia. Aksi baru `closeBusinessDay(input)` dan pemeriksaan auto-close saat aplikasi hidup / tick `now`.
-- Jam batas disimpan di data store (`eod_cutoff_hour`, default 8) sehingga tersinkron antar perangkat; tidak mengubah policy RLS yang ada.
-- `src/lib/report-range.ts`: tambah mode `"business"`, dan `rangeBounds` menghitung batas dari `openedAt`/`closedAt` hari usaha terpilih (hari yang masih terbuka memakai `now` sebagai batas atas). Semua komponen laporan tetap memakai `inRange`, jadi tidak perlu diubah satu-satu kecuali agregasi Statistik Tanggal/Hari/Jam.
-- `ReportRangePicker` mendapat pilihan hari usaha (dropdown daftar hari usaha terakhir).
+- Jam operasional disimpan di data store (`open_hour`/`close_hour`, default 10 dan 2) sehingga tersinkron antar perangkat; tidak mengubah policy RLS yang ada.
+- `src/lib/report-range.ts`: `rangeBounds` menerima jam operasional dan menggeser batas (start = tanggal + jam buka, end = tanggal berikutnya + jam tutup). Bila hari usaha itu sudah punya `closedAt`, batas akhir memakai `closedAt`; bila masih berjalan memakai `now`. Semua komponen laporan tetap memakai `inRange`, sehingga hanya sumber jam operasional dan agregasi Statistik Tanggal/Hari yang perlu disesuaikan.
+- `ReportRangePicker` dan `rangeLabel` menampilkan rentang jam agar jelas.
 - Halaman Kasir (`src/routes/_authenticated/shift.tsx`) mendapat panel status hari usaha + panel End of Day dengan rekap Company Report.
