@@ -280,10 +280,12 @@ export type Database = {
         Row: {
           active: boolean
           address: string
+          allowed_ips: string[]
           app_version: string
           city: string
           created_at: string
           dev_contact: string
+          device_code: string
           expires_at: string
           id: string
           logo_url: string
@@ -298,10 +300,12 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string
+          allowed_ips?: string[]
           app_version?: string
           city?: string
           created_at?: string
           dev_contact?: string
+          device_code?: string
           expires_at?: string
           id?: string
           logo_url?: string
@@ -316,10 +320,12 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string
+          allowed_ips?: string[]
           app_version?: string
           city?: string
           created_at?: string
           dev_contact?: string
+          device_code?: string
           expires_at?: string
           id?: string
           logo_url?: string
