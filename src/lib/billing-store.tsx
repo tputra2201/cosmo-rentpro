@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type Context,
   type ReactNode,
 } from "react";
 import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
@@ -1759,7 +1760,14 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
   }),
 };
 
-const BillingContext = createContext<Ctx | null>(null);
+// Pertahankan satu instance context saat Vite/HMR mengganti modul. Tanpa ini,
+// Provider lama dan hook baru dapat memegang context berbeda lalu /auth blank.
+const billingGlobal = globalThis as typeof globalThis & {
+  __rentoplayBillingContext?: Context<Ctx | null>;
+};
+const BillingContext =
+  billingGlobal.__rentoplayBillingContext ?? createContext<Ctx | null>(null);
+billingGlobal.__rentoplayBillingContext = BillingContext;
 
 
 export function BillingProvider({ children }: { children: ReactNode }) {
