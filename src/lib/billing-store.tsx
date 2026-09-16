@@ -1307,7 +1307,8 @@ type Ctx = State & {
       | "menu"
       | "packages"
       | "paymentMethods"
-      | "addonRentals",
+      | "addonRentals"
+      | "cashGroups",
     activeId: string,
     overId: string,
     orderedIds?: string[],
