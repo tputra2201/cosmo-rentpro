@@ -68,6 +68,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   } = useBilling();
   const { requireShift } = useShiftGate();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
+  const [tableMoveTo, setTableMoveTo] = useState("");
+
   const labelPrinters = printers.filter((p) => p.active);
   const labelHeading = (p: PrinterConfig) =>
     p.role === "bar" ? "BAR" : p.role === "kitchen" ? "DAPUR" : p.name;
