@@ -18,6 +18,7 @@ export const LIST_KINDS = {
   promotion: "promotions",
   point: "pointEntries",
   history: "history",
+  void_record: "voids",
   cafe_table: "cafeTables",
   playing_card: "playingCards",
   card_entry: "cardEntries",
