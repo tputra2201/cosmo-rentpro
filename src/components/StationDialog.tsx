@@ -1410,13 +1410,6 @@ export function StationDialog({
           </DialogHeader>
 
           <div className="flex flex-wrap gap-1.5">
-            <Button
-              size="sm"
-              variant={menuCategory === "semua" ? "default" : "outline"}
-              onClick={() => setMenuCategory("semua")}
-            >
-              Semua
-            </Button>
             {menuCategories.map((c) => (
               <Button
                 key={c}
@@ -1427,6 +1420,13 @@ export function StationDialog({
                 {c}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant={menuCategory === "semua" ? "default" : "outline"}
+              onClick={() => setMenuCategory("semua")}
+            >
+              Semua
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -1438,6 +1438,7 @@ export function StationDialog({
                   { label: "Ukuran", on: (item.sizes?.length ?? 0) > 0 },
                   { label: "Topping", on: (item.toppings?.length ?? 0) > 0 },
                   { label: "Opsi", on: (item.modifiers?.length ?? 0) > 0 },
+                  { label: "Notes", on: true },
                 ].filter((c) => c.on);
                 return (
                   <div key={item.id} className="space-y-1">

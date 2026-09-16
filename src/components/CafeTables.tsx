@@ -272,13 +272,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Menu</p>
                   <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      size="sm"
-                      variant={category === "semua" ? "default" : "outline"}
-                      onClick={() => setCategory("semua")}
-                    >
-                      Semua
-                    </Button>
                     {menuCategories.map((c) => (
                       <Button
                         key={c}
@@ -289,6 +282,13 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         {c}
                       </Button>
                     ))}
+                    <Button
+                      size="sm"
+                      variant={category === "semua" ? "default" : "outline"}
+                      onClick={() => setCategory("semua")}
+                    >
+                      Semua
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {visibleMenu.map((item) => {
@@ -297,6 +297,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         { label: "Ukuran", on: (item.sizes?.length ?? 0) > 0 },
                         { label: "Topping", on: (item.toppings?.length ?? 0) > 0 },
                         { label: "Opsi", on: (item.modifiers?.length ?? 0) > 0 },
+                        { label: "Notes", on: true },
                       ].filter((c) => c.on);
                       return (
                         <div key={item.id} className="space-y-1">

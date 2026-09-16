@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatRupiah,
   optionLabel,
@@ -34,12 +35,14 @@ export function OrderModifierDialog({
   const [size, setSize] = useState<MenuOption | null>(null);
   const [toppings, setToppings] = useState<MenuOption[]>([]);
   const [mods, setMods] = useState<string[]>([]);
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     setVariant(null);
     setSize(null);
     setToppings([]);
     setMods([]);
+    setNote("");
   }, [item?.id]);
 
   const priceAdd = useMemo(
@@ -55,6 +58,7 @@ export function OrderModifierDialog({
     ...(size ? [optionLabel(size)] : []),
     ...toppings.map(optionLabel),
     ...mods,
+    ...(note.trim() ? [`Notes: ${note.trim()}`] : []),
   ];
 
   const single = (
@@ -147,6 +151,16 @@ export function OrderModifierDialog({
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Notes</p>
+            <Textarea
+              value={note}
+              aria-label="Notes pesanan"
+              placeholder="mis. mie setengah matang, tambahkan cabe rawit"
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
         </div>
 
         <DialogFooter>
