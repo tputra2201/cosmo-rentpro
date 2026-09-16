@@ -171,7 +171,7 @@ export function StationDialog({
 
   const [payment, setPayment] = useState("");
 
-  const [customerName, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState("Umum");
   const [customerPhone, setCustomerPhone] = useState("");
   const [member, setMember] = useState(false);
   const [packageId, setPackageId] = useState("");
