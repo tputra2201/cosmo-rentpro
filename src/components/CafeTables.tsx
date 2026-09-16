@@ -232,6 +232,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 >
                   <Utensils className="size-4" /> Pesanan
                 </Button>
+                {t.orders.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      setVoidTableId(t.id);
+                    }}
+                  >
+                    <Ban className="size-4" /> VOID
+                  </Button>
+                )}
                 {allowDelete && (
                   <Button
                     size="icon"
