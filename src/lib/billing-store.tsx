@@ -1329,7 +1329,22 @@ const nameById = (
  * untuk kolom angka/teks yang berubah tiap ketikan agar log tidak membanjir.
  */
 const LOG_DESCRIBERS: Record<string, LogDescriber> = {
+  moveSession: (a, s, r) =>
+    r === false
+      ? null
+      : {
+          action: "Pindah unit TV",
+          detail: `${nameById(s.stations, a[0])} → ${nameById(s.stations, a[1])}`,
+        },
+  moveCafeTable: (a, s, r) =>
+    r === false
+      ? null
+      : {
+          action: "Pindah meja kafe",
+          detail: `${nameById(s.cafeTables, a[0])} → ${nameById(s.cafeTables, a[1])}`,
+        },
   // Menu kafe & kategorinya
+
   addMenuItem: (a) => ({ action: "Tambah menu kafe", detail: `${txt(a[0])} · ${txt(a[1])}` }),
   updateMenuItem: (a, s) => ({
     action: "Ubah menu kafe",
