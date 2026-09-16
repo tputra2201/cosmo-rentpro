@@ -92,10 +92,30 @@ function timeOf(ts: number) {
 }
 
 function LaporanPage() {
-  const [range, setRange] = useState<ReportRange>(() => defaultRange("day"));
+  const [pickedRange, setRange] = useState<ReportRange>(() => defaultRange("day"));
   const { role } = useAuth();
-  const { rolePermissions } = useBilling();
+  const { rolePermissions, operatingHours, businessDays, now } = useBilling();
+
+  // Tanggal yang dipilih dibaca sebagai hari usaha: mulai jam buka store
+  // sampai jam tutup keesokan harinya. Bila hari usaha itu sudah ditutup
+  // lewat End of Day, batas akhirnya memakai waktu penutupan sebenarnya.
+  const range = useMemo<ReportRange>(() => {
+    const base: ReportRange = {
+      mode: pickedRange.mode,
+      from: pickedRange.from,
+      to: pickedRange.to,
+      hours: operatingHours,
+    };
+    if (base.mode !== "day" || base.from !== base.to) return base;
+    const day = (businessDays ?? []).find(
+      (d) => businessDateKey(d.openedAt, operatingHours) === base.from,
+    );
+    if (!day) return base;
+    return { ...base, endOverride: day.closedAt ?? now };
+  }, [pickedRange, operatingHours, businessDays, now]);
+
   const allow = (key: string) => can(role, key, rolePermissions);
+
   const tabs = [
     { value: "nota", label: "Nota Transaksi", key: "laporan.receipt" },
     { value: "company", label: "Company Report", key: "laporan.company" },
