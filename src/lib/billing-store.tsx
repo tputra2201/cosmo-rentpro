@@ -2317,7 +2317,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const activeBusinessDay = (state.businessDays ?? []).find((d) => !d.closedAt) ?? null;
 
   // Jaring pengaman: bila End of Day lupa dijalankan, hari usaha ditutup
-  // otomatis sesudah jam tutup operasional (plus tenggang satu jam).
+  // otomatis tepat pada jam tutup operasional yang diatur di Setup → Store.
   useEffect(() => {
     if (!activeBusinessDay || shiftOpen) return;
     const limit = autoCloseAt(activeBusinessDay.openedAt, state.operatingHours);
