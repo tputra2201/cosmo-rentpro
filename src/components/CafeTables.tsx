@@ -283,6 +283,23 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
         }}
       />
 
+      <VoidDialog
+        open={Boolean(voidTableId)}
+        onOpenChange={(open) => {
+          if (!open) setVoidTableId(null);
+        }}
+        sourceName={cafeTables.find((t) => t.id === voidTableId)?.name ?? ""}
+        onConfirm={(reason) => {
+          if (!voidTableId) return;
+          const done = voidCafeTable(voidTableId, reason);
+          setVoidTableId(null);
+          setOpenId(null);
+          if (done) toast.success(`Pesanan ${done.sourceName} di-VOID`);
+        }}
+      />
+
+
+
       <Dialog open={Boolean(table)} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           {table && (
