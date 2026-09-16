@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
@@ -35,7 +35,6 @@ import {
   type HistoryRecord,
   type OrderItem,
   orderLabel,
-  type MenuItem,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
@@ -50,7 +49,6 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const {
     cafeTables,
     menu,
-    menuCategories,
     paymentMethods,
     updateCafeTable,
     removeCafeTable,
@@ -255,6 +253,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
           );
         })}
       </SortableArea>
+
+      <OrderDraftDialog
+        open={Boolean(orderTableId)}
+        onOpenChange={(open) => {
+          if (!open) setOrderTableId(null);
+        }}
+        sourceName={cafeTables.find((t) => t.id === orderTableId)?.name ?? ""}
+        onSend={(lines) => {
+          if (!orderTableId) return;
+          for (const line of lines) {
+            addCafeOrder(orderTableId, line.item, line.qty, line.mods, line.priceAdd);
+          }
+        }}
+      />
 
       <Dialog open={Boolean(table)} onOpenChange={(v) => !v && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
