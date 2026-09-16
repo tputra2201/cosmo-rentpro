@@ -47,10 +47,12 @@ import { LogBookReport } from "@/components/reports/LogBookReport";
 import { StatsReport } from "@/components/reports/StatsReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
+import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import {
   businessDateKey,
   defaultRange,
   inRange,
+  rangeLabel,
   type ReportRange,
 } from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
@@ -144,9 +146,16 @@ function LaporanPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ReportRangePicker range={range} onChange={setRange} />
-        {allow("laporan.cetak") && (
-          <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
-        )}
+        <div className="flex flex-wrap gap-2">
+          {allow("laporan.cetak") && (
+            <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
+          )}
+          <ExportExcelButton
+            targetRef={reportRef}
+            title="Laporan RenToPlay"
+            periodText={`Periode: ${rangeLabel(range)}`}
+          />
+        </div>
       </div>
 
       {tabs.length === 0 && (
@@ -582,6 +591,7 @@ function Stat({
         {label}
       </p>
       <p
+        data-report-stat={label}
         className={
           highlight
             ? "font-display text-2xl font-bold text-accent"
