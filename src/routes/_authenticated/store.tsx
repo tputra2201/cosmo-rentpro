@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Store, ImageUp, ShieldCheck } from "lucide-react";
+import { Store, ImageUp, ShieldCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useStoreInfo } from "@/lib/store-info";
+import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
