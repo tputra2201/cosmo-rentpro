@@ -114,6 +114,7 @@ export function StationDialog({
     removeSessionAddon,
     stations,
     moveSession,
+    voidSession,
   } = useBilling();
 
   const { requireShift } = useShiftGate();
@@ -184,6 +185,7 @@ export function StationDialog({
   const [bonus, setBonus] = useState(String(defaultBonusMin ?? 0));
   const [confirmPay, setConfirmPay] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmVoid, setConfirmVoid] = useState(false);
   const bonusMin = Math.round(Number(bonus) || 0);
 
   const matchedCustomer =
