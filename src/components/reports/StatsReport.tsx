@@ -16,6 +16,17 @@ const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
 
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
+const dateFormat = new Intl.DateTimeFormat("id-ID", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+const dateKeyOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+
 function bucketOf(map: Map<string, Row>, name: string) {
   const key = name || "-";
   let row = map.get(key);
@@ -38,6 +49,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
     const menus = new Map<string, Row>();
     const days = new Map<string, Row>();
     const hours = new Map<string, Row>();
+    const dates = new Map<string, Row>();
     let totalIncome = 0;
     let totalCount = 0;
 
@@ -79,6 +91,10 @@ export function StatsReport({ range }: { range: ReportRange }) {
       );
       hour.count += 1;
       hour.income += total;
+
+      const dateRow = bucketOf(dates, dateKeyOf(date));
+      dateRow.count += 1;
+      dateRow.income += total;
     }
 
     return {
@@ -87,6 +103,12 @@ export function StatsReport({ range }: { range: ReportRange }) {
       menus: [...menus.values()].sort((a, b) => (b.qty ?? 0) - (a.qty ?? 0) || b.income - a.income),
       days: [...days.values()].sort(byIncome),
       hours: [...hours.values()].sort(byIncome),
+      dates: [...dates.values()]
+        .map((r) => ({
+          ...r,
+          name: dateFormat.format(new Date(`${r.name}T00:00:00`)),
+        }))
+        .sort((a, b) => b.income - a.income),
       totalIncome,
       totalCount,
     };
@@ -97,7 +119,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
   return (
     <div className="space-y-4">
       <div className="surface-panel p-4">
-        <h2 className="font-display text-lg font-bold">Statistik Terlaris &amp; Terramai</h2>
+        <h2 className="font-display text-lg font-bold">Statistik Penjualan</h2>
         <p className="text-xs text-muted-foreground">{rangeLabel(range)}</p>
         {!empty && (
           <p className="mt-2 text-sm text-muted-foreground">
@@ -113,32 +135,38 @@ export function StatsReport({ range }: { range: ReportRange }) {
       ) : (
         <>
           <StatTable
-            title="TV & Meja terlaris"
+            title="Statistik TV & Meja"
             unit="Nota"
             rows={data.places}
             total={data.totalIncome}
           />
           <StatTable
-            title="Konsol terlaris"
+            title="Statistik Konsol"
             unit="Sesi"
             rows={data.consoles}
             emptyText="Belum ada sesi rental pada periode ini."
           />
           <StatTable
-            title="Menu terlaris"
+            title="Statistik Menu"
             unit="Nota"
             rows={data.menus}
             showQty
             emptyText="Belum ada penjualan menu pada periode ini."
           />
           <StatTable
-            title="Hari paling ramai sampai paling sepi"
+            title="Statistik Tanggal"
+            unit="Nota"
+            rows={data.dates}
+            total={data.totalIncome}
+          />
+          <StatTable
+            title="Statistik Hari"
             unit="Nota"
             rows={data.days}
             total={data.totalIncome}
           />
           <StatTable
-            title="Jam paling ramai sampai paling sepi"
+            title="Statistik Jam"
             unit="Nota"
             rows={data.hours}
             total={data.totalIncome}
