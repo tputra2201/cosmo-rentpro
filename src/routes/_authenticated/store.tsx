@@ -398,11 +398,7 @@ const fields: {
   { key: "city", label: "Kota" },
   { key: "owner_name", label: "Nama pemilik" },
   { key: "phone", label: "Nomor HP", type: "tel" },
-  {
-    key: "app_version",
-    label: "Versi aplikasi",
-    hint: "Tampil di pojok kiri atas, contoh: v1.0",
-  },
+  { key: "app_version", label: "Versi aplikasi" },
   {
     key: "dev_contact",
     label: "Nomor kontak developer",
