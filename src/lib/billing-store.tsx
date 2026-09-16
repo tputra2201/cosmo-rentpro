@@ -1,5 +1,4 @@
 import {
-import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
   createContext,
   useCallback,
   useContext,
@@ -9,6 +8,8 @@ import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
   useState,
   type ReactNode,
 } from "react";
+import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
+import { toast } from "sonner";
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
 import type { RolePermissions } from "./permissions";
