@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Store, ImageUp } from "lucide-react";
+import { Store, ImageUp, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useStoreInfo } from "@/lib/store-info";
+import { useDeviceAccess } from "@/lib/device-guard";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,6 +152,137 @@ function LogoSection({
   );
 }
 
+/** Kode perangkat & daftar IP yang boleh bertransaksi. */
+function DeviceAccessSection({
+  storeId,
+  deviceCodeSaved,
+  allowedIpsSaved,
+}: {
+  storeId: string | undefined;
+  deviceCodeSaved: string;
+  allowedIpsSaved: string[];
+}) {
+  const { code, ip, allowed } = useDeviceAccess();
+  const [secret, setSecret] = useState("");
+  const [device, setDevice] = useState(deviceCodeSaved);
+  const [ips, setIps] = useState(allowedIpsSaved.join("\n"));
+  const [seeded, setSeeded] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (!seeded && (deviceCodeSaved || allowedIpsSaved.length)) {
+    setDevice(deviceCodeSaved);
+    setIps(allowedIpsSaved.join("\n"));
+    setSeeded(true);
+  }
+
+  const save = async () => {
+    if (!storeId) return;
+    if (!secret.trim()) {
+      toast.error("Masukkan Kunci Developer terlebih dahulu.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/public/store-registry", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-control-secret": secret.trim(),
+        },
+        body: JSON.stringify({
+          action: "update",
+          id: storeId,
+          device_code: device.trim(),
+          allowed_ips: ips
+            .split(/[\n,;\s]+/)
+            .map((v) => v.trim())
+            .filter(Boolean),
+        }),
+      });
+      if (!res.ok) {
+        toast.error(await res.text(), { duration: 10000 });
+        return;
+      }
+      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
+    } catch {
+      toast.error("Tidak ada koneksi ke server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <ShieldCheck className="size-5" /> Perangkat yang Diizinkan
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Selain perangkat dengan kode terdaftar atau alamat IP yang diizinkan,
+          pengguna hanya bisa melihat — kecuali level Manager, Installer, atau
+          Developer. Bila kedua kolom dibiarkan kosong, semua perangkat boleh
+          bertransaksi.
+        </p>
+      </div>
+
+      <div className="grid gap-2 rounded-lg border border-border p-3 text-sm sm:grid-cols-2">
+        <p>
+          Kode perangkat ini: <span className="font-mono font-bold">{code || "-"}</span>
+        </p>
+        <p>
+          Alamat IP perangkat ini:{" "}
+          <span className="font-mono font-bold">{ip || "tidak diketahui"}</span>
+        </p>
+        <p className="sm:col-span-2">
+          Status perangkat ini:{" "}
+          <span className={allowed ? "font-bold text-success" : "font-bold text-destructive"}>
+            {allowed ? "boleh bertransaksi" : "hanya bisa melihat"}
+          </span>
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="device-code">Device / Wifi MAC Address (satu perangkat)</Label>
+          <Input
+            id="device-code"
+            value={device}
+            onChange={(e) => setDevice(e.target.value)}
+            placeholder="Tempel kode perangkat kasir"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="allowed-ips">Allowed IP Address (satu per baris)</Label>
+          <Textarea
+            id="allowed-ips"
+            value={ips}
+            rows={4}
+            onChange={(e) => setIps(e.target.value)}
+            placeholder={"103.10.20.30\n112.215.44.5"}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="device-secret">Kunci Developer</Label>
+          <Input
+            id="device-secret"
+            type="password"
+            value={secret}
+            autoComplete="off"
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="Kunci Developer"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Button disabled={busy || !storeId} onClick={() => void save()}>
+          {busy ? "Menyimpan…" : "Simpan Perangkat & IP"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/store")({
   head: () => ({
     meta: [
@@ -266,6 +399,12 @@ function StorePage() {
       </div>
 
       <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
+
+      <DeviceAccessSection
+        storeId={store?.id}
+        deviceCodeSaved={store?.device_code ?? ""}
+        allowedIpsSaved={store?.allowed_ips ?? []}
+      />
 
       <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
         {loading && (
