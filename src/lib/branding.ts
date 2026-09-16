@@ -41,6 +41,7 @@ export function brandingSignature(b: Branding) {
 }
 
 const CACHE_KEY = "billing-branding-v1";
+const BRANDING_EVENT = "billing-branding-updated";
 
 function readCache(): Branding | null {
   if (typeof window === "undefined") return null;
@@ -50,6 +51,18 @@ function readCache(): Branding | null {
   } catch {
     return null;
   }
+}
+
+/** Perbarui identitas di tab aktif agar judul dan ikon langsung ikut berubah. */
+export function updateBrandingCache(patch: Partial<Branding>) {
+  if (typeof window === "undefined") return;
+  const next = { ...defaultBranding, ...readCache(), ...patch };
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+  } catch {
+    /* penyimpanan penuh */
+  }
+  window.dispatchEvent(new CustomEvent<Branding>(BRANDING_EVENT, { detail: next }));
 }
 
 /** Tampilan halaman masuk yang diatur Developer, plus status selesai dimuat. */
@@ -82,6 +95,16 @@ export function useBrandingRecord() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const receive = (event: Event) => {
+      const customEvent = event as CustomEvent<Branding>;
+      setBranding({ ...defaultBranding, ...customEvent.detail });
+      setLoaded(true);
+    };
+    window.addEventListener(BRANDING_EVENT, receive);
+    return () => window.removeEventListener(BRANDING_EVENT, receive);
   }, []);
 
   return { branding, loaded };

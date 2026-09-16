@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { passwordSetupUrl } from "@/lib/app-url";
-import { useBrandingRecord } from "@/lib/branding";
+import { updateBrandingCache, useBrandingRecord } from "@/lib/branding";
 import { toLogoDataUrl } from "@/lib/logo-image";
 import {
   ShieldCheck,
@@ -301,10 +301,11 @@ function AppIdentityPanel({
     try {
       const data = await toLogoDataUrl(file);
       setIcon(data);
-      await post(
+      const saved = await post(
         { action: "branding", app_icon_url: data },
         "Ikon aplikasi tersimpan.",
       );
+      if (saved) updateBrandingCache({ app_icon_url: data });
     } catch {
       toast.error("Gambar tidak bisa dibaca.");
     } finally {
@@ -351,12 +352,13 @@ function AppIdentityPanel({
           <Button
             variant="outline"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               setIcon("");
-              void post(
+              const saved = await post(
                 { action: "branding", app_icon_url: "" },
                 "Ikon aplikasi dihapus.",
               );
+              if (saved) updateBrandingCache({ app_icon_url: "" });
             }}
           >
             Hapus ikon
@@ -383,12 +385,13 @@ function AppIdentityPanel({
       <div>
         <Button
           disabled={busy}
-          onClick={() =>
-            void post(
+          onClick={async () => {
+            const saved = await post(
               { action: "branding", ...form },
               "Identitas aplikasi tersimpan.",
-            )
-          }
+            );
+            if (saved) updateBrandingCache(form);
+          }}
         >
           <Save className="size-4" /> Simpan identitas aplikasi
         </Button>

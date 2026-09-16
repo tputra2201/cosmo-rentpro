@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { useBranding } from "@/lib/branding";
 
 /**
@@ -8,6 +9,7 @@ import { useBranding } from "@/lib/branding";
  */
 export function InstallAppTitle() {
   const branding = useBranding();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const version = branding.app_version.trim();
   const label = version && !/^v/i.test(version) ? `v${version}` : version;
   const appName = branding.app_name.trim() || "RenToPlay";
@@ -17,13 +19,13 @@ export function InstallAppTitle() {
   useEffect(() => {
     document.title = name;
     setMeta("apple-mobile-web-app-title", appName);
-  }, [name, appName]);
+  }, [name, appName, pathname]);
 
   useEffect(() => {
-    if (!icon) return;
-    setIcon("icon", icon);
-    setIcon("apple-touch-icon", icon);
-  }, [icon]);
+    const href = icon || "/favicon.png";
+    setIcon("icon", href);
+    setIcon("apple-touch-icon", href);
+  }, [icon, pathname]);
 
   return null;
 }
