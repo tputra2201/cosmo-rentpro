@@ -282,6 +282,63 @@ function DeviceAccessSection({
     </div>
   );
 }
+/** Jam buka & tutup operasional sebagai dasar siklus hari usaha. */
+function OperatingHoursSection() {
+  const { operatingHours, setOperatingHours } = useBilling();
+  const [open, setOpen] = useState(String(operatingHours.openHour));
+  const [close, setClose] = useState(String(operatingHours.closeHour));
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div className="flex items-center gap-2">
+        <Clock className="size-5 text-primary" />
+        <h2 className="font-display text-lg font-bold">Jam Operasional</h2>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Laporan dan statistik satu tanggal dihitung dari jam buka sampai jam tutup
+        keesokan harinya. Contoh: buka 10, tutup 2 berarti 10:00 sampai 02:00.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="open-hour">Jam buka (0–23)</Label>
+          <Input
+            id="open-hour"
+            type="number"
+            min={0}
+            max={23}
+            value={open}
+            onChange={(e) => setOpen(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="close-hour">Jam tutup (0–23)</Label>
+          <Input
+            id="close-hour"
+            type="number"
+            min={0}
+            max={23}
+            value={close}
+            onChange={(e) => setClose(e.target.value)}
+          />
+        </div>
+      </div>
+      <div>
+        <Button
+          onClick={() => {
+            setOperatingHours({
+              openHour: Number(open),
+              closeHour: Number(close),
+            });
+            toast.success("Jam operasional disimpan");
+          }}
+        >
+          Simpan Jam Operasional
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/store")({
   head: () => ({
