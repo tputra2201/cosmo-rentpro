@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
-import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
+import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,10 +163,7 @@ export function StationDialog({
   const [editCustomerId, setEditCustomerId] = useState("");
   const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
-  const [menuCategory, setMenuCategory] = useState<string | null>(null);
   const [orderOpen, setOrderOpen] = useState(false);
-  const [modItem, setModItem] = useState<MenuItem | null>(null);
-  const [modNotesOnly, setModNotesOnly] = useState(false);
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
   const [addonPick, setAddonPick] = useState("");
