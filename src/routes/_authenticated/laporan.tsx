@@ -591,6 +591,7 @@ function Stat({
         {label}
       </p>
       <p
+        data-report-stat={label}
         className={
           highlight
             ? "font-display text-2xl font-bold text-accent"
