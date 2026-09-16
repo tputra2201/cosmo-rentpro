@@ -135,7 +135,7 @@ export function StatsReport({ range }: { range: ReportRange }) {
       ) : (
         <>
           <StatTable
-            title="Statistik TV &amp; Meja"
+            title="Statistik TV & Meja"
             unit="Nota"
             rows={data.places}
             total={data.totalIncome}
