@@ -274,19 +274,44 @@ function PrinterPage() {
                 </Select>
               </DetailField>
 
-              {p.mode === "android" && (
-                <DetailField label="Printer Bluetooth">
-                  <div className="flex items-center justify-between gap-2">
+              {(p.mode === "bluetooth" || p.mode === "usb") && (
+                <DetailField
+                  label="Printer terpilih"
+                  hint="Pilih sekali; printer diingat pada perangkat kasir ini."
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      {deviceNames[p.id] ?? "Belum ada printer dipilih"}
+                    </span>
                     <Button
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Muat ulang printer Bluetooth"
-                      onClick={() => setPairedPrinters(pairedAndroidPrinters())}
+                      size="sm"
+                      variant="outline"
+                      disabled={!canManage}
+                      onClick={() => void scan(p)}
                     >
-                      <RefreshCw className="size-4" />
+                      <RefreshCw className="size-4" /> Pindai printer
                     </Button>
+                    {deviceNames[p.id] && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={!canManage}
+                        onClick={() => {
+                          forgetDevice(p.id);
+                          setDeviceNames((prev) => ({ ...prev, [p.id]: "" }));
+                        }}
+                      >
+                        Lupakan
+                      </Button>
+                    )}
                   </div>
+                </DetailField>
+              )}
+
+              {p.mode === "android" && (
+                <DetailField label="Printer Bluetooth (aplikasi Android)">
                   <Select
                     value={p.bluetoothAddress ?? ""}
                     disabled={!canManage || !androidApp}
