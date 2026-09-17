@@ -111,7 +111,9 @@ export function StationDialog({
     receiptLayout,
     addonRentals,
     addSessionAddon,
+    updateSessionAddon,
     removeSessionAddon,
+
     stations,
     moveSession,
     voidSession,
