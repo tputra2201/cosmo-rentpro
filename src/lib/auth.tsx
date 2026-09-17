@@ -18,7 +18,9 @@ type AuthCtx = {
   signOut: () => Promise<void>;
 };
 
-const Ctx = createContext<AuthCtx | null>(null);
+const globalStore = globalThis as unknown as { __rentoplayAuthContext?: React.Context<AuthCtx | null> };
+const Ctx = globalStore.__rentoplayAuthContext ?? createContext<AuthCtx | null>(null);
+globalStore.__rentoplayAuthContext = Ctx;
 
 const CACHE_KEY = "billing.auth-profile";
 
