@@ -34,14 +34,14 @@ export function OrderModifierDialog({
   /** Hanya tampilkan kolom Notes (sembunyikan varian/ukuran/topping/opsi). */
   notesOnly?: boolean;
 }) {
-  const [variant, setVariant] = useState<MenuOption | null>(null);
+  const [variants, setVariants] = useState<MenuOption[]>([]);
   const [size, setSize] = useState<MenuOption | null>(null);
   const [toppings, setToppings] = useState<MenuOption[]>([]);
   const [mods, setMods] = useState<string[]>([]);
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    setVariant(null);
+    setVariants([]);
     setSize(null);
     setToppings([]);
     setMods([]);
@@ -50,14 +50,14 @@ export function OrderModifierDialog({
 
   const priceAdd = useMemo(
     () =>
-      (variant?.price ?? 0) +
+      variants.reduce((sum, v) => sum + v.price, 0) +
       (size?.price ?? 0) +
       toppings.reduce((sum, t) => sum + t.price, 0),
-    [variant, size, toppings],
+    [variants, size, toppings],
   );
 
   const labels = [
-    ...(variant ? [optionLabel(variant)] : []),
+    ...variants.map(optionLabel),
     ...(size ? [optionLabel(size)] : []),
     ...toppings.map(optionLabel),
     ...mods,
@@ -92,6 +92,36 @@ export function OrderModifierDialog({
       </div>
     );
 
+  const multi = (
+    title: string,
+    options: MenuOption[],
+    value: MenuOption[],
+    set: (v: MenuOption[]) => void,
+  ) =>
+    options.length === 0 ? null : (
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{title}</p>
+        <div className="flex flex-wrap gap-2">
+          {options.map((o) => {
+            const on = value.some((v) => v.name === o.name);
+            return (
+              <Button
+                key={o.name}
+                size="sm"
+                variant={on ? "default" : "outline"}
+                aria-pressed={on}
+                onClick={() =>
+                  set(on ? value.filter((v) => v.name !== o.name) : [...value, o])
+                }
+              >
+                {optionLabel(o)}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    );
+
   return (
     <Dialog open={Boolean(item)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-sm overflow-y-auto">
@@ -102,34 +132,9 @@ export function OrderModifierDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {!notesOnly && single("Varian", item?.variants ?? [], variant, setVariant)}
+          {!notesOnly && multi("Varian", item?.variants ?? [], variants, setVariants)}
           {!notesOnly && single("Ukuran", item?.sizes ?? [], size, setSize)}
-
-          {!notesOnly && (item?.toppings?.length ?? 0) > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Topping</p>
-              <div className="flex flex-wrap gap-2">
-                {(item?.toppings ?? []).map((o) => {
-                  const on = toppings.some((t) => t.name === o.name);
-                  return (
-                    <Button
-                      key={o.name}
-                      size="sm"
-                      variant={on ? "default" : "outline"}
-                      aria-pressed={on}
-                      onClick={() =>
-                        setToppings((prev) =>
-                          on ? prev.filter((t) => t.name !== o.name) : [...prev, o],
-                        )
-                      }
-                    >
-                      {optionLabel(o)}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {!notesOnly && multi("Topping", item?.toppings ?? [], toppings, setToppings)}
 
           {!notesOnly && (item?.modifiers?.length ?? 0) > 0 && (
             <div className="space-y-2">
