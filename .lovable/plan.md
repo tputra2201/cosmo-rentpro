@@ -1,53 +1,55 @@
-# Printer label RPP02N: cetak stabil dari perangkat Android
+# Kembalikan pilihan cetak lewat RawBT untuk printer Bluetooth lama
 
-## Apa yang terjadi
+## Kesimpulan dari uji Anda
 
-Blueprint ECO 80BT (RPP02N) dulu bisa dicetak lewat RawBT karena RawBT memakai
-Bluetooth "lama" (Classic/SPP). Nama RPP02N_Ble yang muncul di dialog browser
-adalah jalur Bluetooth modern (BLE) printer yang sama, dan pada printer ini
-jalur itu memutus sambungan begitu diminta mengirim data — karena itu muncul
-"RPP02N_Ble memutus sambungan".
+- BP-Lite 80D1 berhasil dicetak langsung dari aplikasi (Bluetooth modern/BLE).
+- Blueprint ECO 80BT (RPP02N) hanya mau menerima data lewat Bluetooth "lama"
+  (Classic/SPP). Browser tidak bisa membuka jalur itu, jadi cetak langsung
+  selalu berhenti dengan "memutus sambungan". RawBT bisa karena ia aplikasi
+  Android yang memakai jalur lama tersebut.
 
-Perangkatnya Android dan USB tidak akan dipakai, jadi rencananya: buat jalur
-Bluetooth langsung lebih sabar dulu, dan siapkan jalur Bluetooth lama lewat
-aplikasi Android RenToPlay sebagai pengganti RawBT.
+Karena RawBT terbukti bekerja untuk printer ini, pilihan RawBT dikembalikan —
+bukan menggantikan cetak langsung, tapi sebagai pilihan per printer.
 
 ## Yang akan dikerjakan
 
-1. **Sambungan Bluetooth langsung dibuat lebih sabar**
-   - Saat memindai, printer dicari lewat jalur cetak yang dikenal (bukan
-     menampilkan semua perangkat), sehingga yang dipilih memang jalur cetaknya.
-   - Setelah tersambung, aplikasi langsung menuju jalur tulis yang dikenal
-     printer struk/label kecil, tanpa memeriksa seluruh layanan (pemeriksaan
-     penuh inilah yang sering membuat printer memutus sambungan).
-   - Jeda antar potongan data dinaikkan dan potongan diperkecil untuk printer
-     yang lambat menerima.
+1. **Pilihan cara cetak per printer menjadi lima**
+   - Langsung — printer Bluetooth (BLE)
+   - Langsung — printer USB
+   - **RawBT (printer Bluetooth lama)** ← dikembalikan
+   - Aplikasi Android RenToPlay
+   - Dialog cetak perangkat (printer A4)
 
-2. **Jalur Bluetooth lama lewat aplikasi Android RenToPlay**
-   - Bila printer tetap memutus sambungan, aplikasi otomatis mencoba jalur
-     aplikasi Android (Bluetooth lama), bukan langsung gagal.
-   - Di Setup → Printer, mode "Aplikasi Android" bisa memilih printer dari
-     daftar perangkat yang sudah dipasangkan di HP/tablet, lalu "Uji cetak".
-   - Bila halaman dibuka dari Chrome biasa (bukan aplikasi RenToPlay),
-     pesannya jelas: buka dari aplikasi Android RenToPlay untuk printer jenis
-     ini, dengan keterangan singkat di halaman Printer.
+   Jadi printer struk tetap memakai cetak langsung, dan printer label RPP02N
+   diatur ke RawBT.
 
-3. **Pesan kegagalan yang menuntun**
-   - Pesan menyebut nama printer, penyebabnya (printer memakai Bluetooth lama),
-     dan langkah yang harus diambil, bukan hanya "memutus sambungan".
+2. **Cetak lewat RawBT diperbaiki**
+   - Struk, bill, label, dan laporan dikirim ke RawBT sebagai teks ESC/POS
+     sesuai lebar kertas (40/58/80 mm), termasuk header, footer, margin,
+     ukuran huruf, dan jumlah salinan seperti pengaturan printer.
+   - Pengiriman memakai tautan RawBT tanpa pengkodean ganda, supaya tidak
+     terulang lagi kesalahan "wrong base64" yang pernah muncul.
+   - "Uji cetak" di Setup → Printer memakai jalur yang sama, jadi hasil uji
+     mencerminkan cetakan sesungguhnya.
+
+3. **Petunjuk singkat di halaman Printer**
+   - Untuk mode RawBT: keterangan bahwa aplikasi RawBT perlu terpasang di
+     HP/tablet Android dan printer sudah dipasangkan di pengaturan Bluetooth,
+     serta bahwa mode ini tidak tersedia di PC Windows (di PC pakai cetak
+     langsung Bluetooth/USB).
+   - Bila RawBT tidak terpasang, pesannya menyebut hal itu, bukan error teknis.
 
 ## Catatan teknis
 
-- `src/lib/escpos.ts`: `pickBluetooth()` memakai `filters` layanan cetak
-  (0x18F0, 0xFFE0, 0xFF00, 0xFFE5, 0xAE30) dengan `acceptAllDevices` sebagai
-  cadangan; `connectGatt()` mencoba `getPrimaryService(known)` satu per satu
-  sebelum jatuh ke `getPrimaryServices()`; chunk 60 byte, jeda 40 ms; error
-  disconnect berulang dilempar sebagai `SppLikelyError`.
-- `src/lib/print-docs.ts`: bila `printDirect` mengembalikan kegagalan bertipe
-  SPP dan `isAndroidPrintAvailable()`, otomatis panggil `printViaAndroid`.
-- `src/routes/_authenticated/printer.tsx`: mode "Aplikasi Android" menampilkan
-  daftar printer terpasang (`pairedAndroidPrinters()`), simpan
-  `bluetoothAddress`, plus catatan bila jembatan Android belum tersedia.
-- Aplikasi Android sudah punya jembatan cetak (`PrintBridge.java`), jadi tidak
-  ada perubahan kode Android; hanya APK RenToPlay perlu dipasang di tablet.
+- `src/lib/printing.ts`: `PrintMode` menjadi
+  `"system" | "bluetooth" | "usb" | "rawbt" | "android"`; kembalikan
+  `printViaRawBt(printer, text)` memakai skema
+  `rawbt:base64,<payload>` dengan `toBase64()` (tanpa `encodeURIComponent`),
+  serta label & daftar mode diperbarui.
+- `src/lib/print-docs.ts`: `printReceipt` / `printLabels` / `printReport`
+  menambah cabang `mode === "rawbt"` → `printViaRawBt(printer, textWithCopies(...))`.
+- `src/routes/_authenticated/printer.tsx`: mode RawBT menyembunyikan tombol
+  "Pindai printer" (tidak relevan) dan menampilkan catatan pemakaian; tombol
+  "Uji cetak" mengikuti mode terpilih.
+- Cetak langsung BLE/USB tetap seperti sekarang, termasuk printer yang diingat.
 - Tidak ada perubahan basis data.
