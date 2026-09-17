@@ -238,7 +238,15 @@ export function SetupTable<T>({
                           variant="ghost"
                           aria-label={`Hapus ${label}`}
                           disabled={removeDisabled?.(item)}
-                          onClick={() => onRemove(item)}
+                          onClick={() =>
+                            confirm({
+                              title: `Hapus ${label}?`,
+                              description:
+                                "Data ini tidak bisa dikembalikan setelah dihapus.",
+                              actionLabel: "Hapus",
+                              onConfirm: () => onRemove(item),
+                            })
+                          }
                         >
                           <Trash2 className="size-4 text-destructive" />
                         </Button>
@@ -299,6 +307,8 @@ export function SetupTable<T>({
           )}
         </SheetContent>
       </Sheet>
+
+      {confirmDialog}
     </>
   );
 }
