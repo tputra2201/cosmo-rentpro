@@ -252,13 +252,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     size="icon"
                     variant="ghost"
                     aria-label={`Hapus ${t.name}`}
-                    onClick={() => {
-                      if (!removeCafeTable(t.id)) {
-                        toast.error(`${t.name} masih terisi`);
-                        return;
-                      }
-                      toast.success(`${t.name} dihapus`);
-                    }}
+                    onClick={() =>
+                      confirmAction({
+                        title: `Hapus ${t.name}?`,
+                        description: "Meja ini dihapus dari daftar meja kafe.",
+                        actionLabel: "Hapus",
+                        onConfirm: () => {
+                          if (!removeCafeTable(t.id)) {
+                            toast.error(`${t.name} masih terisi`);
+                            return;
+                          }
+                          toast.success(`${t.name} dihapus`);
+                        },
+                      })
+                    }
                   >
                     <Trash2 className="size-4" />
                   </Button>
@@ -379,7 +386,14 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           )}
                           <button
                             aria-label={`Hapus ${o.name}`}
-                            onClick={() => removeCafeOrder(table.id, o.id)}
+                            onClick={() =>
+                              confirmAction({
+                                title: `Hapus ${o.name}?`,
+                                description: `${o.name} × ${o.qty} dibatalkan dari pesanan ${table.name}.`,
+                                actionLabel: "Hapus",
+                                onConfirm: () => removeCafeOrder(table.id, o.id),
+                              })
+                            }
                           >
                             <Trash2 className="size-3.5 text-muted-foreground" />
                           </button>
