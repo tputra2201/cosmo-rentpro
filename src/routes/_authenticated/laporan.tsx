@@ -52,10 +52,12 @@ import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import {
+  businessDate,
   businessDateKey,
   defaultRange,
   inRange,
   rangeLabel,
+  type OperatingHours,
   type ReportRange,
 } from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
@@ -85,8 +87,8 @@ export const Route = createFileRoute("/_authenticated/laporan")({
   component: LaporanPage,
 });
 
-function dayKey(ts: number) {
-  return new Date(ts).toLocaleDateString("id-ID", {
+function dayKey(ts: number, hours?: OperatingHours) {
+  return businessDate(ts, hours).toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -252,10 +254,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
     .sort((a, b) => paidTime(b) - paidTime(a));
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
-  const todayKey = dayKey(Date.now());
-  const today = history.filter((h) => dayKey(paidTime(h)) === todayKey);
+  // Ringkasan memakai periode hari usaha yang dipilih, bukan tanggal kalender.
+  const today = history;
 
-  const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
+  const cashToday = cashEntries.filter((e) => inRange(e.createdAt, range));
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
   const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
@@ -270,7 +272,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
-    const k = dayKey(paidTime(h));
+    const k = dayKey(paidTime(h), range.hours);
     (acc[k] ||= []).push(h);
     return acc;
   }, {});
@@ -335,7 +337,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
+        <Stat label="Rental periode ini" value={formatRupiah(sum(today, "rentalTotal"))} />
         <Stat
           label="Additional Rental"
           value={formatRupiah(sum(today, "addonTotal"))}
@@ -344,11 +346,11 @@ function ReceiptReport({ range }: { range: ReportRange }) {
         <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
         <Stat label="Pengeluaran" value={formatRupiah(expense)} />
         <Stat
-          label="Total pendapatan hari ini"
+          label="Total pendapatan periode ini"
           value={formatRupiah(sum(today, "total") + otherIncome)}
         />
         <Stat
-          label="Sisa bersih hari ini"
+          label="Sisa bersih periode ini"
           value={formatRupiah(sum(today, "total") + otherIncome - expense)}
           highlight
         />
@@ -356,14 +358,14 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
       {(payoutIn > 0 || payoutOut > 0) && (
         <p className="text-sm text-muted-foreground">
-          Perpindahan uang kas hari ini (tidak dihitung pendapatan/biaya): masuk{" "}
+          Perpindahan uang kas periode ini (tidak dihitung pendapatan/biaya): masuk{" "}
           {formatRupiah(payoutIn)} · keluar {formatRupiah(payoutOut)}.
         </p>
       )}
 
       {cashToday.length > 0 && (
         <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran hari ini</h2>
+          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran periode ini</h2>
           <Table>
             <TableHeader>
               <TableRow>

@@ -35,7 +35,7 @@ export function ReportRangePicker({
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Jenis rentang</Label>
         <Select
           value={range.mode}
-          onValueChange={(value) => onChange(defaultRange(value as RangeMode))}
+          onValueChange={(value) => onChange(defaultRange(value as RangeMode, range.hours))}
         >
           <SelectTrigger className="w-44">
             <SelectValue />
