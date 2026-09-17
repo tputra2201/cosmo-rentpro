@@ -9,6 +9,7 @@ import {
   printHtml,
   printMode,
   printViaAndroid,
+  printViaRawBt,
   textCenter,
   textRow,
   textSep,
@@ -316,7 +317,7 @@ export function printLabels(opts: {
 /** Cetak isi laporan yang sedang tampil di layar. */
 export function printReport(printer: PrinterConfig, title: string, innerHtml: string) {
   const mode = printMode(printer);
-  if (mode === "android" || mode === "bluetooth" || mode === "usb") {
+  if (mode === "android" || mode === "rawbt" || mode === "bluetooth" || mode === "usb") {
     const w = CHARS_PER_LINE[printer.paper];
     const plain = innerHtml
       .replace(/<\/(tr|div|p|h1|h2|h3|section|table)>/gi, "\n")
@@ -330,6 +331,7 @@ export function printReport(printer: PrinterConfig, title: string, innerHtml: st
       .join("\n");
     const text = `${textCenter(title, w)}\n${textSep(w)}\n${plain}`;
     if (mode === "android") printViaAndroid(printer, text);
+    else if (mode === "rawbt") printViaRawBt(printer, text);
     else void printDirect(printer, mode, text);
     return;
   }
