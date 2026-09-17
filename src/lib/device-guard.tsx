@@ -58,10 +58,14 @@ export type DeviceAccess = {
   restricted: boolean;
   /** Perangkat / level ini boleh bertransaksi & mengubah pengaturan */
   allowed: boolean;
-  /** Data store sudah terbaca, jadi keputusan di bawah bisa dipercaya */
+  /** Data store benar-benar terbaca dari server, jadi keputusan bisa dipercaya */
   checked: boolean;
+  /** Level pengguna sudah selesai terbaca */
+  roleReady: boolean;
   /** Level tinggi (Manager / Installer / Developer) — selalu boleh */
   privileged: boolean;
+  /** Nama store yang menilai perangkat ini */
+  storeName: string;
 };
 
 const Ctx = createContext<DeviceAccess>({
@@ -70,12 +74,14 @@ const Ctx = createContext<DeviceAccess>({
   restricted: false,
   allowed: true,
   checked: false,
+  roleReady: false,
   privileged: false,
+  storeName: "",
 });
 
 export function DeviceGuardProvider({ children }: { children: ReactNode }) {
-  const { session, role } = useAuth();
-  const { store } = useStoreInfo(Boolean(session));
+  const { session, role, loading: authLoading } = useAuth();
+  const { store, fresh } = useStoreInfo(Boolean(session));
   const [ip, setIp] = useState("");
   const code = useMemo(() => deviceCode(), []);
 
