@@ -85,8 +85,8 @@ export const Route = createFileRoute("/_authenticated/laporan")({
   component: LaporanPage,
 });
 
-function dayKey(ts: number) {
-  return new Date(ts).toLocaleDateString("id-ID", {
+function dayKey(ts: number, hours?: OperatingHours) {
+  return businessDate(ts, hours).toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -252,10 +252,10 @@ function ReceiptReport({ range }: { range: ReportRange }) {
     .sort((a, b) => paidTime(b) - paidTime(a));
   const [openId, setOpenId] = useState<string | null>(null);
   const selected = history.find((h) => h.id === openId) ?? null;
-  const todayKey = dayKey(Date.now());
-  const today = history.filter((h) => dayKey(paidTime(h)) === todayKey);
+  // Ringkasan memakai periode hari usaha yang dipilih, bukan tanggal kalender.
+  const today = history;
 
-  const cashToday = cashEntries.filter((e) => dayKey(e.createdAt) === todayKey);
+  const cashToday = cashEntries.filter((e) => inRange(e.createdAt, range));
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
   const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
@@ -270,7 +270,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
   const groups = history.reduce<Record<string, typeof history>>((acc, h) => {
-    const k = dayKey(paidTime(h));
+    const k = dayKey(paidTime(h), range.hours);
     (acc[k] ||= []).push(h);
     return acc;
   }, {});
