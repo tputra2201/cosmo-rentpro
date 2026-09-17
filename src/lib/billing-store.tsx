@@ -1553,6 +1553,14 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
       detail: `${station?.name ?? "-"} · ${order ? `${order.name} × ${order.qty}` : txt(a[1])}`,
     };
   },
+  removeSessionAddon: (a, s) => {
+    const station = s.stations.find((row) => row.id === a[0]);
+    const addon = (station?.session?.addons ?? []).find((x) => x.id === a[1]);
+    return {
+      action: "Hapus additional rental",
+      detail: `${station?.name ?? "-"} · ${addon ? `${addon.name} × ${addon.qty}` : txt(a[1])}`,
+    };
+  },
   removeCafeOrder: (a, s) => {
     const table = s.cafeTables.find((row) => row.id === a[0]);
     const order = table?.orders.find((o) => o.id === a[1]);

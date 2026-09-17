@@ -40,6 +40,7 @@ import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
@@ -75,6 +76,7 @@ export function StationDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const {
     now,
     bookings,
@@ -981,7 +983,16 @@ export function StationDialog({
                           )}
                           <button
                             type="button"
-                            onClick={() => removeSessionAddon(station.id, a.id)}
+                            onClick={() =>
+                              confirmAction({
+                                title: `Hapus ${a.name}?`,
+                                description:
+                                  "Item additional rental ini dibatalkan dan tagihan berkurang.",
+                                actionLabel: "Hapus",
+                                onConfirm: () =>
+                                  removeSessionAddon(station.id, a.id),
+                              })
+                            }
                             aria-label={`Hapus ${a.name}`}
                             className="text-muted-foreground transition-colors hover:text-destructive"
                           >
@@ -1047,7 +1058,14 @@ export function StationDialog({
                         )}
                         <button
                           type="button"
-                          onClick={() => removeOrder(station.id, o.id)}
+                          onClick={() =>
+                            confirmAction({
+                              title: `Hapus ${o.name}?`,
+                              description: `${orderLabel(o)} × ${o.qty} dibatalkan dari pesanan.`,
+                              actionLabel: "Hapus",
+                              onConfirm: () => removeOrder(station.id, o.id),
+                            })
+                          }
                           aria-label={`Hapus ${o.name}`}
                           className="text-muted-foreground transition-colors hover:text-destructive"
                         >
@@ -1511,6 +1529,7 @@ export function StationDialog({
         }}
       />
     )}
+    {confirmDialog}
     </>
 
   );

@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   Sheet,
   SheetContent,
@@ -104,6 +105,7 @@ export function SetupTable<T>({
   emptyText?: string | undefined;
   footer?: ReactNode | undefined;
 }) {
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailItem = items.find((i) => getId(i) === detailId) ?? null;
 
@@ -236,7 +238,15 @@ export function SetupTable<T>({
                           variant="ghost"
                           aria-label={`Hapus ${label}`}
                           disabled={removeDisabled?.(item)}
-                          onClick={() => onRemove(item)}
+                          onClick={() =>
+                            confirm({
+                              title: `Hapus ${label}?`,
+                              description:
+                                "Data ini tidak bisa dikembalikan setelah dihapus.",
+                              actionLabel: "Hapus",
+                              onConfirm: () => onRemove(item),
+                            })
+                          }
                         >
                           <Trash2 className="size-4 text-destructive" />
                         </Button>
@@ -297,6 +307,8 @@ export function SetupTable<T>({
           )}
         </SheetContent>
       </Sheet>
+
+      {confirmDialog}
     </>
   );
 }

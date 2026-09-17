@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReceiptView } from "@/components/CustomerDetail";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
@@ -240,7 +241,11 @@ function LaporanPage() {
 }
 
 function ReceiptReport({ range }: { range: ReportRange }) {
-  const { history: rawHistory, cashEntries, clearHistory } = useBilling();
+  const { history: rawHistory, cashEntries, clearHistory, addLog } = useBilling();
+  const { role: myRole } = useAuth();
+  const canClearHistory =
+    myRole === "manager" || myRole === "installer" || myRole === "admin";
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const history = [...rawHistory]
     .filter((h) => inRange(paidTime(h), range))
@@ -289,8 +294,44 @@ function ReceiptReport({ range }: { range: ReportRange }) {
         <p className="text-sm text-muted-foreground">
           Rekap pendapatan dari sesi rental dan penjualan kasir.
         </p>
-        {history.length > 0 && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Cetak</Button><Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Ekspor CSV</Button><Button variant="outline" onClick={clearHistory}><Trash2 className="size-4" /> Hapus riwayat</Button></div>}
+        {history.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer className="size-4" /> Cetak
+            </Button>
+            <Button variant="outline" onClick={exportCsv}>
+              <Download className="size-4" /> Ekspor CSV
+            </Button>
+            {canClearHistory && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  confirm({
+                    title: "Hapus seluruh riwayat transaksi?",
+                    description:
+                      "Semua nota transaksi akan hilang dan tidak bisa dikembalikan.",
+                    actionLabel: "Hapus riwayat",
+                    requireTypedWord: "HAPUS",
+                    onConfirm: () => {
+                      clearHistory();
+                      addLog(
+                        "Hapus seluruh riwayat transaksi",
+                        `${history.length} nota`,
+                      );
+                      toast.success("Riwayat transaksi dihapus");
+                    },
+                  })
+                }
+              >
+                <Trash2 className="size-4" /> Hapus riwayat
+              </Button>
+            )}
+          </div>
+        )}
       </header>
+
+      {confirmDialog}
+
 
 
       <section className="grid gap-4 sm:grid-cols-3">
@@ -500,6 +541,7 @@ function ReceiptDialog({
   const [method, setMethod] = useState(record.payment ?? "Cash");
   const [confirm, setConfirm] = useState(false);
   const options = paymentMethods.filter((p) => p.active);
+  const { confirm: askConfirm, dialog: askDialog } = useConfirm();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -535,13 +577,25 @@ function ReceiptDialog({
               </SelectContent>
             </Select>
             <Button
-              onClick={() => {
-                updateHistoryPayment(record.id, { payment: method, payments: [] });
-                toast.success("Metode pembayaran diperbarui");
-              }}
+              onClick={() =>
+                askConfirm({
+                  title: "Simpan perubahan?",
+                  description: `Metode pembayaran nota ini diubah menjadi ${method}.`,
+                  actionLabel: "Simpan",
+                  destructive: false,
+                  onConfirm: () => {
+                    updateHistoryPayment(record.id, {
+                      payment: method,
+                      payments: [],
+                    });
+                    toast.success("Metode pembayaran diperbarui");
+                  },
+                })
+              }
             >
               Simpan
             </Button>
+            {askDialog}
             {canDelete && (
               <Button variant="destructive" onClick={() => setConfirm(true)}>
                 <Trash2 className="size-4" /> Hapus nota
