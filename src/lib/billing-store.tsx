@@ -3687,6 +3687,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           payment: input.payment?.trim() ? input.payment.trim() : "Cash",
           note: input.note?.trim() ?? "",
           createdAt: input.createdAt ?? Date.now(),
+          ...(actorRef.current.name ? { createdBy: actorRef.current.name } : {}),
         };
         update((prev) => ({ ...prev, cashEntries: [row, ...prev.cashEntries] }));
         return row;
