@@ -78,18 +78,28 @@ export type SessionAddon = {
   price: number;
   mode: AddonMode;
   qty: number;
+  /** Durasi khusus item ini (menit). Kosong = ikut lama sesi. */
+  minutes?: number;
 };
 
-/** Biaya satu sewa tambahan. Mode per jam dikali durasi sesi. */
+/** Jam yang dipakai satu sewa tambahan: durasi sendiri bila diisi, jika tidak ikut sesi. */
+export function addonHours(addon: SessionAddon, sessionHours: number) {
+  const own = addon.minutes;
+  if (typeof own === "number" && own > 0) return own / 60;
+  return Math.max(0, sessionHours);
+}
+
+/** Biaya satu sewa tambahan. Mode per jam dikali durasi yang dipakai item itu. */
 export function addonAmount(addon: SessionAddon, hours: number) {
   const qty = Math.max(0, addon.qty);
   if (addon.mode === "once") return Math.round(addon.price * qty);
-  return Math.round(addon.price * qty * Math.max(0, hours));
+  return Math.round(addon.price * qty * addonHours(addon, hours));
 }
 
 export function addonsTotal(addons: SessionAddon[] | undefined, hours: number) {
   return (addons ?? []).reduce((sum, a) => sum + addonAmount(a, hours), 0);
 }
+
 
 export type Session = {
   mode: PlayMode;
