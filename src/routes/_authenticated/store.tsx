@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Store, ImageUp, ShieldCheck, Clock } from "lucide-react";
+import { Store, ImageUp, ShieldCheck, Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useStoreInfo } from "@/lib/store-info";
+import { useStoreInfo, type AllowedDevice } from "@/lib/store-info";
+
 import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
 import { Textarea } from "@/components/ui/textarea";
