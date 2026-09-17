@@ -153,17 +153,6 @@ function toBase64(value: string) {
   return btoa(binary);
 }
 
-/**
- * Kirim teks polos ke aplikasi RawBT di Android.
- * RawBT menerima skema `rawbt:base64,<data>` dan mencetak langsung ke printer
- * thermal yang sudah dipasangkan lewat Bluetooth atau USB OTG.
- */
-export function printViaRawBt(text: string) {
-  if (typeof window === "undefined") return;
-  const body = text.endsWith("\n") ? text : `${text}\n`;
-  // RawBT membaca base64 apa adanya; jangan di-encode ulang (menyebabkan "wrong base64").
-  window.location.href = `rawbt:base64,${toBase64(body)}`;
-}
 
 /** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
 export function printViaAndroid(printer: PrinterConfig, text: string) {
