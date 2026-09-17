@@ -1,6 +1,7 @@
 /** Perakit dokumen cetak: struk, invoice, label dapur/bar, dan laporan. */
 
 import { addonAmount, formatRupiah, type HistoryRecord, type OrderItem } from "./billing-store";
+import { printDirect } from "./escpos";
 import {
   CHARS_PER_LINE,
   escapeHtml,
@@ -8,7 +9,6 @@ import {
   printHtml,
   printMode,
   printViaAndroid,
-  printViaRawBt,
   textCenter,
   textRow,
   textSep,
