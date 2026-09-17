@@ -1360,8 +1360,14 @@ type Ctx = State & {
   updateAddonRental: (id: string, patch: Partial<Omit<AddonRental, "id">>) => void;
   setAddonDiscount: (id: string, patch: Partial<ItemDiscount>) => void;
   removeAddonRental: (id: string) => void;
-  addSessionAddon: (stationId: string, addonId: string, qty?: number) => void;
+  addSessionAddon: (stationId: string, addonId: string, qty?: number, minutes?: number) => void;
+  updateSessionAddon: (
+    stationId: string,
+    rowId: string,
+    patch: { qty?: number; minutes?: number },
+  ) => void;
   removeSessionAddon: (stationId: string, rowId: string) => void;
+
   reorderConsoleTypes: (activeName: string, overName: string) => void;
   reorderMenuCategories: (activeName: string, overName: string) => void;
   addMenuItem: (name: string, price: number, category?: string) => void;
