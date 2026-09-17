@@ -48,6 +48,7 @@ export function tableTotal(table: CafeTable) {
 }
 
 export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const {
     cafeTables,
     menu,

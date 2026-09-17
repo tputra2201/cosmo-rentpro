@@ -40,6 +40,7 @@ import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
