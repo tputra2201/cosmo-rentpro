@@ -38,6 +38,7 @@ import {
   orderLabel,
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import { labelItemsFor, printLabels } from "@/lib/print-docs";
 import type { PrinterConfig } from "@/lib/printing";
@@ -733,6 +734,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
       </Dialog>
 
       <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+
+      {confirmDialog}
     </>
   );
 }
