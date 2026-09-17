@@ -38,6 +38,7 @@ import {
 import {
   bluetoothSupported,
   forgetDevice,
+  printerReady,
   savedDevice,
   scanPrinter,
   usbSupported,
