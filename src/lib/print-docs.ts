@@ -261,8 +261,8 @@ function labelTextLines(opts: {
   item: LabelItem;
   heading: string;
   source: string;
-  customerName?: string;
-  note?: string;
+  customerName: string | undefined;
+  note: string | undefined;
   stamp: string;
 }) {
   const { printer, item, heading, source, customerName, note, stamp } = opts;
