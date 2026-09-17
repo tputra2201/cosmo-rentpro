@@ -236,6 +236,10 @@ export function printReceipt(opts: {
     printViaAndroid(opts.printer, textWithCopies(opts.printer, receiptText(opts)));
     return;
   }
+  if (mode === "rawbt") {
+    printViaRawBt(opts.printer, textWithCopies(opts.printer, receiptText(opts)));
+    return;
+  }
   if (mode === "bluetooth" || mode === "usb") {
     void printDirect(opts.printer, mode, textWithCopies(opts.printer, receiptText(opts)));
     return;
@@ -263,7 +267,7 @@ export function printLabels(opts: {
   const { printer, items, heading, source, customerName, note } = opts;
   const stamp = time(opts.at ?? Date.now());
   const mode = printMode(printer);
-  if (mode === "android" || mode === "bluetooth" || mode === "usb") {
+  if (mode === "android" || mode === "rawbt" || mode === "bluetooth" || mode === "usb") {
     const w = CHARS_PER_LINE[printer.paper];
     const text = items
       .map((item) =>
@@ -284,6 +288,7 @@ export function printLabels(opts: {
       )
       .join("\n\n");
     if (mode === "android") printViaAndroid(printer, textWithCopies(printer, text));
+    else if (mode === "rawbt") printViaRawBt(printer, textWithCopies(printer, text));
     else void printDirect(printer, mode, textWithCopies(printer, text));
     return;
   }
