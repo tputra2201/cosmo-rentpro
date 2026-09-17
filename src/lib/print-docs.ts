@@ -231,12 +231,13 @@ export function printReceipt(opts: {
   kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
-  if (printMode(opts.printer) === "android") {
+  const mode = printMode(opts.printer);
+  if (mode === "android") {
     printViaAndroid(opts.printer, textWithCopies(opts.printer, receiptText(opts)));
     return;
   }
-  if (printMode(opts.printer) === "rawbt") {
-    printViaRawBt(textWithCopies(opts.printer, receiptText(opts)));
+  if (mode === "bluetooth" || mode === "usb") {
+    void printDirect(opts.printer, mode, textWithCopies(opts.printer, receiptText(opts)));
     return;
   }
   const body = receiptBody(opts);
