@@ -577,13 +577,25 @@ function ReceiptDialog({
               </SelectContent>
             </Select>
             <Button
-              onClick={() => {
-                updateHistoryPayment(record.id, { payment: method, payments: [] });
-                toast.success("Metode pembayaran diperbarui");
-              }}
+              onClick={() =>
+                askConfirm({
+                  title: "Simpan perubahan?",
+                  description: `Metode pembayaran nota ini diubah menjadi ${method}.`,
+                  actionLabel: "Simpan",
+                  destructive: false,
+                  onConfirm: () => {
+                    updateHistoryPayment(record.id, {
+                      payment: method,
+                      payments: [],
+                    });
+                    toast.success("Metode pembayaran diperbarui");
+                  },
+                })
+              }
             >
               Simpan
             </Button>
+            {askDialog}
             {canDelete && (
               <Button variant="destructive" onClick={() => setConfirm(true)}>
                 <Trash2 className="size-4" /> Hapus nota
