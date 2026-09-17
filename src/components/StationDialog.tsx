@@ -170,6 +170,8 @@ export function StationDialog({
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
   const [addonPick, setAddonPick] = useState("");
+  const [addonMinutes, setAddonMinutes] = useState("");
+
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
 
 
