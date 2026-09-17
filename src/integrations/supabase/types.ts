@@ -280,6 +280,7 @@ export type Database = {
         Row: {
           active: boolean
           address: string
+          allowed_devices: Json
           allowed_ips: string[]
           app_version: string
           city: string
@@ -300,6 +301,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string
+          allowed_devices?: Json
           allowed_ips?: string[]
           app_version?: string
           city?: string
@@ -320,6 +322,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string
+          allowed_devices?: Json
           allowed_ips?: string[]
           app_version?: string
           city?: string
@@ -408,10 +411,19 @@ export type Database = {
         }[]
       }
       developer_switch_store: { Args: { _store_id: string }; Returns: string }
-      store_set_device_access: {
-        Args: { _allowed_ips: string[]; _device_code: string }
-        Returns: undefined
-      }
+      store_set_device_access:
+        | {
+            Args: { _allowed_ips: string[]; _device_code: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _allowed_devices?: Json
+              _allowed_ips: string[]
+              _device_code: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role:

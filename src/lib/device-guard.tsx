@@ -100,18 +100,21 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const registered = store?.device_code ?? "";
+  const allowedDevices = store?.allowed_devices ?? [];
   const allowedIps = store?.allowed_ips ?? [];
-  const restricted = Boolean(registered) || allowedIps.length > 0;
+  const restricted = Boolean(registered) || allowedDevices.length > 0 || allowedIps.length > 0;
   const privileged = role === "installer" || role === "manager" || role === "admin";
 
   const allowed = useMemo(() => {
     if (!store || !restricted || privileged) return true;
+    if (code && allowedDevices.some((d) => d.code === code)) return true;
     if (registered && code && registered === code) return true;
     if (ip) return allowedIps.some((pattern) => ipMatches(ip, pattern));
     // Tanpa koneksi: pakai keputusan terakhir yang tersimpan di perangkat.
     if (typeof window === "undefined") return false;
     return localStorage.getItem(VERDICT_KEY) === "yes";
-  }, [store, restricted, privileged, registered, code, ip, allowedIps]);
+  }, [store, restricted, privileged, registered, code, ip, allowedIps, allowedDevices]);
+
 
   useEffect(() => {
     writeAllowed = allowed;

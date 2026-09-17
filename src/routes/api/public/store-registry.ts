@@ -20,6 +20,11 @@ const storeFields = {
   logo_url: z.string().max(400000).optional(),
   device_code: z.string().max(128).optional(),
   allowed_ips: z.array(z.string().max(64)).max(50).optional(),
+  allowed_devices: z
+    .array(z.object({ code: z.string().max(128), label: z.string().max(120) }))
+    .max(50)
+    .optional(),
+
   active: z.boolean().optional(),
   expires_at: z.string().datetime({ offset: true }).optional(),
 };
@@ -117,7 +122,8 @@ async function loadAdmin() {
 }
 
 const columns =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url, device_code, allowed_ips";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url, device_code, allowed_ips, allowed_devices";
+
 
 export const Route = createFileRoute("/api/public/store-registry")({
   server: {

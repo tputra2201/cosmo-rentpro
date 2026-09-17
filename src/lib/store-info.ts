@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** Satu perangkat yang diizinkan bertransaksi di store ini. */
+export type AllowedDevice = {
+  code: string;
+  label: string;
+};
+
 export type StoreInfo = {
   id: string;
   store_code: string;
@@ -17,12 +23,30 @@ export type StoreInfo = {
   logo_url: string;
   device_code: string;
   allowed_ips: string[];
+  allowed_devices: AllowedDevice[];
 };
+
+/** Ubah isi kolom daftar perangkat menjadi bentuk yang aman dipakai. */
+export function normalizeDevices(value: unknown): AllowedDevice[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return { code: item.trim(), label: "" };
+      const row = item as { code?: unknown; label?: unknown };
+      return {
+        code: typeof row?.code === "string" ? row.code.trim() : "",
+        label: typeof row?.label === "string" ? row.label : "",
+      };
+    })
+    .filter((d) => d.code.length > 0);
+}
 
 const CACHE_KEY = "billing-store-info-v1";
 
+
 const COLUMNS =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url, device_code, allowed_ips";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url, device_code, allowed_ips, allowed_devices";
+
 
 function readCache(): StoreInfo | null {
   if (typeof window === "undefined") return null;
@@ -53,9 +77,11 @@ export function useStoreInfo(enabled: boolean) {
     (async () => {
       const { data } = await supabase.from("stores").select(COLUMNS).limit(1).maybeSingle();
       if (cancelled) return;
-      const row = data as StoreInfo | null;
+      const raw = data as (StoreInfo & { allowed_devices?: unknown }) | null;
+      const row = raw ? { ...raw, allowed_devices: normalizeDevices(raw.allowed_devices) } : null;
       if (row) {
         setStore(row);
+
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(row));
         } catch {
