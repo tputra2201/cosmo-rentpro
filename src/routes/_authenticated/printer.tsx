@@ -29,6 +29,7 @@ import {
   PRINT_MODE_LABEL,
   isAndroidPrintAvailable,
   pairedAndroidPrinters,
+  printMode,
   type DocLayout,
   type PaperSize,
   type PrintMode,
