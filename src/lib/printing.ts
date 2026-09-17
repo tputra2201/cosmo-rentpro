@@ -9,14 +9,15 @@
  */
 
 export type PrinterRole = "receipt" | "invoice" | "kitchen" | "bar" | "report";
-export type PaperSize = "40mm" | "80mm" | "a4";
+export type PaperSize = "40mm" | "58mm" | "80mm" | "a4";
 /**
  * Cara mengirim dokumen ke printer.
  * - "system": dialog cetak bawaan perangkat (Windows, Mac, iOS, printer A4).
- * - "rawbt": aplikasi RawBT di Android, langsung ke printer thermal Bluetooth/USB
- *   tanpa perlu printer terdaftar di sistem Android.
+ * - "bluetooth": langsung ke printer thermal Bluetooth dari aplikasi ini.
+ * - "usb": langsung ke printer thermal USB dari aplikasi ini.
+ * - "android": aplikasi Android RenToPlay untuk printer Bluetooth lama (Classic/SPP).
  */
-export type PrintMode = "system" | "rawbt" | "android";
+export type PrintMode = "system" | "bluetooth" | "usb" | "android";
 
 export type PrinterConfig = {
   id: string;
