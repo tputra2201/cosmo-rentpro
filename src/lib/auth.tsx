@@ -18,7 +18,7 @@ type AuthCtx = {
   signOut: () => Promise<void>;
 };
 
-const globalStore = globalThis as unknown as { __rentoplayAuthContext?: React.Context<AuthCtx | null> };
+const globalStore = globalThis as unknown as { __rentoplayAuthContext?: Context<AuthCtx | null> };
 const Ctx = globalStore.__rentoplayAuthContext ?? createContext<AuthCtx | null>(null);
 globalStore.__rentoplayAuthContext = Ctx;
 
