@@ -125,16 +125,17 @@ function PrinterPage() {
       </header>
 
       <section className="surface-panel space-y-2 p-6">
-        <h2 className="text-xl font-semibold">Mencetak dari aplikasi Android</h2>
+        <h2 className="text-xl font-semibold">Cetak langsung tanpa aplikasi tambahan</h2>
         <p className="text-sm text-muted-foreground">
-          Aplikasi Android Billing Rental PS menghubungkan Kassen MT-300 VL langsung melalui
-          Bluetooth tanpa RawBT. Pasangkan printer sekali di pengaturan Bluetooth Android, lalu
-          pilih cara mencetak dan perangkatnya pada daftar di bawah.
+          Pilih cara mencetak pada printer di bawah, tekan <strong>Pindai printer</strong>, pilih
+          printer thermal Anda, lalu tekan <strong>Uji cetak</strong>. Printer yang dipilih diingat
+          pada perangkat ini, jadi cukup sekali dipilih.
         </p>
         <p className="text-sm text-muted-foreground">
-          {androidApp
-            ? `${pairedPrinters.length} printer Bluetooth ditemukan pada perangkat ini.`
-            : "Pilihan Bluetooth langsung aktif saat halaman dibuka dari aplikasi Android khusus."}
+          Bluetooth langsung {bluetoothSupported() ? "tersedia" : "belum didukung"} di perangkat ini;
+          printer USB {usbSupported() ? "tersedia" : "belum didukung"}. Printer Bluetooth lama
+          (Classic/SPP) hanya bisa lewat aplikasi Android
+          {androidApp ? ` (${pairedPrinters.length} printer ditemukan)` : ""} atau disambung USB.
         </p>
       </section>
 
