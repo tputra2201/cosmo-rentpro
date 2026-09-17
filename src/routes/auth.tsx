@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Joystick, LockKeyhole, LogIn, MailQuestion } from "lucide-react";
 import { passwordSetupUrl } from "@/lib/app-url";
-import { deviceCode, takeDeviceReject } from "@/lib/device-guard";
+import { deviceCode, takeDeviceReject, type DeviceReject } from "@/lib/device-guard";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ function AuthPage() {
   const [resetBusy, setResetBusy] = useState(false);
   const [myCode, setMyCode] = useState("");
   const [myIp, setMyIp] = useState("");
-  const [rejected, setRejected] = useState<string | null>(null);
+  const [rejected, setRejected] = useState<DeviceReject | null>(null);
 
   useEffect(() => {
     setMyCode(deviceCode());

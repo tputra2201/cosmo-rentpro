@@ -158,10 +158,12 @@ function LogoSection({
 /** Daftar kode perangkat & daftar IP yang boleh bertransaksi. */
 function DeviceAccessSection({
   storeId,
+  storeName,
   devicesSaved,
   allowedIpsSaved,
 }: {
   storeId: string | undefined;
+  storeName: string;
   devicesSaved: AllowedDevice[];
   allowedIpsSaved: string[];
 }) {
@@ -601,6 +603,7 @@ function StorePage() {
 
       <DeviceAccessSection
         storeId={store?.id}
+        storeName={store?.store_name ?? ""}
         devicesSaved={store?.allowed_devices ?? []}
         allowedIpsSaved={store?.allowed_ips ?? []}
       />
