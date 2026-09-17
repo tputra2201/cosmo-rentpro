@@ -54,6 +54,7 @@ function rememberDevice(printerId: string, device: SavedDevice) {
 }
 
 export function forgetDevice(printerId: string) {
+  forgetActive(printerId);
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem(STORE_PREFIX + printerId);
 }
