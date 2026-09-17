@@ -526,6 +526,8 @@ export type CashEntry = {
   payment: string;
   note: string;
   createdAt: number;
+  /** Nama pelaku yang mencatat entri ini (kosong untuk data lama). */
+  createdBy?: string;
 };
 
 /**
@@ -824,6 +826,7 @@ function cardTopupCashEntry(
   cardNumber: string,
   stamp: number,
   payment = "Cash",
+  actor?: string,
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
@@ -844,6 +847,7 @@ function cardTopupCashEntry(
     payment,
     note: `Top up kartu ${cardNumber}`,
     createdAt: stamp,
+    ...(actor ? { createdBy: actor } : {}),
   };
 }
 
@@ -854,6 +858,7 @@ function cardSaleCashEntry(
   cardNumber: string,
   stamp: number,
   payment = "Cash",
+  actor?: string,
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
@@ -874,6 +879,7 @@ function cardSaleCashEntry(
     payment,
     note: `Penjualan kartu ${cardNumber}`,
     createdAt: stamp,
+    ...(actor ? { createdBy: actor } : {}),
   };
 }
 
@@ -3331,8 +3337,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashEntries: (() => {
             const method = input.payment?.trim() || "Cash";
             const rows = [
-              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method),
-              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method),
+              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method, actorRef.current.name),
+              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method, actorRef.current.name),
             ].filter(Boolean) as CashEntry[];
             return rows.length ? [...rows, ...prev.cashEntries] : prev.cashEntries;
           })(),
@@ -3424,6 +3430,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               card.cardNumber,
               stamp,
               method,
+              actorRef.current.name,
             );
             return row ? [row, ...prev.cashEntries] : prev.cashEntries;
           })(),
@@ -3680,6 +3687,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           payment: input.payment?.trim() ? input.payment.trim() : "Cash",
           note: input.note?.trim() ?? "",
           createdAt: input.createdAt ?? Date.now(),
+          ...(actorRef.current.name ? { createdBy: actorRef.current.name } : {}),
         };
         update((prev) => ({ ...prev, cashEntries: [row, ...prev.cashEntries] }));
         return row;
