@@ -156,6 +156,16 @@ function toBase64(value: string) {
   return btoa(binary);
 }
 
+/**
+ * Kirim teks ESC/POS ke aplikasi RawBT (Android) untuk printer Bluetooth lama.
+ * Payload dikirim sebagai base64 tanpa pengkodean ganda agar tidak "wrong base64".
+ */
+export function printViaRawBt(printer: PrinterConfig, text: string) {
+  if (typeof window === "undefined") return false;
+  const body = text.endsWith("\n") ? text : `${text}\n`;
+  window.location.href = `rawbt:base64,${toBase64(`${body}\n\n\n`)}`;
+  return true;
+}
 
 /** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
 export function printViaAndroid(printer: PrinterConfig, text: string) {
