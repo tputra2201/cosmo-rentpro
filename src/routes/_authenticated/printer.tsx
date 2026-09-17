@@ -311,7 +311,11 @@ function PrinterPage() {
               {(p.mode === "bluetooth" || p.mode === "usb") && (
                 <DetailField
                   label="Printer terpilih"
-                  hint="Pilih sekali; printer diingat pada perangkat kasir ini."
+                  hint={
+                    printerReady(p.id)
+                      ? "Tersambung — cetak berikutnya tanpa dialog pilih printer."
+                      : "Pilih sekali setelah aplikasi dibuka; cetak berikutnya tanpa dialog."
+                  }
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">

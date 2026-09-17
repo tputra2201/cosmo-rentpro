@@ -200,6 +200,10 @@ export function printerReady(printerId: string) {
   return active.has(printerId);
 }
 
+function forgetActive(printerId: string) {
+  active.delete(printerId);
+}
+
 function keepBluetooth(printerId: string, device: BluetoothDevice, writer: Writer) {
   active.set(printerId, { kind: "bluetooth", writer });
   device.addEventListener("gattserverdisconnected", () => {
