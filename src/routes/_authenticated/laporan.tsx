@@ -241,7 +241,11 @@ function LaporanPage() {
 }
 
 function ReceiptReport({ range }: { range: ReportRange }) {
-  const { history: rawHistory, cashEntries, clearHistory } = useBilling();
+  const { history: rawHistory, cashEntries, clearHistory, addLog } = useBilling();
+  const { role: myRole } = useAuth();
+  const canClearHistory =
+    myRole === "manager" || myRole === "installer" || myRole === "admin";
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const history = [...rawHistory]
     .filter((h) => inRange(paidTime(h), range))
