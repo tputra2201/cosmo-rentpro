@@ -634,6 +634,14 @@ export function StationDialog({
               <p className="mt-2 text-sm text-muted-foreground">
                 {session.customerName || "Umum"} · {session.member ? "Member" : "Umum"} · {session.packageName}
               </p>
+              <p className="text-xs text-muted-foreground">
+                Waktu mulai:{" "}
+                {new Date(session.startAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </p>
               {!editCustomer ? (
                 <Button
                   size="sm"
