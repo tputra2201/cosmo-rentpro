@@ -160,7 +160,7 @@ export function useAuth() {
 }
 
 /** Menu yang hanya boleh diakses Installer */
-export const installerOnlyPaths = ["/store"];
+export const installerOnlyPaths: string[] = [];
 
 /** Level setara Admin: Installer dan Manager (termasuk akun Admin lama) */
 export const isAdminLevel = (role: AppRole | null) =>

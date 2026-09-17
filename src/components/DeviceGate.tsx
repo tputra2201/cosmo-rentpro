@@ -23,7 +23,12 @@ export function DeviceGate() {
   const kicking = useRef(false);
 
   useEffect(() => {
-    if (pathname.startsWith("/tv") || pathname.startsWith("/auth")) return;
+    if (
+      pathname.startsWith("/tv") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/atur-sandi")
+    )
+      return;
     if (!checked || !roleReady || allowed || privileged || kicking.current) return;
     kicking.current = true;
     void (async () => {
