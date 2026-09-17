@@ -78,18 +78,28 @@ export type SessionAddon = {
   price: number;
   mode: AddonMode;
   qty: number;
+  /** Durasi khusus item ini (menit). Kosong = ikut lama sesi. */
+  minutes?: number;
 };
 
-/** Biaya satu sewa tambahan. Mode per jam dikali durasi sesi. */
+/** Jam yang dipakai satu sewa tambahan: durasi sendiri bila diisi, jika tidak ikut sesi. */
+export function addonHours(addon: SessionAddon, sessionHours: number) {
+  const own = addon.minutes;
+  if (typeof own === "number" && own > 0) return own / 60;
+  return Math.max(0, sessionHours);
+}
+
+/** Biaya satu sewa tambahan. Mode per jam dikali durasi yang dipakai item itu. */
 export function addonAmount(addon: SessionAddon, hours: number) {
   const qty = Math.max(0, addon.qty);
   if (addon.mode === "once") return Math.round(addon.price * qty);
-  return Math.round(addon.price * qty * Math.max(0, hours));
+  return Math.round(addon.price * qty * addonHours(addon, hours));
 }
 
 export function addonsTotal(addons: SessionAddon[] | undefined, hours: number) {
   return (addons ?? []).reduce((sum, a) => sum + addonAmount(a, hours), 0);
 }
+
 
 export type Session = {
   mode: PlayMode;
@@ -1016,7 +1026,10 @@ export function addonDiscountTotal(
     const base = addonAmount(addon, hours);
     const item = (catalog ?? []).find((a) => a.id === addon.addonId);
     const units =
-      addon.mode === "hourly" ? Math.max(0, addon.qty) * Math.max(0, hours) : Math.max(0, addon.qty);
+      addon.mode === "hourly"
+        ? Math.max(0, addon.qty) * addonHours(addon, hours)
+        : Math.max(0, addon.qty);
+
     return sum + itemDiscountAmount(item?.discount, base, units, ctx, fallbackPercent);
   }, 0);
 }
@@ -1347,8 +1360,14 @@ type Ctx = State & {
   updateAddonRental: (id: string, patch: Partial<Omit<AddonRental, "id">>) => void;
   setAddonDiscount: (id: string, patch: Partial<ItemDiscount>) => void;
   removeAddonRental: (id: string) => void;
-  addSessionAddon: (stationId: string, addonId: string, qty?: number) => void;
+  addSessionAddon: (stationId: string, addonId: string, qty?: number, minutes?: number) => void;
+  updateSessionAddon: (
+    stationId: string,
+    rowId: string,
+    patch: { qty?: number; minutes?: number },
+  ) => void;
   removeSessionAddon: (stationId: string, rowId: string) => void;
+
   reorderConsoleTypes: (activeName: string, overName: string) => void;
   reorderMenuCategories: (activeName: string, overName: string) => void;
   addMenuItem: (name: string, price: number, category?: string) => void;
@@ -2535,16 +2554,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           addonRentals: prev.addonRentals.filter((a) => a.id !== id),
         })),
-      addSessionAddon: (stationId, addonId, qty = 1) =>
+      addSessionAddon: (stationId, addonId, qty = 1, minutes) =>
         update((prev) => {
           const item = prev.addonRentals.find((a) => a.id === addonId);
           if (!item) return prev;
+          const mins =
+            item.mode === "hourly" && typeof minutes === "number" && minutes > 0
+              ? Math.round(minutes)
+              : undefined;
           return {
             ...prev,
             stations: prev.stations.map((s) => {
               if (s.id !== stationId || !s.session) return s;
               const addons = [...(s.session.addons ?? [])];
-              const index = addons.findIndex((a) => a.addonId === addonId);
+              const index = addons.findIndex(
+                (a) => a.addonId === addonId && (a.minutes ?? 0) === (mins ?? 0),
+              );
               const existing = addons[index];
               if (existing) {
                 addons[index] = { ...existing, qty: existing.qty + Math.max(1, qty) };
@@ -2556,12 +2581,36 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   price: item.price,
                   mode: item.mode,
                   qty: Math.max(1, qty),
+                  ...(mins ? { minutes: mins } : {}),
                 });
               }
               return { ...s, session: { ...s.session, addons } };
             }),
           };
         }),
+      updateSessionAddon: (stationId, rowId, patch) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  addons: (s.session.addons ?? []).map((a) => {
+                    if (a.id !== rowId) return a;
+                    const next: SessionAddon = { ...a };
+                    if (typeof patch.qty === "number") next.qty = Math.max(1, Math.round(patch.qty));
+                    if (typeof patch.minutes === "number") {
+                      const mins = Math.round(patch.minutes);
+                      if (mins > 0) next.minutes = mins;
+                      else delete next.minutes;
+                    }
+                    return next;
+                  }),
+                },
+              }
+            : s,
+        ),
+
       removeSessionAddon: (stationId, rowId) =>
         mapStation(stationId, (s) =>
           s.session

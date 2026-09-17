@@ -111,7 +111,9 @@ export function StationDialog({
     receiptLayout,
     addonRentals,
     addSessionAddon,
+    updateSessionAddon,
     removeSessionAddon,
+
     stations,
     moveSession,
     voidSession,
@@ -168,6 +170,8 @@ export function StationDialog({
   const [moveTo, setMoveTo] = useState("");
   const [moveConsole, setMoveConsole] = useState("");
   const [addonPick, setAddonPick] = useState("");
+  const [addonMinutes, setAddonMinutes] = useState("");
+
   const freeStations = stations.filter((s) => s.id !== station?.id && !s.session);
 
 
@@ -870,7 +874,13 @@ export function StationDialog({
               <div className="space-y-2">
                 <p className="text-sm font-medium">Additional Rental</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Select value={addonPick} onValueChange={setAddonPick}>
+                  <Select
+                    value={addonPick}
+                    onValueChange={(v) => {
+                      setAddonPick(v);
+                      setAddonMinutes("");
+                    }}
+                  >
                     <SelectTrigger className="w-56" aria-label="Pilih additional rental">
                       <SelectValue placeholder="Pilih additional rental…" />
                     </SelectTrigger>
@@ -885,6 +895,18 @@ export function StationDialog({
                         ))}
                     </SelectContent>
                   </Select>
+                  {addonRentals.find((a) => a.id === addonPick)?.mode === "hourly" && (
+                    <Input
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      className="w-40"
+                      aria-label="Durasi additional rental (menit)"
+                      placeholder="Durasi (menit)"
+                      value={addonMinutes}
+                      onChange={(e) => setAddonMinutes(e.target.value)}
+                    />
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -893,28 +915,59 @@ export function StationDialog({
                       if (!requireShift()) return;
                       const picked = addonRentals.find((a) => a.id === addonPick);
                       if (!picked) return;
-                      addSessionAddon(station.id, picked.id, 1);
+                      const mins = Number(addonMinutes);
+                      addSessionAddon(
+                        station.id,
+                        picked.id,
+                        1,
+                        Number.isFinite(mins) && mins > 0 ? mins : undefined,
+                      );
                       setAddonPick("");
+                      setAddonMinutes("");
                       toast.success(`${picked.name} ditambahkan`);
                     }}
                   >
                     <Plus className="size-4" /> Tambah
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Durasi dikosongkan = ikut lama sesi TV. Isi menitnya bila sewa tambahan lebih
+                  singkat, misal 60 menit.
+                </p>
                 {(session.addons ?? []).length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {(session.addons ?? []).map((a) => (
                       <li
                         key={a.id}
-                        className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-secondary px-3 py-1.5 text-sm"
                       >
                         <span>
                           {a.name} × {a.qty}
                           <span className="ml-1 text-xs text-muted-foreground">
-                            {a.mode === "hourly" ? "per jam" : "sekali sewa"}
+                            {a.mode === "hourly"
+                              ? a.minutes
+                                ? `per jam · ${a.minutes} menit`
+                                : "per jam · ikut sesi"
+                              : "sekali sewa"}
                           </span>
                         </span>
                         <span className="flex items-center gap-2">
+                          {a.mode === "hourly" && (
+                            <Input
+                              type="number"
+                              min={0}
+                              inputMode="numeric"
+                              className="h-8 w-24"
+                              aria-label={`Durasi ${a.name} (menit)`}
+                              placeholder="ikut sesi"
+                              value={a.minutes ?? ""}
+                              onChange={(e) =>
+                                updateSessionAddon(station.id, a.id, {
+                                  minutes: Math.max(0, Number(e.target.value) || 0),
+                                })
+                              }
+                            />
+                          )}
                           {formatRupiah(
                             addonAmount(a, rentalMinutes(session, now) / 60),
                           )}
@@ -931,6 +984,7 @@ export function StationDialog({
                     ))}
                   </ul>
                 )}
+
               </div>
             )}
 
