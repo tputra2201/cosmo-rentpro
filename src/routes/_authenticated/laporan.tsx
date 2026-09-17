@@ -330,6 +330,9 @@ function ReceiptReport({ range }: { range: ReportRange }) {
         )}
       </header>
 
+      {confirmDialog}
+
+
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
