@@ -65,14 +65,18 @@ function readCache(): StoreInfo | null {
 export function useStoreInfo(enabled: boolean) {
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [loading, setLoading] = useState(enabled);
+  /** true bila data store di atas benar-benar baru dibaca dari server (bukan salinan lama). */
+  const [fresh, setFresh] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
       setStore(null);
       setLoading(false);
+      setFresh(false);
       return;
     }
     setStore(readCache());
+    setFresh(false);
     let cancelled = false;
     (async () => {
       const { data } = await supabase.from("stores").select(COLUMNS).limit(1).maybeSingle();
@@ -81,6 +85,7 @@ export function useStoreInfo(enabled: boolean) {
       const row = raw ? { ...raw, allowed_devices: normalizeDevices(raw.allowed_devices) } : null;
       if (row) {
         setStore(row);
+        setFresh(true);
 
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(row));
@@ -95,5 +100,5 @@ export function useStoreInfo(enabled: boolean) {
     };
   }, [enabled]);
 
-  return { store, loading };
+  return { store, loading, fresh };
 }
