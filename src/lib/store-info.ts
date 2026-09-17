@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** Satu perangkat yang diizinkan bertransaksi di store ini. */
+export type AllowedDevice = {
+  code: string;
+  label: string;
+};
+
 export type StoreInfo = {
   id: string;
   store_code: string;
@@ -17,12 +23,14 @@ export type StoreInfo = {
   logo_url: string;
   device_code: string;
   allowed_ips: string[];
+  allowed_devices: AllowedDevice[];
 };
 
 const CACHE_KEY = "billing-store-info-v1";
 
 const COLUMNS =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url, device_code, allowed_ips";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, expires_at, active, logo_url, device_code, allowed_ips, allowed_devices";
+
 
 function readCache(): StoreInfo | null {
   if (typeof window === "undefined") return null;
