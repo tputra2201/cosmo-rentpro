@@ -541,6 +541,7 @@ function ReceiptDialog({
   const [method, setMethod] = useState(record.payment ?? "Cash");
   const [confirm, setConfirm] = useState(false);
   const options = paymentMethods.filter((p) => p.active);
+  const { confirm: askConfirm, dialog: askDialog } = useConfirm();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
