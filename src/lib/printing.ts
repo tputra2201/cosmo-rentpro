@@ -15,9 +15,10 @@ export type PaperSize = "40mm" | "58mm" | "80mm" | "a4";
  * - "system": dialog cetak bawaan perangkat (Windows, Mac, iOS, printer A4).
  * - "bluetooth": langsung ke printer thermal Bluetooth dari aplikasi ini.
  * - "usb": langsung ke printer thermal USB dari aplikasi ini.
+ * - "rawbt": aplikasi RawBT di Android untuk printer Bluetooth lama (Classic/SPP).
  * - "android": aplikasi Android RenToPlay untuk printer Bluetooth lama (Classic/SPP).
  */
-export type PrintMode = "system" | "bluetooth" | "usb" | "android";
+export type PrintMode = "system" | "bluetooth" | "usb" | "rawbt" | "android";
 
 export type PrinterConfig = {
   id: string;
