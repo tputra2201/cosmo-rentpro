@@ -601,7 +601,7 @@ function StorePage() {
 
       <DeviceAccessSection
         storeId={store?.id}
-        deviceCodeSaved={store?.device_code ?? ""}
+        devicesSaved={store?.allowed_devices ?? []}
         allowedIpsSaved={store?.allowed_ips ?? []}
       />
 
