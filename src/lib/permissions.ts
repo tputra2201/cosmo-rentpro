@@ -143,7 +143,7 @@ export const ALL_PERMISSIONS: string[] = PERMISSION_GROUPS.flatMap((g) =>
 );
 
 const managerDefaults = ALL_PERMISSIONS.filter(
-  (key) => key !== "menu.store" && key !== "store.ubah" && key !== "pengguna.hakakses",
+  (key) => key !== "store.ubah" && key !== "pengguna.hakakses",
 );
 
 /** Hak akses awal untuk setiap level (Installer selalu penuh). */
@@ -232,5 +232,8 @@ export function can(
   overrides?: RolePermissions,
 ): boolean {
   if (role === "installer") return true;
+  // Manager selalu boleh membuka informasi dan pengaturan operasional store,
+  // termasuk bila hak akses lama tersimpan sebelum menu Store dibuka untuk Manager.
+  if ((role === "manager" || role === "admin") && key === "menu.store") return true;
   return permissionsOf(role, overrides).includes(key);
 }
