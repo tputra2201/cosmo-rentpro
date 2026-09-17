@@ -61,9 +61,11 @@ export function useStoreInfo(enabled: boolean) {
     (async () => {
       const { data } = await supabase.from("stores").select(COLUMNS).limit(1).maybeSingle();
       if (cancelled) return;
-      const row = data as StoreInfo | null;
+      const raw = data as (StoreInfo & { allowed_devices?: unknown }) | null;
+      const row = raw ? { ...raw, allowed_devices: normalizeDevices(raw.allowed_devices) } : null;
       if (row) {
         setStore(row);
+
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(row));
         } catch {
