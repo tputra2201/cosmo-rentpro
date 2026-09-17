@@ -337,7 +337,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Rental hari ini" value={formatRupiah(sum(today, "rentalTotal"))} />
+        <Stat label="Rental periode ini" value={formatRupiah(sum(today, "rentalTotal"))} />
         <Stat
           label="Additional Rental"
           value={formatRupiah(sum(today, "addonTotal"))}
@@ -346,11 +346,11 @@ function ReceiptReport({ range }: { range: ReportRange }) {
         <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
         <Stat label="Pengeluaran" value={formatRupiah(expense)} />
         <Stat
-          label="Total pendapatan hari ini"
+          label="Total pendapatan periode ini"
           value={formatRupiah(sum(today, "total") + otherIncome)}
         />
         <Stat
-          label="Sisa bersih hari ini"
+          label="Sisa bersih periode ini"
           value={formatRupiah(sum(today, "total") + otherIncome - expense)}
           highlight
         />
@@ -358,14 +358,14 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
       {(payoutIn > 0 || payoutOut > 0) && (
         <p className="text-sm text-muted-foreground">
-          Perpindahan uang kas hari ini (tidak dihitung pendapatan/biaya): masuk{" "}
+          Perpindahan uang kas periode ini (tidak dihitung pendapatan/biaya): masuk{" "}
           {formatRupiah(payoutIn)} · keluar {formatRupiah(payoutOut)}.
         </p>
       )}
 
       {cashToday.length > 0 && (
         <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran hari ini</h2>
+          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran periode ini</h2>
           <Table>
             <TableHeader>
               <TableRow>
