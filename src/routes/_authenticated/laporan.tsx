@@ -52,10 +52,12 @@ import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import {
+  businessDate,
   businessDateKey,
   defaultRange,
   inRange,
   rangeLabel,
+  type OperatingHours,
   type ReportRange,
 } from "@/lib/report-range";
 import { useAuth } from "@/lib/auth";
