@@ -9,7 +9,7 @@ import {
   type Context,
   type ReactNode,
 } from "react";
-import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
+import { DEVICE_BLOCKED_MESSAGE, deviceCode, deviceWriteAllowed } from "@/lib/device-guard";
 import { toast } from "sonner";
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
@@ -596,6 +596,7 @@ export type HistoryRecord = {
   paidAt?: number; // waktu pembayaran lunas
   ongoing?: boolean; // sesi masih berjalan saat nota dibuat
   cashierName?: string; // kasir yang memproses transaksi
+  deviceCode?: string; // kode perangkat yang memproses transaksi
 };
 
 
