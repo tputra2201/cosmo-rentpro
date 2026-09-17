@@ -35,6 +35,13 @@ import {
   type PrinterConfig,
   type PrinterRole,
 } from "@/lib/printing";
+import {
+  bluetoothSupported,
+  forgetDevice,
+  savedDevice,
+  scanPrinter,
+  usbSupported,
+} from "@/lib/escpos";
 
 export const Route = createFileRoute("/_authenticated/printer")({
   head: () => ({
