@@ -826,6 +826,7 @@ function cardTopupCashEntry(
   cardNumber: string,
   stamp: number,
   payment = "Cash",
+  actor?: string,
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
@@ -846,6 +847,7 @@ function cardTopupCashEntry(
     payment,
     note: `Top up kartu ${cardNumber}`,
     createdAt: stamp,
+    ...(actor ? { createdBy: actor } : {}),
   };
 }
 
@@ -856,6 +858,7 @@ function cardSaleCashEntry(
   cardNumber: string,
   stamp: number,
   payment = "Cash",
+  actor?: string,
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
@@ -876,6 +879,7 @@ function cardSaleCashEntry(
     payment,
     note: `Penjualan kartu ${cardNumber}`,
     createdAt: stamp,
+    ...(actor ? { createdBy: actor } : {}),
   };
 }
 
