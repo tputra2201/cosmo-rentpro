@@ -27,6 +27,7 @@ import {
   PRINTER_ROLE_LABEL,
   PRINT_MODES,
   PRINT_MODE_LABEL,
+  labelLayout,
   isAndroidPrintAvailable,
   pairedAndroidPrinters,
   type DocLayout,
@@ -122,6 +123,7 @@ function PrinterPage() {
         items: [{ name: "Contoh Menu", qty: 1 }],
         heading: printer.role === "bar" ? "BAR" : "DAPUR",
         source: "Uji coba cetak",
+        customerName: "Pelanggan Uji",
       });
       return;
     }
@@ -436,6 +438,38 @@ function PrinterPage() {
                   Aktif
                 </label>
               </div>
+
+              {(p.role === "kitchen" || p.role === "bar") && (
+                <DetailField
+                  label="Isi label yang dicetak"
+                  hint="Matikan informasi yang tidak diperlukan. Baris yang dimatikan tidak menyisakan ruang kosong."
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {([
+                      ["showHeading", "Judul DAPUR/BAR"],
+                      ["showSeparators", "Garis pemisah"],
+                      ["showItemName", "Nama menu"],
+                      ["showQuantity", "Jumlah pesanan"],
+                      ["showNotes", "Catatan pesanan"],
+                      ["showSource", "Nomor TV/meja"],
+                      ["showCustomer", "Nama pelanggan"],
+                      ["showTimestamp", "Tanggal dan jam"],
+                    ] as const).map(([key, text]) => (
+                      <Toggle
+                        key={key}
+                        label={text}
+                        checked={labelLayout(p)[key]}
+                        disabled={!canManage}
+                        onChange={(value) =>
+                          updatePrinter(p.id, {
+                            labelLayout: { ...labelLayout(p), [key]: value },
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                </DetailField>
+              )}
 
               <Button size="sm" variant="outline" onClick={() => testPrint(p)}>
                 <PrinterIcon className="size-4" /> Uji cetak

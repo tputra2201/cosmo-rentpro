@@ -20,6 +20,18 @@ export type PaperSize = "40mm" | "58mm" | "80mm" | "a4";
  */
 export type PrintMode = "system" | "bluetooth" | "usb" | "rawbt" | "android";
 
+/** Informasi yang ditampilkan pada satu label dapur / bar. */
+export type LabelLayout = {
+  showHeading: boolean;
+  showSeparators: boolean;
+  showItemName: boolean;
+  showQuantity: boolean;
+  showNotes: boolean;
+  showSource: boolean;
+  showCustomer: boolean;
+  showTimestamp: boolean;
+};
+
 export type PrinterConfig = {
   id: string;
   name: string;
@@ -38,6 +50,8 @@ export type PrinterConfig = {
   /** Jumlah salinan setiap kali mencetak. */
   copies: number;
   active: boolean;
+  /** Pilihan isi label; nilai lama tanpa pengaturan memakai layout ringkas bawaan. */
+  labelLayout?: Partial<LabelLayout>;
   note?: string;
   sort?: number;
 };
@@ -89,6 +103,21 @@ export const CHARS_PER_LINE: Record<PaperSize, number> = {
   "80mm": 42,
   a4: 60,
 };
+
+export const defaultLabelLayout: LabelLayout = {
+  showHeading: false,
+  showSeparators: false,
+  showItemName: true,
+  showQuantity: true,
+  showNotes: false,
+  showSource: false,
+  showCustomer: true,
+  showTimestamp: true,
+};
+
+export function labelLayout(printer: PrinterConfig): LabelLayout {
+  return { ...defaultLabelLayout, ...(printer.labelLayout ?? {}) };
+}
 
 export function printMode(printer: PrinterConfig): PrintMode {
   if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";

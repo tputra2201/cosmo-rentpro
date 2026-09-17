@@ -7,6 +7,7 @@ import {
   escapeHtml,
   paperCss,
   printHtml,
+  labelLayout,
   printMode,
   printViaAndroid,
   printViaRawBt,
@@ -255,6 +256,31 @@ export function printReceipt(opts: {
 
 export type LabelItem = { name: string; qty: number; note?: string };
 
+function labelTextLines(opts: {
+  printer: PrinterConfig;
+  item: LabelItem;
+  heading: string;
+  source: string;
+  customerName?: string;
+  note?: string;
+  stamp: string;
+}) {
+  const { printer, item, heading, source, customerName, note, stamp } = opts;
+  const layout = labelLayout(printer);
+  const width = CHARS_PER_LINE[printer.paper];
+  const lines: string[] = [];
+  if (layout.showHeading) lines.push(textCenter(heading, width));
+  if (layout.showSeparators) lines.push(textSep(width));
+  if (layout.showItemName) lines.push(item.name);
+  if (layout.showQuantity) lines.push(`x ${item.qty}`);
+  if (layout.showNotes) lines.push(...[item.note, note].filter(Boolean) as string[]);
+  if (layout.showSeparators) lines.push(textSep(width));
+  if (layout.showSource && source) lines.push(source);
+  if (layout.showCustomer && customerName) lines.push(customerName);
+  if (layout.showTimestamp) lines.push(stamp);
+  return lines;
+}
+
 /** Satu label per item (kertas label thermal dapur / bar). */
 export function printLabels(opts: {
   printer: PrinterConfig;
@@ -269,23 +295,9 @@ export function printLabels(opts: {
   const stamp = time(opts.at ?? Date.now());
   const mode = printMode(printer);
   if (mode === "android" || mode === "rawbt" || mode === "bluetooth" || mode === "usb") {
-    const w = CHARS_PER_LINE[printer.paper];
     const text = items
       .map((item) =>
-        [
-          textCenter(heading, w),
-          textSep(w),
-          item.name,
-          `x ${item.qty}`,
-          item.note ?? "",
-          textSep(w),
-          source,
-          customerName ?? "",
-          note ?? "",
-          stamp,
-        ]
-          .filter(Boolean)
-          .join("\n"),
+        labelTextLines({ printer, item, heading, source, customerName, note, stamp }).join("\n"),
       )
       .join("\n\n");
     if (mode === "android") printViaAndroid(printer, textWithCopies(printer, text));
@@ -293,23 +305,24 @@ export function printLabels(opts: {
     else void printDirect(printer, mode, textWithCopies(printer, text));
     return;
   }
+  const layout = labelLayout(printer);
   const labels = items
-    .map(
-      (item) => `
+    .map((item) => {
+      const notes = layout.showNotes ? [item.note, note].filter(Boolean) : [];
+      return `
         <div class="page-break">
-          <div class="center bold">${escapeHtml(heading)}</div>
-          <div class="sep"></div>
-          <div class="bold big">${escapeHtml(item.name)}</div>
-          <div class="bold big">× ${item.qty}</div>
-          ${item.note ? `<div class="muted">${escapeHtml(item.note)}</div>` : ""}
-          <div class="sep"></div>
-          <div class="muted">${escapeHtml(source)}</div>
-          ${customerName ? `<div class="muted">${escapeHtml(customerName)}</div>` : ""}
-          ${note ? `<div class="muted">${escapeHtml(note)}</div>` : ""}
-          <div class="muted">${escapeHtml(stamp)}</div>
+          ${layout.showHeading ? `<div class="center bold">${escapeHtml(heading)}</div>` : ""}
+          ${layout.showSeparators ? '<div class="sep"></div>' : ""}
+          ${layout.showItemName ? `<div class="bold big">${escapeHtml(item.name)}</div>` : ""}
+          ${layout.showQuantity ? `<div class="bold big">× ${item.qty}</div>` : ""}
+          ${notes.map((value) => `<div class="muted">${escapeHtml(value)}</div>`).join("")}
+          ${layout.showSeparators ? '<div class="sep"></div>' : ""}
+          ${layout.showSource && source ? `<div class="muted">${escapeHtml(source)}</div>` : ""}
+          ${layout.showCustomer && customerName ? `<div class="muted">${escapeHtml(customerName)}</div>` : ""}
+          ${layout.showTimestamp ? `<div class="muted">${escapeHtml(stamp)}</div>` : ""}
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
   printHtml(heading, paperCss(printer), withCopies(printer, labels));
 }
