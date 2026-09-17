@@ -349,6 +349,17 @@ function PrinterPage() {
                 </DetailField>
               )}
 
+              {p.mode === "rawbt" && (
+                <DetailField label="Cetak lewat RawBT">
+                  <p className="text-sm text-muted-foreground">
+                    Pilih printer di aplikasi RawBT pada HP/tablet Android ini, dan pastikan
+                    printer sudah dipasangkan di pengaturan Bluetooth. Cocok untuk printer
+                    Bluetooth lama seperti RPP02N. Tidak tersedia di PC Windows — di PC gunakan
+                    cetak langsung Bluetooth atau USB.
+                  </p>
+                </DetailField>
+              )}
+
               {p.mode === "android" && (
                 <DetailField label="Printer Bluetooth (aplikasi Android)">
                   <Select

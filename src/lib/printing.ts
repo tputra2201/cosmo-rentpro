@@ -15,9 +15,10 @@ export type PaperSize = "40mm" | "58mm" | "80mm" | "a4";
  * - "system": dialog cetak bawaan perangkat (Windows, Mac, iOS, printer A4).
  * - "bluetooth": langsung ke printer thermal Bluetooth dari aplikasi ini.
  * - "usb": langsung ke printer thermal USB dari aplikasi ini.
+ * - "rawbt": aplikasi RawBT di Android untuk printer Bluetooth lama (Classic/SPP).
  * - "android": aplikasi Android RenToPlay untuk printer Bluetooth lama (Classic/SPP).
  */
-export type PrintMode = "system" | "bluetooth" | "usb" | "android";
+export type PrintMode = "system" | "bluetooth" | "usb" | "rawbt" | "android";
 
 export type PrinterConfig = {
   id: string;
@@ -76,9 +77,10 @@ export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
   system: "Dialog cetak perangkat (printer A4)",
   bluetooth: "Langsung — printer Bluetooth",
   usb: "Langsung — printer USB",
-  android: "Aplikasi Android (Bluetooth lama)",
+  rawbt: "RawBT (printer Bluetooth lama)",
+  android: "Aplikasi Android RenToPlay (Bluetooth lama)",
 };
-export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "android"];
+export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "rawbt", "android"];
 
 /** Jumlah huruf per baris untuk cetak teks polos ESC/POS. */
 export const CHARS_PER_LINE: Record<PaperSize, number> = {
@@ -90,7 +92,8 @@ export const CHARS_PER_LINE: Record<PaperSize, number> = {
 
 export function printMode(printer: PrinterConfig): PrintMode {
   if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";
-  if (printer.mode === "bluetooth" || printer.mode === "usb") return printer.mode;
+  if (printer.mode === "rawbt" || printer.mode === "bluetooth" || printer.mode === "usb")
+    return printer.mode;
   return "system";
 }
 
@@ -153,6 +156,16 @@ function toBase64(value: string) {
   return btoa(binary);
 }
 
+/**
+ * Kirim teks ESC/POS ke aplikasi RawBT (Android) untuk printer Bluetooth lama.
+ * Payload dikirim sebagai base64 tanpa pengkodean ganda agar tidak "wrong base64".
+ */
+export function printViaRawBt(printer: PrinterConfig, text: string) {
+  if (typeof window === "undefined") return false;
+  const body = text.endsWith("\n") ? text : `${text}\n`;
+  window.location.href = `rawbt:base64,${toBase64(`${body}\n\n\n`)}`;
+  return true;
+}
 
 /** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
 export function printViaAndroid(printer: PrinterConfig, text: string) {
