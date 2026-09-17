@@ -134,9 +134,21 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
     }
   }, [allowed, ip, restricted]);
 
+  const roleReady = !authLoading && role !== null;
+
   const value = useMemo<DeviceAccess>(
-    () => ({ code, ip, restricted, allowed, checked: Boolean(store), privileged }),
-    [code, ip, restricted, allowed, store, privileged],
+    () => ({
+      code,
+      ip,
+      restricted,
+      allowed,
+      // Hanya data yang baru dibaca dari server yang boleh dipakai untuk menolak.
+      checked: fresh,
+      roleReady,
+      privileged,
+      storeName: store?.store_name ?? "",
+    }),
+    [code, ip, restricted, allowed, fresh, roleReady, privileged, store],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
