@@ -64,30 +64,33 @@ export const PRINTER_ROLE_LABEL: Record<PrinterRole, string> = {
 
 export const PAPER_LABEL: Record<PaperSize, string> = {
   "40mm": "Thermal 40 mm",
+  "58mm": "Thermal 58 mm",
   "80mm": "Thermal 80 mm",
   a4: "A4 (inkjet / USB)",
 };
 
-export const PAPER_OPTIONS: PaperSize[] = ["40mm", "80mm", "a4"];
+export const PAPER_OPTIONS: PaperSize[] = ["40mm", "58mm", "80mm", "a4"];
 export const PRINTER_ROLES: PrinterRole[] = ["receipt", "invoice", "kitchen", "bar", "report"];
 
 export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
-  system: "Dialog cetak perangkat",
-  rawbt: "Android — aplikasi RawBT (Bluetooth/USB)",
-  android: "Aplikasi Android — Bluetooth langsung",
+  system: "Dialog cetak perangkat (printer A4)",
+  bluetooth: "Langsung — printer Bluetooth",
+  usb: "Langsung — printer USB",
+  android: "Aplikasi Android (Bluetooth lama)",
 };
-export const PRINT_MODES: PrintMode[] = ["system", "android", "rawbt"];
+export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "android"];
 
-/** Jumlah huruf per baris untuk cetak teks polos (RawBT). */
+/** Jumlah huruf per baris untuk cetak teks polos ESC/POS. */
 export const CHARS_PER_LINE: Record<PaperSize, number> = {
   "40mm": 24,
+  "58mm": 32,
   "80mm": 42,
   a4: 60,
 };
 
 export function printMode(printer: PrinterConfig): PrintMode {
   if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";
-  if (printer.mode === "rawbt") return "rawbt";
+  if (printer.mode === "bluetooth" || printer.mode === "usb") return printer.mode;
   return "system";
 }
 
