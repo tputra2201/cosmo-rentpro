@@ -46,6 +46,7 @@ import { CashierReport } from "@/components/reports/CashierReport";
 import { LogBookReport } from "@/components/reports/LogBookReport";
 import { StatsReport } from "@/components/reports/StatsReport";
 import { VoidReport } from "@/components/reports/VoidReport";
+import { DeviceReport } from "@/components/reports/DeviceReport";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { PrintReportButton } from "@/components/reports/PrintReportButton";
 import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
@@ -139,6 +140,7 @@ function LaporanPage() {
     { value: "logbook", label: "Log Book", key: "laporan.logbook" },
     { value: "statistik", label: "Statistik", key: "laporan.statistik" },
     { value: "void", label: "Laporan VOID", key: "laporan.void" },
+    { value: "perangkat", label: "Transaksi per Perangkat", key: "laporan.perangkat" },
   ].filter((t) => allow(t.key));
   const first = tabs[0]?.value ?? "nota";
   const reportRef = useRef<HTMLDivElement>(null);
@@ -224,6 +226,9 @@ function LaporanPage() {
         </TabsContent>
         <TabsContent value="void" className="mt-6">
           <VoidReport range={range} />
+        </TabsContent>
+        <TabsContent value="perangkat" className="mt-6">
+          <DeviceReport range={range} />
         </TabsContent>
         <TabsContent value="statistik" className="mt-6">
           <StatsReport range={range} />
