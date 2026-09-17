@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Store, ImageUp, ShieldCheck, Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useStoreInfo, type AllowedDevice } from "@/lib/store-info";
+import { normalizeDevices, useStoreInfo, type AllowedDevice } from "@/lib/store-info";
 
 import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
@@ -329,6 +329,9 @@ function DeviceAccessSection({
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">
           <ShieldCheck className="size-5" /> Perangkat yang Diizinkan
         </h2>
+        <p className="mt-1 text-sm font-bold text-primary">
+          Daftar di bawah berlaku untuk store: {storeName || "belum diketahui"}
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
           Hanya perangkat yang kodenya ada di daftar (atau alamat IP-nya cocok)
           boleh bertransaksi — kecuali level Manager, Installer, atau Developer.
