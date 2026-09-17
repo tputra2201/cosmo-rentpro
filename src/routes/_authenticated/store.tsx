@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Store, ImageUp, ShieldCheck, Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useStoreInfo, type AllowedDevice } from "@/lib/store-info";
+import { normalizeDevices, useStoreInfo, type AllowedDevice } from "@/lib/store-info";
 
 import { useBilling } from "@/lib/billing-store";
 import { useDeviceAccess } from "@/lib/device-guard";
@@ -158,10 +158,12 @@ function LogoSection({
 /** Daftar kode perangkat & daftar IP yang boleh bertransaksi. */
 function DeviceAccessSection({
   storeId,
+  storeName,
   devicesSaved,
   allowedIpsSaved,
 }: {
   storeId: string | undefined;
+  storeName: string;
   devicesSaved: AllowedDevice[];
   allowedIpsSaved: string[];
 }) {
@@ -214,11 +216,48 @@ function DeviceAccessSection({
       `${devices.length} perangkat · IP: ${ipList().join(", ") || "kosong"}`,
     );
 
+  /**
+   * Membaca ulang isi yang tersimpan lalu memastikan daftar perangkat & IP
+   * benar-benar sama dengan yang baru disimpan. Tanpa ini, penyimpanan yang
+   * tidak mengubah satu baris pun tetap terlihat "berhasil".
+   */
+  const confirmSaved = async () => {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("allowed_devices, allowed_ips")
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return false;
+    const row = data as { allowed_devices: unknown; allowed_ips: string[] | null };
+    const savedCodes = normalizeDevices(row.allowed_devices)
+      .map((d) => d.code.toUpperCase())
+      .sort()
+      .join("|");
+    const wantCodes = devices
+      .map((d) => d.code.toUpperCase())
+      .sort()
+      .join("|");
+    const savedIps = [...(row.allowed_ips ?? [])].sort().join("|");
+    const wantIps = [...ipList()].sort().join("|");
+    return savedCodes === wantCodes && savedIps === wantIps;
+  };
+
+  const savedOk = () => {
+    logChange();
+    toast.success("Perangkat & IP yang diizinkan tersimpan.");
+  };
+
+  const savedFailed = () =>
+    toast.error(
+      "Daftar perangkat belum tersimpan. Akun ini kemungkinan terdaftar di store lain — pastikan store yang sedang dibuka sudah benar, lalu coba lagi.",
+      { duration: 14000 },
+    );
+
   /** Manager / Installer menyimpan langsung tanpa Kunci Developer. */
   const saveAsManager = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase.rpc("store_set_device_access", {
+      const { data, error } = await supabase.rpc("store_set_device_access", {
         _device_code: devices[0]?.code ?? "",
         _allowed_ips: ipList(),
         _allowed_devices: devices,
@@ -227,8 +266,12 @@ function DeviceAccessSection({
         toast.error(error.message, { duration: 10000 });
         return;
       }
-      logChange();
-      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
+      const changed = typeof data === "number" ? data : 1;
+      if (changed < 1 || !(await confirmSaved())) {
+        savedFailed();
+        return;
+      }
+      savedOk();
     } catch {
       toast.error("Tidak ada koneksi ke server.");
     } finally {
@@ -266,8 +309,11 @@ function DeviceAccessSection({
         toast.error(await res.text(), { duration: 10000 });
         return;
       }
-      logChange();
-      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
+      if (!(await confirmSaved())) {
+        savedFailed();
+        return;
+      }
+      savedOk();
     } catch {
       toast.error("Tidak ada koneksi ke server.");
     } finally {
@@ -283,6 +329,9 @@ function DeviceAccessSection({
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">
           <ShieldCheck className="size-5" /> Perangkat yang Diizinkan
         </h2>
+        <p className="mt-1 text-sm font-bold text-primary">
+          Daftar di bawah berlaku untuk store: {storeName || "belum diketahui"}
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
           Hanya perangkat yang kodenya ada di daftar (atau alamat IP-nya cocok)
           boleh bertransaksi — kecuali level Manager, Installer, atau Developer.
@@ -601,6 +650,7 @@ function StorePage() {
 
       <DeviceAccessSection
         storeId={store?.id}
+        storeName={store?.store_name ?? ""}
         devicesSaved={store?.allowed_devices ?? []}
         allowedIpsSaved={store?.allowed_ips ?? []}
       />

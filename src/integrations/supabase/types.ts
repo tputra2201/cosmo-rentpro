@@ -422,7 +422,7 @@ export type Database = {
               _allowed_ips: string[]
               _device_code: string
             }
-            Returns: undefined
+            Returns: number
           }
     }
     Enums: {

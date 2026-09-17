@@ -58,10 +58,14 @@ export type DeviceAccess = {
   restricted: boolean;
   /** Perangkat / level ini boleh bertransaksi & mengubah pengaturan */
   allowed: boolean;
-  /** Data store sudah terbaca, jadi keputusan di bawah bisa dipercaya */
+  /** Data store benar-benar terbaca dari server, jadi keputusan bisa dipercaya */
   checked: boolean;
+  /** Level pengguna sudah selesai terbaca */
+  roleReady: boolean;
   /** Level tinggi (Manager / Installer / Developer) — selalu boleh */
   privileged: boolean;
+  /** Nama store yang menilai perangkat ini */
+  storeName: string;
 };
 
 const Ctx = createContext<DeviceAccess>({
@@ -70,12 +74,14 @@ const Ctx = createContext<DeviceAccess>({
   restricted: false,
   allowed: true,
   checked: false,
+  roleReady: false,
   privileged: false,
+  storeName: "",
 });
 
 export function DeviceGuardProvider({ children }: { children: ReactNode }) {
-  const { session, role } = useAuth();
-  const { store } = useStoreInfo(Boolean(session));
+  const { session, role, loading: authLoading } = useAuth();
+  const { store, fresh } = useStoreInfo(Boolean(session));
   const [ip, setIp] = useState("");
   const code = useMemo(() => deviceCode(), []);
 
@@ -128,9 +134,21 @@ export function DeviceGuardProvider({ children }: { children: ReactNode }) {
     }
   }, [allowed, ip, restricted]);
 
+  const roleReady = !authLoading && role !== null;
+
   const value = useMemo<DeviceAccess>(
-    () => ({ code, ip, restricted, allowed, checked: Boolean(store), privileged }),
-    [code, ip, restricted, allowed, store, privileged],
+    () => ({
+      code,
+      ip,
+      restricted,
+      allowed,
+      // Hanya data yang baru dibaca dari server yang boleh dipakai untuk menolak.
+      checked: fresh,
+      roleReady,
+      privileged,
+      storeName: store?.store_name ?? "",
+    }),
+    [code, ip, restricted, allowed, fresh, roleReady, privileged, store],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -146,19 +164,32 @@ export const DEVICE_BLOCKED_MESSAGE =
 /** Alasan penolakan masuk, dibaca halaman masuk setelah perangkat dikeluarkan. */
 export const DEVICE_REJECT_KEY = "billing.device-rejected";
 
-export function setDeviceReject(code: string) {
+export type DeviceReject = { code: string; ip: string; storeName: string };
+
+export function setDeviceReject(value: DeviceReject) {
   try {
-    sessionStorage.setItem(DEVICE_REJECT_KEY, code);
+    sessionStorage.setItem(DEVICE_REJECT_KEY, JSON.stringify(value));
   } catch {
     /* ignore */
   }
 }
 
-export function takeDeviceReject(): string | null {
+export function takeDeviceReject(): DeviceReject | null {
   try {
-    const value = sessionStorage.getItem(DEVICE_REJECT_KEY);
-    if (value !== null) sessionStorage.removeItem(DEVICE_REJECT_KEY);
-    return value;
+    const raw = sessionStorage.getItem(DEVICE_REJECT_KEY);
+    if (raw === null) return null;
+    sessionStorage.removeItem(DEVICE_REJECT_KEY);
+    try {
+      const parsed = JSON.parse(raw) as Partial<DeviceReject>;
+      return {
+        code: parsed.code ?? "",
+        ip: parsed.ip ?? "",
+        storeName: parsed.storeName ?? "",
+      };
+    } catch {
+      // Bentuk lama: hanya kode perangkat.
+      return { code: raw, ip: "", storeName: "" };
+    }
   } catch {
     return null;
   }

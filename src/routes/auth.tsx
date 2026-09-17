@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Joystick, LockKeyhole, LogIn, MailQuestion } from "lucide-react";
 import { passwordSetupUrl } from "@/lib/app-url";
-import { deviceCode, takeDeviceReject } from "@/lib/device-guard";
+import { deviceCode, takeDeviceReject, type DeviceReject } from "@/lib/device-guard";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ function AuthPage() {
   const [resetBusy, setResetBusy] = useState(false);
   const [myCode, setMyCode] = useState("");
   const [myIp, setMyIp] = useState("");
-  const [rejected, setRejected] = useState<string | null>(null);
+  const [rejected, setRejected] = useState<DeviceReject | null>(null);
 
   useEffect(() => {
     setMyCode(deviceCode());
@@ -183,9 +183,26 @@ function AuthPage() {
         </div>
 
         {rejected !== null && (
-          <div className="mt-6 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm">
-            Perangkat ini belum terdaftar di store. Minta Manager atau Installer
-            mendaftarkan kode perangkat di bawah ini.
+          <div className="mt-6 grid gap-1 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm">
+            <p className="font-bold">Perangkat ini belum terdaftar.</p>
+            <p>
+              Store yang menolak:{" "}
+              <span className="font-bold">{rejected.storeName || "tidak diketahui"}</span>
+            </p>
+            <p>
+              Kode perangkat:{" "}
+              <span className="font-mono font-bold">{rejected.code || myCode || "-"}</span>
+            </p>
+            <p>
+              Alamat IP internet:{" "}
+              <span className="font-mono font-bold">
+                {rejected.ip || myIp || "tidak diketahui"}
+              </span>
+            </p>
+            <p className="text-xs">
+              Minta Manager atau Installer mendaftarkan kode perangkat ini di Setup →
+              Store → Perangkat yang Diizinkan.
+            </p>
           </div>
         )}
 
