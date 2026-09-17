@@ -132,7 +132,7 @@ export function receiptBody(opts: {
   `;
 }
 
-/** Versi teks polos struk / invoice untuk printer thermal Android (RawBT). */
+/** Versi teks polos struk / invoice untuk printer thermal ESC/POS. */
 export function receiptText(opts: {
   record: HistoryRecord;
   store: PrintStore;
