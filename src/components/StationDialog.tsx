@@ -76,6 +76,7 @@ export function StationDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const {
     now,
     bookings,
@@ -1528,6 +1529,7 @@ export function StationDialog({
         }}
       />
     )}
+    {confirmDialog}
     </>
 
   );
