@@ -154,25 +154,28 @@ function LogoSection({
   );
 }
 
-/** Kode perangkat & daftar IP yang boleh bertransaksi. */
+/** Daftar kode perangkat & daftar IP yang boleh bertransaksi. */
 function DeviceAccessSection({
   storeId,
-  deviceCodeSaved,
+  devicesSaved,
   allowedIpsSaved,
 }: {
   storeId: string | undefined;
-  deviceCodeSaved: string;
+  devicesSaved: AllowedDevice[];
   allowedIpsSaved: string[];
 }) {
   const { code, ip, allowed, privileged } = useDeviceAccess();
+  const { addLog } = useBilling();
   const [secret, setSecret] = useState("");
-  const [device, setDevice] = useState(deviceCodeSaved);
+  const [devices, setDevices] = useState<AllowedDevice[]>(devicesSaved);
   const [ips, setIps] = useState(allowedIpsSaved.join("\n"));
+  const [newCode, setNewCode] = useState("");
+  const [newLabel, setNewLabel] = useState("");
   const [seeded, setSeeded] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  if (!seeded && (deviceCodeSaved || allowedIpsSaved.length)) {
-    setDevice(deviceCodeSaved);
+  if (!seeded && (devicesSaved.length || allowedIpsSaved.length)) {
+    setDevices(devicesSaved);
     setIps(allowedIpsSaved.join("\n"));
     setSeeded(true);
   }
@@ -183,18 +186,47 @@ function DeviceAccessSection({
       .map((v) => v.trim())
       .filter(Boolean);
 
+  const addDevice = (rawCode: string, label: string) => {
+    const value = rawCode.trim().toUpperCase();
+    if (!value) {
+      toast.error("Kode perangkat masih kosong.");
+      return;
+    }
+    if (devices.some((d) => d.code.toUpperCase() === value)) {
+      toast.error("Kode perangkat itu sudah ada di daftar.");
+      return;
+    }
+    setDevices([...devices, { code: value, label: label.trim() }]);
+    setNewCode("");
+    setNewLabel("");
+  };
+
+  const removeDevice = (target: string) =>
+    setDevices(devices.filter((d) => d.code !== target));
+
+  const updateLabel = (target: string, label: string) =>
+    setDevices(devices.map((d) => (d.code === target ? { ...d, label } : d)));
+
+  const logChange = () =>
+    addLog(
+      "Ubah perangkat yang diizinkan",
+      `${devices.length} perangkat · IP: ${ipList().join(", ") || "kosong"}`,
+    );
+
   /** Manager / Installer menyimpan langsung tanpa Kunci Developer. */
   const saveAsManager = async () => {
     setBusy(true);
     try {
       const { error } = await supabase.rpc("store_set_device_access", {
-        _device_code: device.trim(),
+        _device_code: devices[0]?.code ?? "",
         _allowed_ips: ipList(),
+        _allowed_devices: devices,
       });
       if (error) {
         toast.error(error.message, { duration: 10000 });
         return;
       }
+      logChange();
       toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
     } catch {
       toast.error("Tidak ada koneksi ke server.");
@@ -224,17 +256,16 @@ function DeviceAccessSection({
         body: JSON.stringify({
           action: "update",
           id: storeId,
-          device_code: device.trim(),
-          allowed_ips: ips
-            .split(/[\n,;\s]+/)
-            .map((v) => v.trim())
-            .filter(Boolean),
+          device_code: devices[0]?.code ?? "",
+          allowed_devices: devices,
+          allowed_ips: ipList(),
         }),
       });
       if (!res.ok) {
         toast.error(await res.text(), { duration: 10000 });
         return;
       }
+      logChange();
       toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
     } catch {
       toast.error("Tidak ada koneksi ke server.");
@@ -243,6 +274,8 @@ function DeviceAccessSection({
     }
   };
 
+  const thisRegistered = devices.some((d) => d.code === code);
+
   return (
     <div className="surface-panel grid gap-4 p-5">
       <div>
@@ -250,12 +283,10 @@ function DeviceAccessSection({
           <ShieldCheck className="size-5" /> Perangkat yang Diizinkan
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Selain perangkat dengan kode terdaftar atau alamat IP yang diizinkan,
-          pengguna hanya bisa melihat — kecuali level Manager, Installer, atau
-          Developer. Bila kedua kolom dibiarkan kosong, semua perangkat boleh
-          bertransaksi. Alamat IP bisa ditulis dengan pola, contoh
-          <span className="font-mono"> 192.168.80.*</span> berarti semua alamat yang
-          dimulai seperti itu diizinkan.
+          Hanya perangkat yang kodenya ada di daftar (atau alamat IP-nya cocok)
+          boleh bertransaksi — kecuali level Manager, Installer, atau Developer.
+          Bila daftar perangkat dan daftar IP dibiarkan kosong, semua perangkat
+          boleh bertransaksi.
         </p>
       </div>
 
@@ -264,7 +295,7 @@ function DeviceAccessSection({
           Kode perangkat ini: <span className="font-mono font-bold">{code || "-"}</span>
         </p>
         <p>
-          Alamat IP perangkat ini:{" "}
+          Alamat IP internet perangkat ini:{" "}
           <span className="font-mono font-bold">{ip || "tidak diketahui"}</span>
         </p>
         <p className="sm:col-span-2">
@@ -273,18 +304,88 @@ function DeviceAccessSection({
             {allowed ? "boleh bertransaksi" : "hanya bisa melihat"}
           </span>
         </p>
+        <div className="sm:col-span-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={!code || thisRegistered}
+            onClick={() => addDevice(code, "Perangkat ini")}
+          >
+            <Plus className="size-4" />{" "}
+            {thisRegistered ? "Perangkat ini sudah terdaftar" : "Tambahkan perangkat ini"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        <Label>Daftar Kode Perangkat</Label>
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full min-w-[420px] text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/40">
+                <th className="px-3 py-2 text-left font-bold text-primary">Kode Perangkat</th>
+                <th className="px-3 py-2 text-left font-bold text-primary">Keterangan</th>
+                <th className="w-16 px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {devices.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">
+                    Belum ada perangkat terdaftar — semua perangkat diizinkan.
+                  </td>
+                </tr>
+              )}
+              {devices.map((d) => (
+                <tr key={d.code} className="border-b border-border last:border-0">
+                  <td className="px-3 py-2 font-mono font-bold">
+                    {d.code}
+                    {d.code === code && (
+                      <span className="ml-2 text-xs text-success">(perangkat ini)</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      value={d.label}
+                      onChange={(e) => updateLabel(d.code, e.target.value)}
+                      placeholder="Kasir 1"
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Hapus ${d.code}`}
+                      onClick={() => removeDevice(d.code)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <Input
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value)}
+            placeholder="Tempel kode perangkat"
+          />
+          <Input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Keterangan (Kasir 1)"
+          />
+          <Button type="button" variant="secondary" onClick={() => addDevice(newCode, newLabel)}>
+            <Plus className="size-4" /> Tambah
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="grid gap-2">
-          <Label htmlFor="device-code">Device / Wifi MAC Address (satu perangkat)</Label>
-          <Input
-            id="device-code"
-            value={device}
-            onChange={(e) => setDevice(e.target.value)}
-            placeholder="Tempel kode perangkat kasir"
-          />
-        </div>
         <div className="grid gap-2">
           <Label htmlFor="allowed-ips">Allowed IP Address (satu per baris)</Label>
           <Textarea
@@ -292,8 +393,13 @@ function DeviceAccessSection({
             value={ips}
             rows={4}
             onChange={(e) => setIps(e.target.value)}
-            placeholder={"192.168.80.*\n103.10.20.30"}
+            placeholder={"103.10.*\n103.10.20.30"}
           />
+          <p className="text-xs text-muted-foreground">
+            Ini alamat IP internet store (bukan alamat Wi-Fi lokal seperti
+            192.168.x.x). Boleh memakai pola, contoh{" "}
+            <span className="font-mono">103.10.*</span>.
+          </p>
         </div>
         {!privileged && (
           <div className="grid gap-2">
@@ -318,6 +424,7 @@ function DeviceAccessSection({
     </div>
   );
 }
+
 /** Jam buka & tutup operasional sebagai dasar siklus hari usaha. */
 function OperatingHoursSection() {
   const { operatingHours, setOperatingHours } = useBilling();
