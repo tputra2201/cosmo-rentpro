@@ -294,7 +294,40 @@ function ReceiptReport({ range }: { range: ReportRange }) {
         <p className="text-sm text-muted-foreground">
           Rekap pendapatan dari sesi rental dan penjualan kasir.
         </p>
-        {history.length > 0 && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => window.print()}><Printer className="size-4" /> Cetak</Button><Button variant="outline" onClick={exportCsv}><Download className="size-4" /> Ekspor CSV</Button><Button variant="outline" onClick={clearHistory}><Trash2 className="size-4" /> Hapus riwayat</Button></div>}
+        {history.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer className="size-4" /> Cetak
+            </Button>
+            <Button variant="outline" onClick={exportCsv}>
+              <Download className="size-4" /> Ekspor CSV
+            </Button>
+            {canClearHistory && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  confirm({
+                    title: "Hapus seluruh riwayat transaksi?",
+                    description:
+                      "Semua nota transaksi akan hilang dan tidak bisa dikembalikan.",
+                    actionLabel: "Hapus riwayat",
+                    requireTypedWord: "HAPUS",
+                    onConfirm: () => {
+                      clearHistory();
+                      addLog(
+                        "Hapus seluruh riwayat transaksi",
+                        `${history.length} nota`,
+                      );
+                      toast.success("Riwayat transaksi dihapus");
+                    },
+                  })
+                }
+              >
+                <Trash2 className="size-4" /> Hapus riwayat
+              </Button>
+            )}
+          </div>
+        )}
       </header>
 
 
