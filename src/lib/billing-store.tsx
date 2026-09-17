@@ -2988,7 +2988,6 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             stationName: table.name,
             ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
             ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
-          ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
             console: "Kafe",
             mode: "prepaid",
             startAt: table.openedAt ?? endAt,
