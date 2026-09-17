@@ -247,11 +247,12 @@ function AuthPage() {
           </div>
           <div className="flex items-center justify-between gap-2">
             <span>
-              Alamat IP:{" "}
+              Alamat IP internet:{" "}
               <span className="font-mono font-bold text-foreground">
                 {myIp || "tidak diketahui"}
               </span>
             </span>
+
             <Button
               type="button"
               variant="ghost"
