@@ -103,6 +103,12 @@ function timeOf(ts: number) {
   });
 }
 
+/** Tanggal + jam untuk entri kas (contoh: 17 Sep, 20.15). */
+function dateTimeOf(ts: number) {
+  const d = new Date(ts);
+  return `${d.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}, ${timeOf(ts)}`;
+}
+
 function LaporanPage() {
   const [pickedRange, setRange] = useState<ReportRange>(() => defaultRange("day"));
   const { role } = useAuth();
@@ -369,6 +375,8 @@ function ReceiptReport({ range }: { range: ReportRange }) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Waktu</TableHead>
+                <TableHead>Pelaku</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Kelompok</TableHead>
                 <TableHead>Jenis</TableHead>
@@ -380,6 +388,8 @@ function ReceiptReport({ range }: { range: ReportRange }) {
             <TableBody>
               {cashToday.map((e) => (
                 <TableRow key={e.id}>
+                  <TableCell className="whitespace-nowrap">{dateTimeOf(e.createdAt)}</TableCell>
+                  <TableCell>{e.createdBy || "-"}</TableCell>
                   <TableCell>{e.categoryName}</TableCell>
                   <TableCell>{e.group}</TableCell>
                   <TableCell>
