@@ -3337,8 +3337,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashEntries: (() => {
             const method = input.payment?.trim() || "Cash";
             const rows = [
-              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method),
-              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method),
+              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method, actorRef.current.name),
+              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method, actorRef.current.name),
             ].filter(Boolean) as CashEntry[];
             return rows.length ? [...rows, ...prev.cashEntries] : prev.cashEntries;
           })(),
@@ -3430,6 +3430,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               card.cardNumber,
               stamp,
               method,
+              actorRef.current.name,
             );
             return row ? [row, ...prev.cashEntries] : prev.cashEntries;
           })(),
