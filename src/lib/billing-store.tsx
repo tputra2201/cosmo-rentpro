@@ -526,6 +526,8 @@ export type CashEntry = {
   payment: string;
   note: string;
   createdAt: number;
+  /** Nama pelaku yang mencatat entri ini (kosong untuk data lama). */
+  createdBy?: string;
 };
 
 /**
