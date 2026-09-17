@@ -122,7 +122,8 @@ async function loadAdmin() {
 }
 
 const columns =
-  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url, device_code, allowed_ips";
+  "id, store_code, store_name, store_email, address, city, owner_name, phone, app_version, dev_contact, note, active, expires_at, created_at, logo_url, device_code, allowed_ips, allowed_devices";
+
 
 export const Route = createFileRoute("/api/public/store-registry")({
   server: {
