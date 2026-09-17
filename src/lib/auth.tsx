@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type Context, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,7 +18,9 @@ type AuthCtx = {
   signOut: () => Promise<void>;
 };
 
-const Ctx = createContext<AuthCtx | null>(null);
+const globalStore = globalThis as unknown as { __rentoplayAuthContext?: Context<AuthCtx | null> };
+const Ctx = globalStore.__rentoplayAuthContext ?? createContext<AuthCtx | null>(null);
+globalStore.__rentoplayAuthContext = Ctx;
 
 const CACHE_KEY = "billing.auth-profile";
 
