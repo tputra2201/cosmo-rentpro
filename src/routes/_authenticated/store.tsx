@@ -321,46 +321,6 @@ function DeviceAccessSection({
     }
   };
 
-
-  const save = async () => {
-    if (privileged) {
-      await saveAsManager();
-      return;
-    }
-    if (!storeId) return;
-    if (!secret.trim()) {
-      toast.error("Masukkan Kunci Developer terlebih dahulu.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const res = await fetch("/api/public/store-registry", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-control-secret": secret.trim(),
-        },
-        body: JSON.stringify({
-          action: "update",
-          id: storeId,
-          device_code: devices[0]?.code ?? "",
-          allowed_devices: devices,
-          allowed_ips: ipList(),
-        }),
-      });
-      if (!res.ok) {
-        toast.error(await res.text(), { duration: 10000 });
-        return;
-      }
-      logChange();
-      toast.success("Perangkat & IP yang diizinkan tersimpan. Muat ulang halaman.");
-    } catch {
-      toast.error("Tidak ada koneksi ke server.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const thisRegistered = devices.some((d) => d.code === code);
 
   return (
