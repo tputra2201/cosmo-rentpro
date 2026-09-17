@@ -77,9 +77,10 @@ export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
   system: "Dialog cetak perangkat (printer A4)",
   bluetooth: "Langsung — printer Bluetooth",
   usb: "Langsung — printer USB",
-  android: "Aplikasi Android (Bluetooth lama)",
+  rawbt: "RawBT (printer Bluetooth lama)",
+  android: "Aplikasi Android RenToPlay (Bluetooth lama)",
 };
-export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "android"];
+export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "rawbt", "android"];
 
 /** Jumlah huruf per baris untuk cetak teks polos ESC/POS. */
 export const CHARS_PER_LINE: Record<PaperSize, number> = {
