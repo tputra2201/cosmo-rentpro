@@ -35,6 +35,13 @@ import {
   type PrinterConfig,
   type PrinterRole,
 } from "@/lib/printing";
+import {
+  bluetoothSupported,
+  forgetDevice,
+  savedDevice,
+  scanPrinter,
+  usbSupported,
+} from "@/lib/escpos";
 
 export const Route = createFileRoute("/_authenticated/printer")({
   head: () => ({
@@ -76,9 +83,36 @@ function PrinterPage() {
   const { store } = useStoreInfo(true);
   const canManage = can(role, "printer.kelola", rolePermissions);
 
+  const [deviceNames, setDeviceNames] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (androidApp) setPairedPrinters(pairedAndroidPrinters());
   }, [androidApp]);
+
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    for (const p of printers) {
+      const saved = savedDevice(p.id);
+      if (saved) map[p.id] = saved.name;
+    }
+    setDeviceNames(map);
+  }, [printers]);
+
+  const scan = async (printer: PrinterConfig) => {
+    const kind = printer.mode === "usb" ? "usb" : "bluetooth";
+    try {
+      const saved = await scanPrinter(printer.id, kind);
+      setDeviceNames((prev) => ({ ...prev, [printer.id]: saved.name }));
+      toast.success(`${saved.name} tersambung ke ${printer.name}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/cancel|No device selected|chooser/i.test(message)) {
+        toast.error("Pemilihan printer dibatalkan.");
+        return;
+      }
+      toast.error(`Printer tidak bisa disambungkan: ${message}`);
+    }
+  };
 
   const testPrint = (printer: PrinterConfig) => {
     if (printer.role === "kitchen" || printer.role === "bar") {
@@ -125,16 +159,17 @@ function PrinterPage() {
       </header>
 
       <section className="surface-panel space-y-2 p-6">
-        <h2 className="text-xl font-semibold">Mencetak dari aplikasi Android</h2>
+        <h2 className="text-xl font-semibold">Cetak langsung tanpa aplikasi tambahan</h2>
         <p className="text-sm text-muted-foreground">
-          Aplikasi Android Billing Rental PS menghubungkan Kassen MT-300 VL langsung melalui
-          Bluetooth tanpa RawBT. Pasangkan printer sekali di pengaturan Bluetooth Android, lalu
-          pilih cara mencetak dan perangkatnya pada daftar di bawah.
+          Pilih cara mencetak pada printer di bawah, tekan <strong>Pindai printer</strong>, pilih
+          printer thermal Anda, lalu tekan <strong>Uji cetak</strong>. Printer yang dipilih diingat
+          pada perangkat ini, jadi cukup sekali dipilih.
         </p>
         <p className="text-sm text-muted-foreground">
-          {androidApp
-            ? `${pairedPrinters.length} printer Bluetooth ditemukan pada perangkat ini.`
-            : "Pilihan Bluetooth langsung aktif saat halaman dibuka dari aplikasi Android khusus."}
+          Bluetooth langsung {bluetoothSupported() ? "tersedia" : "belum didukung"} di perangkat ini;
+          printer USB {usbSupported() ? "tersedia" : "belum didukung"}. Printer Bluetooth lama
+          (Classic/SPP) hanya bisa lewat aplikasi Android
+          {androidApp ? ` (${pairedPrinters.length} printer ditemukan)` : ""} atau disambung USB.
         </p>
       </section>
 
@@ -273,19 +308,44 @@ function PrinterPage() {
                 </Select>
               </DetailField>
 
-              {p.mode === "android" && (
-                <DetailField label="Printer Bluetooth">
-                  <div className="flex items-center justify-between gap-2">
+              {(p.mode === "bluetooth" || p.mode === "usb") && (
+                <DetailField
+                  label="Printer terpilih"
+                  hint="Pilih sekali; printer diingat pada perangkat kasir ini."
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      {deviceNames[p.id] ?? "Belum ada printer dipilih"}
+                    </span>
                     <Button
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Muat ulang printer Bluetooth"
-                      onClick={() => setPairedPrinters(pairedAndroidPrinters())}
+                      size="sm"
+                      variant="outline"
+                      disabled={!canManage}
+                      onClick={() => void scan(p)}
                     >
-                      <RefreshCw className="size-4" />
+                      <RefreshCw className="size-4" /> Pindai printer
                     </Button>
+                    {deviceNames[p.id] && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={!canManage}
+                        onClick={() => {
+                          forgetDevice(p.id);
+                          setDeviceNames((prev) => ({ ...prev, [p.id]: "" }));
+                        }}
+                      >
+                        Lupakan
+                      </Button>
+                    )}
                   </div>
+                </DetailField>
+              )}
+
+              {p.mode === "android" && (
+                <DetailField label="Printer Bluetooth (aplikasi Android)">
                   <Select
                     value={p.bluetoothAddress ?? ""}
                     disabled={!canManage || !androidApp}

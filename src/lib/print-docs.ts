@@ -1,6 +1,7 @@
 /** Perakit dokumen cetak: struk, invoice, label dapur/bar, dan laporan. */
 
 import { addonAmount, formatRupiah, type HistoryRecord, type OrderItem } from "./billing-store";
+import { printDirect } from "./escpos";
 import {
   CHARS_PER_LINE,
   escapeHtml,
@@ -8,7 +9,6 @@ import {
   printHtml,
   printMode,
   printViaAndroid,
-  printViaRawBt,
   textCenter,
   textRow,
   textSep,
@@ -132,7 +132,7 @@ export function receiptBody(opts: {
   `;
 }
 
-/** Versi teks polos struk / invoice untuk printer thermal Android (RawBT). */
+/** Versi teks polos struk / invoice untuk printer thermal ESC/POS. */
 export function receiptText(opts: {
   record: HistoryRecord;
   store: PrintStore;
@@ -231,12 +231,13 @@ export function printReceipt(opts: {
   kind: "receipt" | "invoice" | "bill";
   cashier?: string;
 }) {
-  if (printMode(opts.printer) === "android") {
+  const mode = printMode(opts.printer);
+  if (mode === "android") {
     printViaAndroid(opts.printer, textWithCopies(opts.printer, receiptText(opts)));
     return;
   }
-  if (printMode(opts.printer) === "rawbt") {
-    printViaRawBt(textWithCopies(opts.printer, receiptText(opts)));
+  if (mode === "bluetooth" || mode === "usb") {
+    void printDirect(opts.printer, mode, textWithCopies(opts.printer, receiptText(opts)));
     return;
   }
   const body = receiptBody(opts);
@@ -261,7 +262,8 @@ export function printLabels(opts: {
 }) {
   const { printer, items, heading, source, customerName, note } = opts;
   const stamp = time(opts.at ?? Date.now());
-  if (printMode(printer) === "android") {
+  const mode = printMode(printer);
+  if (mode === "android" || mode === "bluetooth" || mode === "usb") {
     const w = CHARS_PER_LINE[printer.paper];
     const text = items
       .map((item) =>
@@ -281,30 +283,8 @@ export function printLabels(opts: {
           .join("\n"),
       )
       .join("\n\n");
-    printViaAndroid(printer, textWithCopies(printer, text));
-    return;
-  }
-  if (printMode(printer) === "rawbt") {
-    const w = CHARS_PER_LINE[printer.paper];
-    const text = items
-      .map((item) =>
-        [
-          textCenter(heading, w),
-          textSep(w),
-          item.name,
-          `x ${item.qty}`,
-          item.note ?? "",
-          textSep(w),
-          source,
-          customerName ?? "",
-          note ?? "",
-          stamp,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      )
-      .join("\n\n");
-    printViaRawBt(textWithCopies(printer, text));
+    if (mode === "android") printViaAndroid(printer, textWithCopies(printer, text));
+    else void printDirect(printer, mode, textWithCopies(printer, text));
     return;
   }
   const labels = items
@@ -330,7 +310,8 @@ export function printLabels(opts: {
 
 /** Cetak isi laporan yang sedang tampil di layar. */
 export function printReport(printer: PrinterConfig, title: string, innerHtml: string) {
-  if (printMode(printer) === "rawbt" || printMode(printer) === "android") {
+  const mode = printMode(printer);
+  if (mode === "android" || mode === "bluetooth" || mode === "usb") {
     const w = CHARS_PER_LINE[printer.paper];
     const plain = innerHtml
       .replace(/<\/(tr|div|p|h1|h2|h3|section|table)>/gi, "\n")
@@ -343,8 +324,8 @@ export function printReport(printer: PrinterConfig, title: string, innerHtml: st
       .filter(Boolean)
       .join("\n");
     const text = `${textCenter(title, w)}\n${textSep(w)}\n${plain}`;
-    if (printMode(printer) === "android") printViaAndroid(printer, text);
-    else printViaRawBt(text);
+    if (mode === "android") printViaAndroid(printer, text);
+    else void printDirect(printer, mode, text);
     return;
   }
   const css = `

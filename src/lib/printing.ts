@@ -9,14 +9,15 @@
  */
 
 export type PrinterRole = "receipt" | "invoice" | "kitchen" | "bar" | "report";
-export type PaperSize = "40mm" | "80mm" | "a4";
+export type PaperSize = "40mm" | "58mm" | "80mm" | "a4";
 /**
  * Cara mengirim dokumen ke printer.
  * - "system": dialog cetak bawaan perangkat (Windows, Mac, iOS, printer A4).
- * - "rawbt": aplikasi RawBT di Android, langsung ke printer thermal Bluetooth/USB
- *   tanpa perlu printer terdaftar di sistem Android.
+ * - "bluetooth": langsung ke printer thermal Bluetooth dari aplikasi ini.
+ * - "usb": langsung ke printer thermal USB dari aplikasi ini.
+ * - "android": aplikasi Android RenToPlay untuk printer Bluetooth lama (Classic/SPP).
  */
-export type PrintMode = "system" | "rawbt" | "android";
+export type PrintMode = "system" | "bluetooth" | "usb" | "android";
 
 export type PrinterConfig = {
   id: string;
@@ -63,30 +64,33 @@ export const PRINTER_ROLE_LABEL: Record<PrinterRole, string> = {
 
 export const PAPER_LABEL: Record<PaperSize, string> = {
   "40mm": "Thermal 40 mm",
+  "58mm": "Thermal 58 mm",
   "80mm": "Thermal 80 mm",
   a4: "A4 (inkjet / USB)",
 };
 
-export const PAPER_OPTIONS: PaperSize[] = ["40mm", "80mm", "a4"];
+export const PAPER_OPTIONS: PaperSize[] = ["40mm", "58mm", "80mm", "a4"];
 export const PRINTER_ROLES: PrinterRole[] = ["receipt", "invoice", "kitchen", "bar", "report"];
 
 export const PRINT_MODE_LABEL: Record<PrintMode, string> = {
-  system: "Dialog cetak perangkat",
-  rawbt: "Android — aplikasi RawBT (Bluetooth/USB)",
-  android: "Aplikasi Android — Bluetooth langsung",
+  system: "Dialog cetak perangkat (printer A4)",
+  bluetooth: "Langsung — printer Bluetooth",
+  usb: "Langsung — printer USB",
+  android: "Aplikasi Android (Bluetooth lama)",
 };
-export const PRINT_MODES: PrintMode[] = ["system", "android", "rawbt"];
+export const PRINT_MODES: PrintMode[] = ["system", "bluetooth", "usb", "android"];
 
-/** Jumlah huruf per baris untuk cetak teks polos (RawBT). */
+/** Jumlah huruf per baris untuk cetak teks polos ESC/POS. */
 export const CHARS_PER_LINE: Record<PaperSize, number> = {
   "40mm": 24,
+  "58mm": 32,
   "80mm": 42,
   a4: 60,
 };
 
 export function printMode(printer: PrinterConfig): PrintMode {
   if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";
-  if (printer.mode === "rawbt") return "rawbt";
+  if (printer.mode === "bluetooth" || printer.mode === "usb") return printer.mode;
   return "system";
 }
 
@@ -149,17 +153,6 @@ function toBase64(value: string) {
   return btoa(binary);
 }
 
-/**
- * Kirim teks polos ke aplikasi RawBT di Android.
- * RawBT menerima skema `rawbt:base64,<data>` dan mencetak langsung ke printer
- * thermal yang sudah dipasangkan lewat Bluetooth atau USB OTG.
- */
-export function printViaRawBt(text: string) {
-  if (typeof window === "undefined") return;
-  const body = text.endsWith("\n") ? text : `${text}\n`;
-  // RawBT membaca base64 apa adanya; jangan di-encode ulang (menyebabkan "wrong base64").
-  window.location.href = `rawbt:base64,${toBase64(body)}`;
-}
 
 /** Kirim teks ESC/POS melalui jembatan Bluetooth aplikasi Android khusus. */
 export function printViaAndroid(printer: PrinterConfig, text: string) {
@@ -293,6 +286,7 @@ export function escapeHtml(value: unknown) {
 
 const PAPER_WIDTH_MM: Record<PaperSize, number | null> = {
   "40mm": 40,
+  "58mm": 58,
   "80mm": 80,
   a4: null,
 };
