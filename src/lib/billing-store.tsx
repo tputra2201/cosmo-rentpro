@@ -2554,16 +2554,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           addonRentals: prev.addonRentals.filter((a) => a.id !== id),
         })),
-      addSessionAddon: (stationId, addonId, qty = 1) =>
+      addSessionAddon: (stationId, addonId, qty = 1, minutes) =>
         update((prev) => {
           const item = prev.addonRentals.find((a) => a.id === addonId);
           if (!item) return prev;
+          const mins =
+            item.mode === "hourly" && typeof minutes === "number" && minutes > 0
+              ? Math.round(minutes)
+              : undefined;
           return {
             ...prev,
             stations: prev.stations.map((s) => {
               if (s.id !== stationId || !s.session) return s;
               const addons = [...(s.session.addons ?? [])];
-              const index = addons.findIndex((a) => a.addonId === addonId);
+              const index = addons.findIndex(
+                (a) => a.addonId === addonId && (a.minutes ?? 0) === (mins ?? 0),
+              );
               const existing = addons[index];
               if (existing) {
                 addons[index] = { ...existing, qty: existing.qty + Math.max(1, qty) };
@@ -2575,12 +2581,36 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   price: item.price,
                   mode: item.mode,
                   qty: Math.max(1, qty),
+                  ...(mins ? { minutes: mins } : {}),
                 });
               }
               return { ...s, session: { ...s.session, addons } };
             }),
           };
         }),
+      updateSessionAddon: (stationId, rowId, patch) =>
+        mapStation(stationId, (s) =>
+          s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  addons: (s.session.addons ?? []).map((a) => {
+                    if (a.id !== rowId) return a;
+                    const next: SessionAddon = { ...a };
+                    if (typeof patch.qty === "number") next.qty = Math.max(1, Math.round(patch.qty));
+                    if (typeof patch.minutes === "number") {
+                      const mins = Math.round(patch.minutes);
+                      if (mins > 0) next.minutes = mins;
+                      else delete next.minutes;
+                    }
+                    return next;
+                  }),
+                },
+              }
+            : s,
+        ),
+
       removeSessionAddon: (stationId, rowId) =>
         mapStation(stationId, (s) =>
           s.session
