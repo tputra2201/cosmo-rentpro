@@ -286,6 +286,7 @@ export function escapeHtml(value: unknown) {
 
 const PAPER_WIDTH_MM: Record<PaperSize, number | null> = {
   "40mm": 40,
+  "58mm": 58,
   "80mm": 80,
   a4: null,
 };
