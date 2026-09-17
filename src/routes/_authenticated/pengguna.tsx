@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/pengguna")({
   head: () => ({
@@ -429,6 +430,7 @@ function UserDetail({
   const [name, setName] = useState(user.fullName);
   const [role, setRole] = useState<AppRole>(user.role);
   const options = selectableRoles(canInstaller);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   return (
     <>
@@ -466,11 +468,18 @@ function UserDetail({
           if (name && name !== user.fullName) payload.fullName = name;
           if (role !== user.role) payload.role = role;
           if (Object.keys(payload).length === 0) return;
-          onSave(payload);
+          confirm({
+            title: "Simpan perubahan?",
+            description: `Data ${user.fullName || user.email} akan diperbarui.`,
+            actionLabel: "Simpan",
+            destructive: false,
+            onConfirm: () => onSave(payload),
+          });
         }}
       >
         Simpan
       </Button>
+      {confirmDialog}
 
       <DetailField label="Akun">
         <p className="text-xs text-muted-foreground">
