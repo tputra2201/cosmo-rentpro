@@ -60,32 +60,66 @@ export function forgetDevice(printerId: string) {
 
 /* ------------------------------- Bluetooth ------------------------------- */
 
-async function bleWriter(device: BluetoothDevice): Promise<Writer> {
-  const server = await device.gatt?.connect();
-  if (!server) throw new Error("Printer Bluetooth tidak bisa dihubungkan.");
-  const services = await server.getPrimaryServices();
-  for (const service of services) {
-    const chars = await service.getCharacteristics().catch(() => []);
-    for (const ch of chars) {
-      if (ch.properties.write || ch.properties.writeWithoutResponse) {
-        const chunk = 180;
-        return {
-          name: device.name ?? "Printer Bluetooth",
-          write: async (bytes) => {
-            for (let i = 0; i < bytes.length; i += chunk) {
-              const part = bytes.slice(i, i + chunk);
-              if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
-              else await ch.writeValueWithResponse(part);
-              await new Promise((r) => setTimeout(r, 20));
-            }
-          },
-        };
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Printer BLE kecil sering memutus koneksi; sambung ulang beberapa kali. */
+async function connectGatt(device: BluetoothDevice) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      if (!device.gatt) break;
+      if (!device.gatt.connected) await device.gatt.connect();
+      // Beri printer waktu menyiapkan service sebelum ditanya.
+      await wait(attempt === 0 ? 300 : 600);
+      const services = await device.gatt.getPrimaryServices();
+      for (const service of services) {
+        const chars = await service.getCharacteristics().catch(() => []);
+        for (const ch of chars) {
+          if (ch.properties.write || ch.properties.writeWithoutResponse) return ch;
+        }
       }
+      throw new Error("no-write-characteristic");
+    } catch (error) {
+      lastError = error;
+      try {
+        device.gatt?.disconnect();
+      } catch {
+        /* diabaikan */
+      }
+      await wait(500);
     }
   }
+  if (lastError instanceof Error && lastError.message === "no-write-characteristic") {
+    throw new Error(
+      "Printer ini tidak menyediakan jalur tulis Bluetooth (kemungkinan Bluetooth lama/SPP). Gunakan USB atau aplikasi Android.",
+    );
+  }
   throw new Error(
-    "Printer ini tidak menyediakan jalur tulis Bluetooth (kemungkinan Bluetooth lama/SPP). Gunakan USB atau aplikasi Android.",
+    `Printer ${device.name ?? "Bluetooth"} memutus sambungan. Matikan lalu nyalakan printer, dekatkan perangkat, atau gunakan USB.`,
   );
+}
+
+async function bleWriter(device: BluetoothDevice): Promise<Writer> {
+  let ch = await connectGatt(device);
+  const chunk = 100;
+  return {
+    name: device.name ?? "Printer Bluetooth",
+    write: async (bytes) => {
+      for (let i = 0; i < bytes.length; i += chunk) {
+        const part = bytes.slice(i, i + chunk);
+        try {
+          if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
+          else await ch.writeValueWithResponse(part);
+        } catch {
+          // Printer terputus di tengah cetak: sambung lagi, lanjutkan potongan ini.
+          ch = await connectGatt(device);
+          if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
+          else await ch.writeValueWithResponse(part);
+        }
+        await wait(25);
+      }
+    },
+  };
 }
 
 async function pickBluetooth(): Promise<{ device: BluetoothDevice; writer: Writer }> {
