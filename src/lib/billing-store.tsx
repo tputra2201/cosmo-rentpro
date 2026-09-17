@@ -1026,7 +1026,10 @@ export function addonDiscountTotal(
     const base = addonAmount(addon, hours);
     const item = (catalog ?? []).find((a) => a.id === addon.addonId);
     const units =
-      addon.mode === "hourly" ? Math.max(0, addon.qty) * Math.max(0, hours) : Math.max(0, addon.qty);
+      addon.mode === "hourly"
+        ? Math.max(0, addon.qty) * addonHours(addon, hours)
+        : Math.max(0, addon.qty);
+
     return sum + itemDiscountAmount(item?.discount, base, units, ctx, fallbackPercent);
   }, 0);
 }
