@@ -83,9 +83,36 @@ function PrinterPage() {
   const { store } = useStoreInfo(true);
   const canManage = can(role, "printer.kelola", rolePermissions);
 
+  const [deviceNames, setDeviceNames] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (androidApp) setPairedPrinters(pairedAndroidPrinters());
   }, [androidApp]);
+
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    for (const p of printers) {
+      const saved = savedDevice(p.id);
+      if (saved) map[p.id] = saved.name;
+    }
+    setDeviceNames(map);
+  }, [printers]);
+
+  const scan = async (printer: PrinterConfig) => {
+    const kind = printer.mode === "usb" ? "usb" : "bluetooth";
+    try {
+      const saved = await scanPrinter(printer.id, kind);
+      setDeviceNames((prev) => ({ ...prev, [printer.id]: saved.name }));
+      toast.success(`${saved.name} tersambung ke ${printer.name}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/cancel|No device selected|chooser/i.test(message)) {
+        toast.error("Pemilihan printer dibatalkan.");
+        return;
+      }
+      toast.error(`Printer tidak bisa disambungkan: ${message}`);
+    }
+  };
 
   const testPrint = (printer: PrinterConfig) => {
     if (printer.role === "kitchen" || printer.role === "bar") {
