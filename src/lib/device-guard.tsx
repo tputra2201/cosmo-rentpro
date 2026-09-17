@@ -164,19 +164,32 @@ export const DEVICE_BLOCKED_MESSAGE =
 /** Alasan penolakan masuk, dibaca halaman masuk setelah perangkat dikeluarkan. */
 export const DEVICE_REJECT_KEY = "billing.device-rejected";
 
-export function setDeviceReject(code: string) {
+export type DeviceReject = { code: string; ip: string; storeName: string };
+
+export function setDeviceReject(value: DeviceReject) {
   try {
-    sessionStorage.setItem(DEVICE_REJECT_KEY, code);
+    sessionStorage.setItem(DEVICE_REJECT_KEY, JSON.stringify(value));
   } catch {
     /* ignore */
   }
 }
 
-export function takeDeviceReject(): string | null {
+export function takeDeviceReject(): DeviceReject | null {
   try {
-    const value = sessionStorage.getItem(DEVICE_REJECT_KEY);
-    if (value !== null) sessionStorage.removeItem(DEVICE_REJECT_KEY);
-    return value;
+    const raw = sessionStorage.getItem(DEVICE_REJECT_KEY);
+    if (raw === null) return null;
+    sessionStorage.removeItem(DEVICE_REJECT_KEY);
+    try {
+      const parsed = JSON.parse(raw) as Partial<DeviceReject>;
+      return {
+        code: parsed.code ?? "",
+        ip: parsed.ip ?? "",
+        storeName: parsed.storeName ?? "",
+      };
+    } catch {
+      // Bentuk lama: hanya kode perangkat.
+      return { code: raw, ip: "", storeName: "" };
+    }
   } catch {
     return null;
   }
