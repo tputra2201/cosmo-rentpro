@@ -105,6 +105,7 @@ export function SetupTable<T>({
   emptyText?: string | undefined;
   footer?: ReactNode | undefined;
 }) {
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailItem = items.find((i) => getId(i) === detailId) ?? null;
 
