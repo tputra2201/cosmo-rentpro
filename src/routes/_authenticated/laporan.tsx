@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReceiptView } from "@/components/CustomerDetail";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
