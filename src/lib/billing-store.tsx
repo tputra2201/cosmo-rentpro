@@ -9,7 +9,7 @@ import {
   type Context,
   type ReactNode,
 } from "react";
-import { DEVICE_BLOCKED_MESSAGE, deviceWriteAllowed } from "@/lib/device-guard";
+import { DEVICE_BLOCKED_MESSAGE, deviceCode, deviceWriteAllowed } from "@/lib/device-guard";
 import { toast } from "sonner";
 import { useAuth } from "./auth";
 import { useStoreSync, type SyncStatus } from "./store-sync";
@@ -596,6 +596,7 @@ export type HistoryRecord = {
   paidAt?: number; // waktu pembayaran lunas
   ongoing?: boolean; // sesi masih berjalan saat nota dibuat
   cashierName?: string; // kasir yang memproses transaksi
+  deviceCode?: string; // kode perangkat yang memproses transaksi
 };
 
 
@@ -2066,6 +2067,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           paidAt: session.paidAt ?? endAt,
           ongoing: false,
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
+          ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
           minutes: Math.ceil(elapsedSeconds(session, endAt) / 60),
           rentalTotal: rental,
           ...(bill.addon ? { addonTotal: bill.addon } : {}),
@@ -2184,6 +2186,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           paidAt: at,
           ongoing: true,
           ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
+          ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
           minutes: Math.ceil(elapsedSeconds(sess, at) / 60),
           rentalTotal: bill.rental,
           ...(bill.addon ? { addonTotal: bill.addon } : {}),
@@ -2984,6 +2987,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             id: `cafe-${tableId}-${endAt}`,
             stationName: table.name,
             ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
+            ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
             console: "Kafe",
             mode: "prepaid",
             startAt: table.openedAt ?? endAt,
