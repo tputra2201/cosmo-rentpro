@@ -54,38 +54,73 @@ function rememberDevice(printerId: string, device: SavedDevice) {
 }
 
 export function forgetDevice(printerId: string) {
+  forgetActive(printerId);
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem(STORE_PREFIX + printerId);
 }
 
 /* ------------------------------- Bluetooth ------------------------------- */
 
-async function bleWriter(device: BluetoothDevice): Promise<Writer> {
-  const server = await device.gatt?.connect();
-  if (!server) throw new Error("Printer Bluetooth tidak bisa dihubungkan.");
-  const services = await server.getPrimaryServices();
-  for (const service of services) {
-    const chars = await service.getCharacteristics().catch(() => []);
-    for (const ch of chars) {
-      if (ch.properties.write || ch.properties.writeWithoutResponse) {
-        const chunk = 180;
-        return {
-          name: device.name ?? "Printer Bluetooth",
-          write: async (bytes) => {
-            for (let i = 0; i < bytes.length; i += chunk) {
-              const part = bytes.slice(i, i + chunk);
-              if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
-              else await ch.writeValueWithResponse(part);
-              await new Promise((r) => setTimeout(r, 20));
-            }
-          },
-        };
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Printer BLE kecil sering memutus koneksi; sambung ulang beberapa kali. */
+async function connectGatt(device: BluetoothDevice) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      if (!device.gatt) break;
+      if (!device.gatt.connected) await device.gatt.connect();
+      // Beri printer waktu menyiapkan service sebelum ditanya.
+      await wait(attempt === 0 ? 300 : 600);
+      const services = await device.gatt.getPrimaryServices();
+      for (const service of services) {
+        const chars = await service.getCharacteristics().catch(() => []);
+        for (const ch of chars) {
+          if (ch.properties.write || ch.properties.writeWithoutResponse) return ch;
+        }
       }
+      throw new Error("no-write-characteristic");
+    } catch (error) {
+      lastError = error;
+      try {
+        device.gatt?.disconnect();
+      } catch {
+        /* diabaikan */
+      }
+      await wait(500);
     }
   }
+  if (lastError instanceof Error && lastError.message === "no-write-characteristic") {
+    throw new Error(
+      "Printer ini tidak menyediakan jalur tulis Bluetooth (kemungkinan Bluetooth lama/SPP). Gunakan USB atau aplikasi Android.",
+    );
+  }
   throw new Error(
-    "Printer ini tidak menyediakan jalur tulis Bluetooth (kemungkinan Bluetooth lama/SPP). Gunakan USB atau aplikasi Android.",
+    `Printer ${device.name ?? "Bluetooth"} memutus sambungan. Matikan lalu nyalakan printer, dekatkan perangkat, atau gunakan USB.`,
   );
+}
+
+async function bleWriter(device: BluetoothDevice): Promise<Writer> {
+  let ch = await connectGatt(device);
+  const chunk = 100;
+  return {
+    name: device.name ?? "Printer Bluetooth",
+    write: async (bytes) => {
+      for (let i = 0; i < bytes.length; i += chunk) {
+        const part = bytes.slice(i, i + chunk);
+        try {
+          if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
+          else await ch.writeValueWithResponse(part);
+        } catch {
+          // Printer terputus di tengah cetak: sambung lagi, lanjutkan potongan ini.
+          ch = await connectGatt(device);
+          if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part);
+          else await ch.writeValueWithResponse(part);
+        }
+        await wait(25);
+      }
+    },
+  };
 }
 
 async function pickBluetooth(): Promise<{ device: BluetoothDevice; writer: Writer }> {
@@ -157,29 +192,56 @@ const usbKey = (d: USBDevice) => `${d.vendorId}:${d.productId}:${d.serialNumber 
 
 /* --------------------------- Pilih & simpan printer --------------------------- */
 
+/** Printer yang sudah dipilih, diingat selama aplikasi terbuka. */
+const active = new Map<string, { kind: DirectKind; writer: Writer }>();
+
+/** Apakah printer sudah siap dipakai tanpa dialog pemilihan lagi. */
+export function printerReady(printerId: string) {
+  return active.has(printerId);
+}
+
+function forgetActive(printerId: string) {
+  active.delete(printerId);
+}
+
+function keepBluetooth(printerId: string, device: BluetoothDevice, writer: Writer) {
+  active.set(printerId, { kind: "bluetooth", writer });
+  device.addEventListener("gattserverdisconnected", () => {
+    // Biarkan tetap tersimpan: writer akan menyambung ulang sendiri saat mencetak.
+  });
+}
+
 /** Buka dialog pemilihan printer, lalu simpan pilihannya untuk perangkat ini. */
 export async function scanPrinter(printerId: string, kind: DirectKind): Promise<SavedDevice> {
   if (kind === "bluetooth") {
-    const { device } = await pickBluetooth();
+    const { device, writer } = await pickBluetooth();
     const saved: SavedDevice = {
       kind,
       name: device.name ?? "Printer Bluetooth",
       key: device.id,
     };
     rememberDevice(printerId, saved);
+    keepBluetooth(printerId, device, writer);
     return saved;
   }
-  const { device } = await pickUsb();
+  const { device, writer } = await pickUsb();
   const saved: SavedDevice = { kind, name: device.productName ?? "Printer USB", key: usbKey(device) };
   rememberDevice(printerId, saved);
+  active.set(printerId, { kind, writer });
   return saved;
 }
 
 async function writerFor(printer: PrinterConfig, kind: DirectKind): Promise<Writer> {
+  const cached = active.get(printer.id);
+  if (cached && cached.kind === kind) return cached.writer;
+
   const saved = savedDevice(printer.id);
   if (saved && saved.kind === kind) {
     const writer = kind === "bluetooth" ? await reopenBluetooth(saved.key) : await reopenUsb(saved.key);
-    if (writer) return writer;
+    if (writer) {
+      active.set(printer.id, { kind, writer });
+      return writer;
+    }
   }
   const picked = kind === "bluetooth" ? await pickBluetooth() : await pickUsb();
   const key =
@@ -187,6 +249,8 @@ async function writerFor(printer: PrinterConfig, kind: DirectKind): Promise<Writ
       ? (picked.device as BluetoothDevice).id
       : usbKey(picked.device as USBDevice);
   rememberDevice(printer.id, { kind, name: picked.writer.name, key });
+  if (kind === "bluetooth") keepBluetooth(printer.id, picked.device as BluetoothDevice, picked.writer);
+  else active.set(printer.id, { kind, writer: picked.writer });
   return picked.writer;
 }
 
