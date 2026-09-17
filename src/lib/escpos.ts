@@ -191,29 +191,52 @@ const usbKey = (d: USBDevice) => `${d.vendorId}:${d.productId}:${d.serialNumber 
 
 /* --------------------------- Pilih & simpan printer --------------------------- */
 
+/** Printer yang sudah dipilih, diingat selama aplikasi terbuka. */
+const active = new Map<string, { kind: DirectKind; writer: Writer }>();
+
+/** Apakah printer sudah siap dipakai tanpa dialog pemilihan lagi. */
+export function printerReady(printerId: string) {
+  return active.has(printerId);
+}
+
+function keepBluetooth(printerId: string, device: BluetoothDevice, writer: Writer) {
+  active.set(printerId, { kind: "bluetooth", writer });
+  device.addEventListener("gattserverdisconnected", () => {
+    // Biarkan tetap tersimpan: writer akan menyambung ulang sendiri saat mencetak.
+  });
+}
+
 /** Buka dialog pemilihan printer, lalu simpan pilihannya untuk perangkat ini. */
 export async function scanPrinter(printerId: string, kind: DirectKind): Promise<SavedDevice> {
   if (kind === "bluetooth") {
-    const { device } = await pickBluetooth();
+    const { device, writer } = await pickBluetooth();
     const saved: SavedDevice = {
       kind,
       name: device.name ?? "Printer Bluetooth",
       key: device.id,
     };
     rememberDevice(printerId, saved);
+    keepBluetooth(printerId, device, writer);
     return saved;
   }
-  const { device } = await pickUsb();
+  const { device, writer } = await pickUsb();
   const saved: SavedDevice = { kind, name: device.productName ?? "Printer USB", key: usbKey(device) };
   rememberDevice(printerId, saved);
+  active.set(printerId, { kind, writer });
   return saved;
 }
 
 async function writerFor(printer: PrinterConfig, kind: DirectKind): Promise<Writer> {
+  const cached = active.get(printer.id);
+  if (cached && cached.kind === kind) return cached.writer;
+
   const saved = savedDevice(printer.id);
   if (saved && saved.kind === kind) {
     const writer = kind === "bluetooth" ? await reopenBluetooth(saved.key) : await reopenUsb(saved.key);
-    if (writer) return writer;
+    if (writer) {
+      active.set(printer.id, { kind, writer });
+      return writer;
+    }
   }
   const picked = kind === "bluetooth" ? await pickBluetooth() : await pickUsb();
   const key =
@@ -221,6 +244,8 @@ async function writerFor(printer: PrinterConfig, kind: DirectKind): Promise<Writ
       ? (picked.device as BluetoothDevice).id
       : usbKey(picked.device as USBDevice);
   rememberDevice(printer.id, { kind, name: picked.writer.name, key });
+  if (kind === "bluetooth") keepBluetooth(printer.id, picked.device as BluetoothDevice, picked.writer);
+  else active.set(printer.id, { kind, writer: picked.writer });
   return picked.writer;
 }
 
