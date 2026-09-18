@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { PromoPicker } from "@/components/PromoPicker";
@@ -107,8 +107,6 @@ export function StationDialog({
     packages,
     defaultBonusMin,
     adjustBonusTime,
-    pauseSession,
-    resumeSession,
     customers,
     updateSessionCustomer,
     playingCards,
