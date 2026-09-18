@@ -936,10 +936,21 @@ export function StationDialog({
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    addTime(station.id, m);
-                    toast.success(
-                      `${m > 0 ? "Tambah" : "Kurangi"} ${Math.abs(m)} menit di ${station.name}`,
-                    );
+                    confirmAction({
+                      title: `${m > 0 ? "Tambah" : "Kurangi"} ${Math.abs(m)} menit?`,
+                      description:
+                        m > 0
+                          ? `Waktu main ${station.name} ditambah ${m} menit dan tagihan ikut bertambah.`
+                          : `Waktu main ${station.name} dikurangi ${Math.abs(m)} menit dan tagihan ikut berkurang.`,
+                      actionLabel: m > 0 ? "Tambah" : "Kurangi",
+                      destructive: m < 0,
+                      onConfirm: () => {
+                        addTime(station.id, m);
+                        toast.success(
+                          `${m > 0 ? "Tambah" : "Kurangi"} ${Math.abs(m)} menit di ${station.name}`,
+                        );
+                      },
+                    });
                   }}
                 >
                   <Timer className="size-4" /> {m > 0 ? `+${m}` : m} mnt
@@ -954,14 +965,22 @@ export function StationDialog({
                   <span className="text-sm text-accent">{(session.bonusMin ?? 0) >= 0 ? "+" : ""}{session.bonusMin ?? 0} mnt</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {[-5, -3, -1, 1, 2, 3, 5].map((m) => (
+                  {[-15, -10, -5, -1, 1, 5, 10, 15, 30].map((m) => (
                     <Button
                       key={m}
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        adjustBonusTime(station.id, m);
-                        toast.success(`Waktu ekstra ${m > 0 ? "+" : ""}${m} menit`, { description: "Tarif tidak berubah" });
+                        confirmAction({
+                          title: `Waktu ekstra ${m > 0 ? "+" : ""}${m} menit?`,
+                          description: `Tagihan ${station.name} tidak berubah, hanya waktu mainnya.`,
+                          actionLabel: "Terapkan",
+                          destructive: m < 0,
+                          onConfirm: () => {
+                            adjustBonusTime(station.id, m);
+                            toast.success(`Waktu ekstra ${m > 0 ? "+" : ""}${m} menit`, { description: "Tarif tidak berubah" });
+                          },
+                        });
                       }}
                     >
                       {m > 0 ? `+${m}` : m}
@@ -969,8 +988,15 @@ export function StationDialog({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">Paket {session.durationMin} menit — total main {Math.max(0, session.durationMin + (session.bonusMin ?? 0))} menit.</p>
+                {remainingSeconds(session, now) <= 0 && (
+                  <p className="text-xs text-warning">
+                    Waktu sudah habis. Tambah waktu di atas (berbayar) atau waktu ekstra
+                    tanpa biaya agar sesi lanjut tanpa perlu diakhiri dulu.
+                  </p>
+                )}
               </div>
             )}
+
 
             {addonRentals.some((a) => a.active) && (
               <div className="space-y-2">

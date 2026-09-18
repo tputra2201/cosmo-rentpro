@@ -22,17 +22,23 @@ export function TimeUpAlarm() {
   const { stations, bookings, now, sessionSecurity } = useBilling();
   const [dismissed, setDismissed] = useState<string[]>([]);
 
+  const keyOf = (station: (typeof stations)[number]) =>
+    `${station.id}:${station.session?.startAt ?? 0}:${station.session?.durationMin ?? 0}:${
+      station.session?.bonusMin ?? 0
+    }`;
+
   const due = useMemo(() => {
     return (
       stations.find(
         (station) =>
           stationStatus(station, now, bookings) === "timeup" &&
-          !dismissed.includes(`${station.id}:${station.session?.startAt ?? 0}`),
+          !dismissed.includes(keyOf(station)),
       ) ?? null
     );
   }, [stations, bookings, now, dismissed]);
 
-  const key = due ? `${due.id}:${due.session?.startAt ?? 0}` : "";
+  const key = due ? keyOf(due) : "";
+
 
   useEffect(() => {
     if (!key || !sessionSecurity.alarmEnabled) return;
