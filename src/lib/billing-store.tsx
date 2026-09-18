@@ -2636,26 +2636,27 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const addTime = useCallback<Ctx["addTime"]>(
     (stationId, extraMin) =>
-      mapStation(stationId, (s) =>
-        s.session
-          ? {
-              ...s,
-              session: {
-                ...s.session,
-                mode: "prepaid",
-                durationMin: Math.max(
-                  1,
-                  (s.session.mode === "prepaid"
-                    ? s.session.durationMin
-                    : Math.ceil(elapsedSeconds(s.session, Date.now()) / 60)) +
-                    extraMin,
-                ),
-              },
-            }
-          : s,
-      ),
+      mapStation(stationId, (s) => {
+        if (!s.session) return s;
+        const elapsedMin = Math.ceil(elapsedSeconds(s.session, Date.now()) / 60);
+        // Basis durasi: kalau waktu sudah habis (atau sesi open), pakai waktu
+        // yang sudah terpakai agar tambahan waktu benar-benar terasa jalan.
+        const baseMin =
+          s.session.mode === "prepaid"
+            ? Math.max(s.session.durationMin, elapsedMin - (s.session.bonusMin ?? 0))
+            : elapsedMin;
+        return {
+          ...s,
+          session: {
+            ...s.session,
+            mode: "prepaid",
+            durationMin: Math.max(1, baseMin + extraMin),
+          },
+        };
+      }),
     [mapStation],
   );
+
 
   const addOrder = useCallback<Ctx["addOrder"]>(
     (stationId, item, qty, mods, priceAdd) =>
