@@ -1854,23 +1854,55 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   const [now, setNow] = useState(() => Date.now());
   const [hydrated, setHydrated] = useState(false);
+  // True hanya bila data lokal memang terbaca dari perangkat. Kalau false,
+  // aplikasi berjalan dari isi bawaan sehingga tidak boleh mengirim pengaturan
+  // penting (Jenis Konsol & Tarif) ke pusat sebelum menerima data store.
+  const [storageLoaded, setStorageLoaded] = useState(false);
+  const storageWarnedRef = useRef(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState(migrateState(JSON.parse(raw)));
+      if (raw) {
+        setState(migrateState(JSON.parse(raw)));
+        setStorageLoaded(true);
+      }
     } catch {
-      /* ignore corrupt storage */
+      /* isi penyimpanan rusak: jalan dari bawaan, jangan tandai terbaca */
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* storage full or blocked: keep running in memory */
+    const write = (value: State) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (write(state)) {
+      setStorageLoaded(true);
+      return;
+    }
+    // Penyimpanan perangkat penuh: simpan ulang tanpa Log Book & riwayat lama
+    // (keduanya tetap aman di pusat) supaya data hari ini tidak ikut hilang.
+    const trimmed: State = {
+      ...state,
+      logEntries: state.logEntries.slice(-300),
+      history: state.history.slice(-300),
+    };
+    const saved = write(trimmed);
+    if (saved) setStorageLoaded(true);
+    if (!storageWarnedRef.current) {
+      storageWarnedRef.current = true;
+      toast.warning(
+        saved
+          ? "Penyimpanan perangkat hampir penuh. Log Book dan riwayat lama di perangkat ini dipangkas — datanya tetap ada di laporan."
+          : "Perangkat ini tidak bisa menyimpan data. Bersihkan penyimpanan browser lalu muat ulang halaman.",
+      );
     }
   }, [state, hydrated]);
 
