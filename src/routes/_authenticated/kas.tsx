@@ -33,6 +33,7 @@ import {
 } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { useCan } from "@/lib/use-can";
 import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
 import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import { useStoreInfo } from "@/lib/store-info";
@@ -216,6 +217,7 @@ function CashGroup({
   list: CashEntry[];
   onRemove: (entry: CashEntry) => void;
 }) {
+  const allow = useCan();
   const total = list.reduce((s, e) => s + e.amount, 0);
   return (
     <section className="surface-panel overflow-x-auto p-4 sm:p-6">
@@ -270,14 +272,16 @@ function CashGroup({
                   {formatRupiah(e.amount)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label="Hapus catatan"
-                    onClick={() => onRemove(e)}
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
+                  {allow("kas.hapus") && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Hapus catatan"
+                      onClick={() => onRemove(e)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

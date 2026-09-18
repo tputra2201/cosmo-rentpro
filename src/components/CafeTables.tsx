@@ -41,6 +41,7 @@ import {
 } from "@/lib/billing-store";
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { useCan } from "@/lib/use-can";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
 import {
   labelItemsFor,
@@ -60,6 +61,7 @@ export function tableTotal(table: CafeTable) {
 
 export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
+  const allow = useCan();
   const {
     cafeTables,
     menu,
@@ -351,20 +353,22 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (!requireShift()) return;
-                    if (!t.customerName?.trim()) {
-                      updateCafeTable(t.id, { customerName: "Umum" });
-                    }
-                    setOrderTableId(t.id);
-                  }}
-                >
-                  <Plus className="size-4" /> Tambah Order
-                </Button>
+                {allow("kafe.order") && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      if (!t.customerName?.trim()) {
+                        updateCafeTable(t.id, { customerName: "Umum" });
+                      }
+                      setOrderTableId(t.id);
+                    }}
+                  >
+                    <Plus className="size-4" /> Tambah Order
+                  </Button>
+                )}
 
-                {t.orders.length > 0 && (
+                {t.orders.length > 0 && allow("kafe.void") && (
                   <Button
                     size="sm"
                     variant="destructive"
@@ -376,7 +380,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Ban className="size-4" /> VOID
                   </Button>
                 )}
-                {filled && (
+                {/* Sesi meja hanya bisa diakhiri kalau tidak ada tagihan tersisa. */}
+                {filled && t.orders.length === 0 && allow("kafe.akhiri") && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -384,9 +389,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       confirmAction({
                         title: `Akhiri sesi ${t.name}?`,
                         description:
-                          t.orders.length > 0
-                            ? "Masih ada pesanan yang belum dibayar di meja ini."
-                            : "Meja akan kembali berstatus kosong dan siap dipakai lagi.",
+                          "Meja akan kembali berstatus kosong dan siap dipakai lagi.",
                         actionLabel: "Akhiri Sesi",
                         onConfirm: () => {
                           clearCafeTable(t.id);
@@ -494,15 +497,17 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 </div>
 
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    if (!requireShift()) return;
-                    setOrderTableId(table.id);
-                  }}
-                >
-                  <Plus className="size-4" /> Tambah Order
-                </Button>
+                {allow("kafe.order") && (
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      setOrderTableId(table.id);
+                    }}
+                  >
+                    <Plus className="size-4" /> Tambah Order
+                  </Button>
+                )}
 
 
                 {table.orders.length > 0 && (
@@ -535,19 +540,21 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                               <Printer className="size-3.5" />
                             </button>
                           )}
-                          <button
-                            aria-label={`Hapus ${o.name}`}
-                            onClick={() =>
-                              confirmAction({
-                                title: `Hapus ${o.name}?`,
-                                description: `${o.name} × ${o.qty} dibatalkan dari pesanan ${table.name}.`,
-                                actionLabel: "Hapus",
-                                onConfirm: () => removeCafeOrder(table.id, o.id),
-                              })
-                            }
-                          >
-                            <Trash2 className="size-3.5 text-muted-foreground" />
-                          </button>
+                          {allow("kafe.hapusorder") && (
+                            <button
+                              aria-label={`Hapus ${o.name}`}
+                              onClick={() =>
+                                confirmAction({
+                                  title: `Hapus ${o.name}?`,
+                                  description: `${o.name} × ${o.qty} dibatalkan dari pesanan ${table.name}.`,
+                                  actionLabel: "Hapus",
+                                  onConfirm: () => removeCafeOrder(table.id, o.id),
+                                })
+                              }
+                            >
+                              <Trash2 className="size-3.5 text-muted-foreground" />
+                            </button>
+                          )}
                         </span>
                       </li>
                     ))}
@@ -579,13 +586,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 )}
 
                 {/* Promo berlaku: bisa diberikan satu atau beberapa sekaligus. */}
-                <PromoPicker
-                  target={{ type: "table", id: table.id }}
-                  {...(table.promoIds ? { promoIds: table.promoIds } : {})}
-                />
+                {allow("kafe.promo") && (
+                  <PromoPicker
+                    target={{ type: "table", id: table.id }}
+                    {...(table.promoIds ? { promoIds: table.promoIds } : {})}
+                  />
+                )}
 
                 {/* Gabung tagihan: meja lain & pesanan sesi TV dibayar dari panel ini. */}
 
+                {allow("kafe.gabung") && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
                   <span className="text-sm font-semibold">Gabung Tagihan</span>
                   <Button
@@ -624,6 +634,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </>
                   )}
                 </div>
+                )}
 
 
 
@@ -659,6 +670,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <span className="text-neon">{formatRupiah(total)}</span>
                   </div>
 
+                  {allow("kafe.diskon") && (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label>Diskon transaksi</Label>
@@ -687,8 +699,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       />
                     </div>
                   </div>
+                  )}
 
-                  {activeMethods.length > 1 && (
+                  {activeMethods.length > 1 && allow("kafe.split") && (
                     <div className="flex justify-end">
                       <button
                         type="button"
@@ -889,6 +902,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 </div>
               </div>
 
+              {allow("kafe.pindahmeja") && (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
                 <span className="text-sm font-semibold">Pindah meja</span>
                 <Select value={tableMoveTo} onValueChange={setTableMoveTo}>
@@ -938,21 +952,37 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   Pindahkan
                 </Button>
               </div>
+              )}
 
               <DialogFooter className="flex-col gap-2 sm:flex-row">
 
+                {allow("kafe.void") && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    clearCafeTable(table.id);
-                    toast.success(`Pesanan ${table.name} dibatalkan`);
-                    setOpenId(null);
-                  }}
+                  onClick={() =>
+                    confirmAction({
+                      title: `Batalkan pesanan ${table.name}?`,
+                      description:
+                        "Seluruh pesanan di meja ini dibatalkan tanpa pembayaran.",
+                      actionLabel: "Batalkan pesanan",
+                      destructive: true,
+                      onConfirm: () => {
+                        clearCafeTable(table.id);
+                        toast.success(`Pesanan ${table.name} dibatalkan`);
+                        setOpenId(null);
+                      },
+                    })
+                  }
                 >
                   Batalkan pesanan
                 </Button>
+                )}
                 <Button
-                  disabled={table.orders.length === 0 || activeMethods.length === 0}
+                  disabled={
+                    table.orders.length === 0 ||
+                    activeMethods.length === 0 ||
+                    !allow("kafe.bayar")
+                  }
                   onClick={() => {
                     if (splitMode) {
                       const rows = splitRows.filter((row) => row.amount > 0);

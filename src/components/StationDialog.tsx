@@ -51,6 +51,7 @@ import { BillPreviewDialog } from "@/components/BillPreviewDialog";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { useCan } from "@/lib/use-can";
 import {
   CARD_PAYMENT_NAME,
   sessionBill,
@@ -87,6 +88,7 @@ export function StationDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
+  const allow = useCan();
   const {
     now,
     bookings,
@@ -722,6 +724,7 @@ export function StationDialog({
 
               <Button
                 className="w-full"
+                disabled={!allow("sesi.mulai")}
                 onClick={() => {
                   if (!requireShift()) return;
                   startSession(station.id, "prepaid", duration, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: chosenPackage?.name || `${duration} Menit`, notes, bonusMin });
@@ -737,6 +740,7 @@ export function StationDialog({
             <Button
               variant="secondary"
               className="w-full"
+              disabled={!allow("sesi.mulai")}
               onClick={() => {
                 if (!requireShift()) return;
                 startSession(station.id, "open", 0, { customerName, customerPhone, member, ...(matchedCustomer ? { customerId: matchedCustomer.id } : {}), packageName: "Open Time", notes });
@@ -769,7 +773,7 @@ export function StationDialog({
                   second: "2-digit",
                 })}
               </p>
-              {!editCustomer ? (
+              {!allow("sesi.ubahpelanggan") ? null : !editCustomer ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -909,7 +913,7 @@ export function StationDialog({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={!moveTo || moveTo === "none"}
+                    disabled={!moveTo || moveTo === "none" || !allow("sesi.pindah")}
                     onClick={() => {
                       const target = stations.find((s) => s.id === moveTo);
                       if (!target) return;
@@ -941,7 +945,11 @@ export function StationDialog({
 
 
             <div className="flex flex-wrap gap-2">
-              {[30, 60, -30, -60].map((m) => (
+              {[30, 60, -30, -60]
+                .filter((m) =>
+                  m > 0 ? allow("sesi.tambahwaktu") : allow("sesi.kurangiwaktu"),
+                )
+                .map((m) => (
                 <Button
                   key={m}
                   size="sm"
@@ -969,7 +977,7 @@ export function StationDialog({
               ))}
             </div>
 
-            {session.mode === "prepaid" && (
+            {session.mode === "prepaid" && allow("sesi.ekstra") && (
               <div className="space-y-2 rounded-md border border-border p-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">Waktu ekstra (tanpa biaya)</p>
@@ -1009,7 +1017,7 @@ export function StationDialog({
             )}
 
 
-            {addonRentals.some((a) => a.active) && (
+            {addonRentals.some((a) => a.active) && allow("sesi.addon") && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Additional Rental</p>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1110,6 +1118,7 @@ export function StationDialog({
                           {formatRupiah(
                             addonAmount(a, rentalMinutes(session, now) / 60),
                           )}
+                          {allow("sesi.hapusaddon") && (
                           <button
                             type="button"
                             onClick={() =>
@@ -1127,6 +1136,7 @@ export function StationDialog({
                           >
                             <Trash2 className="size-3.5" />
                           </button>
+                          )}
                         </span>
                       </li>
                     ))}
@@ -1140,6 +1150,7 @@ export function StationDialog({
             <div className="space-y-2">
               <p className="text-sm font-medium">Pesanan makanan &amp; minuman</p>
               <div className="flex flex-wrap gap-2">
+                {allow("sesi.order") && (
                 <Button
                   size="sm"
                   onClick={() => {
@@ -1149,6 +1160,7 @@ export function StationDialog({
                 >
                   <Plus className="size-4" /> Tambah Order
                 </Button>
+                )}
                 {!isSettled && (
                   <Button size="sm" variant="outline" onClick={previewBill}>
                     <PrinterIcon className="size-4" /> Cetak Bill
@@ -1185,6 +1197,7 @@ export function StationDialog({
                             <PrinterIcon className="size-3.5" />
                           </button>
                         )}
+                        {allow("sesi.hapusorder") && (
                         <button
                           type="button"
                           onClick={() =>
@@ -1200,6 +1213,7 @@ export function StationDialog({
                         >
                           <Trash2 className="size-3.5" />
                         </button>
+                        )}
                       </span>
                     </li>
                   ))}
@@ -1221,7 +1235,7 @@ export function StationDialog({
             </div>
 
 
-            {session && bill && (
+            {session && bill && allow("sesi.diskon") && (
               <div className="space-y-2 rounded-md border border-border p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -1260,10 +1274,12 @@ export function StationDialog({
             )}
 
             {/* Promo yang sedang berlaku, bisa diberikan satu atau beberapa sekaligus. */}
-            <PromoPicker
-              target={{ type: "station", id: station.id }}
-              {...(session.promoIds ? { promoIds: session.promoIds } : {})}
-            />
+            {allow("sesi.promo") && (
+              <PromoPicker
+                target={{ type: "station", id: station.id }}
+                {...(session.promoIds ? { promoIds: session.promoIds } : {})}
+              />
+            )}
 
             {/* Gabung tagihan: TV lain dan meja kafe dibayar dari panel ini. */}
 
@@ -1277,9 +1293,11 @@ export function StationDialog({
                 <>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">Gabung Tagihan</p>
-                    <Button type="button" size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
-                      Gabung Tagihan
-                    </Button>
+                    {allow("sesi.gabung") && (
+                      <Button type="button" size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
+                        Gabung Tagihan
+                      </Button>
+                    )}
                   </div>
                   {transferredLines.length > 0 ? (
                     <div className="space-y-1">
@@ -1440,6 +1458,7 @@ export function StationDialog({
                       </span>
                       <span className="flex items-center gap-2">
                         {formatRupiah(s.amount)}
+                        {allow("sesi.batalbayar") && (
                         <button
                           type="button"
                           aria-label="Batalkan pembayaran"
@@ -1451,6 +1470,7 @@ export function StationDialog({
                         >
                           <Trash2 className="size-3.5" />
                         </button>
+                        )}
                       </span>
                     </li>
                   ))}
@@ -1471,7 +1491,7 @@ export function StationDialog({
 
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">Tipe pembayaran</p>
-                {activePayments.length > 1 && (
+                {activePayments.length > 1 && allow("sesi.split") && (
                   <button
                     type="button"
                     className="text-xs text-primary underline-offset-2 hover:underline"
@@ -1612,7 +1632,7 @@ export function StationDialog({
             <div className="grid gap-2 sm:grid-cols-2">
               <Button
                 className="w-full"
-                disabled={isSettled || activePayments.length === 0}
+                disabled={isSettled || activePayments.length === 0 || !allow("sesi.bayar")}
                 onClick={() => {
                   if (validatePayment()) setConfirmPay(true);
                 }}
@@ -1623,11 +1643,12 @@ export function StationDialog({
               <Button
                 variant="destructive"
                 className="w-full"
-                disabled={!isSettled}
+                disabled={!isSettled || !allow("sesi.akhiri")}
                 onClick={() => setConfirmEnd(true)}
               >
                 <Square className="size-4" /> Akhiri Sesi
               </Button>
+              {allow("sesi.void") && (
               <Button
                 variant="destructive"
                 className="w-full sm:col-span-2"
@@ -1638,6 +1659,7 @@ export function StationDialog({
               >
                 <Ban className="size-4" /> VOID Transaksi
               </Button>
+              )}
             </div>
             {!isSettled && (
               <p className="text-center text-xs text-muted-foreground">

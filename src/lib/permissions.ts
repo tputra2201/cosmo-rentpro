@@ -102,10 +102,24 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     label: "Sesi rental",
     items: [
       { key: "sesi.mulai", label: "Mulai sesi rental" },
-      { key: "sesi.tambahwaktu", label: "Tambah / kurangi waktu" },
+      { key: "sesi.tambahwaktu", label: "Tambah waktu (berbayar)" },
+      { key: "sesi.kurangiwaktu", label: "Kurangi waktu (berbayar)" },
+      { key: "sesi.ekstra", label: "Waktu ekstra tanpa biaya" },
+      { key: "sesi.jeda", label: "Jeda / lanjutkan timer" },
+      { key: "sesi.pindah", label: "Pindah TV" },
+      { key: "sesi.ubahpelanggan", label: "Ubah data pelanggan sesi" },
+      { key: "sesi.addon", label: "Tambah Additional Rental" },
+      { key: "sesi.hapusaddon", label: "Hapus item Additional Rental" },
+      { key: "sesi.order", label: "Tambah order makanan & minuman" },
+      { key: "sesi.hapusorder", label: "Hapus / batalkan item pesanan" },
+      { key: "sesi.promo", label: "Terapkan / batalkan promo" },
       { key: "sesi.diskon", label: "Beri diskon" },
+      { key: "sesi.gabung", label: "Gabung tagihan TV & meja" },
       { key: "sesi.bayar", label: "Terima pembayaran" },
+      { key: "sesi.split", label: "Split bill (beberapa metode)" },
+      { key: "sesi.batalbayar", label: "Batalkan pembayaran yang sudah masuk" },
       { key: "sesi.akhiri", label: "Akhiri sesi" },
+      { key: "sesi.void", label: "VOID transaksi TV" },
       { key: "cetak.struk", label: "Cetak struk / invoice" },
       { key: "cetak.label", label: "Cetak label dapur / bar" },
     ],
@@ -116,8 +130,34 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "shift.checkin", label: "Check-in shift" },
       { key: "shift.closeout", label: "Cash close out" },
       { key: "kas.tambah", label: "Catat kas masuk / keluar" },
+      { key: "kas.hapus", label: "Hapus catatan kas" },
       { key: "kartu.jual", label: "Jual Playing Card" },
       { key: "kartu.topup", label: "Top up saldo kartu" },
+    ],
+  },
+  {
+    label: "Meja kafe",
+    items: [
+      { key: "kafe.order", label: "Tambah order meja kafe" },
+      { key: "kafe.hapusorder", label: "Hapus / batalkan item pesanan meja" },
+      { key: "kafe.promo", label: "Terapkan / batalkan promo meja" },
+      { key: "kafe.diskon", label: "Beri diskon meja" },
+      { key: "kafe.gabung", label: "Gabung / lepas gabungan tagihan meja" },
+      { key: "kafe.pindahmeja", label: "Pindahkan pesanan ke meja lain" },
+      { key: "kafe.bayar", label: "Terima pembayaran meja kafe" },
+      { key: "kafe.split", label: "Split bill meja kafe" },
+      { key: "kafe.akhiri", label: "Akhiri sesi meja kafe" },
+      { key: "kafe.void", label: "VOID pesanan meja kafe" },
+    ],
+  },
+  {
+    label: "Reservasi",
+    items: [
+      { key: "booking.buat", label: "Buat reservasi" },
+      { key: "booking.ubah", label: "Ubah reservasi" },
+      { key: "booking.checkin", label: "Check-in reservasi" },
+      { key: "booking.batal", label: "Batalkan reservasi" },
+      { key: "booking.hapus", label: "Hapus reservasi" },
     ],
   },
   {
@@ -175,6 +215,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "pembayaran.kelola",
     "backup.export",
     "laporan.cetak",
+    "kas.hapus",
   ],
   kasir: [
     "menu.dashboard",
@@ -200,6 +241,29 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "pelanggan.kelola",
     "cetak.struk",
     "cetak.label",
+    "sesi.ekstra",
+    "sesi.jeda",
+    "sesi.pindah",
+    "sesi.ubahpelanggan",
+    "sesi.addon",
+    "sesi.hapusaddon",
+    "sesi.order",
+    "sesi.hapusorder",
+    "sesi.promo",
+    "sesi.gabung",
+    "sesi.split",
+    "kafe.order",
+    "kafe.hapusorder",
+    "kafe.promo",
+    "kafe.gabung",
+    "kafe.pindahmeja",
+    "kafe.bayar",
+    "kafe.split",
+    "kafe.akhiri",
+    "booking.buat",
+    "booking.ubah",
+    "booking.checkin",
+    "booking.batal",
   ],
   operator: [
     "menu.dashboard",
@@ -210,11 +274,53 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "menu.tema",
     "sesi.mulai",
     "sesi.tambahwaktu",
+    "sesi.ekstra",
+    "sesi.order",
+    "sesi.addon",
+    "kafe.order",
     "cetak.label",
   ],
 };
 
 export type RolePermissions = Partial<Record<string, string[]>>;
+
+/**
+ * Hak akses baru yang ditambahkan setelah pengaturan lama tersimpan.
+ * Bila store sudah punya pengaturan sendiri, hak akses baru ini tetap
+ * mengikuti bawaan levelnya supaya tidak ada fitur yang tiba-tiba hilang.
+ */
+const ADDED_PERMISSIONS: string[] = [
+  "sesi.kurangiwaktu",
+  "sesi.ekstra",
+  "sesi.jeda",
+  "sesi.pindah",
+  "sesi.ubahpelanggan",
+  "sesi.addon",
+  "sesi.hapusaddon",
+  "sesi.order",
+  "sesi.hapusorder",
+  "sesi.promo",
+  "sesi.gabung",
+  "sesi.split",
+  "sesi.batalbayar",
+  "sesi.void",
+  "kas.hapus",
+  "kafe.order",
+  "kafe.hapusorder",
+  "kafe.promo",
+  "kafe.diskon",
+  "kafe.gabung",
+  "kafe.pindahmeja",
+  "kafe.bayar",
+  "kafe.split",
+  "kafe.akhiri",
+  "kafe.void",
+  "booking.buat",
+  "booking.ubah",
+  "booking.checkin",
+  "booking.batal",
+  "booking.hapus",
+];
 
 /** Hak akses yang berlaku untuk sebuah level (pengaturan Installer menimpa default). */
 export function permissionsOf(
@@ -223,7 +329,13 @@ export function permissionsOf(
 ): string[] {
   if (!role) return [];
   if (role === "installer") return ALL_PERMISSIONS;
-  return overrides?.[role] ?? defaultRolePermissions[role] ?? [];
+  const saved = overrides?.[role];
+  const fallback = defaultRolePermissions[role] ?? [];
+  if (!saved) return fallback;
+  const missing = ADDED_PERMISSIONS.filter(
+    (key) => fallback.includes(key) && !saved.includes(key),
+  );
+  return missing.length > 0 ? [...saved, ...missing] : saved;
 }
 
 export function can(
