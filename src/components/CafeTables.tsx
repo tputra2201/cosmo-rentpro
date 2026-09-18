@@ -701,6 +701,30 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                   )}
 
+                  {dueAmount > 0 && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cafe-pay-amount">
+                        Jumlah dibayar sekarang (kosongkan untuk lunas)
+                      </Label>
+                      <Input
+                        id="cafe-pay-amount"
+                        type="number"
+                        min={0}
+                        max={dueAmount}
+                        placeholder={String(dueAmount)}
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(e.target.value)}
+                      />
+                      {isPartial && (
+                        <p className="text-xs text-muted-foreground">
+                          Bayar sebagian (DP) {formatRupiah(payTarget)} · sisa{" "}
+                          {formatRupiah(dueAmount - payTarget)} tetap jadi tagihan meja.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+
                   {activeMethods.length > 1 && allow("kafe.split") && (
                     <div className="flex justify-end">
                       <button
