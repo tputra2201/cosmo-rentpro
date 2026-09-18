@@ -231,6 +231,13 @@ export type Customer = {
   createdAt: number;
 };
 export type BookingStatus = "confirmed" | "checked-in" | "completed" | "cancelled";
+/** Additional Rental yang dipesan bersama reservasi. */
+export type BookingAddon = {
+  addonId: string;
+  qty: number;
+  /** Durasi khusus item ini (menit). Kosong = ikut lama sesi. */
+  minutes?: number;
+};
 export type Booking = {
   id: string;
   stationId: string;
@@ -241,6 +248,14 @@ export type Booking = {
   endAt: number;
   notes: string;
   status: BookingStatus;
+  /** Additional Rental yang otomatis masuk sesi saat check-in. */
+  addons?: BookingAddon[];
+  /** Uang muka (DP) yang sudah disetor pelanggan. */
+  dpAmount?: number;
+  /** Metode pembayaran DP. */
+  dpPayment?: string;
+  /** Penanda bahwa DP sudah dipakai sebagai pembayaran sesi. */
+  dpUsedAt?: number;
 };
 export type Promotion = {
   id: string;
