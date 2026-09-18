@@ -2655,7 +2655,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         addOrder(...args);
       },
       removeOrder,
-      setRates: (rates) => update((prev) => ({ ...prev, rates })),
+      setRates: (rates) => {
+        markSettingsDirty("rates");
+        update((prev) => ({ ...prev, rates }));
+      },
       addAddonRental: (name, price, mode) => {
         const clean = name.trim();
         if (!clean) return false;
@@ -2768,6 +2771,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             : s,
         ),
       setConsoleDiscount: (name, patch) =>
+        markSettingsDirty("consoleDiscounts") ??
         update((prev) => ({
           ...prev,
           consoleDiscounts: {
