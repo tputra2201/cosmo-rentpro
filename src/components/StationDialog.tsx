@@ -425,18 +425,19 @@ export function StationDialog({
           return;
         }
       }
-      settleSession(station.id, {
-        payments: rows,
-        amount: payTarget,
-        amountPaid: splitPaid,
-      });
-
+      const label = Array.from(new Set(rows.map((r) => r.method))).join(" + ");
+      settleSpread(label, (amount) => ({
+        payments: amount === payTarget ? rows : [{ method: label, amount }],
+        amount,
+        amountPaid: amount === payTarget ? splitPaid : amount,
+      }));
     } else {
-      settleSession(station.id, {
+      settleSpread(selectedPayment, (amount) => ({
         payment: selectedPayment,
-        amount: payTarget,
-        amountPaid: selectedPayment === "Cash" ? cashReceived : payTarget,
-      });
+        amount,
+        amountPaid:
+          selectedPayment === "Cash" && amount === payTarget ? cashReceived : amount,
+      }));
     }
     const sisa = Math.max(0, dueAmount - payTarget);
     if (sisa <= 0) setWantPrint(true);
