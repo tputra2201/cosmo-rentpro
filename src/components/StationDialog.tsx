@@ -930,17 +930,19 @@ export function StationDialog({
 
 
             <div className="flex flex-wrap gap-2">
-              {[15, 30, 60].map((m) => (
+              {[30, 60, -30, -60].map((m) => (
                 <Button
                   key={m}
                   size="sm"
                   variant="outline"
                   onClick={() => {
                     addTime(station.id, m);
-                    toast.success(`Tambah ${m} menit di ${station.name}`);
+                    toast.success(
+                      `${m > 0 ? "Tambah" : "Kurangi"} ${Math.abs(m)} menit di ${station.name}`,
+                    );
                   }}
                 >
-                  <Timer className="size-4" /> +{m} mnt
+                  <Timer className="size-4" /> {m > 0 ? `+${m}` : m} mnt
                 </Button>
               ))}
             </div>

@@ -2643,11 +2643,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               session: {
                 ...s.session,
                 mode: "prepaid",
-                durationMin:
+                durationMin: Math.max(
+                  1,
                   (s.session.mode === "prepaid"
                     ? s.session.durationMin
                     : Math.ceil(elapsedSeconds(s.session, Date.now()) / 60)) +
-                  extraMin,
+                    extraMin,
+                ),
               },
             }
           : s,
