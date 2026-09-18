@@ -156,6 +156,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
 
+  // Gabung tagihan: pesanan titipan di meja ini, serta calon meja & TV yang bisa digabung.
+  const linkedOrders = (table?.orders ?? []).filter((o) => o.linkedFrom);
+  const linkedSourceNames = linkedOrders
+    .map((o) => o.linkedFrom!.name)
+    .filter((name, i, arr) => arr.indexOf(name) === i);
+  const mergeTableCandidates = cafeTables.filter(
+    (t) => t.id !== table?.id && t.orders.length > 0,
+  );
+  const mergeStationCandidates = stations.filter(
+    (s) => s.session && !s.session.paidAt && s.session.orders.length > 0,
+  );
+
+
+
   const isCardPayment = payMethod === CARD_PAYMENT_NAME;
   const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
   const manualDisc = { type: discType, value: Math.max(0, Number(discValue) || 0) };
