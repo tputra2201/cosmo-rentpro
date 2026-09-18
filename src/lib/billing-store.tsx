@@ -2534,13 +2534,44 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       }
       return { ...defaultState, storeId: id };
     });
+    // Perangkat ganti store: penanda "diedit di sini" tidak lagi berlaku.
+    dirtyRef.current = new Set();
+    try {
+      localStorage.removeItem(DIRTY_SETTINGS_KEY);
+    } catch {
+      /* penyimpanan diblokir */
+    }
   }, []);
+
+  const dirtySettings = useCallback(() => dirtyRef.current, []);
+
+  // Perubahan Jenis Konsol & Tarif yang datang dari pusat dicatat, supaya kalau
+  // suatu perangkat menimpanya lagi jelas terlihat kapan dan menjadi apa.
+  const applyRemote = useCallback(
+    (apply: (prev: State) => State) => {
+      setState((prev) => {
+        const next = apply(prev);
+        const before = JSON.stringify([prev.consoleTypes, prev.rates]);
+        const after = JSON.stringify([next.consoleTypes, next.rates]);
+        if (before !== after) {
+          const detail = next.consoleTypes
+            .map((c) => `${c} ${formatRupiah(next.rates[c] ?? 0)}`)
+            .join(", ");
+          queueMicrotask(() => addLog("Tarif konsol disegarkan dari pusat", "Sinkronisasi", detail));
+        }
+        return next;
+      });
+    },
+    [addLog],
+  );
 
   const sync = useStoreSync({
     state,
     hydrated,
     enabled: Boolean(authSession),
-    applyRemote: setState,
+    storageLoaded,
+    dirtySettings,
+    applyRemote,
     bindStore,
   });
 
