@@ -43,6 +43,8 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCan } from "@/lib/use-can";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
+import { OrderSelectionActions } from "@/components/OrderSelectionActions";
+
 import {
   labelItemsFor,
   printLabels,
@@ -146,6 +148,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [billPreview, setBillPreview] = useState<string | null>(null);
+  // Item pesanan yang dicentang untuk dibayar sendiri atau ditransfer.
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
@@ -159,7 +164,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setRestPay("");
     setSplitMode(false);
     setSplits([]);
+    setPickedIds([]);
   }, [openId]);
+
 
 
 
