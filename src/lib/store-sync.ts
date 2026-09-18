@@ -5,8 +5,11 @@ import {
   applyRecords,
   clearSyncedLists,
   flattenSnapshot,
+  isDefaultProtectedSetting,
   isKnownKind,
+  PROTECTED_SETTINGS,
   recordKey,
+  SETTINGS_KIND,
   type SyncRecord,
 } from "./sync-records";
 
