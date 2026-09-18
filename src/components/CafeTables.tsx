@@ -519,6 +519,48 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 )}
 
+                {/* Gabung tagihan: meja lain & pesanan sesi TV dibayar dari panel ini. */}
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
+                  <span className="text-sm font-semibold">Gabung Tagihan</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      setMergeOpen(true);
+                    }}
+                  >
+                    <Link2 className="size-4" /> Gabung Tagihan
+                  </Button>
+                  {linkedOrders.length > 0 && (
+                    <>
+                      <span className="text-xs text-muted-foreground">
+                        Titipan dari {linkedSourceNames.join(", ")}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          confirmAction({
+                            title: "Lepas gabungan tagihan?",
+                            description: `Pesanan titipan dikembalikan ke ${linkedSourceNames.join(", ")}.`,
+                            actionLabel: "Lepas",
+                            destructive: false,
+                            onConfirm: () => {
+                              unmergeCafeTables(table.id);
+                              toast.success("Gabungan tagihan dilepas");
+                            },
+                          })
+                        }
+                      >
+                        <Unlink className="size-4" /> Lepas gabungan
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+
+
                 <div className="space-y-3 border-t border-border pt-4">
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
