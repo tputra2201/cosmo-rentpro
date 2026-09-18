@@ -1662,6 +1662,24 @@ type Ctx = State & {
     priceAdd?: number,
   ) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
+  /** Bayar hanya item pesanan yang dipilih (di meja kafe atau sesi TV). */
+  payOrderItems: (
+    source: { type: "table" | "station"; id: string },
+    orderIds: string[],
+    input: {
+      payment?: string;
+      payments?: PaymentSplit[];
+      amountPaid?: number;
+      member?: boolean;
+    },
+  ) => HistoryRecord | null;
+  /** Pindahkan item pesanan terpilih ke meja kafe atau TV lain. */
+  transferOrders: (
+    from: { type: "table" | "station"; id: string },
+    to: { type: "table" | "station"; id: string },
+    orderIds: string[],
+  ) => boolean;
+
   clearCafeTable: (tableId: string) => void;
   /** Batalkan (VOID) sesi rental yang sedang berjalan beserta pesanannya. */
   voidSession: (stationId: string, reason: string) => VoidRecord | null;
