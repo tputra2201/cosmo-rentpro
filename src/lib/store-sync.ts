@@ -172,6 +172,8 @@ export function useStoreSync(options: {
   const stateRef = useRef(state);
   const prevKeysRef = useRef<Set<string> | null>(null);
   const blockedUntilRef = useRef(0);
+  /** Sudah pernah mengambil seluruh data store pada sesi ini. */
+  const bootstrappedRef = useRef(false);
 
 
   stateRef.current = state;
@@ -363,10 +365,26 @@ export function useStoreSync(options: {
       Object.keys(shadowRef.current).length > 0 ||
       Object.keys(outboxRef.current).length > 0 ||
       Boolean(localStorage.getItem(SINCE_KEY));
-    if (hasSyncHistory) {
+    // Jejak sinkron lama hanya bisa dipercaya bila data lokalnya juga benar-benar
+    // terbaca. Kalau data lokal hilang (penyimpanan penuh/rusak) sementara
+    // jejaknya masih ada, perangkat ini akan mengirim isi bawaan ke pusat —
+    // inilah yang membuat Jenis Konsol & Tarif ter-reset. Paksa ambil ulang.
+    if (hasSyncHistory && storageLoaded) {
+      bootstrappedRef.current = true;
       setReadyStoreId(storeId);
       return;
     }
+    if (hasSyncHistory && !storageLoaded) {
+      localStorage.removeItem(SHADOW_KEY);
+      localStorage.removeItem(OUTBOX_KEY);
+      localStorage.removeItem(SINCE_KEY);
+      localStorage.setItem(FRESH_KEY, storeId);
+      shadowRef.current = {};
+      outboxRef.current = {};
+      prevKeysRef.current = null;
+      setPending(0);
+    }
+
 
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
