@@ -2806,6 +2806,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!clean) return false;
         if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
           return false;
+        markSettingsDirty("consoleTypes", "rates");
         update((prev) => ({
           ...prev,
           consoleTypes: [...prev.consoleTypes, clean],
@@ -2818,6 +2819,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!clean || clean === oldName) return false;
         if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
           return false;
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         update((prev) => {
           const rates: Rates = {};
           for (const key of Object.keys(prev.rates)) {
@@ -2841,14 +2843,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         return true;
       },
-      setConsoleRate: (name, rate) =>
+      setConsoleRate: (name, rate) => {
+        markSettingsDirty("rates");
         update((prev) => ({
           ...prev,
           rates: { ...prev.rates, [name]: Math.max(0, rate) },
-        })),
+        }));
+      },
       removeConsoleType: (name) => {
         if (state.consoleTypes.length <= 1) return false;
         if (state.stations.some((s) => s.console === name)) return false;
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         update((prev) => {
           const rates = { ...prev.rates };
           delete rates[name];
