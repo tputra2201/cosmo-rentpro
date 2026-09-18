@@ -6,7 +6,7 @@ const STORAGE_KEY = "billing-theme-v1";
 
 export const themeOptions: { value: ThemeName; label: string; hint: string }[] = [
   { value: "gelap", label: "Gelap", hint: "Latar gelap, nyaman untuk ruangan redup" },
-  { value: "terang", label: "Putih", hint: "Latar putih bersih, terang dan tajam" },
+  { value: "terang", label: "Kuning", hint: "Latar kuning lembut, hangat dan tidak menyilaukan" },
   { value: "berwarna", label: "Berwarna", hint: "Latar biru Chelsea dengan aksen emas" },
   { value: "cosmo", label: "Cosmo", hint: "Ungu pekat dengan aksen oranye dan magenta" },
 ];
