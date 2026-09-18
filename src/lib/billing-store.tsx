@@ -3963,6 +3963,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
       replaceAll: (data) => {
+        // Pemulihan dari berkas cadangan memang dimaksudkan menimpa pusat.
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         setState(migrateState(data));
         update((prev) => withLog(prev, "Pulihkan data dari berkas cadangan"));
       },
