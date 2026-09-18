@@ -264,6 +264,7 @@ function CashHistory() {
         <Group title="Kas masuk" list={incoming} />
         <Group title="Kas keluar" list={outgoing} />
       </div>
+      {dialog}
     </div>
   );
 }
