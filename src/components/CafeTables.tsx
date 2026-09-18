@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
+import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Utensils, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
@@ -70,6 +70,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     voidCafeTable,
     moveCafeTable,
     payCafeTable,
+    stations,
+    mergeCafeTables,
+    unmergeCafeTables,
+    linkStationToTable,
 
     reorderList,
     playingCards,
@@ -86,6 +90,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const { requireShift } = useShiftGate();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const [tableMoveTo, setTableMoveTo] = useState("");
+  const [mergeOpen, setMergeOpen] = useState(false);
+
 
   const labelPrinters = printers.filter((p) => p.active);
   const labelHeading = (p: PrinterConfig) =>
