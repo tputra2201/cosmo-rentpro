@@ -51,7 +51,10 @@ export type OrderItem = {
   qty: number;
   /** Opsi modifikasi yang dipilih (mis. "Less sugar", "Iced", "Pedas"). */
   mods?: string[];
+  /** Asal pesanan bila tagihannya dititipkan dari meja/TV lain. */
+  linkedFrom?: { type: "table" | "station"; id: string; name: string };
 };
+
 
 /** Nama pesanan lengkap dengan opsi modifikasi. */
 export const orderLabel = (o: OrderItem) =>
