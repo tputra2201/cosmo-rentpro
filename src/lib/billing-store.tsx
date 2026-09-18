@@ -3330,15 +3330,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
             t.id === tableId
-              ? {
-                  ...t,
-                  orders: [],
-                  openedAt: null,
-                  customerName: "",
-                  notes: "",
-                  promoIds: [],
-                  paidAt: undefined,
-                }
+              ? (() => {
+                  const { paidAt: _paidAt, ...rest } = t;
+                  return {
+                    ...rest,
+                    orders: [],
+                    openedAt: null,
+                    customerName: "",
+                    notes: "",
+                    promoIds: [],
+                  };
+                })()
               : t,
           ),
         })),
