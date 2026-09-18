@@ -197,11 +197,102 @@ function CashHistory() {
           <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
           <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
         </section>
-        <Group title="Kas masuk" list={incoming} />
-        <Group title="Kas keluar" list={outgoing} />
+        <CashGroup title="Kas masuk" list={incoming} onRemove={remove} />
+        <CashGroup title="Kas keluar" list={outgoing} onRemove={remove} />
       </div>
       {dialog}
     </div>
+  );
+}
+
+/** Tabel satu kelompok kas. Didefinisikan di luar CashHistory agar posisi
+ *  geser horizontal di HP tidak ke-reset setiap kali data di-refresh. */
+function CashGroup({
+  title,
+  list,
+  onRemove,
+}: {
+  title: string;
+  list: CashEntry[];
+  onRemove: (entry: CashEntry) => void;
+}) {
+  const total = list.reduce((s, e) => s + e.amount, 0);
+  return (
+    <section className="surface-panel overflow-x-auto p-4 sm:p-6">
+      <SetupHeading title={title} />
+      {list.length === 0 ? (
+        <p className="py-6 text-center text-muted-foreground">
+          Tidak ada catatan pada periode ini.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Jenis</TableHead>
+              <TableHead>Metode</TableHead>
+              <TableHead>Pelaku</TableHead>
+              <TableHead>Catatan</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="whitespace-nowrap">{timeOf(e.createdAt)}</TableCell>
+                <TableCell>{e.categoryName}</TableCell>
+                <TableCell>{e.group}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {e.payout
+                      ? e.direction === "in"
+                        ? "Kas masuk"
+                        : "Kas keluar"
+                      : e.direction === "in"
+                        ? "Pendapatan"
+                        : "Pengeluaran"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{e.payment}</TableCell>
+                <TableCell>{e.createdBy || "-"}</TableCell>
+                <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
+                <TableCell
+                  className={
+                    e.direction === "in"
+                      ? "text-right font-semibold text-accent"
+                      : "text-right font-semibold text-destructive"
+                  }
+                >
+                  {e.direction === "in" ? "+" : "-"}
+                  {formatRupiah(e.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Hapus catatan"
+                    onClick={() => onRemove(e)}
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell className="font-semibold">Total</TableCell>
+              <TableCell colSpan={6} />
+              <TableCell className="text-right font-semibold">
+                {formatRupiah(total)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableBody>
+        </Table>
+      )}
+    </section>
   );
 }
 
