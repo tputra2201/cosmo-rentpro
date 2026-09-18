@@ -627,6 +627,8 @@ export function computeBill(input: {
   promotions: Promotion[];
   now: number;
   fallbackPercent?: number;
+  /** Promo diskon yang dipilih kasir (bisa beberapa sekaligus). */
+  promoIds?: string[];
   manual?: { type: DiscountType; value: number; max?: number };
 }): BillBreakdown {
   const fallback = input.fallbackPercent ?? 0;
@@ -639,9 +641,26 @@ export function computeBill(input: {
     Math.min(addon, Math.max(0, input.addonDiscount ?? 0)) +
     orderDiscountTotal(input.orders, input.menu, input.ctx, fallback);
   const afterItem = Math.max(0, subtotal - itemDiscount);
-  const promo = activeGlobalPromo(input.promotions, input.now);
-  const promoDiscount = promoDiscountAmount(promo, afterItem);
+  // Promo diskon: happy hour otomatis ditambah promo yang dipilih kasir.
+  // Beberapa promo bisa dipakai sekaligus, dihitung bertingkat.
+  const picked = (input.promoIds ?? [])
+    .map((id) => input.promotions.find((p) => p.id === id))
+    .filter((p): p is Promotion => Boolean(p) && promoKind(p!) === "discount");
+  const auto = activeGlobalPromo(input.promotions, input.now);
+  const promoList = [...(auto ? [auto] : []), ...picked].filter(
+    (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i,
+  );
+  let promoDiscount = 0;
+  const promoNames: string[] = [];
+  for (const promo of promoList) {
+    const amount = promoDiscountAmount(promo, Math.max(0, afterItem - promoDiscount));
+    if (amount <= 0) continue;
+    promoDiscount += amount;
+    promoNames.push(promo.name);
+  }
+  promoDiscount = Math.min(afterItem, promoDiscount);
   const afterPromo = Math.max(0, afterItem - promoDiscount);
+
   const manual = input.manual;
   const manualRaw =
     !manual || !manual.value
