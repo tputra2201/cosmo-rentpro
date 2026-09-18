@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -190,9 +191,7 @@ export function OrderDraftDialog({
                   className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate">
-                      {line.item.name} × {line.qty}
-                    </span>
+                    <span className="block truncate">{line.item.name}</span>
                     {line.mods && line.mods.length > 0 && (
                       <span className="block truncate text-[11px] text-muted-foreground">
                         {line.mods.join(" · ")}
@@ -200,6 +199,53 @@ export function OrderDraftDialog({
                     )}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Kurangi ${line.item.name}`}
+                        className="rounded border border-border px-1.5 leading-none text-muted-foreground transition-colors hover:text-primary"
+                        onClick={() =>
+                          setLines((prev) =>
+                            prev.map((row) =>
+                              row.key === line.key
+                                ? { ...row, qty: Math.max(1, row.qty - 1) }
+                                : row,
+                            ),
+                          )
+                        }
+                      >
+                        −
+                      </button>
+                      <Input
+                        type="number"
+                        min={1}
+                        aria-label={`Jumlah ${line.item.name}`}
+                        className="h-7 w-14 px-1 text-center text-sm"
+                        value={line.qty}
+                        onChange={(e) => {
+                          const next = Math.max(1, Math.round(Number(e.target.value) || 1));
+                          setLines((prev) =>
+                            prev.map((row) =>
+                              row.key === line.key ? { ...row, qty: next } : row,
+                            ),
+                          );
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Tambah ${line.item.name}`}
+                        className="rounded border border-border px-1.5 leading-none text-muted-foreground transition-colors hover:text-primary"
+                        onClick={() =>
+                          setLines((prev) =>
+                            prev.map((row) =>
+                              row.key === line.key ? { ...row, qty: row.qty + 1 } : row,
+                            ),
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </span>
                     {formatRupiah(lineTotal(line))}
                     <button
                       type="button"

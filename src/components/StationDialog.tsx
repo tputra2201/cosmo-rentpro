@@ -37,7 +37,14 @@ import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
-import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
+import {
+  labelItemsFor,
+  printLabels,
+  printReceipt,
+  receiptText,
+  type PrintStore,
+} from "@/lib/print-docs";
+import { BillPreviewDialog } from "@/components/BillPreviewDialog";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -123,6 +130,7 @@ export function StationDialog({
 
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
+  const [billPreview, setBillPreview] = useState<string | null>(null);
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
   );
@@ -423,16 +431,10 @@ export function StationDialog({
   };
 
 
-  /** Cetak bill sementara sebelum tagihan dilunasi. */
-  const printBill = () => {
-    const printer = printerFor(printers, "receipt");
-    if (!printer) {
-      toast.error("Printer struk belum diatur di menu Printer");
-      return;
-    }
-    if (!session || !bill) return;
-    printReceipt({
-      record: {
+  /** Data nota bill sementara sebelum tagihan dilunasi. */
+  const billRecord = (): import("@/lib/billing-store").HistoryRecord | null => {
+    if (!session || !bill) return null;
+    return {
         id: `BILL-${station.id}-${Date.now()}`,
         stationName: station.name,
         console: station.console,
@@ -446,9 +448,37 @@ export function StationDialog({
         ...(bill.discount ? { discount: bill.discount } : {}),
         ...(bill.promoName ? { promoName: bill.promoName } : {}),
         ...(session.customerName ? { customerName: session.customerName } : {}),
-        orders: session.orders ?? [],
-        ongoing: true,
-      },
+      orders: session.orders ?? [],
+      ongoing: true,
+    };
+  };
+
+  /** Buka pratinjau bill dulu, cetak setelah kasir menekan Cetak. */
+  const previewBill = () => {
+    const printer = printerFor(printers, "receipt");
+    if (!printer) {
+      toast.error("Printer struk belum diatur di menu Printer");
+      return;
+    }
+    const record = billRecord();
+    if (!record) return;
+    setBillPreview(
+      receiptText({
+        record,
+        store: storeInfo as PrintStore,
+        printer,
+        layout: { ...receiptLayout, showPayment: false },
+        kind: "bill",
+      }),
+    );
+  };
+
+  const doPrintBill = () => {
+    const printer = printerFor(printers, "receipt");
+    const record = billRecord();
+    if (!printer || !record) return;
+    printReceipt({
+      record,
       store: storeInfo as PrintStore,
       printer,
       layout: { ...receiptLayout, showPayment: false },
@@ -459,6 +489,13 @@ export function StationDialog({
   return (
     <>
     <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+    <BillPreviewDialog
+      open={billPreview !== null}
+      onOpenChange={(v) => !v && setBillPreview(null)}
+      sourceName={station?.name ?? ""}
+      text={billPreview ?? ""}
+      onPrint={doPrintBill}
+    />
     <VoidDialog
       open={confirmVoid}
       onOpenChange={setConfirmVoid}
@@ -1021,7 +1058,7 @@ export function StationDialog({
                   <Plus className="size-4" /> Tambah Order
                 </Button>
                 {!isSettled && (
-                  <Button size="sm" variant="outline" onClick={printBill}>
+                  <Button size="sm" variant="outline" onClick={previewBill}>
                     <PrinterIcon className="size-4" /> Cetak Bill
                   </Button>
                 )}
@@ -1313,7 +1350,7 @@ export function StationDialog({
                       }
                     }}
                   >
-                    {splitMode ? "Satu metode saja" : "Bagi beberapa metode"}
+                    {splitMode ? "Satu metode saja" : "Split Bill"}
                   </button>
                 )}
               </div>

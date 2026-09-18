@@ -40,7 +40,16 @@ import {
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
-import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import {
+  labelItemsFor,
+  printLabels,
+  printReceipt,
+  receiptText,
+  type PrintStore,
+} from "@/lib/print-docs";
+import { BillPreviewDialog } from "@/components/BillPreviewDialog";
+import { printerFor } from "@/lib/printing";
+import { useStoreInfo } from "@/lib/store-info";
 import type { PrinterConfig } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
@@ -71,7 +80,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     now,
     chargeCard,
     printers,
+    receiptLayout,
   } = useBilling();
+  const { store: storeInfo } = useStoreInfo(true);
   const { requireShift } = useShiftGate();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const [tableMoveTo, setTableMoveTo] = useState("");
@@ -117,6 +128,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [discValue, setDiscValue] = useState("");
   const [cardPart, setCardPart] = useState("");
   const [restPay, setRestPay] = useState("");
+  const [splitMode, setSplitMode] = useState(false);
+  const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
+  const [billPreview, setBillPreview] = useState<string | null>(null);
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
@@ -127,6 +141,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setDiscValue("");
     setCardPart("");
     setRestPay("");
+    setSplitMode(false);
+    setSplits([]);
   }, [openId]);
 
 
@@ -155,6 +171,74 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
   const shortage = Math.max(0, total - receivedValue);
+
+  // Split Bill: satu tagihan dibagi ke beberapa metode pembayaran.
+  const splitRows = splits.map((row) => ({
+    method: row.method || activeMethods[0]?.name || "Cash",
+    amount: Math.max(0, Number(row.amount) || 0),
+  }));
+  const splitPaid = splitRows.reduce((sum, row) => sum + row.amount, 0);
+  const splitRemaining = Math.max(0, total - splitPaid);
+  const splitCardAmount = splitRows
+    .filter((row) => row.method === CARD_PAYMENT_NAME)
+    .reduce((sum, row) => sum + row.amount, 0);
+  const splitCard = findCardByNumber(playingCards, cardNumber);
+
+  /** Isi bill sementara meja untuk pratinjau dan cetak. */
+  const billRecord = (): HistoryRecord | null => {
+    if (!table) return null;
+    return {
+      id: `BILL-${table.id}-${Date.now()}`,
+      stationName: table.name,
+      console: "PS4",
+      mode: "open",
+      startAt: table.openedAt ?? now,
+      endAt: now,
+      minutes: 0,
+      rentalTotal: 0,
+      fnbTotal: bill.subtotal,
+      total: bill.total,
+      kind: "cafe",
+      tableName: table.name,
+      ...(bill.discount ? { discount: bill.discount } : {}),
+      ...(bill.promoName ? { promoName: bill.promoName } : {}),
+      ...(table.customerName ? { customerName: table.customerName } : {}),
+      orders: table.orders,
+      ongoing: true,
+    };
+  };
+
+  const previewBill = () => {
+    const printer = printerFor(printers, "receipt");
+    if (!printer) {
+      toast.error("Printer struk belum diatur di menu Printer");
+      return;
+    }
+    const record = billRecord();
+    if (!record) return;
+    setBillPreview(
+      receiptText({
+        record,
+        store: storeInfo as PrintStore,
+        printer,
+        layout: { ...receiptLayout, showPayment: false },
+        kind: "bill",
+      }),
+    );
+  };
+
+  const doPrintBill = () => {
+    const printer = printerFor(printers, "receipt");
+    const record = billRecord();
+    if (!printer || !record) return;
+    printReceipt({
+      record,
+      store: storeInfo as PrintStore,
+      printer,
+      layout: { ...receiptLayout, showPayment: false },
+      kind: "bill",
+    });
+  };
 
   return (
     <>
@@ -405,22 +489,28 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </ul>
                 )}
 
-                {table.orders.length > 0 && labelPrinters.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() =>
-                      printOrderLabels(
-                        table.orders,
-                        table.name,
-                        table.customerName ?? undefined,
-                        table.notes ?? undefined,
-                      )
-                    }
-                  >
-                    <Printer className="size-4" /> Cetak semua label
-                  </Button>
+                {table.orders.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {labelPrinters.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          printOrderLabels(
+                            table.orders,
+                            table.name,
+                            table.customerName ?? undefined,
+                            table.notes ?? undefined,
+                          )
+                        }
+                      >
+                        <Printer className="size-4" /> Cetak semua label
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={previewBill}>
+                      <Printer className="size-4" /> Cetak Bill
+                    </Button>
+                  </div>
                 )}
 
                 <div className="space-y-3 border-t border-border pt-4">
@@ -484,10 +574,114 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </div>
                   </div>
 
+                  {activeMethods.length > 1 && (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-xs text-primary underline-offset-2 hover:underline"
+                        onClick={() => {
+                          if (splitMode) {
+                            setSplitMode(false);
+                            setSplits([]);
+                          } else {
+                            setSplitMode(true);
+                            setSplits([
+                              { method: activeMethods[0]?.name ?? "Cash", amount: String(total) },
+                              { method: activeMethods[1]?.name ?? "QRIS", amount: "0" },
+                            ]);
+                          }
+                        }}
+                      >
+                        {splitMode ? "Satu metode saja" : "Split Bill"}
+                      </button>
+                    </div>
+                  )}
+
                   {activeMethods.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       Belum ada tipe pembayaran aktif. Atur di menu Pembayaran.
                     </p>
+                  ) : splitMode ? (
+                    <div className="space-y-2">
+                      {splits.map((row, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <Select
+                            value={row.method || activeMethods[0]?.name || "Cash"}
+                            onValueChange={(v) =>
+                              setSplits((prev) =>
+                                prev.map((r, idx) => (idx === i ? { ...r, method: v } : r)),
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeMethods.map((m) => (
+                                <SelectItem key={m.id} value={m.name}>
+                                  {m.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min={0}
+                            className="flex-1"
+                            aria-label={`Jumlah ${row.method}`}
+                            value={row.amount}
+                            onChange={(e) =>
+                              setSplits((prev) =>
+                                prev.map((r, idx) =>
+                                  idx === i ? { ...r, amount: e.target.value } : r,
+                                ),
+                              )
+                            }
+                          />
+                          {splits.length > 2 && (
+                            <button
+                              type="button"
+                              aria-label="Hapus metode"
+                              className="text-muted-foreground transition-colors hover:text-destructive"
+                              onClick={() =>
+                                setSplits((prev) => prev.filter((_, idx) => idx !== i))
+                              }
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setSplits((prev) => [
+                            ...prev,
+                            {
+                              method: activeMethods[0]?.name ?? "Cash",
+                              amount: String(splitRemaining),
+                            },
+                          ])
+                        }
+                      >
+                        <Plus className="size-4" /> Tambah metode
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        {splitRemaining > 0
+                          ? `Masih kurang ${formatRupiah(splitRemaining)}`
+                          : `Terkumpul ${formatRupiah(splitPaid)}`}
+                      </p>
+                      {splitCardAmount > 0 && (
+                        <CardPaymentPanel
+                          cardNumber={cardNumber}
+                          onCardNumberChange={setCardNumber}
+                          need={splitCardAmount}
+                          discount={bill.discount}
+                          inputId="cafe-split-card-number"
+                        />
+                      )}
+                    </div>
                   ) : (
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1.5">
@@ -520,7 +714,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </div>
                   )}
 
-                  {isCardPayment && (
+                  {isCardPayment && !splitMode && (
                     <div className="space-y-3">
                       <CardPaymentPanel
                         cardNumber={cardNumber}
@@ -562,6 +756,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </div>
                   )}
 
+                  {!splitMode && (
                   <p className="text-xs text-muted-foreground">
                     {isCardPayment
                       ? card
@@ -575,6 +770,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       ? `Kembalian: ${formatRupiah(received === "" ? 0 : change)}`
                       : `Kurang: ${formatRupiah(shortage)}`}
                   </p>
+                  )}
 
                 </div>
               </div>
@@ -644,6 +840,67 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 <Button
                   disabled={table.orders.length === 0 || activeMethods.length === 0}
                   onClick={() => {
+                    if (splitMode) {
+                      const rows = splitRows.filter((row) => row.amount > 0);
+                      if (rows.length === 0) {
+                        toast.error("Isi jumlah tiap metode pembayaran");
+                        return;
+                      }
+                      if (splitPaid + 0.5 < total) {
+                        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+                        return;
+                      }
+                      if (splitCardAmount > 0) {
+                        if (!splitCard) {
+                          toast.error("Kartu belum terdaftar!", {
+                            description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+                          });
+                          return;
+                        }
+                        if (!splitCard.active) {
+                          toast.error("Kartu ini sedang diblokir");
+                          return;
+                        }
+                        if (splitCard.balance + 0.5 < splitCardAmount) {
+                          toast.error("Saldo kartu tidak mencukupi!");
+                          return;
+                        }
+                      }
+                      if (!requireShift()) return;
+                      if (
+                        splitCardAmount > 0 &&
+                        splitCard &&
+                        !chargeCard(splitCard.id, splitCardAmount, `Pembayaran ${table.name}`)
+                      ) {
+                        toast.error("Saldo kartu tidak mencukupi!");
+                        return;
+                      }
+                      const splitRecord = payCafeTable(table.id, {
+                        payments: rows,
+                        amountPaid: splitPaid,
+                        discount: manualDisc,
+                        ...(splitCardAmount > 0 && splitCard
+                          ? { member: Boolean(splitCard.member) }
+                          : {}),
+                      });
+                      if (!splitRecord) {
+                        toast.error("Pembayaran gagal diproses");
+                        return;
+                      }
+                      toast.success(`${table.name} lunas ${formatRupiah(splitRecord.total)}`, {
+                        description: rows
+                          .map((row) => `${row.method} ${formatRupiah(row.amount)}`)
+                          .join(" + "),
+                      });
+                      setSplitMode(false);
+                      setSplits([]);
+                      setReceived("");
+                      setCardNumber("");
+                      setDiscValue("");
+                      setOpenId(null);
+                      setPaidRecord(splitRecord);
+                      return;
+                    }
                     if (isCardPayment) {
                       if (!card) {
                         toast.error("Kartu belum terdaftar!", {
@@ -735,6 +992,14 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
       </Dialog>
 
       <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+
+      <BillPreviewDialog
+        open={billPreview !== null}
+        onOpenChange={(v) => !v && setBillPreview(null)}
+        sourceName={table?.name ?? ""}
+        text={billPreview ?? ""}
+        onPrint={doPrintBill}
+      />
 
       {confirmDialog}
     </>
