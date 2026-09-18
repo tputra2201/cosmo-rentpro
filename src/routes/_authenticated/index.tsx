@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { Activity, Coins, MonitorPlay } from "lucide-react";
 import { StationCard } from "@/components/StationCard";
 import { SortableArea, SortableItem } from "@/components/Sortable";
@@ -10,7 +9,6 @@ import {
   CARD_PAYMENT_NAME,
   formatRupiah,
   paidTotal,
-  playAlarm,
   sessionBill,
   stationStatus,
   useBilling,
@@ -50,22 +48,6 @@ function Dashboard() {
     cardMemberDiscountPercent,
   } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const alerted = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    stations.forEach((station) => {
-      const status = stationStatus(station, now, bookings);
-      if (status === "timeup" && !alerted.current.has(station.id)) {
-        alerted.current.add(station.id);
-        playAlarm();
-        toast.error(`Waktu ${station.name} habis!`, {
-          description: "Silakan akhiri sesi atau tambah waktu.",
-          duration: 15000,
-        });
-      }
-      if (status !== "timeup") alerted.current.delete(station.id);
-    });
-  }, [stations, now]);
 
   const active = stations.filter((s) => s.session);
   const available = stations.filter((s) => stationStatus(s, now, bookings) === "idle");
