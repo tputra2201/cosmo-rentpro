@@ -176,9 +176,10 @@ function CashHistory() {
     });
   };
 
-  const Group = ({ title, list }: { title: string; list: CashEntry[] }) => (
-    <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-      <SetupHeading title={title} />
+  return (
+    <div className="space-y-4">
+      <ReportRangePicker range={picked} onChange={setPicked} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
       {list.length === 0 ? (
         <p className="py-6 text-center text-muted-foreground">
           Tidak ada catatan pada periode ini.
