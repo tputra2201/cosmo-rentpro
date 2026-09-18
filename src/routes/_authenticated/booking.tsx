@@ -135,7 +135,15 @@ function BookingPage() {
 type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
 
 function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: BookingItem; stationName: string; locked?: boolean; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
-  const { now, stations, startSession, updateBooking } = useBilling();
+  const { now, stations, addonRentals, startSession, updateBooking, addSessionAddon, settleSession, addCashEntry } = useBilling();
+  const dpAmount = Math.max(0, Math.round(item.dpAmount ?? 0));
+  const addonText = (item.addons ?? [])
+    .map((row) => {
+      const addon = addonRentals.find((a) => a.id === row.addonId);
+      const dur = addon?.mode === "hourly" ? (row.minutes ? ` ${row.minutes} menit` : " ikut sesi") : "";
+      return `${addon?.name ?? "Barang"} × ${row.qty}${dur}`;
+    })
+    .join(" · ");
   const minutes = bookingMinutes(item);
   const ready = canCheckIn(item, now);
   const opensAt = new Date(item.startAt - CHECKIN_LEAD_MS).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -154,11 +162,33 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
       packageName: `Reservasi ${minutes} Menit`,
       notes: item.notes ?? "",
     });
+    for (const row of item.addons ?? []) {
+      addSessionAddon(item.stationId, row.addonId, Math.max(1, row.qty), row.minutes);
+    }
+    if (dpAmount > 0 && !item.dpUsedAt) {
+      const paid = settleSession(item.stationId, {
+        payment: item.dpPayment || "Cash",
+        amount: dpAmount,
+        amountPaid: dpAmount,
+      });
+      if (paid) {
+        addCashEntry({
+          categoryId: BOOKING_DP_USED_CATEGORY_ID,
+          amount: dpAmount,
+          payment: item.dpPayment || "Cash",
+          note: `DP reservasi ${item.customerName} dipakai di ${station.name}`,
+        });
+        updateBooking(item.id, { status: "checked-in", dpUsedAt: Date.now() });
+        toast.success(`${item.customerName} check-in di ${station.name} · DP ${formatRupiah(dpAmount)} sudah dipakai`);
+        return;
+      }
+      toast.error("DP belum bisa dipakai — buka shift kasir lebih dulu");
+    }
     updateBooking(item.id, { status: "checked-in" });
     toast.success(`${item.customerName} check-in di ${station.name} · ${minutes} menit`);
   };
 
-  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>{item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>}{!readOnly && <><EditBookingDialog item={item}/>{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan reservasi"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus reservasi"><Trash2 className="size-4"/></Button></>}</div></article>;
+  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>{item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}{addonText && <p className="mt-1 text-sm">Additional rental: {addonText}</p>}{dpAmount > 0 && <p className="mt-1 text-sm">DP {formatRupiah(dpAmount)} · {item.dpPayment || "Cash"}{item.dpUsedAt ? " · sudah dipakai" : ""}</p>}{item.notes && <p className="mt-1 text-sm">{item.notes}</p>}</div><div className="flex shrink-0 gap-2">{item.status === "confirmed" && <Button size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>}{!readOnly && <><EditBookingDialog item={item}/>{item.status !== "completed" && item.status !== "cancelled" && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan reservasi"><XCircle className="size-4"/></Button>}<Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus reservasi"><Trash2 className="size-4"/></Button></>}</div></article>;
 }
 
 function EditBookingDialog({ item }: { item: BookingItem }) {
