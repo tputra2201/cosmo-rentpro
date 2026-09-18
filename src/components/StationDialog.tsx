@@ -40,6 +40,8 @@ import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
+import { OrderSelectionActions } from "@/components/OrderSelectionActions";
+
 import {
   labelItemsFor,
   printLabels,
@@ -211,6 +213,15 @@ export function StationDialog({
   const [confirmPay, setConfirmPay] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [confirmVoid, setConfirmVoid] = useState(false);
+  // Item pesanan yang dicentang untuk dibayar sendiri atau ditransfer.
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const pickedOrders = (station?.session?.orders ?? []).filter((o) =>
+    pickedIds.includes(o.id),
+  );
+  useEffect(() => {
+    setPickedIds([]);
+  }, [station?.id, open]);
+
   const bonusMin = Math.round(Number(bonus) || 0);
 
   const matchedCustomer =
