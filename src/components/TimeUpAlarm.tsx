@@ -22,10 +22,23 @@ export function TimeUpAlarm() {
   const { stations, bookings, now, sessionSecurity } = useBilling();
   const [dismissed, setDismissed] = useState<string[]>([]);
 
+  // Satu kali konfirmasi berlaku untuk sesi tersebut, jadi popup tidak muncul
+  // lagi walau waktu ditambah atau dikurangi.
   const keyOf = (station: (typeof stations)[number]) =>
-    `${station.id}:${station.session?.startAt ?? 0}:${station.session?.durationMin ?? 0}:${
-      station.session?.bonusMin ?? 0
-    }`;
+    `${station.id}:${station.session?.startAt ?? 0}`;
+
+  const activeKeys = useMemo(
+    () => stations.filter((station) => station.session).map((station) => keyOf(station)),
+    [stations],
+  );
+
+  // Bersihkan konfirmasi lama saat sesi sudah berakhir.
+  useEffect(() => {
+    setDismissed((prev) => {
+      const next = prev.filter((key) => activeKeys.includes(key));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [activeKeys]);
 
   const due = useMemo(() => {
     return (
@@ -52,6 +65,7 @@ export function TimeUpAlarm() {
   }, [key, sessionSecurity.alarmEnabled, sessionSecurity.alarmSound, sessionSecurity.alarmRepeat]);
 
   if (!due) return null;
+
 
   return (
     <Dialog

@@ -2636,26 +2636,27 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const addTime = useCallback<Ctx["addTime"]>(
     (stationId, extraMin) =>
-      mapStation(stationId, (s) =>
-        s.session
-          ? {
-              ...s,
-              session: {
-                ...s.session,
-                mode: "prepaid",
-                durationMin: Math.max(
-                  1,
-                  (s.session.mode === "prepaid"
-                    ? s.session.durationMin
-                    : Math.ceil(elapsedSeconds(s.session, Date.now()) / 60)) +
-                    extraMin,
-                ),
-              },
-            }
-          : s,
-      ),
+      mapStation(stationId, (s) => {
+        if (!s.session) return s;
+        const elapsedMin = Math.ceil(elapsedSeconds(s.session, Date.now()) / 60);
+        // Basis durasi: kalau waktu sudah habis (atau sesi open), pakai waktu
+        // yang sudah terpakai agar tambahan waktu benar-benar terasa jalan.
+        const baseMin =
+          s.session.mode === "prepaid"
+            ? Math.max(s.session.durationMin, elapsedMin - (s.session.bonusMin ?? 0))
+            : elapsedMin;
+        return {
+          ...s,
+          session: {
+            ...s.session,
+            mode: "prepaid",
+            durationMin: Math.max(1, baseMin + extraMin),
+          },
+        };
+      }),
     [mapStation],
   );
+
 
   const addOrder = useCallback<Ctx["addOrder"]>(
     (stationId, item, qty, mods, priceAdd) =>
@@ -3549,11 +3550,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       setInvoiceLayout: (patch) =>
         update((prev) => ({ ...prev, invoiceLayout: { ...prev.invoiceLayout, ...patch } })),
       adjustBonusTime: (stationId, deltaMin) =>
-        mapStation(stationId, (s) =>
-          s.session
-            ? { ...s, session: { ...s.session, bonusMin: (s.session.bonusMin ?? 0) + Math.round(deltaMin) } }
-            : s,
-        ),
+        mapStation(stationId, (s) => {
+          if (!s.session) return s;
+          const delta = Math.round(deltaMin);
+          const current = s.session.bonusMin ?? 0;
+          if (delta <= 0) return { ...s, session: { ...s.session, bonusMin: current + delta } };
+          const elapsedMin = Math.ceil(elapsedSeconds(s.session, Date.now()) / 60);
+          // Kalau waktu sudah habis, tutup dulu selisih waktu terpakai supaya
+          // waktu ekstra benar-benar berjalan dari sekarang.
+          const minBonus = Math.max(current, elapsedMin - s.session.durationMin);
+          return { ...s, session: { ...s.session, bonusMin: minBonus + delta } };
+        }),
+
       setSessionBonus: (stationId, bonusMin) =>
         mapStation(stationId, (s) =>
           s.session ? { ...s, session: { ...s.session, bonusMin: Math.round(bonusMin) } } : s,
