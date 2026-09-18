@@ -1,6 +1,7 @@
 import { Gamepad2, Clock, Utensils, Infinity as InfinityIcon, Pause, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCan } from "@/lib/use-can";
 import { Badge } from "@/components/ui/badge";
 import {
   formatClock,
@@ -54,6 +55,7 @@ export function StationCard({
     pauseSession,
     resumeSession,
   } = useBilling();
+  const allow = useCan();
   const status = stationStatus(station, now, bookings);
   const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
   const session = station.session;
@@ -222,7 +224,7 @@ export function StationCard({
 
       {session && (
         <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-          {isPaused(session) ? (
+          {!allow("sesi.jeda") ? null : isPaused(session) ? (
             <Button
               size="sm"
               className="w-full"
