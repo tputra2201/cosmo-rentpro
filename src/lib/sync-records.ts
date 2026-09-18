@@ -71,13 +71,25 @@ const DEFAULT_PROTECTED: Record<string, unknown> = {
   consoleDiscounts: {},
 };
 
+/** JSON dengan urutan kunci tetap, supaya urutan tidak mempengaruhi hasil. */
+function stable(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stable(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
 /** Apakah payload pengaturan ini masih sama dengan bawaan aplikasi? */
 export function isDefaultProtectedSetting(
   entityId: string,
   payload: Record<string, unknown>,
 ): boolean {
   if (!(entityId in DEFAULT_PROTECTED)) return false;
-  return JSON.stringify(payload[entityId]) === JSON.stringify(DEFAULT_PROTECTED[entityId]);
+  return stable(payload[entityId]) === stable(DEFAULT_PROTECTED[entityId]);
 }
 
 export const recordKey = (kind: string, entityId: string) => `${kind}:${entityId}`;
