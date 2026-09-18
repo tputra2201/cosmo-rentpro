@@ -1662,6 +1662,24 @@ type Ctx = State & {
     priceAdd?: number,
   ) => void;
   removeCafeOrder: (tableId: string, orderId: string) => void;
+  /** Bayar hanya item pesanan yang dipilih (di meja kafe atau sesi TV). */
+  payOrderItems: (
+    source: { type: "table" | "station"; id: string },
+    orderIds: string[],
+    input: {
+      payment?: string;
+      payments?: PaymentSplit[];
+      amountPaid?: number;
+      member?: boolean;
+    },
+  ) => HistoryRecord | null;
+  /** Pindahkan item pesanan terpilih ke meja kafe atau TV lain. */
+  transferOrders: (
+    from: { type: "table" | "station"; id: string },
+    to: { type: "table" | "station"; id: string },
+    orderIds: string[],
+  ) => boolean;
+
   clearCafeTable: (tableId: string) => void;
   /** Batalkan (VOID) sesi rental yang sedang berjalan beserta pesanannya. */
   voidSession: (stationId: string, reason: string) => VoidRecord | null;
@@ -4155,6 +4173,166 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         return true;
       },
+      payOrderItems: (source, orderIds, input) => {
+        if (!shiftOpen) return null;
+        const at = Date.now();
+        const compute = (prev: State): { record: HistoryRecord | null; next: State } => {
+          const table =
+            source.type === "table"
+              ? prev.cafeTables.find((t) => t.id === source.id)
+              : undefined;
+          const station =
+            source.type === "station"
+              ? prev.stations.find((s) => s.id === source.id)
+              : undefined;
+          const orders =
+            (source.type === "table" ? table?.orders : station?.session?.orders) ?? [];
+          const picked = orders.filter((o) => orderIds.includes(o.id));
+          if (picked.length === 0) return { record: null, next: prev };
+          const methodsUsed = input.payments?.length
+            ? input.payments.map((p) => p.method)
+            : [input.payment ?? ""];
+          const bill = cafeBill(picked, at, prev, {
+            member: Boolean(input.member),
+            card: methodsUsed.includes(CARD_PAYMENT_NAME),
+          });
+          const total = bill.total;
+          const splits = input.payments?.length ? input.payments : [];
+          const received = splits.length
+            ? splits.reduce((sum, p) => sum + p.amount, 0)
+            : (input.amountPaid ?? total);
+          if (received + 0.5 < total) return { record: null, next: prev };
+          const label = splits.length
+            ? Array.from(new Set(splits.map((p) => p.method))).join(" + ")
+            : input.payment || "Cash";
+          const sourceName = table?.name ?? station?.name ?? "";
+          const record: HistoryRecord = {
+            id: `item-${source.id}-${at}`,
+            stationName: sourceName,
+            ...(actorRef.current.name ? { cashierName: actorRef.current.name } : {}),
+            ...(deviceCode() ? { deviceCode: deviceCode() } : {}),
+            console: station?.console ?? "Kafe",
+            mode: "prepaid",
+            startAt: at,
+            endAt: at,
+            minutes: 0,
+            rentalTotal: 0,
+            fnbTotal: bill.fnb,
+            total,
+            discount: bill.discount,
+            payment: label,
+            ...(splits.length > 1 ? { payments: splits } : {}),
+            customerName:
+              table?.customerName || station?.session?.customerName || "Umum",
+            packageName: source.type === "station" ? "Pesanan TV" : "Kafe",
+            amountPaid: received,
+            change: Math.max(0, received - total),
+            orders: picked,
+            kind: "cafe",
+            ...(table ? { tableName: table.name } : {}),
+          };
+          const keep = (o: OrderItem) => !orderIds.includes(o.id);
+          return {
+            record,
+            next: withLog(
+              {
+                ...prev,
+                history: [record, ...prev.history],
+                cafeTables:
+                  source.type === "table"
+                    ? prev.cafeTables.map((t) =>
+                        t.id === source.id ? { ...t, orders: t.orders.filter(keep) } : t,
+                      )
+                    : prev.cafeTables,
+                stations:
+                  source.type === "station"
+                    ? prev.stations.map((s) =>
+                        s.id === source.id && s.session
+                          ? {
+                              ...s,
+                              session: { ...s.session, orders: s.session.orders.filter(keep) },
+                            }
+                          : s,
+                      )
+                    : prev.stations,
+              },
+              "Bayar item pesanan terpilih",
+              `${sourceName} · ${picked.length} item · ${formatRupiah(total)} · ${label}`,
+            ),
+          };
+        };
+        const { record } = compute(stateRef.current);
+        if (!record) return null;
+        setState((prev) => compute(prev).next);
+        return record;
+      },
+      transferOrders: (from, to, orderIds) => {
+        if (from.type === to.type && from.id === to.id) return false;
+        const srcOrders =
+          (from.type === "table"
+            ? state.cafeTables.find((t) => t.id === from.id)?.orders
+            : state.stations.find((s) => s.id === from.id)?.session?.orders) ?? [];
+        if (!srcOrders.some((o) => orderIds.includes(o.id))) return false;
+        if (to.type === "table") {
+          if (!state.cafeTables.some((t) => t.id === to.id)) return false;
+        } else {
+          const dest = state.stations.find((s) => s.id === to.id);
+          if (!dest?.session || dest.session.paidAt) return false;
+        }
+        update((prev) => {
+          const fromName =
+            (from.type === "table"
+              ? prev.cafeTables.find((t) => t.id === from.id)?.name
+              : prev.stations.find((s) => s.id === from.id)?.name) ?? "";
+          const toName =
+            (to.type === "table"
+              ? prev.cafeTables.find((t) => t.id === to.id)?.name
+              : prev.stations.find((s) => s.id === to.id)?.name) ?? "";
+          const orders =
+            (from.type === "table"
+              ? prev.cafeTables.find((t) => t.id === from.id)?.orders
+              : prev.stations.find((s) => s.id === from.id)?.session?.orders) ?? [];
+          const picked = orders.filter((o) => orderIds.includes(o.id));
+          if (picked.length === 0) return prev;
+          const at = Date.now();
+          const moved = picked.map((o, i) => {
+            const plain = stripLinkTag(o);
+            return { ...plain, id: `${plain.id}-mv-${at}-${i}` };
+          });
+          return withLog(
+            {
+              ...prev,
+              cafeTables: prev.cafeTables.map((t) => {
+                let list = t.orders;
+                if (from.type === "table" && t.id === from.id)
+                  list = list.filter((o) => !orderIds.includes(o.id));
+                if (to.type === "table" && t.id === to.id) list = [...list, ...moved];
+                if (list === t.orders) return t;
+                return {
+                  ...t,
+                  orders: list,
+                  ...(to.type === "table" && t.id === to.id
+                    ? { openedAt: t.openedAt ?? at }
+                    : {}),
+                };
+              }),
+              stations: prev.stations.map((s) => {
+                if (!s.session) return s;
+                let list = s.session.orders;
+                if (from.type === "station" && s.id === from.id)
+                  list = list.filter((o) => !orderIds.includes(o.id));
+                if (to.type === "station" && s.id === to.id) list = [...list, ...moved];
+                if (list === s.session.orders) return s;
+                return { ...s, session: { ...s.session, orders: list } };
+              }),
+            },
+            "Transfer item pesanan",
+            `${picked.length} item: ${fromName} → ${toName}`,
+          );
+        });
+        return true;
+      },
+
       givePromo: (target, promoId) => {
         const at = Date.now();
         const promo = state.promotions.find((p) => p.id === promoId);

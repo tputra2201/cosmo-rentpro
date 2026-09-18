@@ -43,6 +43,8 @@ import { SortableArea, SortableItem } from "@/components/Sortable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCan } from "@/lib/use-can";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
+import { OrderSelectionActions } from "@/components/OrderSelectionActions";
+
 import {
   labelItemsFor,
   printLabels,
@@ -146,6 +148,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [splitMode, setSplitMode] = useState(false);
   const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
   const [billPreview, setBillPreview] = useState<string | null>(null);
+  // Item pesanan yang dicentang untuk dibayar sendiri atau ditransfer.
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
@@ -159,13 +164,17 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setRestPay("");
     setSplitMode(false);
     setSplits([]);
+    setPickedIds([]);
   }, [openId]);
+
 
 
 
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
+  const pickedOrders = (table?.orders ?? []).filter((o) => pickedIds.includes(o.id));
+
 
   // Gabung tagihan: pesanan titipan di meja ini, serta calon meja & TV yang bisa digabung.
   const linkedOrders = (table?.orders ?? []).filter((o) => o.linkedFrom);
@@ -697,7 +706,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         key={o.id}
                         className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                       >
-                        <span>
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            aria-label={`Pilih ${o.name}`}
+                            checked={pickedIds.includes(o.id)}
+                            onChange={(e) =>
+                              setPickedIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, o.id]
+                                  : prev.filter((id) => id !== o.id),
+                              )
+                            }
+                          />
                           {orderLabel(o)} × {o.qty}
                         </span>
                         <span className="flex items-center gap-2">
@@ -740,6 +762,19 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     ))}
                   </ul>
                 )}
+
+                {pickedOrders.length > 0 && (
+                  <OrderSelectionActions
+                    source={{ type: "table", id: table.id }}
+                    sourceName={table.name}
+                    orders={pickedOrders}
+                    payPermission="kafe.bayar"
+                    transferPermission="kafe.gabung"
+                    onDone={() => setPickedIds([])}
+                    onPaid={(record) => setPaidRecord(record)}
+                  />
+                )}
+
 
                 {table.orders.length > 0 && (
                   <div className="flex flex-wrap gap-2">
