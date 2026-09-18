@@ -173,6 +173,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
+  const pickedOrders = (table?.orders ?? []).filter((o) => pickedIds.includes(o.id));
+
 
   // Gabung tagihan: pesanan titipan di meja ini, serta calon meja & TV yang bisa digabung.
   const linkedOrders = (table?.orders ?? []).filter((o) => o.linkedFrom);
