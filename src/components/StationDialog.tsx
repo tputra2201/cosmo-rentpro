@@ -401,11 +401,11 @@ export function StationDialog({
         toast.error("Saldo Playing Card tidak mencukupi");
         return;
       }
-      settleSession(station.id, {
+      settleSpread(CARD_PAYMENT_NAME, (amount) => ({
         payment: CARD_PAYMENT_NAME,
-        amount: payTarget,
-        amountPaid: cardCharge,
-      });
+        amount,
+        amountPaid: amount,
+      }));
       const remaining = Math.max(0, dueAmount - payTarget);
       if (remaining <= 0) setWantPrint(true);
       toast.success("Pembayaran Playing Card diterima", {
