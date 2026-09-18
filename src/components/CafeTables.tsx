@@ -315,9 +315,16 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                       {t.area} · {t.seats} kursi
                     </p>
                   </div>
-                  <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
-                    {filled ? "Terisi" : "Kosong"}
-                  </Badge>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
+                      {filled ? "Terisi" : "Kosong"}
+                    </Badge>
+                    {t.paidAt && t.orders.length === 0 && (
+                      <Badge variant="outline" className="border-current text-[10px] text-accent">
+                        Lunas
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
