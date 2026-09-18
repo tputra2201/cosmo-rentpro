@@ -481,7 +481,11 @@ export function StationDialog({
       }));
     }
     const sisa = Math.max(0, dueAmount - payTarget);
-    if (sisa <= 0) setWantPrint(true);
+    if (sisa <= 0) {
+      setWantPrint(true);
+      if (timeIsUp()) setAutoEnd(true);
+    }
+
     toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
       description: `${formatRupiah(payTarget)} — ${
         splitMode
