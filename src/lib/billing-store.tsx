@@ -1493,6 +1493,13 @@ type Ctx = State & {
   unmergeStations: (parentStationId: string) => void;
   /** Titipkan pesanan meja kafe ke sesi TV induk, lalu meja dikosongkan. */
   linkCafeTable: (parentStationId: string, tableId: string) => boolean;
+  /** Gabungkan pesanan meja kafe lain ke satu meja induk. */
+  mergeCafeTables: (parentTableId: string, childTableIds: string[]) => boolean;
+  /** Lepas kembali semua pesanan titipan di meja induk ini ke asalnya. */
+  unmergeCafeTables: (parentTableId: string) => void;
+  /** Titipkan pesanan sesi TV ke meja kafe (rental tetap dibayar di panel TV). */
+  linkStationToTable: (tableId: string, stationId: string) => boolean;
+
 
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
