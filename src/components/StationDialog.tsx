@@ -1175,7 +1175,20 @@ export function StationDialog({
                       key={o.id}
                       className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                     >
-                      <span>
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          aria-label={`Pilih ${o.name}`}
+                          checked={pickedIds.includes(o.id)}
+                          onChange={(e) =>
+                            setPickedIds((prev) =>
+                              e.target.checked
+                                ? [...prev, o.id]
+                                : prev.filter((id) => id !== o.id),
+                            )
+                          }
+                        />
                         {orderLabel(o)} × {o.qty}
                       </span>
                       <span className="flex items-center gap-2">
@@ -1219,6 +1232,19 @@ export function StationDialog({
                   ))}
                 </ul>
               )}
+
+              {pickedOrders.length > 0 && (
+                <OrderSelectionActions
+                  source={{ type: "station", id: station.id }}
+                  sourceName={station.name}
+                  orders={pickedOrders}
+                  payPermission="sesi.bayar"
+                  transferPermission="sesi.gabung"
+                  onDone={() => setPickedIds([])}
+                  onPaid={(record) => setPaidRecord(record)}
+                />
+              )}
+
 
               {session.orders.length > 0 && labelPrinters.length > 0 && (
                 <Button
