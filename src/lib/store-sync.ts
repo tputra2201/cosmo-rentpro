@@ -349,7 +349,7 @@ export function useStoreSync(options: {
       writeJson(OUTBOX_KEY, outbox);
       setPending(Object.keys(outbox).length);
     }
-  }, []);
+  }, [dirtySettings]);
 
   // Catat perubahan lokal langsung. Jangan beri kesempatan tarikan berkala
   // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
