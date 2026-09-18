@@ -3355,8 +3355,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     customerName: "",
                     notes: "",
                     promoIds: [],
+                    settlements: [],
                   };
                 })()
+
               : t,
           ),
         })),
