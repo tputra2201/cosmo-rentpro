@@ -678,7 +678,7 @@ export function computeBill(input: {
     subtotal,
     itemDiscount,
     promoDiscount,
-    promoName: promoDiscount > 0 && promo ? promo.name : "",
+    promoName: promoNames.join(" · "),
     manualDiscount,
     discount,
     total: Math.max(0, subtotal - discount),
