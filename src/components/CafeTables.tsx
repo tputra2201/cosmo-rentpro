@@ -74,6 +74,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     voidCafeTable,
     moveCafeTable,
     payCafeTable,
+    settleCafeTable,
+    removeCafeSettlement,
+    cancelCafeRemainder,
+
     stations,
     mergeCafeTables,
     unmergeCafeTables,
@@ -133,6 +137,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [voidTableId, setVoidTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
+  const [payAmount, setPayAmount] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [discType, setDiscType] = useState<DiscountType>("fixed");
   const [discValue, setDiscValue] = useState("");
@@ -146,6 +151,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   useEffect(() => {
     setPayMethod("");
     setReceived("");
+    setPayAmount("");
     setCardNumber("");
     setDiscType("fixed");
     setDiscValue("");
@@ -154,6 +160,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setSplitMode(false);
     setSplits([]);
   }, [openId]);
+
 
 
   const activeMethods = paymentMethods.filter((p) => p.active);
