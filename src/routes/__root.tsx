@@ -60,6 +60,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { ReservationAlert } from "@/components/ReservationAlert";
 import { IdleLogout } from "@/components/IdleLogout";
+import { TimeUpAlarm } from "@/components/TimeUpAlarm";
 import { InstallAppTitle } from "@/components/InstallAppTitle";
 import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
@@ -216,6 +217,7 @@ function RootComponent() {
             <DeviceGate />
             <PresenceHeartbeat />
             <ReservationAlert />
+            <TimeUpAlarm />
             <IdleLogout />
             <AndroidPrintFeedback />
             <InstallAppTitle />

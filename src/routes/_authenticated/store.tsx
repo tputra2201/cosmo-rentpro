@@ -11,6 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ALARM_SOUNDS, playAlarm, type AlarmSound } from "@/lib/alarm";
 
 /** Perkecil gambar agar ringan dan tetap tajam sebagai logo. */
 async function toLogoDataUrl(file: File, max = 256) {
@@ -533,6 +542,99 @@ function OperatingHoursSection() {
 }
 
 
+/** Keluar otomatis saat menganggur dan alarm waktu habis. */
+function SessionSecuritySection() {
+  const { sessionSecurity, setSessionSecurity } = useBilling();
+  const [minutes, setMinutes] = useState(String(sessionSecurity.idleMinutes));
+
+  return (
+    <div className="surface-panel grid gap-4 p-5">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="size-5 text-primary" />
+        <h2 className="font-display text-lg font-bold">Keamanan Sesi &amp; Alarm</h2>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Pengguna keluar sendiri bila layar tidak dipakai selama waktu di bawah. Timer rental
+        tetap berjalan sesuai jam sebenarnya, jadi sisa waktu tidak berubah. Isi 0 untuk
+        mematikan keluar otomatis.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor="idle-minutes">Keluar otomatis setelah (menit)</Label>
+          <Input
+            id="idle-minutes"
+            type="number"
+            min={0}
+            max={240}
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label>Nada alarm waktu habis</Label>
+          <div className="flex gap-2">
+            <Select
+              value={sessionSecurity.alarmSound}
+              onValueChange={(value) => setSessionSecurity({ alarmSound: value as AlarmSound })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALARM_SOUNDS.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => playAlarm(sessionSecurity.alarmSound)}
+            >
+              Coba nada
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex items-center justify-between rounded-lg bg-secondary/60 p-3 text-sm">
+          <span>Alarm suara saat waktu habis</span>
+          <Switch
+            checked={sessionSecurity.alarmEnabled}
+            onCheckedChange={(alarmEnabled) => setSessionSecurity({ alarmEnabled })}
+            aria-label="Alarm suara saat waktu habis"
+          />
+        </label>
+        <label className="flex items-center justify-between rounded-lg bg-secondary/60 p-3 text-sm">
+          <span>Berbunyi berulang sampai ditekan OK</span>
+          <Switch
+            checked={sessionSecurity.alarmRepeat}
+            onCheckedChange={(alarmRepeat) => setSessionSecurity({ alarmRepeat })}
+            aria-label="Alarm berulang"
+          />
+        </label>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Kotak peringatan waktu habis tetap muncul walau layar sedang di halaman masuk. Beberapa
+        browser baru mengeluarkan suara setelah layar pernah disentuh sekali.
+      </p>
+      <div>
+        <Button
+          onClick={() => {
+            setSessionSecurity({ idleMinutes: Number(minutes) || 0 });
+            toast.success("Pengaturan keamanan sesi disimpan");
+          }}
+        >
+          Simpan Keamanan Sesi
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 export const Route = createFileRoute("/_authenticated/store")({
   head: () => ({
     meta: [
@@ -645,6 +747,7 @@ function StorePage() {
       </div>
 
       <OperatingHoursSection />
+      <SessionSecuritySection />
 
       <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
 

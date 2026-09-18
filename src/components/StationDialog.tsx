@@ -126,7 +126,12 @@ export function StationDialog({
     stations,
     moveSession,
     voidSession,
+    cafeTables,
+    mergeStations,
+    unmergeStations,
+    linkCafeTable,
   } = useBilling();
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
