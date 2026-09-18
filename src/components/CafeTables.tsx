@@ -187,16 +187,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   );
   const total = bill.total;
+  // Pembayaran sebagian (DP) yang sudah diterima untuk meja ini.
+  const cafePaid = (table?.settlements ?? []).reduce((sum, s) => sum + s.amount, 0);
+  const dueAmount = Math.max(0, total - cafePaid);
+  const payTarget =
+    payAmount === ""
+      ? dueAmount
+      : Math.min(dueAmount, Math.max(0, Number(payAmount) || 0));
+  const isPartial = payTarget + 0.5 < dueAmount;
   const cardCharge = isCardPayment
-    ? Math.min(total, Math.max(0, cardPart === "" ? total : Number(cardPart) || 0))
-    : total;
-  const restAmount = isCardPayment ? Math.max(0, total - cardCharge) : 0;
+    ? Math.min(payTarget, Math.max(0, cardPart === "" ? payTarget : Number(cardPart) || 0))
+    : payTarget;
+  const restAmount = isCardPayment ? Math.max(0, payTarget - cardCharge) : 0;
   const restMethod = restPay || otherMethods[0]?.name || "Cash";
 
 
   const receivedValue = Number(received) || 0;
-  const change = Math.max(0, receivedValue - total);
-  const shortage = Math.max(0, total - receivedValue);
+  const change = Math.max(0, receivedValue - payTarget);
+  const shortage = Math.max(0, payTarget - receivedValue);
 
   // Split Bill: satu tagihan dibagi ke beberapa metode pembayaran.
   const splitRows = splits.map((row) => ({
@@ -204,7 +212,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     amount: Math.max(0, Number(row.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, row) => sum + row.amount, 0);
-  const splitRemaining = Math.max(0, total - splitPaid);
+  const splitRemaining = Math.max(0, payTarget - splitPaid);
+
   const splitCardAmount = splitRows
     .filter((row) => row.method === CARD_PAYMENT_NAME)
     .reduce((sum, row) => sum + row.amount, 0);
