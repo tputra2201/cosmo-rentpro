@@ -318,6 +318,10 @@ export const CARD_PAYMENT_NAME = "Playing Card";
 export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
 /** Penjualan kartu baru: penghasilan store. */
 export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
+/** DP reservasi: kas masuk, bukan penghasilan. */
+export const BOOKING_DP_CATEGORY_ID = "cc-dp-reservasi";
+/** DP reservasi yang dipakai saat check-in: kas keluar, bukan biaya. */
+export const BOOKING_DP_USED_CATEGORY_ID = "cc-dp-reservasi-pakai";
 
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
 export const CARD_FUNDING_METHODS = [
