@@ -201,6 +201,8 @@ function EditBookingDialog({ item }: { item: BookingItem }) {
   const [duration, setDuration] = useState(String(Math.max(15, Math.round((item.endAt - item.startAt) / 60000))));
   const [notes, setNotes] = useState(item.notes ?? "");
   const [status, setStatus] = useState<BookingStatus>(item.status);
+  const [addonRows, setAddonRows] = useState<BookingAddon[]>(item.addons ?? []);
+
 
   const openChange = (value: boolean) => {
     setOpen(value);
@@ -208,7 +210,7 @@ function EditBookingDialog({ item }: { item: BookingItem }) {
       setStationId(item.stationId); setName(item.customerName); setPhone(item.customerPhone ?? "");
       setStart(localInputValue(new Date(item.startAt)));
       setDuration(String(Math.max(15, Math.round((item.endAt - item.startAt) / 60000))));
-      setNotes(item.notes ?? ""); setStatus(item.status);
+      setNotes(item.notes ?? ""); setStatus(item.status); setAddonRows(item.addons ?? []);
     }
   };
 
@@ -216,7 +218,7 @@ function EditBookingDialog({ item }: { item: BookingItem }) {
     const startAt = new Date(start).getTime();
     const minutes = Number(duration);
     if (!stationId || !name.trim() || !Number.isFinite(startAt) || !Number.isFinite(minutes) || minutes <= 0) { toast.error("Lengkapi data reservasi"); return; }
-    const ok = updateBooking(item.id, { stationId, customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes, status });
+    const ok = updateBooking(item.id, { stationId, customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes, status, addons: addonRows });
     if (!ok) { toast.error("Jadwal bentrok dengan reservasi lain pada unit tersebut"); return; }
     toast.success("Reservasi diperbarui"); setOpen(false);
   };
@@ -232,6 +234,8 @@ function EditBookingDialog({ item }: { item: BookingItem }) {
         <div className="space-y-1.5"><Label htmlFor={`edit-duration-${item.id}`}>Durasi (menit)</Label><Input id={`edit-duration-${item.id}`} type="number" min={15} step={15} value={duration} onChange={(e) => setDuration(e.target.value)}/></div>
         <div className="space-y-1.5"><Label>Status</Label><Select value={status} onValueChange={(value) => setStatus(value as BookingStatus)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{(Object.keys(statusLabel) as BookingStatus[]).map((key) => <SelectItem key={key} value={key}>{statusLabel[key]}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-1.5"><Label htmlFor={`edit-notes-${item.id}`}>Catatan</Label><Input id={`edit-notes-${item.id}`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan opsional"/></div>
+        <div className="space-y-1.5"><Label>Additional Rental</Label><AddonRowsEditor rows={addonRows} onChange={setAddonRows}/></div>
+        {(item.dpAmount ?? 0) > 0 && <p className="text-sm text-muted-foreground">DP {formatRupiah(item.dpAmount ?? 0)} · {item.dpPayment || "Cash"}{item.dpUsedAt ? " · sudah dipakai saat check-in" : " · dipakai otomatis saat check-in"}</p>}
       </div>
       <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Batal</Button><Button onClick={save}>Simpan perubahan</Button></DialogFooter>
     </DialogContent>
