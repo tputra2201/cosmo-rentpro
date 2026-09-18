@@ -65,7 +65,7 @@ function localInputValue(date: Date) {
 }
 
 function BookingPage() {
-  const { bookings, stations, customers, addBooking, updateBooking, removeBooking } = useBilling();
+  const { bookings, stations, customers, paymentMethods, addBooking, updateBooking, removeBooking, addCashEntry } = useBilling();
   const initialStart = useMemo(() => { const date = new Date(); date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30, 0, 0); return date; }, []);
   const [stationId, setStationId] = useState(stations[0]?.id ?? "");
   const [customerId, setCustomerId] = useState("");
@@ -74,6 +74,10 @@ function BookingPage() {
   const [start, setStart] = useState(localInputValue(initialStart));
   const [duration, setDuration] = useState("60");
   const [notes, setNotes] = useState("");
+  const [addonRows, setAddonRows] = useState<BookingAddon[]>([]);
+  const [dp, setDp] = useState("");
+  const activePayments = paymentMethods.filter((item) => item.active);
+  const [dpPayment, setDpPayment] = useState(activePayments[0]?.name ?? "Cash");
 
   const ordered = [...bookings].sort((a, b) => a.startAt - b.startAt);
   const now = Date.now();
@@ -92,9 +96,14 @@ function BookingPage() {
     const startAt = new Date(start).getTime();
     const minutes = Number(duration);
     if (!stationId || !name.trim() || !Number.isFinite(startAt) || minutes <= 0) { toast.error("Lengkapi data reservasi"); return; }
-    const ok = addBooking({ stationId, ...(customerId ? { customerId } : {}), customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes });
+    const dpAmount = Math.max(0, Math.round(Number(dp) || 0));
+    const ok = addBooking({ stationId, ...(customerId ? { customerId } : {}), customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes, ...(addonRows.length ? { addons: addonRows } : {}), ...(dpAmount > 0 ? { dpAmount, dpPayment } : {}) });
     if (!ok) { toast.error("Jadwal bentrok dengan reservasi lain pada unit tersebut"); return; }
-    toast.success("Reservasi berhasil ditambahkan"); setName(""); setPhone(""); setCustomerId(""); setNotes("");
+    if (dpAmount > 0) {
+      const cash = addCashEntry({ categoryId: BOOKING_DP_CATEGORY_ID, amount: dpAmount, payment: dpPayment, note: `DP reservasi ${name.trim()}` });
+      if (!cash) toast.error("DP belum tercatat di kas — buka shift kasir lebih dulu");
+    }
+    toast.success("Reservasi berhasil ditambahkan"); setName(""); setPhone(""); setCustomerId(""); setNotes(""); setAddonRows([]); setDp("");
   };
 
   return <div className="space-y-8">
