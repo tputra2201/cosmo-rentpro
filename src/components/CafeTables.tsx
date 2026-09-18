@@ -282,41 +282,55 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
               label={t.name}
               className={`surface-panel p-3 ${filled ? "border-primary/50" : ""}`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
-                    {t.name}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t.area} · {t.seats} kursi
-                  </p>
+              <div
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer text-left"
+                aria-label={`Buka panel pesanan ${t.name}`}
+                onClick={() => openTablePanel(t)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openTablePanel(t);
+                  }
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+                      {t.name}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {t.area} · {t.seats} kursi
+                    </p>
+                  </div>
+                  <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
+                    {filled ? "Terisi" : "Kosong"}
+                  </Badge>
                 </div>
-                <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
-                  {filled ? "Terisi" : "Kosong"}
-                </Badge>
+
+                <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
+                  {t.customerName?.trim() || "Umum"}
+                </p>
+
+                {t.orders.length > 0 && (
+                  <>
+                    <ul className="mt-2 space-y-0.5 text-[11px]">
+                      {t.orders.map((o) => (
+                        <li key={o.id} className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 truncate">
+                            {orderLabel(o)} × {o.qty}
+                          </span>
+                          <span className="shrink-0">{formatRupiah(o.price * o.qty)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 font-display text-2xl font-extrabold text-neon">
+                      {formatRupiah(tableTotal(t))}
+                    </p>
+                  </>
+                )}
               </div>
-
-              <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
-                {t.customerName?.trim() || "Umum"}
-              </p>
-
-              {t.orders.length > 0 && (
-                <>
-                  <ul className="mt-2 space-y-0.5 text-[11px]">
-                    {t.orders.map((o) => (
-                      <li key={o.id} className="flex items-start justify-between gap-2">
-                        <span className="min-w-0 truncate">
-                          {orderLabel(o)} × {o.qty}
-                        </span>
-                        <span className="shrink-0">{formatRupiah(o.price * o.qty)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 font-display text-2xl font-extrabold text-neon">
-                    {formatRupiah(tableTotal(t))}
-                  </p>
-                </>
-              )}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
@@ -331,20 +345,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                 >
                   <Plus className="size-4" /> Tambah Order
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setOpenId(t.id);
-                    setPayMethod(activeMethods[0]?.name ?? "");
-                    setReceived("");
-                    if (!t.customerName?.trim()) {
-                      updateCafeTable(t.id, { customerName: "Umum" });
-                    }
-                  }}
-                >
-                  <Utensils className="size-4" /> Pesanan
-                </Button>
+
                 {t.orders.length > 0 && (
                   <Button
                     size="sm"
