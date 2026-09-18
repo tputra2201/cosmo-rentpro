@@ -3371,7 +3371,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const table = prev.cafeTables.find((t) => t.id === tableId);
           if (!table || table.orders.length === 0) return prev;
           const at = Date.now();
-          const bill = cafeBill(table.orders, at, prev, { member: false, card: false });
+          const bill = cafeBill(
+            table.orders,
+            at,
+            prev,
+            { member: false, card: false },
+            undefined,
+            table.promoIds,
+          );
+
           const made: VoidRecord = {
             id: `void-${at}-${Math.random().toString(36).slice(2, 7)}`,
             at,
