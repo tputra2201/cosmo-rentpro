@@ -713,7 +713,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           } else {
                             setSplitMode(true);
                             setSplits([
-                              { method: activeMethods[0]?.name ?? "Cash", amount: String(total) },
+                              { method: activeMethods[0]?.name ?? "Cash", amount: String(payTarget) },
                               { method: activeMethods[1]?.name ?? "QRIS", amount: "0" },
                             ]);
                           }
@@ -834,7 +834,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           id="cafe-received"
                           type="number"
                           min={0}
-                          value={received === "" ? total : received}
+                          value={received === "" ? payTarget : received}
                           onChange={(e) => setReceived(e.target.value)}
                         />
                       </div>
@@ -857,8 +857,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             id="cafe-card-part"
                             type="number"
                             min={0}
-                            max={total}
-                            value={cardPart === "" ? String(total) : cardPart}
+                            max={payTarget}
+                            value={cardPart === "" ? String(payTarget) : cardPart}
+
                             onChange={(e) => setCardPart(e.target.value)}
                           />
                         </div>
