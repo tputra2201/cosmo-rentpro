@@ -3489,14 +3489,29 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           );
 
           const total = bill.total;
+          // Pembayaran sebagian (DP) yang sudah diterima ikut melunasi nota.
+          const prior = table.settlements ?? [];
+          const priorPaid = prior.reduce((sum, s) => sum + s.amount, 0);
+          const due = Math.max(0, total - priorPaid);
           const splits = input.payments?.length ? input.payments : [];
           const received = splits.length
             ? splits.reduce((sum, p) => sum + p.amount, 0)
-            : (input.amountPaid ?? total);
-          if (received + 0.5 < total) return { record: null, next: prev };
-          const label = splits.length
-            ? Array.from(new Set(splits.map((p) => p.method))).join(" + ")
-            : input.payment || "Cash";
+            : (input.amountPaid ?? due);
+          if (received + 0.5 < due) return { record: null, next: prev };
+          const priorSplits: PaymentSplit[] = prior.flatMap((s) =>
+            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          );
+          const nowSplits: PaymentSplit[] = splits.length
+            ? splits
+            : due > 0
+              ? [{ method: input.payment || "Cash", amount: due }]
+              : [];
+          const allSplits = [...priorSplits, ...nowSplits];
+          const label =
+            Array.from(new Set(allSplits.map((p) => p.method))).join(" + ") ||
+            input.payment ||
+            "Cash";
+
           const completed: HistoryRecord = {
             id: `cafe-${tableId}-${endAt}`,
             stationName: table.name,
