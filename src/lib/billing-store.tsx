@@ -163,6 +163,8 @@ export type Session = {
   paidAt?: number; // waktu tagihan dinyatakan lunas
   pausedAt?: number; // jika terisi, timer sedang dijeda
   pausedMs?: number; // akumulasi total waktu jeda
+  /** Koreksi hitung mundur setelah waktu habis; tidak mengubah durasi main/tagihan. */
+  timerOffsetMs?: number;
   /** Tagihan sesi ini digabung dan dibayar dari panel TV induk berikut. */
   mergedInto?: string;
 };
@@ -1191,7 +1193,11 @@ export function effectiveMinutes(session: Session) {
 
 export function remainingSeconds(session: Session, now: number) {
   if (session.mode === "open") return Infinity;
-  return effectiveMinutes(session) * 60 - elapsedSeconds(session, now);
+  return (
+    effectiveMinutes(session) * 60 -
+    elapsedSeconds(session, now) +
+    Math.floor((session.timerOffsetMs ?? 0) / 1000)
+  );
 }
 
 export function rentalMinutes(session: Session, now: number) {
@@ -2655,7 +2661,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             // setelah 00:00 bukan durasi berbayar dan tidak boleh ikut ditagih.
             durationMin: nextDuration,
             ...(originalMode === "prepaid" && extraMin > 0 && overdueSeconds > 0
-              ? { pausedMs: (s.session.pausedMs ?? 0) + overdueSeconds * 1000 }
+              ? { timerOffsetMs: (s.session.timerOffsetMs ?? 0) + overdueSeconds * 1000 }
               : {}),
           },
         };
@@ -3570,7 +3576,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               // dimasukkan ke bonus agar angka paket/tagihan tetap bersih.
               bonusMin: current + delta,
               ...(overdueSeconds > 0
-                ? { pausedMs: (s.session.pausedMs ?? 0) + overdueSeconds * 1000 }
+                ? { timerOffsetMs: (s.session.timerOffsetMs ?? 0) + overdueSeconds * 1000 }
                 : {}),
             },
           };
