@@ -56,6 +56,30 @@ const SETTINGS_KEYS = [
 ] as const;
 
 
+/**
+ * Pengaturan yang isinya mahal kalau hilang: Jenis Konsol, Tarif per Jam, dan
+ * potongan harga per konsol. Baris ini hanya boleh dikirim ke pusat kalau
+ * memang diubah di perangkat ini, supaya perangkat yang datanya tergerus
+ * (penyimpanan browser penuh atau terpotong) tidak menimpanya dengan bawaan.
+ */
+export const PROTECTED_SETTINGS = new Set(["consoleTypes", "rates", "consoleDiscounts"]);
+
+/** Nilai bawaan aplikasi — salinan dari defaultState di billing-store. */
+const DEFAULT_PROTECTED: Record<string, unknown> = {
+  consoleTypes: ["PS3", "PS4", "PS5"],
+  rates: { PS3: 5000, PS4: 8000, PS5: 12000 },
+  consoleDiscounts: {},
+};
+
+/** Apakah payload pengaturan ini masih sama dengan bawaan aplikasi? */
+export function isDefaultProtectedSetting(
+  entityId: string,
+  payload: Record<string, unknown>,
+): boolean {
+  if (!(entityId in DEFAULT_PROTECTED)) return false;
+  return JSON.stringify(payload[entityId]) === JSON.stringify(DEFAULT_PROTECTED[entityId]);
+}
+
 export const recordKey = (kind: string, entityId: string) => `${kind}:${entityId}`;
 
 /**
