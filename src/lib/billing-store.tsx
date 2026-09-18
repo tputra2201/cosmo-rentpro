@@ -3860,6 +3860,129 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         return true;
       },
+      givePromo: (target, promoId) => {
+        const at = Date.now();
+        const promo = state.promotions.find((p) => p.id === promoId);
+        if (!promo || !promoInWindow(promo, at)) return false;
+        const kind = promoKind(promo);
+        if (target.type === "station") {
+          const station = state.stations.find((s) => s.id === target.id);
+          if (!station?.session || station.session.paidAt) return false;
+          if (station.session.promoIds?.includes(promoId)) return false;
+        } else {
+          const table = state.cafeTables.find((t) => t.id === target.id);
+          if (!table) return false;
+          if (table.promoIds?.includes(promoId)) return false;
+          // Bonus jam rental hanya berlaku untuk sesi TV.
+          if (kind === "bonusHours") return false;
+        }
+        // Hadiah menu (BOGO & menu gratis) langsung masuk sebagai pesanan harga 0.
+        const gift = promo.freeMenuId
+          ? state.menu.find((m) => m.id === promo.freeMenuId)
+          : undefined;
+        const giftLines =
+          (kind === "freeMenu" || kind === "bogo") && gift
+            ? [freeOrderLine(gift, promo.freeMenuQty ?? 1, promo.name)]
+            : [];
+        const bonusMin =
+          kind === "bonusHours" ? Math.max(0, Math.round((promo.bonusHours ?? 0) * 60)) : 0;
+        update((prev) => {
+          const name =
+            target.type === "station"
+              ? (prev.stations.find((s) => s.id === target.id)?.name ?? "TV")
+              : (prev.cafeTables.find((t) => t.id === target.id)?.name ?? "Meja");
+          const next: State =
+            target.type === "station"
+              ? {
+                  ...prev,
+                  stations: prev.stations.map((s) => {
+                    if (s.id !== target.id || !s.session) return s;
+                    const ids = [...(s.session.promoIds ?? []), promoId];
+                    return {
+                      ...s,
+                      session: {
+                        ...s.session,
+                        promoIds: ids,
+                        orders: [...s.session.orders, ...giftLines],
+                        bonusMin: s.session.bonusMin + bonusMin,
+                        promoName: [s.session.promoName, promo.name]
+                          .filter(Boolean)
+                          .join(" · "),
+                      },
+                    };
+                  }),
+                }
+              : {
+                  ...prev,
+                  cafeTables: prev.cafeTables.map((t) =>
+                    t.id === target.id
+                      ? {
+                          ...t,
+                          promoIds: [...(t.promoIds ?? []), promoId],
+                          orders: [...t.orders, ...giftLines],
+                          openedAt: t.openedAt ?? at,
+                        }
+                      : t,
+                  ),
+                };
+          return withLog(
+            next,
+            "Berikan promo",
+            `${promo.name} (${promoKindLabel(kind)}) → ${name}`,
+          );
+        });
+        return true;
+      },
+      cancelPromo: (target, promoId) =>
+        update((prev) => {
+          const promo = prev.promotions.find((p) => p.id === promoId);
+          if (!promo) return prev;
+          const kind = promoKind(promo);
+          const giftTag = `${PROMO_FREE_TAG}: ${promo.name}`;
+          const dropGift = (orders: OrderItem[]) =>
+            orders.filter((o) => !(o.price === 0 && (o.mods ?? []).includes(giftTag)));
+          const bonusMin =
+            kind === "bonusHours" ? Math.max(0, Math.round((promo.bonusHours ?? 0) * 60)) : 0;
+          const name =
+            target.type === "station"
+              ? (prev.stations.find((s) => s.id === target.id)?.name ?? "TV")
+              : (prev.cafeTables.find((t) => t.id === target.id)?.name ?? "Meja");
+          const next: State =
+            target.type === "station"
+              ? {
+                  ...prev,
+                  stations: prev.stations.map((s) => {
+                    if (s.id !== target.id || !s.session) return s;
+                    if (!s.session.promoIds?.includes(promoId)) return s;
+                    const ids = s.session.promoIds.filter((id) => id !== promoId);
+                    const names = (s.session.promoName ?? "")
+                      .split(" · ")
+                      .filter((n) => n && n !== promo.name);
+                    return {
+                      ...s,
+                      session: {
+                        ...s.session,
+                        promoIds: ids,
+                        orders: dropGift(s.session.orders),
+                        bonusMin: Math.max(0, s.session.bonusMin - bonusMin),
+                        promoName: names.join(" · "),
+                      },
+                    };
+                  }),
+                }
+              : {
+                  ...prev,
+                  cafeTables: prev.cafeTables.map((t) => {
+                    if (t.id !== target.id || !t.promoIds?.includes(promoId)) return t;
+                    return {
+                      ...t,
+                      promoIds: t.promoIds.filter((id) => id !== promoId),
+                      orders: dropGift(t.orders),
+                    };
+                  }),
+                };
+          return withLog(next, "Batalkan promo", `${promo.name} dibatalkan dari ${name}`);
+        }),
 
 
       addCustomer: (input) => {
