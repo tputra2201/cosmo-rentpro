@@ -734,6 +734,8 @@ type State = {
 
 
 const STORAGE_KEY = "billing-ps-state-v1";
+/** Penanda pengaturan penting yang memang diubah dari perangkat ini. */
+const DIRTY_SETTINGS_KEY = "billing.settings-dirty-v1";
 
 /** Pindahkan satu elemen array dari posisi `from` ke posisi `to`. */
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
@@ -1859,6 +1861,27 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // penting (Jenis Konsol & Tarif) ke pusat sebelum menerima data store.
   const [storageLoaded, setStorageLoaded] = useState(false);
   const storageWarnedRef = useRef(false);
+  // Pengaturan penting yang benar-benar diubah dari perangkat ini. Hanya kunci
+  // di daftar ini yang boleh dikirim ke pusat, sehingga perangkat yang datanya
+  // tergerus tidak pernah menimpa Jenis Konsol & Tarif store dengan bawaan.
+  const dirtyRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DIRTY_SETTINGS_KEY);
+      if (raw) dirtyRef.current = new Set(JSON.parse(raw) as string[]);
+    } catch {
+      /* penanda rusak: anggap belum ada perubahan lokal */
+    }
+  }, []);
+  const markSettingsDirty = useCallback((...keys: string[]) => {
+    for (const key of keys) dirtyRef.current.add(key);
+    try {
+      localStorage.setItem(DIRTY_SETTINGS_KEY, JSON.stringify([...dirtyRef.current]));
+    } catch {
+      /* penyimpanan penuh: cukup berlaku selama aplikasi terbuka */
+    }
+  }, []);
+
 
   useEffect(() => {
     try {
@@ -2557,7 +2580,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const detail = next.consoleTypes
             .map((c) => `${c} ${formatRupiah(next.rates[c] ?? 0)}`)
             .join(", ");
-          queueMicrotask(() => addLog("Tarif konsol disegarkan dari pusat", "Sinkronisasi", detail));
+          queueMicrotask(() => addLog("Tarif konsol disegarkan dari pusat", detail));
         }
         return next;
       });
