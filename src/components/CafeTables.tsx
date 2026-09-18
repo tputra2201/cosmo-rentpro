@@ -697,7 +697,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                         key={o.id}
                         className="flex items-center justify-between rounded-md bg-secondary px-3 py-1.5 text-sm"
                       >
-                        <span>
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-primary"
+                            aria-label={`Pilih ${o.name}`}
+                            checked={pickedIds.includes(o.id)}
+                            onChange={(e) =>
+                              setPickedIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, o.id]
+                                  : prev.filter((id) => id !== o.id),
+                              )
+                            }
+                          />
                           {orderLabel(o)} × {o.qty}
                         </span>
                         <span className="flex items-center gap-2">
@@ -740,6 +753,19 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     ))}
                   </ul>
                 )}
+
+                {pickedOrders.length > 0 && (
+                  <OrderSelectionActions
+                    source={{ type: "table", id: table.id }}
+                    sourceName={table.name}
+                    orders={pickedOrders}
+                    payPermission="kafe.bayar"
+                    transferPermission="kafe.gabung"
+                    onDone={() => setPickedIds([])}
+                    onPaid={(record) => setPaidRecord(record)}
+                  />
+                )}
+
 
                 {table.orders.length > 0 && (
                   <div className="flex flex-wrap gap-2">
