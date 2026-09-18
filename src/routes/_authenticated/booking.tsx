@@ -8,7 +8,43 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useBilling, canCheckIn, bookingMinutes, CHECKIN_LEAD_MS, type BookingStatus } from "@/lib/billing-store";
+import { useBilling, canCheckIn, bookingMinutes, formatRupiah, BOOKING_DP_CATEGORY_ID, BOOKING_DP_USED_CATEGORY_ID, CHECKIN_LEAD_MS, type BookingAddon, type BookingStatus } from "@/lib/billing-store";
+
+/** Baris pemilih Additional Rental untuk reservasi (barang, jumlah, durasi). */
+function AddonRowsEditor({ rows, onChange }: { rows: BookingAddon[]; onChange: (next: BookingAddon[]) => void }) {
+  const { addonRentals } = useBilling();
+  const options = addonRentals.filter((item) => item.active);
+  const [pick, setPick] = useState("");
+  const [qty, setQty] = useState("1");
+  const [minutes, setMinutes] = useState("");
+  const picked = options.find((item) => item.id === pick);
+
+  const add = () => {
+    if (!picked) { toast.error("Pilih barang additional rental"); return; }
+    const count = Math.max(1, Math.round(Number(qty) || 1));
+    const mins = picked.mode === "hourly" ? Math.max(0, Math.round(Number(minutes) || 0)) : 0;
+    onChange([...rows, { addonId: picked.id, qty: count, ...(mins > 0 ? { minutes: mins } : {}) }]);
+    setPick(""); setQty("1"); setMinutes("");
+  };
+
+  if (options.length === 0) return <p className="text-sm text-muted-foreground">Belum ada barang di Setup Price → Additional Rental.</p>;
+
+  return <div className="space-y-2">
+    {rows.map((row, index) => {
+      const item = options.find((opt) => opt.id === row.addonId) ?? addonRentals.find((opt) => opt.id === row.addonId);
+      return <div key={`${row.addonId}-${index}`} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+        <span className="min-w-0 truncate">{item?.name ?? "Barang"} × {row.qty}{item?.mode === "hourly" ? ` · ${row.minutes ? `${row.minutes} menit` : "ikut sesi"}` : ""}</span>
+        <Button size="icon" variant="ghost" aria-label="Hapus additional rental" onClick={() => onChange(rows.filter((_, i) => i !== index))}><Trash2 className="size-4 text-destructive"/></Button>
+      </div>;
+    })}
+    <div className="grid gap-2 sm:grid-cols-[1fr_70px_90px_auto]">
+      <Select value={pick} onValueChange={setPick}><SelectTrigger><SelectValue placeholder="Pilih barang"/></SelectTrigger><SelectContent>{options.map((item) => <SelectItem key={item.id} value={item.id}>{item.name} · {formatRupiah(item.price)}{item.mode === "hourly" ? "/jam" : ""}</SelectItem>)}</SelectContent></Select>
+      <Input type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} aria-label="Jumlah"/>
+      {picked?.mode === "hourly" ? <Input type="number" min={0} step={15} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="menit" aria-label="Durasi (menit)"/> : <span />}
+      <Button type="button" variant="outline" onClick={add}><Plus className="size-4"/></Button>
+    </div>
+  </div>;
+}
 
 export const Route = createFileRoute("/_authenticated/booking")({
   head: () => ({ meta: [
