@@ -37,7 +37,14 @@ import { CustomerPicker } from "@/components/CustomerPicker";
 import { CardPaymentPanel } from "@/components/CardPaymentPanel";
 import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
-import { labelItemsFor, printLabels, printReceipt, type PrintStore } from "@/lib/print-docs";
+import {
+  labelItemsFor,
+  printLabels,
+  printReceipt,
+  receiptText,
+  type PrintStore,
+} from "@/lib/print-docs";
+import { BillPreviewDialog } from "@/components/BillPreviewDialog";
 import { printerFor, type PrinterConfig } from "@/lib/printing";
 import { useStoreInfo } from "@/lib/store-info";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -123,6 +130,7 @@ export function StationDialog({
 
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
+  const [billPreview, setBillPreview] = useState<string | null>(null);
   const [paidRecord, setPaidRecord] = useState<import("@/lib/billing-store").HistoryRecord | null>(
     null,
   );
@@ -424,7 +432,7 @@ export function StationDialog({
 
 
   /** Data nota bill sementara sebelum tagihan dilunasi. */
-  const billRecord = (): HistoryRecord | null => {
+  const billRecord = (): import("@/lib/billing-store").HistoryRecord | null => {
     if (!session || !bill) return null;
     return {
         id: `BILL-${station.id}-${Date.now()}`,
@@ -481,6 +489,13 @@ export function StationDialog({
   return (
     <>
     <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+    <BillPreviewDialog
+      open={billPreview !== null}
+      onOpenChange={(v) => !v && setBillPreview(null)}
+      sourceName={station?.name ?? ""}
+      text={billPreview ?? ""}
+      onPrint={doPrintBill}
+    />
     <VoidDialog
       open={confirmVoid}
       onOpenChange={setConfirmVoid}
@@ -1043,7 +1058,7 @@ export function StationDialog({
                   <Plus className="size-4" /> Tambah Order
                 </Button>
                 {!isSettled && (
-                  <Button size="sm" variant="outline" onClick={printBill}>
+                  <Button size="sm" variant="outline" onClick={previewBill}>
                     <PrinterIcon className="size-4" /> Cetak Bill
                   </Button>
                 )}
