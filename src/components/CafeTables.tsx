@@ -956,180 +956,54 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
               <DialogFooter className="flex-col gap-2 sm:flex-row">
 
-                {allow("kafe.void") && (
+                {allow("kafe.void") && dueAmount > 0 && table.orders.length > 0 && (
                 <Button
                   variant="outline"
                   onClick={() =>
                     confirmAction({
-                      title: `Batalkan pesanan ${table.name}?`,
+                      title:
+                        cafePaid > 0
+                          ? `Batalkan sisa tagihan ${table.name}?`
+                          : `Batalkan pesanan ${table.name}?`,
                       description:
-                        "Seluruh pesanan di meja ini dibatalkan tanpa pembayaran.",
-                      actionLabel: "Batalkan pesanan",
+                        cafePaid > 0
+                          ? `Hanya sisa tagihan ${formatRupiah(dueAmount)} yang dibatalkan. Pembayaran ${formatRupiah(cafePaid)} yang sudah diterima tetap tercatat sebagai nota.`
+                          : "Seluruh pesanan di meja ini dibatalkan tanpa pembayaran.",
+                      actionLabel: cafePaid > 0 ? "Batalkan sisa tagihan" : "Batalkan pesanan",
                       destructive: true,
                       onConfirm: () => {
-                        clearCafeTable(table.id);
-                        toast.success(`Pesanan ${table.name} dibatalkan`);
+                        const record = cancelCafeRemainder(table.id);
+                        toast.success(
+                          record
+                            ? `Sisa tagihan ${table.name} dibatalkan`
+                            : `Pesanan ${table.name} dibatalkan`,
+                        );
                         setOpenId(null);
+                        if (record) setPaidRecord(record);
                       },
                     })
                   }
                 >
-                  Batalkan pesanan
+                  {cafePaid > 0 ? "Batalkan sisa tagihan" : "Batalkan pesanan"}
                 </Button>
                 )}
                 <Button
                   disabled={
                     table.orders.length === 0 ||
+                    dueAmount <= 0 ||
                     activeMethods.length === 0 ||
                     !allow("kafe.bayar")
                   }
-                  onClick={() => {
-                    if (splitMode) {
-                      const rows = splitRows.filter((row) => row.amount > 0);
-                      if (rows.length === 0) {
-                        toast.error("Isi jumlah tiap metode pembayaran");
-                        return;
-                      }
-                      if (splitPaid + 0.5 < total) {
-                        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
-                        return;
-                      }
-                      if (splitCardAmount > 0) {
-                        if (!splitCard) {
-                          toast.error("Kartu belum terdaftar!", {
-                            description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
-                          });
-                          return;
-                        }
-                        if (!splitCard.active) {
-                          toast.error("Kartu ini sedang diblokir");
-                          return;
-                        }
-                        if (splitCard.balance + 0.5 < splitCardAmount) {
-                          toast.error("Saldo kartu tidak mencukupi!");
-                          return;
-                        }
-                      }
-                      if (!requireShift()) return;
-                      if (
-                        splitCardAmount > 0 &&
-                        splitCard &&
-                        !chargeCard(splitCard.id, splitCardAmount, `Pembayaran ${table.name}`)
-                      ) {
-                        toast.error("Saldo kartu tidak mencukupi!");
-                        return;
-                      }
-                      const splitRecord = payCafeTable(table.id, {
-                        payments: rows,
-                        amountPaid: splitPaid,
-                        discount: manualDisc,
-                        ...(splitCardAmount > 0 && splitCard
-                          ? { member: Boolean(splitCard.member) }
-                          : {}),
-                      });
-                      if (!splitRecord) {
-                        toast.error("Pembayaran gagal diproses");
-                        return;
-                      }
-                      toast.success(`${table.name} lunas ${formatRupiah(splitRecord.total)}`, {
-                        description: rows
-                          .map((row) => `${row.method} ${formatRupiah(row.amount)}`)
-                          .join(" + "),
-                      });
-                      setSplitMode(false);
-                      setSplits([]);
-                      setReceived("");
-                      setCardNumber("");
-                      setDiscValue("");
-                      setOpenId(null);
-                      setPaidRecord(splitRecord);
-                      return;
-                    }
-                    if (isCardPayment) {
-                      if (!card) {
-                        toast.error("Kartu belum terdaftar!", {
-                          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
-                        });
-                        return;
-                      }
-                      if (!card.active) {
-                        toast.error("Kartu ini sedang diblokir");
-                        return;
-                      }
-                      if (card.balance + 0.5 < cardCharge) {
-                        toast.error("Saldo kartu tidak mencukupi!", {
-                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
-                        });
-                        return;
-                      }
-                      if (restAmount > 0 && otherMethods.length === 0) {
-                        toast.error("Belum ada metode lain untuk sisa tagihan");
-                        return;
-                      }
-                      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
-                        toast.error("Saldo kartu tidak mencukupi!");
-                        return;
-                      }
-                      if (!requireShift()) return;
-                      const cardRecord = payCafeTable(table.id, {
-                        ...(restAmount > 0
-                          ? {
-                              payments: [
-                                { method: CARD_PAYMENT_NAME, amount: cardCharge },
-                                { method: restMethod, amount: restAmount },
-                              ],
-                            }
-                          : { payment: CARD_PAYMENT_NAME }),
-                        amountPaid: total,
-                        member: Boolean(card.member),
-                        discount: manualDisc,
-                      });
-                      if (!cardRecord) {
-                        toast.error("Pembayaran gagal diproses");
-                        return;
-                      }
-                      toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
-                        description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
-                          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
-                        }${bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""}`,
-                      });
-                      setReceived("");
-                      setCardNumber("");
-                      setDiscValue("");
-                      setCardPart("");
-                      setRestPay("");
-                      setOpenId(null);
-                      setPaidRecord(cardRecord);
-                      return;
-                    }
-
-                    const paid = received === "" ? total : receivedValue;
-                    if (paid + 0.5 < total) {
-                      toast.error("Uang diterima kurang dari total tagihan");
-                      return;
-                    }
-                    if (!requireShift()) return;
-                    const record = payCafeTable(table.id, {
-                      payment: payMethod || activeMethods[0]?.name || "Cash",
-                      amountPaid: paid,
-                      discount: manualDisc,
-                    });
-                    if (!record) {
-                      toast.error("Pembayaran gagal diproses");
-                      return;
-                    }
-                    toast.success(`${table.name} lunas ${formatRupiah(record.total)}`, {
-                      description: `${record.payment} · kembalian ${formatRupiah(record.change ?? 0)}`,
-                    });
-                    setReceived("");
-                    setDiscValue("");
-                    setOpenId(null);
-                    setPaidRecord(record);
-                  }}
+                  onClick={handleCafePay}
                 >
-                  Bayar &amp; selesaikan
+                  {dueAmount <= 0
+                    ? "Sudah Lunas"
+                    : isPartial
+                      ? `Bayar ${formatRupiah(payTarget)}`
+                      : "Bayar & selesaikan"}
                 </Button>
               </DialogFooter>
+
             </>
           )}
         </DialogContent>
