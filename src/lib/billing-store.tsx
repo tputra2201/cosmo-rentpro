@@ -231,6 +231,13 @@ export type Customer = {
   createdAt: number;
 };
 export type BookingStatus = "confirmed" | "checked-in" | "completed" | "cancelled";
+/** Additional Rental yang dipesan bersama reservasi. */
+export type BookingAddon = {
+  addonId: string;
+  qty: number;
+  /** Durasi khusus item ini (menit). Kosong = ikut lama sesi. */
+  minutes?: number;
+};
 export type Booking = {
   id: string;
   stationId: string;
@@ -241,6 +248,14 @@ export type Booking = {
   endAt: number;
   notes: string;
   status: BookingStatus;
+  /** Additional Rental yang otomatis masuk sesi saat check-in. */
+  addons?: BookingAddon[];
+  /** Uang muka (DP) yang sudah disetor pelanggan. */
+  dpAmount?: number;
+  /** Metode pembayaran DP. */
+  dpPayment?: string;
+  /** Penanda bahwa DP sudah dipakai sebagai pembayaran sesi. */
+  dpUsedAt?: number;
 };
 export type Promotion = {
   id: string;
@@ -303,6 +318,10 @@ export const CARD_PAYMENT_NAME = "Playing Card";
 export const CARD_TOPUP_CATEGORY_ID = "cc-topup-card";
 /** Penjualan kartu baru: penghasilan store. */
 export const CARD_SALE_CATEGORY_ID = "cc-jual-kartu";
+/** DP reservasi: kas masuk, bukan penghasilan. */
+export const BOOKING_DP_CATEGORY_ID = "cc-dp-reservasi";
+/** DP reservasi yang dipakai saat check-in: kas keluar, bukan biaya. */
+export const BOOKING_DP_USED_CATEGORY_ID = "cc-dp-reservasi-pakai";
 
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
 export const CARD_FUNDING_METHODS = [
@@ -797,14 +816,18 @@ const defaultState: State = {
     { id: "cc-belanja", name: "Belanja Bahan Kafe", direction: "out", payout: false, group: "Operasional", active: true },
     { id: "cc-gaji", name: "Gaji Karyawan", direction: "out", payout: false, group: "Gaji", active: true },
     { id: "cc-ambil-owner", name: "Pengambilan Uang Owner", direction: "out", payout: true, group: "Kas Owner", active: true },
+    { id: BOOKING_DP_CATEGORY_ID, name: "DP Reservasi", direction: "in", payout: true, group: "DP Reservasi", active: true },
+    { id: BOOKING_DP_USED_CATEGORY_ID, name: "DP Reservasi dipakai", direction: "out", payout: true, group: "DP Reservasi", active: true },
   ],
   cashGroups: [
     { id: "cg-in-lain", name: "Pendapatan Lain", direction: "in", active: true, sort: 0 },
     { id: "cg-in-owner", name: "Kas Owner", direction: "in", active: true, sort: 1 },
     { id: "cg-in-card", name: "Playing Card", direction: "in", active: true, sort: 2 },
+    { id: "cg-in-dp", name: "DP Reservasi", direction: "in", active: true, sort: 3 },
     { id: "cg-out-ops", name: "Operasional", direction: "out", active: true, sort: 0 },
     { id: "cg-out-gaji", name: "Gaji", direction: "out", active: true, sort: 1 },
     { id: "cg-out-owner", name: "Kas Owner", direction: "out", active: true, sort: 2 },
+    { id: "cg-out-dp", name: "DP Reservasi", direction: "out", active: true, sort: 3 },
   ],
   cashEntries: [],
   shifts: [],
@@ -1229,22 +1252,43 @@ function migrateState(raw: unknown): State {
         payout: Boolean(item.payout),
         active: item.active ?? true,
       }));
-      if (!list.some((item) => item.id === CARD_TOPUP_CATEGORY_ID)) {
-        const preset = defaultState.cashCategories.find(
-          (item) => item.id === CARD_TOPUP_CATEGORY_ID,
-        );
+      for (const id of [
+        CARD_TOPUP_CATEGORY_ID,
+        BOOKING_DP_CATEGORY_ID,
+        BOOKING_DP_USED_CATEGORY_ID,
+      ]) {
+        if (list.some((item) => item.id === id)) continue;
+        const preset = defaultState.cashCategories.find((item) => item.id === id);
         if (preset) list.push(preset);
       }
       return list;
     })(),
     cashGroups: (() => {
       if (parsed.cashGroups?.length) {
-        return parsed.cashGroups.map((row, index) => ({
+        const rows = parsed.cashGroups.map((row, index) => ({
           ...row,
           name: row.name?.trim() ? row.name.trim() : "Lainnya",
           active: row.active ?? true,
           sort: row.sort ?? index,
         }));
+        for (const direction of ["in", "out"] as const) {
+          if (
+            rows.some(
+              (row) =>
+                row.direction === direction &&
+                row.name.toLowerCase() === "dp reservasi",
+            )
+          )
+            continue;
+          rows.push({
+            id: `cg-${direction}-dp`,
+            name: "DP Reservasi",
+            direction,
+            active: true,
+            sort: rows.length,
+          });
+        }
+        return rows;
       }
       const source = parsed.cashCategories?.length
         ? parsed.cashCategories
