@@ -176,7 +176,48 @@ function CashHistory() {
     });
   };
 
-  const Group = ({ title, list }: { title: string; list: CashEntry[] }) => (
+  return (
+    <div className="space-y-4">
+      <ReportRangePicker range={picked} onChange={setPicked} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
+        <div className="flex flex-wrap gap-2">
+          <ExportExcelButton
+            targetRef={printRef}
+            title={`Riwayat Kas ${storeName}`}
+            periodText={`Periode ${rangeLabel(range)}`}
+            folderName={storeName}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6" ref={printRef}>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Stat label="Total kas masuk" value={formatRupiah(totalIn)} tone="accent" />
+          <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
+          <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
+        </section>
+        <CashGroup title="Kas masuk" list={incoming} onRemove={remove} />
+        <CashGroup title="Kas keluar" list={outgoing} onRemove={remove} />
+      </div>
+      {dialog}
+    </div>
+  );
+}
+
+/** Tabel satu kelompok kas. Didefinisikan di luar CashHistory agar posisi
+ *  geser horizontal di HP tidak ke-reset setiap kali data di-refresh. */
+function CashGroup({
+  title,
+  list,
+  onRemove,
+}: {
+  title: string;
+  list: CashEntry[];
+  onRemove: (entry: CashEntry) => void;
+}) {
+  const total = list.reduce((s, e) => s + e.amount, 0);
+  return (
     <section className="surface-panel overflow-x-auto p-4 sm:p-6">
       <SetupHeading title={title} />
       {list.length === 0 ? (
@@ -233,7 +274,7 @@ function CashHistory() {
                     size="icon"
                     variant="ghost"
                     aria-label="Hapus catatan"
-                    onClick={() => remove(e)}
+                    onClick={() => onRemove(e)}
                   >
                     <Trash2 className="size-4 text-destructive" />
                   </Button>
@@ -244,7 +285,7 @@ function CashHistory() {
               <TableCell className="font-semibold">Total</TableCell>
               <TableCell colSpan={6} />
               <TableCell className="text-right font-semibold">
-                {formatRupiah(total(list))}
+                {formatRupiah(total)}
               </TableCell>
               <TableCell />
             </TableRow>
@@ -252,34 +293,6 @@ function CashHistory() {
         </Table>
       )}
     </section>
-  );
-
-  return (
-    <div className="space-y-4">
-      <ReportRangePicker range={picked} onChange={setPicked} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
-        <div className="flex flex-wrap gap-2">
-          <ExportExcelButton
-            targetRef={printRef}
-            title={`Riwayat Kas ${storeName}`}
-            periodText={`Periode ${rangeLabel(range)}`}
-            folderName={storeName}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-6" ref={printRef}>
-        <section className="grid gap-4 sm:grid-cols-3">
-          <Stat label="Total kas masuk" value={formatRupiah(totalIn)} tone="accent" />
-          <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
-          <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
-        </section>
-        <Group title="Kas masuk" list={incoming} />
-        <Group title="Kas keluar" list={outgoing} />
-      </div>
-      {dialog}
-    </div>
   );
 }
 
