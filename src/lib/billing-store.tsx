@@ -3500,7 +3500,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               history: [completed, ...prev.history],
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
+                  ? {
+                      // Meja tetap terisi setelah lunas; kasir menutupnya lewat "Akhiri Sesi".
+                      ...t,
+                      orders: [],
+                      promoIds: [],
+                      openedAt: t.openedAt ?? endAt,
+                      paidAt: endAt,
+                    }
                   : t,
               ),
             },
