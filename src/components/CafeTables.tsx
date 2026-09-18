@@ -376,6 +376,28 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Ban className="size-4" /> VOID
                   </Button>
                 )}
+                {filled && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      confirmAction({
+                        title: `Akhiri sesi ${t.name}?`,
+                        description:
+                          t.orders.length > 0
+                            ? "Masih ada pesanan yang belum dibayar di meja ini."
+                            : "Meja akan kembali berstatus kosong dan siap dipakai lagi.",
+                        actionLabel: "Akhiri Sesi",
+                        onConfirm: () => {
+                          clearCafeTable(t.id);
+                          toast.success(`Sesi ${t.name} diakhiri`);
+                        },
+                      })
+                    }
+                  >
+                    <Receipt className="size-4" /> Akhiri Sesi
+                  </Button>
+                )}
                 {allowDelete && (
                   <Button
                     size="icon"
