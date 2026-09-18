@@ -261,7 +261,8 @@ export function useStoreSync(options: {
       } catch (err) {
         if (cancelled) return;
         // Sesi kedaluwarsa: segarkan sekali, kalau gagal antar ke halaman masuk.
-        if (isSessionInvalid(err)) {
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        if (isSessionInvalid(err) && !offline) {
           const recovered = await recoverSession();
           if (!recovered) return;
         }
