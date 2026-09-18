@@ -3,6 +3,8 @@ import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Utensils, Receipt } 
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
+import { PromoPicker } from "@/components/PromoPicker";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
