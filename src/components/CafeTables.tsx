@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Coffee, Plus, Printer, Trash2, Utensils, Receipt } from "lucide-react";
+import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Utensils, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
@@ -70,6 +70,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     voidCafeTable,
     moveCafeTable,
     payCafeTable,
+    stations,
+    mergeCafeTables,
+    unmergeCafeTables,
+    linkStationToTable,
 
     reorderList,
     playingCards,
@@ -86,6 +90,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const { requireShift } = useShiftGate();
   const [paidRecord, setPaidRecord] = useState<HistoryRecord | null>(null);
   const [tableMoveTo, setTableMoveTo] = useState("");
+  const [mergeOpen, setMergeOpen] = useState(false);
+
 
   const labelPrinters = printers.filter((p) => p.active);
   const labelHeading = (p: PrinterConfig) =>
@@ -149,6 +155,20 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const activeMethods = paymentMethods.filter((p) => p.active);
   const otherMethods = activeMethods.filter((m) => m.name !== CARD_PAYMENT_NAME);
   const table = cafeTables.find((t) => t.id === openId) ?? null;
+
+  // Gabung tagihan: pesanan titipan di meja ini, serta calon meja & TV yang bisa digabung.
+  const linkedOrders = (table?.orders ?? []).filter((o) => o.linkedFrom);
+  const linkedSourceNames = linkedOrders
+    .map((o) => o.linkedFrom!.name)
+    .filter((name, i, arr) => arr.indexOf(name) === i);
+  const mergeTableCandidates = cafeTables.filter(
+    (t) => t.id !== table?.id && t.orders.length > 0,
+  );
+  const mergeStationCandidates = stations.filter(
+    (s) => s.session && !s.session.paidAt && s.session.orders.length > 0,
+  );
+
+
 
   const isCardPayment = payMethod === CARD_PAYMENT_NAME;
   const card = isCardPayment ? findCardByNumber(playingCards, cardNumber) : undefined;
@@ -512,6 +532,48 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     </Button>
                   </div>
                 )}
+
+                {/* Gabung tagihan: meja lain & pesanan sesi TV dibayar dari panel ini. */}
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
+                  <span className="text-sm font-semibold">Gabung Tagihan</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (!requireShift()) return;
+                      setMergeOpen(true);
+                    }}
+                  >
+                    <Link2 className="size-4" /> Gabung Tagihan
+                  </Button>
+                  {linkedOrders.length > 0 && (
+                    <>
+                      <span className="text-xs text-muted-foreground">
+                        Titipan dari {linkedSourceNames.join(", ")}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          confirmAction({
+                            title: "Lepas gabungan tagihan?",
+                            description: `Pesanan titipan dikembalikan ke ${linkedSourceNames.join(", ")}.`,
+                            actionLabel: "Lepas",
+                            destructive: false,
+                            onConfirm: () => {
+                              unmergeCafeTables(table.id);
+                              toast.success("Gabungan tagihan dilepas");
+                            },
+                          })
+                        }
+                      >
+                        <Unlink className="size-4" /> Lepas gabungan
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+
 
                 <div className="space-y-3 border-t border-border pt-4">
                   <div className="space-y-1 text-sm">
@@ -991,7 +1053,120 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gabung Tagihan ke {table?.name ?? "meja ini"}</DialogTitle>
+            <DialogDescription>
+              Pesanan meja lain dan pesanan sesi TV bisa dibayar dari panel ini. Biaya rental TV
+              tetap dibayar di panel TV-nya. Bisa dilepas selama belum dibayar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Meja lain yang ada pesanannya</p>
+              {mergeTableCandidates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Tidak ada meja lain yang bisa digabung.
+                </p>
+              ) : (
+                mergeTableCandidates.map((other) => (
+                  <div
+                    key={other.id}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                  >
+                    <span className="text-sm">
+                      {other.name} · {other.orders.length} pesanan ·{" "}
+                      {formatRupiah(tableTotal(other))}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (!table) return;
+                        confirmAction({
+                          title: `Gabung ${other.name} ke ${table.name}?`,
+                          description: `${other.orders.length} pesanan senilai ${formatRupiah(
+                            tableTotal(other),
+                          )} ikut dibayar dari ${table.name}. Total baru ${formatRupiah(
+                            total + tableTotal(other),
+                          )}.`,
+                          actionLabel: "Gabung",
+                          destructive: false,
+                          onConfirm: () => {
+                            if (mergeCafeTables(table.id, [other.id]))
+                              toast.success(`${other.name} digabung ke ${table.name}`);
+                            else toast.error("Meja ini tidak bisa digabung");
+                          },
+                        });
+                      }}
+                    >
+                      Gabung
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">TV yang ada pesanannya</p>
+              {mergeStationCandidates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Belum ada pesanan di sesi TV.</p>
+              ) : (
+                mergeStationCandidates.map((s) => {
+                  const value = (s.session?.orders ?? []).reduce(
+                    (sum, o) => sum + o.price * o.qty,
+                    0,
+                  );
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                    >
+                      <span className="text-sm">
+                        {s.name} · {s.session?.orders.length} pesanan · {formatRupiah(value)}
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!table) return;
+                          confirmAction({
+                            title: `Titipkan pesanan ${s.name} ke ${table.name}?`,
+                            description: `Pesanan senilai ${formatRupiah(
+                              value,
+                            )} dibayar dari ${table.name}. Biaya rental ${s.name} tetap dibayar di panel TV. Total baru ${formatRupiah(
+                              total + value,
+                            )}.`,
+                            actionLabel: "Titipkan",
+                            destructive: false,
+                            onConfirm: () => {
+                              if (linkStationToTable(table.id, s.id))
+                                toast.success(`Pesanan ${s.name} dititipkan ke ${table.name}`);
+                              else toast.error("Pesanan TV ini tidak bisa dititipkan");
+                            },
+                          });
+                        }}
+                      >
+                        Titipkan
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setMergeOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PaidPrintDialog record={paidRecord} onClose={() => setPaidRecord(null)} />
+
 
       <BillPreviewDialog
         open={billPreview !== null}

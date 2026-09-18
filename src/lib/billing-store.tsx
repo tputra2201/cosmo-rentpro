@@ -51,7 +51,40 @@ export type OrderItem = {
   qty: number;
   /** Opsi modifikasi yang dipilih (mis. "Less sugar", "Iced", "Pedas"). */
   mods?: string[];
+  /** Asal pesanan bila tagihannya dititipkan dari meja/TV lain. */
+  linkedFrom?: { type: "table" | "station"; id: string; name: string };
 };
+
+
+/** Tanda asal pesanan titipan yang ikut tampil di bill, struk, dan label. */
+const linkTag = (from: NonNullable<OrderItem["linkedFrom"]>) =>
+  `${from.type === "table" ? "Meja" : "TV"} ${from.name}`;
+
+/** Salin pesanan sebagai titipan, lengkap dengan tanda asalnya. */
+export function withLinkTag(
+  order: OrderItem,
+  from: NonNullable<OrderItem["linkedFrom"]>,
+  index = 0,
+): OrderItem {
+  const tag = linkTag(from);
+  const mods = order.mods ?? [];
+  return {
+    ...order,
+    id: `${order.id}-link-${Date.now()}-${index}`,
+    mods: mods.includes(tag) ? mods : [...mods, tag],
+    linkedFrom: from,
+  };
+}
+
+/** Kembalikan pesanan titipan ke bentuk aslinya (tanda asal dilepas). */
+export function stripLinkTag(order: OrderItem): OrderItem {
+  const { linkedFrom, ...rest } = order;
+  if (!linkedFrom) return rest;
+  const tag = linkTag(linkedFrom);
+  const mods = (rest.mods ?? []).filter((m) => m !== tag);
+  return mods.length ? { ...rest, mods } : { ...rest, mods: [] };
+}
+
 
 /** Nama pesanan lengkap dengan opsi modifikasi. */
 export const orderLabel = (o: OrderItem) =>
@@ -1490,6 +1523,13 @@ type Ctx = State & {
   unmergeStations: (parentStationId: string) => void;
   /** Titipkan pesanan meja kafe ke sesi TV induk, lalu meja dikosongkan. */
   linkCafeTable: (parentStationId: string, tableId: string) => boolean;
+  /** Gabungkan pesanan meja kafe lain ke satu meja induk. */
+  mergeCafeTables: (parentTableId: string, childTableIds: string[]) => boolean;
+  /** Lepas kembali semua pesanan titipan di meja induk ini ke asalnya. */
+  unmergeCafeTables: (parentTableId: string) => void;
+  /** Titipkan pesanan sesi TV ke meja kafe (rental tetap dibayar di panel TV). */
+  linkStationToTable: (tableId: string, stationId: string) => boolean;
+
 
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
@@ -3545,62 +3585,107 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return moved;
       },
       mergeStations: (parentStationId, childStationIds) => {
-        let merged = false;
+        // Kelayakan diperiksa dari state sekarang supaya hasil true/false bisa
+        // dipakai langsung untuk pesan di layar (setState berjalan setelahnya).
+        const parentNow = state.stations.find((s) => s.id === parentStationId);
+        if (!parentNow?.session || parentNow.session.mergedInto) return false;
+        const eligible = state.stations.filter(
+          (s) =>
+            childStationIds.includes(s.id) &&
+            s.id !== parentStationId &&
+            s.session &&
+            !s.session.mergedInto &&
+            !s.session.paidAt,
+        );
+        if (!eligible.length) return false;
+        const ids = eligible.map((s) => s.id);
         update((prev) => {
           const parent = prev.stations.find((s) => s.id === parentStationId);
-          if (!parent?.session || parent.session.mergedInto) return prev;
+          if (!parent?.session) return prev;
           const names: string[] = [];
           const stations = prev.stations.map((s) => {
-            if (!childStationIds.includes(s.id) || s.id === parentStationId) return s;
-            if (!s.session || s.session.mergedInto || s.session.paidAt) return s;
+            if (!ids.includes(s.id) || !s.session || s.session.mergedInto || s.session.paidAt)
+              return s;
             names.push(s.name);
             return { ...s, session: { ...s.session, mergedInto: parentStationId } };
           });
           if (!names.length) return prev;
-          merged = true;
           return withLog(
             { ...prev, stations },
             "Gabung tagihan TV",
             `${names.join(", ")} → ${parent.name}`,
           );
         });
-        return merged;
+        return true;
       },
       unmergeStations: (parentStationId) =>
         update((prev) => {
+          const parentName =
+            prev.stations.find((s) => s.id === parentStationId)?.name ?? "TV induk";
           const names = prev.stations
             .filter((s) => s.session?.mergedInto === parentStationId)
             .map((s) => s.name);
-          if (!names.length) return prev;
-          const parentName =
-            prev.stations.find((s) => s.id === parentStationId)?.name ?? "TV induk";
+          // Pesanan meja yang dititipkan ke sesi ini juga dikembalikan.
+          const parent = prev.stations.find((s) => s.id === parentStationId);
+          const linked = (parent?.session?.orders ?? []).filter(
+            (o) => o.linkedFrom?.type === "table",
+          );
+          if (!names.length && linked.length === 0) return prev;
+          const restored = new Map<string, OrderItem[]>();
+          for (const order of linked) {
+            const from = order.linkedFrom!;
+            const list = restored.get(from.id) ?? [];
+            list.push(stripLinkTag(order));
+            restored.set(from.id, list);
+          }
+          const tableNames = linked
+            .map((o) => o.linkedFrom!.name)
+            .filter((name, i, arr) => arr.indexOf(name) === i);
           return withLog(
             {
               ...prev,
               stations: prev.stations.map((s) => {
+                if (s.id === parentStationId && s.session) {
+                  return {
+                    ...s,
+                    session: {
+                      ...s.session,
+                      orders: s.session.orders.filter((o) => o.linkedFrom?.type !== "table"),
+                    },
+                  };
+                }
                 if (s.session?.mergedInto !== parentStationId) return s;
                 const { mergedInto: _drop, ...session } = s.session;
                 return { ...s, session };
               }),
+              cafeTables: prev.cafeTables.map((t) => {
+                const back = restored.get(t.id);
+                if (!back) return t;
+                return {
+                  ...t,
+                  orders: [...t.orders, ...back],
+                  openedAt: t.openedAt ?? Date.now(),
+                };
+              }),
             },
             "Lepas gabungan tagihan TV",
-            `${names.join(", ")} dilepas dari ${parentName}`,
+            `${[...names, ...tableNames].join(", ")} dilepas dari ${parentName}`,
           );
         }),
       linkCafeTable: (parentStationId, tableId) => {
-        let linked = false;
+        const parentNow = state.stations.find((s) => s.id === parentStationId);
+        const tableNow = state.cafeTables.find((t) => t.id === tableId);
+        if (!parentNow?.session || parentNow.session.paidAt) return false;
+        if (!tableNow || tableNow.orders.length === 0) return false;
         update((prev) => {
           const parent = prev.stations.find((s) => s.id === parentStationId);
           const table = prev.cafeTables.find((t) => t.id === tableId);
           if (!parent?.session || !table || table.orders.length === 0) return prev;
-          linked = true;
           // Pesanan meja dititipkan ke sesi TV induk dengan tanda meja asalnya,
           // supaya rincian pesanan tetap terbaca di bill dan struk.
-          const moved = table.orders.map((order) => ({
-            ...order,
-            id: `${order.id}-link-${Date.now()}`,
-            mods: [...(order.mods ?? []), `Meja ${table.name}`],
-          }));
+          const moved = table.orders.map((order, i) =>
+            withLinkTag(order, { type: "table", id: table.id, name: table.name }, i),
+          );
           return withLog(
             {
               ...prev,
@@ -3619,8 +3704,122 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             `${table.name} → ${parent.name}`,
           );
         });
-        return linked;
+        return true;
       },
+      mergeCafeTables: (parentTableId, childTableIds) => {
+        const parentNow = state.cafeTables.find((t) => t.id === parentTableId);
+        if (!parentNow) return false;
+        const eligible = state.cafeTables.filter(
+          (t) => childTableIds.includes(t.id) && t.id !== parentTableId && t.orders.length > 0,
+        );
+        if (!eligible.length) return false;
+        const ids = eligible.map((t) => t.id);
+        update((prev) => {
+          const parent = prev.cafeTables.find((t) => t.id === parentTableId);
+          if (!parent) return prev;
+          const names: string[] = [];
+          const moved: OrderItem[] = [];
+          for (const table of prev.cafeTables) {
+            if (!ids.includes(table.id) || table.orders.length === 0) continue;
+            names.push(table.name);
+            table.orders.forEach((order, i) =>
+              moved.push(
+                withLinkTag(order, { type: "table", id: table.id, name: table.name }, i),
+              ),
+            );
+          }
+          if (!moved.length) return prev;
+          return withLog(
+            {
+              ...prev,
+              cafeTables: prev.cafeTables.map((t) => {
+                if (t.id === parentTableId)
+                  return {
+                    ...t,
+                    orders: [...t.orders, ...moved],
+                    openedAt: t.openedAt ?? Date.now(),
+                  };
+                if (!ids.includes(t.id)) return t;
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+              }),
+            },
+            "Gabung tagihan meja kafe",
+            `${names.join(", ")} → ${parent.name}`,
+          );
+        });
+        return true;
+      },
+      unmergeCafeTables: (parentTableId) =>
+        update((prev) => {
+          const parent = prev.cafeTables.find((t) => t.id === parentTableId);
+          if (!parent) return prev;
+          const linked = parent.orders.filter((o) => o.linkedFrom);
+          if (!linked.length) return prev;
+          const backToTable = new Map<string, OrderItem[]>();
+          const backToStation = new Map<string, OrderItem[]>();
+          for (const order of linked) {
+            const from = order.linkedFrom!;
+            const bucket = from.type === "table" ? backToTable : backToStation;
+            const list = bucket.get(from.id) ?? [];
+            list.push(stripLinkTag(order));
+            bucket.set(from.id, list);
+          }
+          const names = linked
+            .map((o) => o.linkedFrom!.name)
+            .filter((name, i, arr) => arr.indexOf(name) === i);
+          return withLog(
+            {
+              ...prev,
+              cafeTables: prev.cafeTables.map((t) => {
+                if (t.id === parentTableId)
+                  return { ...t, orders: t.orders.filter((o) => !o.linkedFrom) };
+                const back = backToTable.get(t.id);
+                if (!back) return t;
+                return { ...t, orders: [...t.orders, ...back], openedAt: t.openedAt ?? Date.now() };
+              }),
+              stations: prev.stations.map((s) => {
+                const back = backToStation.get(s.id);
+                if (!back || !s.session) return s;
+                return { ...s, session: { ...s.session, orders: [...s.session.orders, ...back] } };
+              }),
+            },
+            "Lepas gabungan tagihan meja kafe",
+            `${names.join(", ")} dilepas dari ${parent.name}`,
+          );
+        }),
+      linkStationToTable: (tableId, stationId) => {
+        const tableNow = state.cafeTables.find((t) => t.id === tableId);
+        const stationNow = state.stations.find((s) => s.id === stationId);
+        if (!tableNow || !stationNow?.session || stationNow.session.paidAt) return false;
+        if (stationNow.session.orders.length === 0) return false;
+        update((prev) => {
+          const table = prev.cafeTables.find((t) => t.id === tableId);
+          const station = prev.stations.find((s) => s.id === stationId);
+          if (!table || !station?.session || station.session.orders.length === 0) return prev;
+          const moved = station.session.orders.map((order, i) =>
+            withLinkTag(order, { type: "station", id: station.id, name: station.name }, i),
+          );
+          return withLog(
+            {
+              ...prev,
+              cafeTables: prev.cafeTables.map((t) =>
+                t.id === tableId
+                  ? { ...t, orders: [...t.orders, ...moved], openedAt: t.openedAt ?? Date.now() }
+                  : t,
+              ),
+              stations: prev.stations.map((s) =>
+                s.id === stationId && s.session
+                  ? { ...s, session: { ...s.session, orders: [] } }
+                  : s,
+              ),
+            },
+            "Titip pesanan TV ke meja kafe",
+            `${station.name} → ${table.name}`,
+          );
+        });
+        return true;
+      },
+
 
       addCustomer: (input) => {
         const customer: Customer = { id: `customer-${Date.now()}`, ...input, points: 0, visits: 0, totalSpent: 0, createdAt: Date.now() };
