@@ -243,7 +243,10 @@ export type CafeTable = {
   notes: string;
   openedAt: number | null;
   orders: OrderItem[];
+  /** Promo yang diberikan kasir untuk meja ini. */
+  promoIds?: string[];
   sort?: number;
+
 };
 
 
