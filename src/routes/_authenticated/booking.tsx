@@ -67,6 +67,7 @@ function localInputValue(date: Date) {
 
 function BookingPage() {
   const { bookings, stations, customers, paymentMethods, addBooking, updateBooking, removeBooking, addCashEntry } = useBilling();
+  const allow = useCan();
   const initialStart = useMemo(() => { const date = new Date(); date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30, 0, 0); return date; }, []);
   const [stationId, setStationId] = useState(stations[0]?.id ?? "");
   const [customerId, setCustomerId] = useState("");
