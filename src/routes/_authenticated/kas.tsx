@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,11 @@ import {
   type CashGroup,
 } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
+import { useStoreInfo } from "@/lib/store-info";
+import { defaultRange, inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
@@ -127,7 +132,7 @@ function CashHistory() {
   const { cashEntries, operatingHours, removeCashEntry } = useBilling();
   const { store } = useStoreInfo(true);
   const storeName = store?.store_name?.trim() || "RenToPlay";
-  const confirm = useConfirm();
+  const { confirm, dialog } = useConfirm();
   const printRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<ReportRange>(() => defaultRange("day"));
   const range = useMemo<ReportRange>(
@@ -146,13 +151,14 @@ function CashHistory() {
   const totalOut = total(outgoing);
 
   const remove = (entry: CashEntry) => {
-    void confirm({
+    confirm({
       title: `Hapus catatan ${entry.categoryName}?`,
       description: "Data ini tidak bisa dikembalikan.",
-    }).then((ok) => {
-      if (!ok) return;
-      removeCashEntry(entry.id);
-      toast.success("Catatan kas dihapus");
+      destructive: true,
+      onConfirm: () => {
+        removeCashEntry(entry.id);
+        toast.success("Catatan kas dihapus");
+      },
     });
   };
 
