@@ -70,11 +70,15 @@ function timeOf(ts: number) {
 }
 
 function KasPage() {
-  const { cashEntries, removeCashEntry } = useBilling();
+  const { cashEntries, operatingHours, removeCashEntry } = useBilling();
 
-  const todayKey = new Date().toDateString();
-  const today = cashEntries.filter(
-    (e) => new Date(e.createdAt).toDateString() === todayKey,
+  const businessRange = useMemo<ReportRange>(
+    () => defaultRange("day", operatingHours),
+    [operatingHours],
+  );
+  const today = useMemo(
+    () => cashEntries.filter((e) => inRange(e.createdAt, businessRange)),
+    [cashEntries, businessRange],
   );
   const sum = (rows: CashEntry[], pick: (e: CashEntry) => boolean) =>
     rows.filter(pick).reduce((s, e) => s + e.amount, 0);
@@ -88,14 +92,24 @@ function KasPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Kas Lain &amp; Pengeluaran</h1>
+        <p className="text-sm text-muted-foreground">Hari usaha {rangeLabel(businessRange)}</p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Pendapatan lain hari ini" value={formatRupiah(incomeToday)} tone="accent" />
-        <Stat label="Pengeluaran hari ini" value={formatRupiah(expenseToday)} tone="danger" />
-        <Stat label="Kas masuk (bukan pendapatan)" value={formatRupiah(payoutIn)} />
-        <Stat label="Kas keluar (bukan biaya)" value={formatRupiah(payoutOut)} />
+        <Stat
+          label="Pendapatan lain hari usaha ini"
+          value={formatRupiah(incomeToday)}
+          tone="accent"
+        />
+        <Stat
+          label="Pengeluaran hari usaha ini"
+          value={formatRupiah(expenseToday)}
+          tone="danger"
+        />
+        <Stat label="Kas masuk hari usaha ini (bukan pendapatan)" value={formatRupiah(payoutIn)} />
+        <Stat label="Kas keluar hari usaha ini (bukan biaya)" value={formatRupiah(payoutOut)} />
       </section>
+
 
       <Tabs defaultValue="in">
         <TabsList className="flex w-full flex-wrap">
