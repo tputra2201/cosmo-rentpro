@@ -5,8 +5,11 @@ import {
   applyRecords,
   clearSyncedLists,
   flattenSnapshot,
+  isDefaultProtectedSetting,
   isKnownKind,
+  PROTECTED_SETTINGS,
   recordKey,
+  SETTINGS_KIND,
   type SyncRecord,
 } from "./sync-records";
 
@@ -132,6 +135,15 @@ export function useStoreSync(options: {
   state: BillingSnapshot;
   hydrated: boolean;
   enabled: boolean;
+  /**
+   * True bila data lokal benar-benar dibaca dari penyimpanan perangkat. False
+   * berarti aplikasi berjalan dari isi bawaan (penyimpanan kosong, penuh, atau
+   * rusak) — dalam keadaan itu perangkat wajib mengambil ulang data store dari
+   * pusat sebelum boleh mengirim apa pun.
+   */
+  storageLoaded: boolean;
+  /** Kunci pengaturan yang memang diubah di perangkat ini. */
+  dirtySettings: () => Set<string>;
   applyRemote: (apply: (prev: BillingSnapshot) => BillingSnapshot) => void;
   /**
    * Mengikat data lokal ke satu store. Kalau perangkat sebelumnya memegang data
@@ -139,7 +151,8 @@ export function useStoreSync(options: {
    */
   bindStore: (storeId: string, keepLocal?: boolean) => void;
 }): SyncStatus {
-  const { state, hydrated, enabled, applyRemote, bindStore } = options;
+  const { state, hydrated, enabled, storageLoaded, dirtySettings, applyRemote, bindStore } =
+    options;
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -159,6 +172,8 @@ export function useStoreSync(options: {
   const stateRef = useRef(state);
   const prevKeysRef = useRef<Set<string> | null>(null);
   const blockedUntilRef = useRef(0);
+  /** Sudah pernah mengambil seluruh data store pada sesi ini. */
+  const bootstrappedRef = useRef(false);
 
 
   stateRef.current = state;
@@ -285,9 +300,22 @@ export function useStoreSync(options: {
     const outbox = outboxRef.current;
     let changed = false;
 
+    const dirty = dirtySettings();
     for (const [key, record] of current) {
       const json = stableStringify(record.payload);
       if (shadow[key] === json) continue;
+      // Jenis Konsol, Tarif per Jam, dan potongan harga konsol hanya dikirim
+      // bila memang diubah dari perangkat ini. Dan isi bawaan tidak pernah
+      // dikirim sebelum perangkat ini menerima data store dari pusat.
+      if (record.kind === SETTINGS_KIND && PROTECTED_SETTINGS.has(record.entity_id)) {
+        if (!dirty.has(record.entity_id)) continue;
+        if (
+          !bootstrappedRef.current &&
+          isDefaultProtectedSetting(record.entity_id, record.payload)
+        ) {
+          continue;
+        }
+      }
       // Catat kolom mana yang diubah di perangkat ini, supaya kolom lain
       // tidak ikut menimpa perubahan perangkat lain pada baris yang sama.
       const base = parseJson(shadow[key]);
@@ -321,7 +349,7 @@ export function useStoreSync(options: {
       writeJson(OUTBOX_KEY, outbox);
       setPending(Object.keys(outbox).length);
     }
-  }, []);
+  }, [dirtySettings]);
 
   // Catat perubahan lokal langsung. Jangan beri kesempatan tarikan berkala
   // menimpa pengaturan yang baru diubah sebelum masuk antrean kirim.
@@ -350,10 +378,26 @@ export function useStoreSync(options: {
       Object.keys(shadowRef.current).length > 0 ||
       Object.keys(outboxRef.current).length > 0 ||
       Boolean(localStorage.getItem(SINCE_KEY));
-    if (hasSyncHistory) {
+    // Jejak sinkron lama hanya bisa dipercaya bila data lokalnya juga benar-benar
+    // terbaca. Kalau data lokal hilang (penyimpanan penuh/rusak) sementara
+    // jejaknya masih ada, perangkat ini akan mengirim isi bawaan ke pusat —
+    // inilah yang membuat Jenis Konsol & Tarif ter-reset. Paksa ambil ulang.
+    if (hasSyncHistory && storageLoaded) {
+      bootstrappedRef.current = true;
       setReadyStoreId(storeId);
       return;
     }
+    if (hasSyncHistory && !storageLoaded) {
+      localStorage.removeItem(SHADOW_KEY);
+      localStorage.removeItem(OUTBOX_KEY);
+      localStorage.removeItem(SINCE_KEY);
+      localStorage.setItem(FRESH_KEY, storeId);
+      shadowRef.current = {};
+      outboxRef.current = {};
+      prevKeysRef.current = null;
+      setPending(0);
+    }
+
 
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
@@ -401,6 +445,7 @@ export function useStoreSync(options: {
         if (newest) localStorage.setItem(SINCE_KEY, newest);
       }
       localStorage.removeItem(FRESH_KEY);
+      bootstrappedRef.current = true;
       setError(null);
       setReadyStoreId(storeId);
     })();
@@ -417,6 +462,7 @@ export function useStoreSync(options: {
     readyStoreId,
     state.storeId,
     bootAttempt,
+    storageLoaded,
     applyRemote,
     noteShadow,
   ]);

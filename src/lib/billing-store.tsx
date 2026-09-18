@@ -734,6 +734,8 @@ type State = {
 
 
 const STORAGE_KEY = "billing-ps-state-v1";
+/** Penanda pengaturan penting yang memang diubah dari perangkat ini. */
+const DIRTY_SETTINGS_KEY = "billing.settings-dirty-v1";
 
 /** Pindahkan satu elemen array dari posisi `from` ke posisi `to`. */
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
@@ -1854,23 +1856,76 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   const [now, setNow] = useState(() => Date.now());
   const [hydrated, setHydrated] = useState(false);
+  // True hanya bila data lokal memang terbaca dari perangkat. Kalau false,
+  // aplikasi berjalan dari isi bawaan sehingga tidak boleh mengirim pengaturan
+  // penting (Jenis Konsol & Tarif) ke pusat sebelum menerima data store.
+  const [storageLoaded, setStorageLoaded] = useState(false);
+  const storageWarnedRef = useRef(false);
+  // Pengaturan penting yang benar-benar diubah dari perangkat ini. Hanya kunci
+  // di daftar ini yang boleh dikirim ke pusat, sehingga perangkat yang datanya
+  // tergerus tidak pernah menimpa Jenis Konsol & Tarif store dengan bawaan.
+  const dirtyRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DIRTY_SETTINGS_KEY);
+      if (raw) dirtyRef.current = new Set(JSON.parse(raw) as string[]);
+    } catch {
+      /* penanda rusak: anggap belum ada perubahan lokal */
+    }
+  }, []);
+  const markSettingsDirty = useCallback((...keys: string[]) => {
+    for (const key of keys) dirtyRef.current.add(key);
+    try {
+      localStorage.setItem(DIRTY_SETTINGS_KEY, JSON.stringify([...dirtyRef.current]));
+    } catch {
+      /* penyimpanan penuh: cukup berlaku selama aplikasi terbuka */
+    }
+  }, []);
+
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setState(migrateState(JSON.parse(raw)));
+      if (raw) {
+        setState(migrateState(JSON.parse(raw)));
+        setStorageLoaded(true);
+      }
     } catch {
-      /* ignore corrupt storage */
+      /* isi penyimpanan rusak: jalan dari bawaan, jangan tandai terbaca */
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* storage full or blocked: keep running in memory */
+    const write = (value: State) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (write(state)) {
+      setStorageLoaded(true);
+      return;
+    }
+    // Penyimpanan perangkat penuh: simpan ulang tanpa Log Book & riwayat lama
+    // (keduanya tetap aman di pusat) supaya data hari ini tidak ikut hilang.
+    const trimmed: State = {
+      ...state,
+      logEntries: state.logEntries.slice(-300),
+      history: state.history.slice(-300),
+    };
+    const saved = write(trimmed);
+    if (saved) setStorageLoaded(true);
+    if (!storageWarnedRef.current) {
+      storageWarnedRef.current = true;
+      toast.warning(
+        saved
+          ? "Penyimpanan perangkat hampir penuh. Log Book dan riwayat lama di perangkat ini dipangkas — datanya tetap ada di laporan."
+          : "Perangkat ini tidak bisa menyimpan data. Bersihkan penyimpanan browser lalu muat ulang halaman.",
+      );
     }
   }, [state, hydrated]);
 
@@ -2502,13 +2557,44 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       }
       return { ...defaultState, storeId: id };
     });
+    // Perangkat ganti store: penanda "diedit di sini" tidak lagi berlaku.
+    dirtyRef.current = new Set();
+    try {
+      localStorage.removeItem(DIRTY_SETTINGS_KEY);
+    } catch {
+      /* penyimpanan diblokir */
+    }
   }, []);
+
+  const dirtySettings = useCallback(() => dirtyRef.current, []);
+
+  // Perubahan Jenis Konsol & Tarif yang datang dari pusat dicatat, supaya kalau
+  // suatu perangkat menimpanya lagi jelas terlihat kapan dan menjadi apa.
+  const applyRemote = useCallback(
+    (apply: (prev: State) => State) => {
+      setState((prev) => {
+        const next = apply(prev);
+        const before = JSON.stringify([prev.consoleTypes, prev.rates]);
+        const after = JSON.stringify([next.consoleTypes, next.rates]);
+        if (before !== after) {
+          const detail = next.consoleTypes
+            .map((c) => `${c} ${formatRupiah(next.rates[c] ?? 0)}`)
+            .join(", ");
+          queueMicrotask(() => addLog("Tarif konsol disegarkan dari pusat", detail));
+        }
+        return next;
+      });
+    },
+    [addLog],
+  );
 
   const sync = useStoreSync({
     state,
     hydrated,
     enabled: Boolean(authSession),
-    applyRemote: setState,
+    storageLoaded,
+    dirtySettings,
+    applyRemote,
     bindStore,
   });
 
@@ -2569,7 +2655,10 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         addOrder(...args);
       },
       removeOrder,
-      setRates: (rates) => update((prev) => ({ ...prev, rates })),
+      setRates: (rates) => {
+        markSettingsDirty("rates");
+        update((prev) => ({ ...prev, rates }));
+      },
       addAddonRental: (name, price, mode) => {
         const clean = name.trim();
         if (!clean) return false;
@@ -2681,7 +2770,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               }
             : s,
         ),
-      setConsoleDiscount: (name, patch) =>
+      setConsoleDiscount: (name, patch) => {
+        markSettingsDirty("consoleDiscounts");
         update((prev) => ({
           ...prev,
           consoleDiscounts: {
@@ -2692,7 +2782,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ...patch,
             },
           },
-        })),
+        }));
+      },
       setSessionDiscount: (stationId, patch) =>
         mapStation(stationId, (s) =>
           s.session
@@ -2715,6 +2806,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!clean) return false;
         if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
           return false;
+        markSettingsDirty("consoleTypes", "rates");
         update((prev) => ({
           ...prev,
           consoleTypes: [...prev.consoleTypes, clean],
@@ -2727,6 +2819,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!clean || clean === oldName) return false;
         if (state.consoleTypes.some((c) => c.toLowerCase() === clean.toLowerCase()))
           return false;
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         update((prev) => {
           const rates: Rates = {};
           for (const key of Object.keys(prev.rates)) {
@@ -2750,14 +2843,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         return true;
       },
-      setConsoleRate: (name, rate) =>
+      setConsoleRate: (name, rate) => {
+        markSettingsDirty("rates");
         update((prev) => ({
           ...prev,
           rates: { ...prev.rates, [name]: Math.max(0, rate) },
-        })),
+        }));
+      },
       removeConsoleType: (name) => {
         if (state.consoleTypes.length <= 1) return false;
         if (state.stations.some((s) => s.console === name)) return false;
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         update((prev) => {
           const rates = { ...prev.rates };
           delete rates[name];
@@ -3867,6 +3963,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,
 
       replaceAll: (data) => {
+        // Pemulihan dari berkas cadangan memang dimaksudkan menimpa pusat.
+        markSettingsDirty("consoleTypes", "rates", "consoleDiscounts");
         setState(migrateState(data));
         update((prev) => withLog(prev, "Pulihkan data dari berkas cadangan"));
       },
