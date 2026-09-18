@@ -554,6 +554,12 @@ export function activePromosOfKind(promotions: Promotion[], now: number, kind: P
   return promotions.filter((promo) => promoKind(promo) === kind && promoInWindow(promo, now));
 }
 
+/** Semua promo yang tanggal dan jamnya sedang berlaku. */
+export function activePromos(promotions: Promotion[], now: number) {
+  return promotions.filter((promo) => promoInWindow(promo, now));
+}
+
+
 /** Tanda pada baris pesanan hadiah promo. */
 export const PROMO_FREE_TAG = "Promo";
 
