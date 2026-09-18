@@ -300,9 +300,22 @@ export function useStoreSync(options: {
     const outbox = outboxRef.current;
     let changed = false;
 
+    const dirty = dirtySettings();
     for (const [key, record] of current) {
       const json = stableStringify(record.payload);
       if (shadow[key] === json) continue;
+      // Jenis Konsol, Tarif per Jam, dan potongan harga konsol hanya dikirim
+      // bila memang diubah dari perangkat ini. Dan isi bawaan tidak pernah
+      // dikirim sebelum perangkat ini menerima data store dari pusat.
+      if (record.kind === SETTINGS_KIND && PROTECTED_SETTINGS.has(record.entity_id)) {
+        if (!dirty.has(record.entity_id)) continue;
+        if (
+          !bootstrappedRef.current &&
+          isDefaultProtectedSetting(record.entity_id, record.payload)
+        ) {
+          continue;
+        }
+      }
       // Catat kolom mana yang diubah di perangkat ini, supaya kolom lain
       // tidak ikut menimpa perubahan perangkat lain pada baris yang sama.
       const base = parseJson(shadow[key]);
@@ -432,6 +445,7 @@ export function useStoreSync(options: {
         if (newest) localStorage.setItem(SINCE_KEY, newest);
       }
       localStorage.removeItem(FRESH_KEY);
+      bootstrappedRef.current = true;
       setError(null);
       setReadyStoreId(storeId);
     })();
