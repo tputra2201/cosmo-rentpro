@@ -10,6 +10,45 @@ import {
   type SyncRecord,
 } from "./sync-records";
 
+/**
+ * Sesi login sudah tidak sah di pusat (kedaluwarsa atau dicabut). Tanpa token
+ * yang sah, permintaan berjalan sebagai anon sehingga Postgres menolak
+ * store_members dengan "permission denied" — bukan kegagalan jaringan.
+ */
+function isSessionInvalid(err: unknown): boolean {
+  const e = err as { message?: string; code?: string; status?: number } | null;
+  if (!e) return false;
+  const msg = String(e.message ?? "").toLowerCase();
+  return (
+    e.code === "42501" ||
+    e.status === 401 ||
+    e.status === 403 ||
+    msg.includes("session_not_found") ||
+    msg.includes("session not found") ||
+    msg.includes("permission denied") ||
+    msg.includes("jwt expired") ||
+    msg.includes("invalid claim") ||
+    msg.includes("refresh token")
+  );
+}
+
+/**
+ * Coba segarkan sesi sekali. Kalau tetap gagal (dan perangkat sedang daring),
+ * bersihkan sesi lokal lalu antar pengguna ke halaman masuk, bukan mengulang
+ * permintaan yang pasti ditolak setiap 8 detik.
+ */
+async function recoverSession(): Promise<boolean> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return false;
+  const { data } = await supabase.auth.refreshSession().catch(() => ({ data: { session: null } }));
+  if (data?.session) return true;
+  await supabase.auth.signOut({ scope: "local" }).catch(() => null);
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
+    window.location.assign("/auth");
+  }
+  return false;
+}
+
+
 const OUTBOX_KEY = "billing-sync-outbox-v1";
 const SHADOW_KEY = "billing-sync-shadow-v1";
 const SINCE_KEY = "billing-sync-since-v1";
@@ -174,7 +213,7 @@ export function useStoreSync(options: {
     (async () => {
       try {
         const { data: auth, error: authError } = await supabase.auth.getUser();
-        if (authError) throw new Error(authError.message);
+        if (authError) throw authError;
         const userId = auth.user?.id;
         if (!userId) return;
         const { data, error: memberError } = await supabase
@@ -184,7 +223,7 @@ export function useStoreSync(options: {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (memberError) throw new Error(memberError.message);
+        if (memberError) throw memberError;
         const id = (data as { store_id: string } | null)?.store_id ?? null;
         if (!id) {
           setError("Akun belum terhubung ke store. Hubungi Admin atau Developer.");
@@ -219,7 +258,14 @@ export function useStoreSync(options: {
         localStorage.setItem(STORE_KEY, id);
         setStoreId(id);
         setError(null);
-      } catch {
+      } catch (err) {
+        if (cancelled) return;
+        // Sesi kedaluwarsa: segarkan sekali, kalau gagal antar ke halaman masuk.
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        if (isSessionInvalid(err) && !offline) {
+          const recovered = await recoverSession();
+          if (!recovered) return;
+        }
         fail();
       }
     })();
@@ -387,7 +433,8 @@ export function useStoreSync(options: {
       // Pastikan pilihan store di perangkat masih sama dengan membership di
       // pusat. Ini penting untuk akun Developer yang dapat berganti store dari
       // perangkat lain. Jika berubah, hentikan sebelum satu baris pun diterapkan.
-      const { data: auth } = await supabase.auth.getUser();
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       const userId = auth.user?.id;
       if (!userId) return;
       const { data: membership, error: membershipError } = await supabase
@@ -396,7 +443,7 @@ export function useStoreSync(options: {
         .eq("user_id", userId)
         .limit(1)
         .maybeSingle();
-      if (membershipError) throw new Error(membershipError.message);
+      if (membershipError) throw membershipError;
       const currentStoreId = (membership as { store_id: string } | null)?.store_id ?? null;
       if (!currentStoreId) throw new Error("Akun belum terhubung ke store.");
       if (currentStoreId !== storeId) {
@@ -534,7 +581,16 @@ export function useStoreSync(options: {
       setError(null);
       setLastSyncedAt(Date.now());
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sinkronisasi gagal";
+      const message =
+        (err as { message?: string } | null)?.message ?? "Sinkronisasi gagal";
+      // Sesi sudah tidak sah: jangan ulangi permintaan yang pasti ditolak.
+      if (isSessionInvalid(err)) {
+        const recovered = await recoverSession();
+        if (!recovered) {
+          setError("Sesi masuk sudah berakhir. Silakan masuk kembali.");
+          return;
+        }
+      }
       // Penolakan aturan baris berarti akun ini tidak (lagi) terhubung ke store
       // yang dipakai, atau sesinya kedaluwarsa. Coba segarkan sesi sekali, lalu
       // beri jeda supaya tidak menabrak pusat setiap 20 detik tanpa hasil.
