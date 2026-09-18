@@ -670,6 +670,65 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <span className="text-neon">{formatRupiah(total)}</span>
                   </div>
 
+                  {cafePaid > 0 && (
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sudah dibayar</span>
+                        <span>{formatRupiah(cafePaid)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold">
+                        <span>Sisa Tagihan</span>
+                        <span className={dueAmount > 0 ? "text-destructive" : "text-neon"}>
+                          {dueAmount > 0 ? formatRupiah(dueAmount) : "Lunas"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {(table.settlements ?? []).length > 0 && (
+                    <div className="space-y-1.5 rounded-md border border-border p-3">
+                      <p className="text-sm font-medium text-neon">Pembayaran diterima</p>
+                      <ul className="space-y-1">
+                        {(table.settlements ?? []).map((s) => (
+                          <li key={s.id} className="flex items-center justify-between text-sm">
+                            <span className="truncate text-muted-foreground">
+                              {s.payment} ·{" "}
+                              {new Date(s.at).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="flex items-center gap-2">
+                              {formatRupiah(s.amount)}
+                              {allow("kafe.void") && (
+                                <button
+                                  type="button"
+                                  aria-label="Batalkan pembayaran"
+                                  className="text-muted-foreground transition-colors hover:text-destructive"
+                                  onClick={() =>
+                                    confirmAction({
+                                      title: "Batalkan pembayaran ini?",
+                                      description: `${s.payment} ${formatRupiah(s.amount)} akan dihapus dan kembali menjadi tagihan meja.`,
+                                      actionLabel: "Batalkan pembayaran",
+                                      destructive: true,
+                                      onConfirm: () => {
+                                        removeCafeSettlement(table.id, s.id);
+                                        toast.success("Pembayaran dibatalkan");
+                                      },
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+
                   {allow("kafe.diskon") && (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="space-y-1.5">
