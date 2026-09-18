@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,11 @@ import {
   type CashGroup,
 } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
+import { useStoreInfo } from "@/lib/store-info";
+import { defaultRange, inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
@@ -115,75 +120,151 @@ function KasPage() {
         </TabsContent>
 
         <TabsContent value="riwayat" className="mt-4">
-          <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-            {cashEntries.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground">
-                Belum ada catatan kas.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Jenis</TableHead>
-                    <TableHead>Metode</TableHead>
-                    <TableHead>Catatan</TableHead>
-                    <TableHead className="text-right">Jumlah</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cashEntries.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="whitespace-nowrap">{timeOf(e.createdAt)}</TableCell>
-                      <TableCell>{e.categoryName}</TableCell>
-                      <TableCell>{e.group}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {e.payout
-                            ? e.direction === "in"
-                              ? "Kas masuk"
-                              : "Kas keluar"
-                            : e.direction === "in"
-                              ? "Pendapatan"
-                              : "Pengeluaran"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{e.payment}</TableCell>
-                      <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
-                      <TableCell
-                        className={
-                          e.direction === "in"
-                            ? "text-right font-semibold text-accent"
-                            : "text-right font-semibold text-destructive"
-                        }
-                      >
-                        {e.direction === "in" ? "+" : "-"}
-                        {formatRupiah(e.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          aria-label="Hapus catatan"
-                          onClick={() => {
-                            removeCashEntry(e.id);
-                            toast.success("Catatan kas dihapus");
-                          }}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </section>
+          <CashHistory />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/** Riwayat kas per periode hari usaha, dipisah kas masuk dan kas keluar. */
+function CashHistory() {
+  const { cashEntries, operatingHours, removeCashEntry } = useBilling();
+  const { store } = useStoreInfo(true);
+  const storeName = store?.store_name?.trim() || "RenToPlay";
+  const { confirm, dialog } = useConfirm();
+  const printRef = useRef<HTMLDivElement>(null);
+  const [picked, setPicked] = useState<ReportRange>(() => defaultRange("day"));
+  const range = useMemo<ReportRange>(
+    () => ({ mode: picked.mode, from: picked.from, to: picked.to, hours: operatingHours }),
+    [picked, operatingHours],
+  );
+
+  const rows = useMemo(
+    () => cashEntries.filter((e) => inRange(e.createdAt, range)),
+    [cashEntries, range],
+  );
+  const incoming = rows.filter((e) => e.direction === "in");
+  const outgoing = rows.filter((e) => e.direction === "out");
+  const total = (list: CashEntry[]) => list.reduce((s, e) => s + e.amount, 0);
+  const totalIn = total(incoming);
+  const totalOut = total(outgoing);
+
+  const remove = (entry: CashEntry) => {
+    confirm({
+      title: `Hapus catatan ${entry.categoryName}?`,
+      description: "Data ini tidak bisa dikembalikan.",
+      destructive: true,
+      onConfirm: () => {
+        removeCashEntry(entry.id);
+        toast.success("Catatan kas dihapus");
+      },
+    });
+  };
+
+  const Group = ({ title, list }: { title: string; list: CashEntry[] }) => (
+    <section className="surface-panel overflow-x-auto p-4 sm:p-6">
+      <SetupHeading title={title} />
+      {list.length === 0 ? (
+        <p className="py-6 text-center text-muted-foreground">
+          Tidak ada catatan pada periode ini.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Jenis</TableHead>
+              <TableHead>Metode</TableHead>
+              <TableHead>Pelaku</TableHead>
+              <TableHead>Catatan</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="whitespace-nowrap">{timeOf(e.createdAt)}</TableCell>
+                <TableCell>{e.categoryName}</TableCell>
+                <TableCell>{e.group}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {e.payout
+                      ? e.direction === "in"
+                        ? "Kas masuk"
+                        : "Kas keluar"
+                      : e.direction === "in"
+                        ? "Pendapatan"
+                        : "Pengeluaran"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{e.payment}</TableCell>
+                <TableCell>{e.createdBy || "-"}</TableCell>
+                <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
+                <TableCell
+                  className={
+                    e.direction === "in"
+                      ? "text-right font-semibold text-accent"
+                      : "text-right font-semibold text-destructive"
+                  }
+                >
+                  {e.direction === "in" ? "+" : "-"}
+                  {formatRupiah(e.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Hapus catatan"
+                    onClick={() => remove(e)}
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell className="font-semibold">Total</TableCell>
+              <TableCell colSpan={6} />
+              <TableCell className="text-right font-semibold">
+                {formatRupiah(total(list))}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableBody>
+        </Table>
+      )}
+    </section>
+  );
+
+  return (
+    <div className="space-y-4">
+      <ReportRangePicker range={picked} onChange={setPicked} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
+        <div className="flex flex-wrap gap-2">
+          <ExportExcelButton
+            targetRef={printRef}
+            title={`Riwayat Kas ${storeName}`}
+            periodText={`Periode ${rangeLabel(range)}`}
+            folderName={storeName}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6" ref={printRef}>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Stat label="Total kas masuk" value={formatRupiah(totalIn)} tone="accent" />
+          <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
+          <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
+        </section>
+        <Group title="Kas masuk" list={incoming} />
+        <Group title="Kas keluar" list={outgoing} />
+      </div>
+      {dialog}
     </div>
   );
 }
