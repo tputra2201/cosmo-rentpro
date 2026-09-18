@@ -10,7 +10,7 @@
 - [x] Ekspor laporan ke Excel (unduh lokal + Google Drive akun pemilik, folder per store)
 - [x] Menu Kafe: urutan awal Kategori lalu Nama Menu, drag tetap aktif dan menyimpan urutan manual
 - [x] Tombol VOID di card TV & meja kafe + Laporan VOID (waktu, sumber, nilai, alasan, pelaku)
-- [ ] Auto logout bisa diatur (menit / nonaktif) + alarm waktu habis dengan nada pilihan, tampil juga di halaman masuk
-- [ ] Jenis promo: diskon, bonus jam rental, BOGO kafe, main X jam dapat menu gratis
-- [ ] Gabung tagihan TV+TV (satu nota) dan titip meja kafe ke TV induk
-- [ ] Tarif konsol Cosmo Gaming TS ter-reset lagi — cari akar masalah & kunci permanen
+- [x] Auto logout bisa diatur (menit / nonaktif) + alarm waktu habis dengan nada pilihan, tampil juga di halaman masuk
+- [x] Jenis promo: diskon, bonus jam rental, BOGO kafe, main X jam dapat menu gratis
+- [x] Gabung tagihan TV+TV (satu nota) dan titip meja kafe ke TV induk
+- [x] Tarif konsol Cosmo Gaming TS ter-reset lagi — cari akar masalah & kunci permanen
