@@ -271,8 +271,27 @@ export function StationDialog({
     ? pendingCardBill
     : billWithoutPendingCard;
   const sessionTotal = bill ? bill.total : 0;
-  const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
+  const ownDue = Math.max(0, sessionTotal - alreadyPaid);
+  // TV lain yang tagihannya digabung ke panel ini.
+  const mergedChildren = stations.filter((s) => s.session?.mergedInto === station.id);
+  const childDue = (child: Station) => {
+    if (!child.session) return 0;
+    const childBill = sessionBill(child.session, now, child.console, priceCfg, {
+      member: Boolean(child.session.member),
+      card: false,
+    });
+    return Math.max(0, childBill.total - paidTotal(child.session));
+  };
+  const childrenDue = mergedChildren.reduce((sum, child) => sum + childDue(child), 0);
+  const mergedParent = session?.mergedInto
+    ? stations.find((s) => s.id === session.mergedInto)
+    : undefined;
+  const dueAmount = ownDue + childrenDue;
   const isSettled = dueAmount <= 0;
+  const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
+  const mergeCandidates = stations.filter(
+    (s) => s.id !== station.id && s.session && !s.session.mergedInto && !s.session.paidAt,
+  );
 
   const payTarget =
     payAmount === ""
