@@ -3449,9 +3449,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               voids: [made, ...(prev.voids ?? [])],
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
+                  ? {
+                      ...t,
+                      orders: [],
+                      openedAt: null,
+                      customerName: "",
+                      notes: "",
+                      promoIds: [],
+                      settlements: [],
+                    }
                   : t,
               ),
+
             },
             "VOID pesanan meja kafe",
             `${table.name} · ${made.customerName} · ${formatRupiah(made.total)} · alasan: ${made.reason || "-"}`,
