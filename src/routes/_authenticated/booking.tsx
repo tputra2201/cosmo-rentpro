@@ -117,6 +117,12 @@ function BookingPage() {
         <div className="space-y-1.5"><Label htmlFor="booking-start">Mulai</Label><Input id="booking-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)}/></div>
         <div className="space-y-1.5"><Label>Durasi</Label><Select value={duration} onValueChange={setDuration}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{[30,60,90,120,180,240].map((item) => <SelectItem key={item} value={String(item)}>{item} menit</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-1.5"><Label htmlFor="booking-notes">Catatan</Label><Input id="booking-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan opsional"/></div>
+        <div className="space-y-1.5"><Label>Additional Rental</Label><AddonRowsEditor rows={addonRows} onChange={setAddonRows}/></div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+          <div className="space-y-1.5"><Label htmlFor="booking-dp">DP (uang muka)</Label><Input id="booking-dp" type="number" min={0} step={1000} value={dp} onChange={(e) => setDp(e.target.value)} placeholder="0"/></div>
+          <div className="space-y-1.5"><Label>Metode pembayaran DP</Label><Select value={dpPayment} onValueChange={setDpPayment}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{activePayments.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></div>
+        </div>
+        <p className="text-xs text-muted-foreground">DP dicatat sebagai kas masuk (bukan penghasilan) dan otomatis dipakai sebagai pembayaran saat check-in.</p>
         <Button className="w-full" type="submit"><CalendarDays className="size-4"/> Simpan Reservasi</Button>
       </form>
       <div className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Agenda mendatang</h2><Badge variant="secondary">{upcoming.length} reservasi</Badge></div>{upcoming.length === 0 ? <div className="surface-panel p-10 text-center text-muted-foreground">Belum ada reservasi mendatang.</div> : <div className="space-y-3">{upcoming.map((item) => <BookingRow key={item.id} item={item} stationName={stations.find((station) => station.id === item.stationId)?.name ?? "Unit"} onStatus={(status) => updateBooking(item.id, { status })} onDelete={() => removeBooking(item.id)}/>)}</div>}
