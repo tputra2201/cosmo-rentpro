@@ -56,6 +56,36 @@ export type OrderItem = {
 };
 
 
+/** Tanda asal pesanan titipan yang ikut tampil di bill, struk, dan label. */
+const linkTag = (from: NonNullable<OrderItem["linkedFrom"]>) =>
+  `${from.type === "table" ? "Meja" : "TV"} ${from.name}`;
+
+/** Salin pesanan sebagai titipan, lengkap dengan tanda asalnya. */
+export function withLinkTag(
+  order: OrderItem,
+  from: NonNullable<OrderItem["linkedFrom"]>,
+  index = 0,
+): OrderItem {
+  const tag = linkTag(from);
+  const mods = order.mods ?? [];
+  return {
+    ...order,
+    id: `${order.id}-link-${Date.now()}-${index}`,
+    mods: mods.includes(tag) ? mods : [...mods, tag],
+    linkedFrom: from,
+  };
+}
+
+/** Kembalikan pesanan titipan ke bentuk aslinya (tanda asal dilepas). */
+export function stripLinkTag(order: OrderItem): OrderItem {
+  const { linkedFrom, ...rest } = order;
+  if (!linkedFrom) return rest;
+  const tag = linkTag(linkedFrom);
+  const mods = (rest.mods ?? []).filter((m) => m !== tag);
+  return mods.length ? { ...rest, mods } : { ...rest, mods: [] };
+}
+
+
 /** Nama pesanan lengkap dengan opsi modifikasi. */
 export const orderLabel = (o: OrderItem) =>
   o.mods && o.mods.length > 0 ? `${o.name} (${o.mods.join(", ")})` : o.name;
