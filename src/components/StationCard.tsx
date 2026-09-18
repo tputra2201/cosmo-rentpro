@@ -25,6 +25,15 @@ const statusLabel = {
   offline: "Offline",
 } as const;
 
+const statusNameColor = {
+  idle: "text-primary",
+  booked: "text-primary",
+  playing: "text-accent",
+  timeup: "text-destructive",
+  maintenance: "text-warning",
+  offline: "text-muted-foreground",
+} as const;
+
 export function StationCard({
   station,
   now,
