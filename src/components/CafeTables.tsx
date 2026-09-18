@@ -535,7 +535,14 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 )}
 
+                {/* Promo berlaku: bisa diberikan satu atau beberapa sekaligus. */}
+                <PromoPicker
+                  target={{ type: "table", id: table.id }}
+                  {...(table.promoIds ? { promoIds: table.promoIds } : {})}
+                />
+
                 {/* Gabung tagihan: meja lain & pesanan sesi TV dibayar dari panel ini. */}
+
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
                   <span className="text-sm font-semibold">Gabung Tagihan</span>
                   <Button
