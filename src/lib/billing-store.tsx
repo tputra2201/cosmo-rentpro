@@ -3312,7 +3312,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
-            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
           ),
         })),
       voidSession: (stationId, reason) => {
@@ -3402,7 +3402,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               voids: [made, ...(prev.voids ?? [])],
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
                   : t,
               ),
             },
@@ -3470,7 +3470,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ...prev,
             history: [completed, ...prev.history],
             cafeTables: prev.cafeTables.map((t) =>
-              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
             ),
           };
         });
@@ -3620,7 +3620,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ...prev,
             cafeTables: prev.cafeTables.map((t) => {
               if (t.id === fromTableId)
-                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] };
               if (t.id === toTableId)
                 return {
                   ...t,
@@ -3747,7 +3747,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ),
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
                   : t,
               ),
             },
@@ -3791,7 +3791,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     openedAt: t.openedAt ?? Date.now(),
                   };
                 if (!ids.includes(t.id)) return t;
-                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] };
               }),
             },
             "Gabung tagihan meja kafe",
