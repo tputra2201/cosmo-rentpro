@@ -1656,6 +1656,82 @@ export function StationDialog({
         }}
       />
     )}
+    <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Gabung Tagihan ke {station.name}</DialogTitle>
+          <DialogDescription>
+            Tagihan TV lain dibayar dari panel ini, dan pesanan meja kafe dititipkan ke sesi TV
+            ini. Bisa dilepas selama belum dibayar.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">TV yang sedang bermain</p>
+            {mergeCandidates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Tidak ada TV lain yang bisa digabung.</p>
+            ) : (
+              mergeCandidates.map((other) => (
+                <div
+                  key={other.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                >
+                  <span className="text-sm">
+                    {other.name} · {other.session?.customerName || "Umum"}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (mergeStations(station.id, [other.id]))
+                        toast.success(`${other.name} digabung ke ${station.name}`);
+                      else toast.error("TV ini tidak bisa digabung");
+                    }}
+                  >
+                    Gabung
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Meja kafe yang ada pesanan</p>
+            {openCafeTables.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Belum ada pesanan di meja kafe.</p>
+            ) : (
+              openCafeTables.map((table) => (
+                <div
+                  key={table.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                >
+                  <span className="text-sm">
+                    {table.name} · {table.orders.length} pesanan
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (linkCafeTable(station.id, table.id))
+                        toast.success(`Pesanan ${table.name} dititipkan ke ${station.name}`);
+                      else toast.error("Pesanan meja ini tidak bisa dititipkan");
+                    }}
+                  >
+                    Titipkan
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setMergeOpen(false)}>
+            Tutup
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     {confirmDialog}
     </>
 
