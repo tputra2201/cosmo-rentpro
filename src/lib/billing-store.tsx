@@ -1293,6 +1293,7 @@ export function cafeBill(
   cfg: PriceConfig,
   ctx: DiscountContext,
   manual?: { type: DiscountType; value: number },
+  promoIds?: string[],
 ): BillBreakdown {
   return computeBill({
     rental: 0,
@@ -1303,7 +1304,9 @@ export function cafeBill(
     promotions: cfg.promotions,
     now,
     fallbackPercent: fallbackCardPercent(cfg, ctx),
+    ...(promoIds?.length ? { promoIds } : {}),
     ...(manual && manual.value ? { manual } : {}),
+
   });
 }
 
