@@ -3649,26 +3649,72 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             !s.session.paidAt,
         );
         if (!eligible.length) return false;
-        const ids = eligible.map((s) => s.id);
+        const at = Date.now();
+        const cfg: PriceConfig = {
+          consoleDiscounts: state.consoleDiscounts,
+          menu: state.menu,
+          promotions: state.promotions,
+          addonRentals: state.addonRentals,
+          cardDiscountPercent: state.cardDiscountPercent,
+          cardMemberDiscountPercent: state.cardMemberDiscountPercent,
+        };
+        // Tagihan TV yang digabung dipindah jadi satu baris di TV induk, lalu
+        // sesinya ditutup supaya TV itu langsung bisa dijual lagi.
+        const moved = eligible.map((child, index) => {
+          const childSession = child.session!;
+          const bill = sessionBill(childSession, at, child.console, cfg, {
+            member: Boolean(childSession.member),
+            card: false,
+          });
+          const due = Math.max(0, Math.round(bill.total - paidTotal(childSession)));
+          const minutes = rentalMinutes(childSession, at);
+          const mods = [
+            linkTag({ type: "station", id: child.id, name: child.name }),
+            `Rental ${Math.floor(minutes / 60)} jam ${minutes % 60} menit`,
+            ...(childSession.orders.length
+              ? [`Pesanan ${childSession.orders.length} item`]
+              : []),
+          ];
+          const order: OrderItem = {
+            id: `merge-${child.id}-${at}-${index}`,
+            name: `Tagihan ${child.name}${
+              childSession.customerName ? ` · ${childSession.customerName}` : ""
+            }`,
+            price: due,
+            qty: 1,
+            mods,
+            linkedFrom: { type: "station", id: child.id, name: child.name },
+          };
+          return { child, order, due };
+        });
         update((prev) => {
           const parent = prev.stations.find((s) => s.id === parentStationId);
           if (!parent?.session) return prev;
-          const names: string[] = [];
+          const ids = moved.map((row) => row.child.id);
           const stations = prev.stations.map((s) => {
-            if (!ids.includes(s.id) || !s.session || s.session.mergedInto || s.session.paidAt)
-              return s;
-            names.push(s.name);
-            return { ...s, session: { ...s.session, mergedInto: parentStationId } };
+            if (s.id === parentStationId && s.session)
+              return {
+                ...s,
+                session: {
+                  ...s.session,
+                  orders: [...s.session.orders, ...moved.map((row) => row.order)],
+                },
+              };
+            if (!ids.includes(s.id)) return s;
+            return { ...s, session: null };
+
           });
-          if (!names.length) return prev;
           return withLog(
             { ...prev, stations },
             "Gabung tagihan TV",
-            `${names.join(", ")} → ${parent.name}`,
+            `${moved
+              .map((row) => `${row.child.name} (${formatRupiah(row.due)})`)
+              .join(", ")} → ${parent.name}; TV asal kembali tersedia`,
           );
         });
         return true;
       },
+
       unmergeStations: (parentStationId) =>
         update((prev) => {
           const parentName =
