@@ -462,6 +462,7 @@ export function useStoreSync(options: {
     readyStoreId,
     state.storeId,
     bootAttempt,
+    storageLoaded,
     applyRemote,
     noteShadow,
   ]);
