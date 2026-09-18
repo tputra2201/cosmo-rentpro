@@ -179,6 +179,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     { consoleDiscounts, menu, promotions, cardDiscountPercent, cardMemberDiscountPercent },
     { member: Boolean(card?.member), card: Boolean(isCardPayment && card) },
     manualDisc,
+    table?.promoIds,
+
   );
   const total = bill.total;
   const cardCharge = isCardPayment
