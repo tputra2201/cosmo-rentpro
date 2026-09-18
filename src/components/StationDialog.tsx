@@ -1237,32 +1237,26 @@ export function StationDialog({
                       Gabung Tagihan
                     </Button>
                   </div>
-                  {mergedChildren.length > 0 ? (
+                  {transferredLines.length > 0 ? (
                     <div className="space-y-1">
-                      {mergedChildren.map((child) => (
-                        <div key={child.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {child.name} · {child.session?.customerName || "Umum"}
-                          </span>
-                          <span className="font-semibold">{formatRupiah(childDue(child))}</span>
+                      {transferredLines.map((line) => (
+                        <div key={line.id} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{line.name}</span>
+                          <span className="font-semibold">{formatRupiah(line.price * line.qty)}</span>
                         </div>
                       ))}
-                      <button
-                        type="button"
-                        className="text-xs text-destructive underline-offset-2 hover:underline"
-                        onClick={() => {
-                          unmergeStations(station.id);
-                          toast.success("Gabungan tagihan dilepas");
-                        }}
-                      >
-                        Lepas gabungan
-                      </button>
+                      <p className="text-xs text-muted-foreground">
+                        TV asalnya sudah kembali tersedia dan bisa dijual lagi. Untuk membatalkan,
+                        hapus barisnya di daftar pesanan.
+                      </p>
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Satukan tagihan TV lain, atau titipkan pesanan meja kafe ke TV ini.
+                      Satukan tagihan TV lain, atau titipkan pesanan meja kafe ke TV ini. TV yang
+                      tagihannya dipindah langsung tersedia kembali.
                     </p>
                   )}
+
                 </>
               )}
             </div>
