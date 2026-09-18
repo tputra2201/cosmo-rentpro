@@ -1252,22 +1252,43 @@ function migrateState(raw: unknown): State {
         payout: Boolean(item.payout),
         active: item.active ?? true,
       }));
-      if (!list.some((item) => item.id === CARD_TOPUP_CATEGORY_ID)) {
-        const preset = defaultState.cashCategories.find(
-          (item) => item.id === CARD_TOPUP_CATEGORY_ID,
-        );
+      for (const id of [
+        CARD_TOPUP_CATEGORY_ID,
+        BOOKING_DP_CATEGORY_ID,
+        BOOKING_DP_USED_CATEGORY_ID,
+      ]) {
+        if (list.some((item) => item.id === id)) continue;
+        const preset = defaultState.cashCategories.find((item) => item.id === id);
         if (preset) list.push(preset);
       }
       return list;
     })(),
     cashGroups: (() => {
       if (parsed.cashGroups?.length) {
-        return parsed.cashGroups.map((row, index) => ({
+        const rows = parsed.cashGroups.map((row, index) => ({
           ...row,
           name: row.name?.trim() ? row.name.trim() : "Lainnya",
           active: row.active ?? true,
           sort: row.sort ?? index,
         }));
+        for (const direction of ["in", "out"] as const) {
+          if (
+            rows.some(
+              (row) =>
+                row.direction === direction &&
+                row.name.toLowerCase() === "dp reservasi",
+            )
+          )
+            continue;
+          rows.push({
+            id: `cg-${direction}-dp`,
+            name: "DP Reservasi",
+            direction,
+            active: true,
+            sort: rows.length,
+          });
+        }
+        return rows;
       }
       const source = parsed.cashCategories?.length
         ? parsed.cashCategories
