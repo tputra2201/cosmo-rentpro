@@ -1280,7 +1280,9 @@ export function sessionBill(
     promotions: cfg.promotions,
     now,
     fallbackPercent,
+    ...(session.promoIds?.length ? { promoIds: session.promoIds } : {}),
     ...(manual && manual.value ? { manual } : fallbackManual ? { manual: fallbackManual } : {}),
+
   });
 }
 
