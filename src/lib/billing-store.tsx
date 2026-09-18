@@ -3429,11 +3429,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       },
       payCafeTable: (tableId, input) => {
         if (!shiftOpen) return null;
-        let record: HistoryRecord | null = null;
-        setState((prev) => {
+        const endAt = Date.now();
+        // Nota dihitung dari data terbaru lebih dulu (bukan di dalam setState)
+        // supaya hasilnya pasti terbaca dan tidak muncul pesan "gagal" palsu.
+        const compute = (prev: State): { record: HistoryRecord | null; next: State } => {
           const table = prev.cafeTables.find((t) => t.id === tableId);
-          if (!table || table.orders.length === 0) return prev;
-          const endAt = Date.now();
+          if (!table || table.orders.length === 0) return { record: null, next: prev };
           const methodsUsed = input.payments?.length
             ? input.payments.map((p) => p.method)
             : [input.payment ?? ""];
@@ -3451,7 +3452,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const received = splits.length
             ? splits.reduce((sum, p) => sum + p.amount, 0)
             : (input.amountPaid ?? total);
-          if (received + 0.5 < total) return prev;
+          if (received + 0.5 < total) return { record: null, next: prev };
           const label = splits.length
             ? Array.from(new Set(splits.map((p) => p.method))).join(" + ")
             : input.payment || "Cash";
@@ -3480,17 +3481,25 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             kind: "cafe",
             tableName: table.name,
           };
-          record = completed;
           return {
-            ...prev,
-            history: [completed, ...prev.history],
-            cafeTables: prev.cafeTables.map((t) =>
-              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
-            ),
+            record: completed,
+            next: {
+              ...prev,
+              history: [completed, ...prev.history],
+              cafeTables: prev.cafeTables.map((t) =>
+                t.id === tableId
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
+                  : t,
+              ),
+            },
           };
-        });
+        };
+        const { record } = compute(stateRef.current);
+        if (!record) return null;
+        setState((prev) => compute(prev).next);
         return record;
       },
+
 
       addPaymentMethod: (name) =>
         update((prev) => ({

@@ -144,6 +144,9 @@ export function StationDialog({
   );
   // Setelah tagihan lunas, tawarkan cetak struk walau sesi masih berjalan.
   const [wantPrint, setWantPrint] = useState(false);
+  // Waktu bermain sudah habis dan tagihan baru dilunasi: sesi ditutup otomatis.
+  const [autoEnd, setAutoEnd] = useState(false);
+
   const paidHistoryId = station?.session?.historyId;
   useEffect(() => {
     if (!wantPrint || !paidHistoryId) return;
@@ -291,6 +294,25 @@ export function StationDialog({
     : undefined;
   const dueAmount = ownDue + childrenDue;
   const isSettled = dueAmount <= 0;
+  // Setelah pelunasan saat waktu sudah habis: akhiri sesi & tutup panel sendiri.
+  useEffect(() => {
+    if (!autoEnd) return;
+    if (!station?.session) {
+      setAutoEnd(false);
+      return;
+    }
+    if (dueAmount > 0.5) return;
+    const record = stopSession(station.id);
+    setAutoEnd(false);
+    if (!record) return;
+    setWantPrint(false);
+    onOpenChange(false);
+    setPaidRecord(record);
+    toast.success(`${record.stationName} selesai`, {
+      description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+    });
+  }, [autoEnd, dueAmount, station, stopSession, onOpenChange]);
+
   const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
   // Baris tagihan TV lain yang sudah dipindah ke panel ini.
   const transferredLines = (session?.orders ?? []).filter(
@@ -401,7 +423,14 @@ export function StationDialog({
     }
   };
 
+  /** Waktu bermain sudah habis (mode paket), jadi pelunasan menutup sesi. */
+  const timeIsUp = () =>
+    Boolean(session) &&
+    session!.mode !== "open" &&
+    remainingSeconds(session!, Date.now()) <= 0;
+
   const handlePay = () => {
+
     if (!requireShift()) return;
     if (isCardPayment) {
       if (!card) return;
@@ -415,7 +444,11 @@ export function StationDialog({
         amountPaid: amount,
       }));
       const remaining = Math.max(0, dueAmount - payTarget);
-      if (remaining <= 0) setWantPrint(true);
+      if (remaining <= 0) {
+        setWantPrint(true);
+        if (timeIsUp()) setAutoEnd(true);
+      }
+
       toast.success("Pembayaran Playing Card diterima", {
         description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
           (bill?.discount ?? 0) > 0 ? ` · potongan ${formatRupiah(bill?.discount ?? 0)}` : ""
@@ -448,7 +481,11 @@ export function StationDialog({
       }));
     }
     const sisa = Math.max(0, dueAmount - payTarget);
-    if (sisa <= 0) setWantPrint(true);
+    if (sisa <= 0) {
+      setWantPrint(true);
+      if (timeIsUp()) setAutoEnd(true);
+    }
+
     toast.success(sisa > 0 ? "Pembayaran sebagian diterima" : "Pembayaran diterima", {
       description: `${formatRupiah(payTarget)} — ${
         splitMode
