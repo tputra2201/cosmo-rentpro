@@ -1212,6 +1212,51 @@ export function StationDialog({
               </div>
             )}
 
+            {/* Gabung tagihan: TV lain dan meja kafe dibayar dari panel ini. */}
+            <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
+              {mergedParent ? (
+                <p className="text-sm text-muted-foreground">
+                  Tagihan TV ini digabung ke <strong>{mergedParent.name}</strong> — pembayarannya
+                  dilakukan dari panel {mergedParent.name}.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Gabung Tagihan</p>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
+                      Gabung Tagihan
+                    </Button>
+                  </div>
+                  {mergedChildren.length > 0 ? (
+                    <div className="space-y-1">
+                      {mergedChildren.map((child) => (
+                        <div key={child.id} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {child.name} · {child.session?.customerName || "Umum"}
+                          </span>
+                          <span className="font-semibold">{formatRupiah(childDue(child))}</span>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="text-xs text-destructive underline-offset-2 hover:underline"
+                        onClick={() => {
+                          unmergeStations(station.id);
+                          toast.success("Gabungan tagihan dilepas");
+                        }}
+                      >
+                        Lepas gabungan
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Satukan tagihan TV lain, atau titipkan pesanan meja kafe ke TV ini.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
             {!isSettled && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
