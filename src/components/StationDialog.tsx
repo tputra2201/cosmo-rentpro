@@ -423,7 +423,14 @@ export function StationDialog({
     }
   };
 
+  /** Waktu bermain sudah habis (mode paket), jadi pelunasan menutup sesi. */
+  const timeIsUp = () =>
+    Boolean(session) &&
+    session!.mode !== "open" &&
+    remainingSeconds(session!, Date.now()) <= 0;
+
   const handlePay = () => {
+
     if (!requireShift()) return;
     if (isCardPayment) {
       if (!card) return;
