@@ -2638,19 +2638,20 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     (stationId, extraMin) =>
       mapStation(stationId, (s) => {
         if (!s.session) return s;
-        const elapsedMin = Math.ceil(elapsedSeconds(s.session, Date.now()) / 60);
-        // Basis durasi: kalau waktu sudah habis (atau sesi open), pakai waktu
-        // yang sudah terpakai agar tambahan waktu benar-benar terasa jalan.
-        const baseMin =
-          s.session.mode === "prepaid"
-            ? Math.max(s.session.durationMin, elapsedMin - (s.session.bonusMin ?? 0))
-            : elapsedMin;
+        const at = Date.now();
+        const overdueSeconds = Math.max(0, -remainingSeconds(s.session, at));
+        const nextDuration = Math.max(1, s.session.durationMin + extraMin);
         return {
           ...s,
           session: {
             ...s.session,
             mode: "prepaid",
-            durationMin: Math.max(1, baseMin + extraMin),
+            // Tagihan hanya berubah sebesar tombol yang dipilih. Waktu lewat
+            // setelah 00:00 bukan durasi berbayar dan tidak boleh ikut ditagih.
+            durationMin: nextDuration,
+            ...(extraMin > 0 && overdueSeconds > 0
+              ? { pausedMs: (s.session.pausedMs ?? 0) + overdueSeconds * 1000 }
+              : {}),
           },
         };
       }),
@@ -3555,11 +3556,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const delta = Math.round(deltaMin);
           const current = s.session.bonusMin ?? 0;
           if (delta <= 0) return { ...s, session: { ...s.session, bonusMin: current + delta } };
-          const elapsedMin = Math.ceil(elapsedSeconds(s.session, Date.now()) / 60);
-          // Kalau waktu sudah habis, tutup dulu selisih waktu terpakai supaya
-          // waktu ekstra benar-benar berjalan dari sekarang.
-          const minBonus = Math.max(current, elapsedMin - s.session.durationMin);
-          return { ...s, session: { ...s.session, bonusMin: minBonus + delta } };
+          const overdueSeconds = Math.max(0, -remainingSeconds(s.session, Date.now()));
+          return {
+            ...s,
+            session: {
+              ...s.session,
+              // Waktu lewat setelah 00:00 dinetralkan pada timer, bukan
+              // dimasukkan ke bonus agar angka paket/tagihan tetap bersih.
+              bonusMin: current + delta,
+              ...(overdueSeconds > 0
+                ? { pausedMs: (s.session.pausedMs ?? 0) + overdueSeconds * 1000 }
+                : {}),
+            },
+          };
         }),
 
       setSessionBonus: (stationId, bonusMin) =>
