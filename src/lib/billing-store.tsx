@@ -247,9 +247,12 @@ export type CafeTable = {
   orders: OrderItem[];
   /** Promo yang diberikan kasir untuk meja ini. */
   promoIds?: string[];
+  /** Pembayaran sebagian (DP) yang sudah diterima untuk meja ini. */
+  settlements?: Settlement[];
   /** Waktu tagihan meja dinyatakan lunas; meja tetap terisi sampai sesi diakhiri. */
   paidAt?: number;
   sort?: number;
+
 
 };
 
@@ -1674,6 +1677,19 @@ type Ctx = State & {
       discount?: { type: DiscountType; value: number };
     },
   ) => HistoryRecord | null;
+  /** Terima pembayaran sebagian (DP) untuk meja kafe. */
+  settleCafeTable: (
+    tableId: string,
+    input: { payment?: string; payments?: PaymentSplit[]; amount: number; amountPaid: number },
+  ) => Settlement | null;
+  /** Batalkan satu pembayaran meja kafe yang belum menjadi nota. */
+  removeCafeSettlement: (tableId: string, settlementId: string) => void;
+  /**
+   * Batalkan hanya sisa tagihan meja kafe. Bagian yang sudah dibayar tetap
+   * tercatat sebagai nota; meja tetap terisi sampai sesi diakhiri.
+   */
+  cancelCafeRemainder: (tableId: string) => HistoryRecord | null;
+
 
   addPaymentMethod: (name: string) => void;
   updatePaymentMethod: (id: string, patch: Partial<Omit<PaymentMethod, "id">>) => void;
