@@ -74,6 +74,10 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     voidCafeTable,
     moveCafeTable,
     payCafeTable,
+    settleCafeTable,
+    removeCafeSettlement,
+    cancelCafeRemainder,
+
     stations,
     mergeCafeTables,
     unmergeCafeTables,
@@ -133,6 +137,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [voidTableId, setVoidTableId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [received, setReceived] = useState("");
+  const [payAmount, setPayAmount] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [discType, setDiscType] = useState<DiscountType>("fixed");
   const [discValue, setDiscValue] = useState("");
@@ -146,6 +151,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   useEffect(() => {
     setPayMethod("");
     setReceived("");
+    setPayAmount("");
     setCardNumber("");
     setDiscType("fixed");
     setDiscValue("");
@@ -154,6 +160,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setSplitMode(false);
     setSplits([]);
   }, [openId]);
+
 
 
   const activeMethods = paymentMethods.filter((p) => p.active);
@@ -187,16 +194,24 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
   );
   const total = bill.total;
+  // Pembayaran sebagian (DP) yang sudah diterima untuk meja ini.
+  const cafePaid = (table?.settlements ?? []).reduce((sum, s) => sum + s.amount, 0);
+  const dueAmount = Math.max(0, total - cafePaid);
+  const payTarget =
+    payAmount === ""
+      ? dueAmount
+      : Math.min(dueAmount, Math.max(0, Number(payAmount) || 0));
+  const isPartial = payTarget + 0.5 < dueAmount;
   const cardCharge = isCardPayment
-    ? Math.min(total, Math.max(0, cardPart === "" ? total : Number(cardPart) || 0))
-    : total;
-  const restAmount = isCardPayment ? Math.max(0, total - cardCharge) : 0;
+    ? Math.min(payTarget, Math.max(0, cardPart === "" ? payTarget : Number(cardPart) || 0))
+    : payTarget;
+  const restAmount = isCardPayment ? Math.max(0, payTarget - cardCharge) : 0;
   const restMethod = restPay || otherMethods[0]?.name || "Cash";
 
 
   const receivedValue = Number(received) || 0;
-  const change = Math.max(0, receivedValue - total);
-  const shortage = Math.max(0, total - receivedValue);
+  const change = Math.max(0, receivedValue - payTarget);
+  const shortage = Math.max(0, payTarget - receivedValue);
 
   // Split Bill: satu tagihan dibagi ke beberapa metode pembayaran.
   const splitRows = splits.map((row) => ({
@@ -204,7 +219,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     amount: Math.max(0, Number(row.amount) || 0),
   }));
   const splitPaid = splitRows.reduce((sum, row) => sum + row.amount, 0);
-  const splitRemaining = Math.max(0, total - splitPaid);
+  const splitRemaining = Math.max(0, payTarget - splitPaid);
+
   const splitCardAmount = splitRows
     .filter((row) => row.method === CARD_PAYMENT_NAME)
     .reduce((sum, row) => sum + row.amount, 0);
@@ -265,6 +281,170 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
       kind: "bill",
     });
   };
+
+  /**
+   * Terima pembayaran meja kafe: bisa lunas sekaligus atau sebagian (DP),
+   * persis seperti panel TV. DP tersimpan sebagai pembayaran diterima.
+   */
+  const handleCafePay = () => {
+    if (!table) return;
+    const tableId = table.id;
+    const tableName = table.name;
+    const finish = (
+      input: {
+        payment?: string;
+        payments?: { method: string; amount: number }[];
+        amountPaid: number;
+        member?: boolean;
+      },
+      description: string,
+    ) => {
+      if (isPartial) {
+        const ok = settleCafeTable(tableId, {
+          ...(input.payments ? { payments: input.payments } : {}),
+          ...(input.payment ? { payment: input.payment } : {}),
+          amount: payTarget,
+          amountPaid: input.amountPaid,
+        });
+        if (!ok) {
+          toast.error("Pembayaran gagal diproses");
+          return;
+        }
+        toast.success(`Pembayaran sebagian ${formatRupiah(payTarget)} diterima`, {
+          description: `${description} · sisa tagihan ${formatRupiah(dueAmount - payTarget)}`,
+        });
+        setReceived("");
+        setPayAmount("");
+        setCardNumber("");
+        setCardPart("");
+        setRestPay("");
+        setSplitMode(false);
+        setSplits([]);
+        return;
+      }
+      const record = payCafeTable(tableId, { ...input, discount: manualDisc });
+      if (!record) {
+        toast.error("Pembayaran gagal diproses");
+        return;
+      }
+      toast.success(`${tableName} lunas ${formatRupiah(record.total)}`, { description });
+      setReceived("");
+      setPayAmount("");
+      setCardNumber("");
+      setCardPart("");
+      setRestPay("");
+      setDiscValue("");
+      setSplitMode(false);
+      setSplits([]);
+      setOpenId(null);
+      setPaidRecord(record);
+    };
+
+    if (splitMode) {
+      const rows = splitRows.filter((row) => row.amount > 0);
+      if (rows.length === 0) {
+        toast.error("Isi jumlah tiap metode pembayaran");
+        return;
+      }
+      if (splitPaid + 0.5 < payTarget) {
+        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+        return;
+      }
+      if (splitCardAmount > 0) {
+        if (!splitCard) {
+          toast.error("Kartu belum terdaftar!", {
+            description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+          });
+          return;
+        }
+        if (!splitCard.active) {
+          toast.error("Kartu ini sedang diblokir");
+          return;
+        }
+        if (splitCard.balance + 0.5 < splitCardAmount) {
+          toast.error("Saldo kartu tidak mencukupi!");
+          return;
+        }
+      }
+      if (!requireShift()) return;
+      if (
+        splitCardAmount > 0 &&
+        splitCard &&
+        !chargeCard(splitCard.id, splitCardAmount, `Pembayaran ${tableName}`)
+      ) {
+        toast.error("Saldo kartu tidak mencukupi!");
+        return;
+      }
+      finish(
+        {
+          payments: rows,
+          amountPaid: splitPaid,
+          ...(splitCardAmount > 0 && splitCard ? { member: Boolean(splitCard.member) } : {}),
+        },
+        rows.map((row) => `${row.method} ${formatRupiah(row.amount)}`).join(" + "),
+      );
+      return;
+    }
+
+    if (isCardPayment) {
+      if (!card) {
+        toast.error("Kartu belum terdaftar!", {
+          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+        });
+        return;
+      }
+      if (!card.active) {
+        toast.error("Kartu ini sedang diblokir");
+        return;
+      }
+      if (card.balance + 0.5 < cardCharge) {
+        toast.error("Saldo kartu tidak mencukupi!", {
+          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
+        });
+        return;
+      }
+      if (restAmount > 0 && otherMethods.length === 0) {
+        toast.error("Belum ada metode lain untuk sisa tagihan");
+        return;
+      }
+      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${tableName}`)) {
+        toast.error("Saldo kartu tidak mencukupi!");
+        return;
+      }
+      if (!requireShift()) return;
+      finish(
+        {
+          ...(restAmount > 0
+            ? {
+                payments: [
+                  { method: CARD_PAYMENT_NAME, amount: cardCharge },
+                  { method: restMethod, amount: restAmount },
+                ],
+              }
+            : { payment: CARD_PAYMENT_NAME }),
+          amountPaid: payTarget,
+          member: Boolean(card.member),
+        },
+        `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
+          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
+        }`,
+      );
+      return;
+    }
+
+    const paid = received === "" ? payTarget : receivedValue;
+    if (paid + 0.5 < payTarget) {
+      toast.error("Uang diterima kurang dari total tagihan");
+      return;
+    }
+    if (!requireShift()) return;
+    const method = payMethod || activeMethods[0]?.name || "Cash";
+    finish(
+      { payment: method, amountPaid: paid },
+      `${method} · kembalian ${formatRupiah(Math.max(0, paid - payTarget))}`,
+    );
+  };
+
 
   /** Klik kartu meja langsung membuka panel pesanan & pembayaran meja itu. */
   const openTablePanel = (t: CafeTable) => {
@@ -670,6 +850,65 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <span className="text-neon">{formatRupiah(total)}</span>
                   </div>
 
+                  {cafePaid > 0 && (
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sudah dibayar</span>
+                        <span>{formatRupiah(cafePaid)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold">
+                        <span>Sisa Tagihan</span>
+                        <span className={dueAmount > 0 ? "text-destructive" : "text-neon"}>
+                          {dueAmount > 0 ? formatRupiah(dueAmount) : "Lunas"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {(table.settlements ?? []).length > 0 && (
+                    <div className="space-y-1.5 rounded-md border border-border p-3">
+                      <p className="text-sm font-medium text-neon">Pembayaran diterima</p>
+                      <ul className="space-y-1">
+                        {(table.settlements ?? []).map((s) => (
+                          <li key={s.id} className="flex items-center justify-between text-sm">
+                            <span className="truncate text-muted-foreground">
+                              {s.payment} ·{" "}
+                              {new Date(s.at).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="flex items-center gap-2">
+                              {formatRupiah(s.amount)}
+                              {allow("kafe.void") && (
+                                <button
+                                  type="button"
+                                  aria-label="Batalkan pembayaran"
+                                  className="text-muted-foreground transition-colors hover:text-destructive"
+                                  onClick={() =>
+                                    confirmAction({
+                                      title: "Batalkan pembayaran ini?",
+                                      description: `${s.payment} ${formatRupiah(s.amount)} akan dihapus dan kembali menjadi tagihan meja.`,
+                                      actionLabel: "Batalkan pembayaran",
+                                      destructive: true,
+                                      onConfirm: () => {
+                                        removeCafeSettlement(table.id, s.id);
+                                        toast.success("Pembayaran dibatalkan");
+                                      },
+                                    })
+                                  }
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+
                   {allow("kafe.diskon") && (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="space-y-1.5">
@@ -701,6 +940,30 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                   )}
 
+                  {dueAmount > 0 && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cafe-pay-amount">
+                        Jumlah dibayar sekarang (kosongkan untuk lunas)
+                      </Label>
+                      <Input
+                        id="cafe-pay-amount"
+                        type="number"
+                        min={0}
+                        max={dueAmount}
+                        placeholder={String(dueAmount)}
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(e.target.value)}
+                      />
+                      {isPartial && (
+                        <p className="text-xs text-muted-foreground">
+                          Bayar sebagian (DP) {formatRupiah(payTarget)} · sisa{" "}
+                          {formatRupiah(dueAmount - payTarget)} tetap jadi tagihan meja.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+
                   {activeMethods.length > 1 && allow("kafe.split") && (
                     <div className="flex justify-end">
                       <button
@@ -713,7 +976,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           } else {
                             setSplitMode(true);
                             setSplits([
-                              { method: activeMethods[0]?.name ?? "Cash", amount: String(total) },
+                              { method: activeMethods[0]?.name ?? "Cash", amount: String(payTarget) },
                               { method: activeMethods[1]?.name ?? "QRIS", amount: "0" },
                             ]);
                           }
@@ -834,7 +1097,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                           id="cafe-received"
                           type="number"
                           min={0}
-                          value={received === "" ? total : received}
+                          value={received === "" ? payTarget : received}
                           onChange={(e) => setReceived(e.target.value)}
                         />
                       </div>
@@ -857,8 +1120,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             id="cafe-card-part"
                             type="number"
                             min={0}
-                            max={total}
-                            value={cardPart === "" ? String(total) : cardPart}
+                            max={payTarget}
+                            value={cardPart === "" ? String(payTarget) : cardPart}
+
                             onChange={(e) => setCardPart(e.target.value)}
                           />
                         </div>
@@ -956,180 +1220,54 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
 
               <DialogFooter className="flex-col gap-2 sm:flex-row">
 
-                {allow("kafe.void") && (
+                {allow("kafe.void") && dueAmount > 0 && table.orders.length > 0 && (
                 <Button
                   variant="outline"
                   onClick={() =>
                     confirmAction({
-                      title: `Batalkan pesanan ${table.name}?`,
+                      title:
+                        cafePaid > 0
+                          ? `Batalkan sisa tagihan ${table.name}?`
+                          : `Batalkan pesanan ${table.name}?`,
                       description:
-                        "Seluruh pesanan di meja ini dibatalkan tanpa pembayaran.",
-                      actionLabel: "Batalkan pesanan",
+                        cafePaid > 0
+                          ? `Hanya sisa tagihan ${formatRupiah(dueAmount)} yang dibatalkan. Pembayaran ${formatRupiah(cafePaid)} yang sudah diterima tetap tercatat sebagai nota.`
+                          : "Seluruh pesanan di meja ini dibatalkan tanpa pembayaran.",
+                      actionLabel: cafePaid > 0 ? "Batalkan sisa tagihan" : "Batalkan pesanan",
                       destructive: true,
                       onConfirm: () => {
-                        clearCafeTable(table.id);
-                        toast.success(`Pesanan ${table.name} dibatalkan`);
+                        const record = cancelCafeRemainder(table.id);
+                        toast.success(
+                          record
+                            ? `Sisa tagihan ${table.name} dibatalkan`
+                            : `Pesanan ${table.name} dibatalkan`,
+                        );
                         setOpenId(null);
+                        if (record) setPaidRecord(record);
                       },
                     })
                   }
                 >
-                  Batalkan pesanan
+                  {cafePaid > 0 ? "Batalkan sisa tagihan" : "Batalkan pesanan"}
                 </Button>
                 )}
                 <Button
                   disabled={
                     table.orders.length === 0 ||
+                    dueAmount <= 0 ||
                     activeMethods.length === 0 ||
                     !allow("kafe.bayar")
                   }
-                  onClick={() => {
-                    if (splitMode) {
-                      const rows = splitRows.filter((row) => row.amount > 0);
-                      if (rows.length === 0) {
-                        toast.error("Isi jumlah tiap metode pembayaran");
-                        return;
-                      }
-                      if (splitPaid + 0.5 < total) {
-                        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
-                        return;
-                      }
-                      if (splitCardAmount > 0) {
-                        if (!splitCard) {
-                          toast.error("Kartu belum terdaftar!", {
-                            description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
-                          });
-                          return;
-                        }
-                        if (!splitCard.active) {
-                          toast.error("Kartu ini sedang diblokir");
-                          return;
-                        }
-                        if (splitCard.balance + 0.5 < splitCardAmount) {
-                          toast.error("Saldo kartu tidak mencukupi!");
-                          return;
-                        }
-                      }
-                      if (!requireShift()) return;
-                      if (
-                        splitCardAmount > 0 &&
-                        splitCard &&
-                        !chargeCard(splitCard.id, splitCardAmount, `Pembayaran ${table.name}`)
-                      ) {
-                        toast.error("Saldo kartu tidak mencukupi!");
-                        return;
-                      }
-                      const splitRecord = payCafeTable(table.id, {
-                        payments: rows,
-                        amountPaid: splitPaid,
-                        discount: manualDisc,
-                        ...(splitCardAmount > 0 && splitCard
-                          ? { member: Boolean(splitCard.member) }
-                          : {}),
-                      });
-                      if (!splitRecord) {
-                        toast.error("Pembayaran gagal diproses");
-                        return;
-                      }
-                      toast.success(`${table.name} lunas ${formatRupiah(splitRecord.total)}`, {
-                        description: rows
-                          .map((row) => `${row.method} ${formatRupiah(row.amount)}`)
-                          .join(" + "),
-                      });
-                      setSplitMode(false);
-                      setSplits([]);
-                      setReceived("");
-                      setCardNumber("");
-                      setDiscValue("");
-                      setOpenId(null);
-                      setPaidRecord(splitRecord);
-                      return;
-                    }
-                    if (isCardPayment) {
-                      if (!card) {
-                        toast.error("Kartu belum terdaftar!", {
-                          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
-                        });
-                        return;
-                      }
-                      if (!card.active) {
-                        toast.error("Kartu ini sedang diblokir");
-                        return;
-                      }
-                      if (card.balance + 0.5 < cardCharge) {
-                        toast.error("Saldo kartu tidak mencukupi!", {
-                          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
-                        });
-                        return;
-                      }
-                      if (restAmount > 0 && otherMethods.length === 0) {
-                        toast.error("Belum ada metode lain untuk sisa tagihan");
-                        return;
-                      }
-                      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${table.name}`)) {
-                        toast.error("Saldo kartu tidak mencukupi!");
-                        return;
-                      }
-                      if (!requireShift()) return;
-                      const cardRecord = payCafeTable(table.id, {
-                        ...(restAmount > 0
-                          ? {
-                              payments: [
-                                { method: CARD_PAYMENT_NAME, amount: cardCharge },
-                                { method: restMethod, amount: restAmount },
-                              ],
-                            }
-                          : { payment: CARD_PAYMENT_NAME }),
-                        amountPaid: total,
-                        member: Boolean(card.member),
-                        discount: manualDisc,
-                      });
-                      if (!cardRecord) {
-                        toast.error("Pembayaran gagal diproses");
-                        return;
-                      }
-                      toast.success(`${table.name} lunas ${formatRupiah(cardRecord.total)}`, {
-                        description: `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
-                          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
-                        }${bill.discount > 0 ? ` · potongan ${formatRupiah(bill.discount)}` : ""}`,
-                      });
-                      setReceived("");
-                      setCardNumber("");
-                      setDiscValue("");
-                      setCardPart("");
-                      setRestPay("");
-                      setOpenId(null);
-                      setPaidRecord(cardRecord);
-                      return;
-                    }
-
-                    const paid = received === "" ? total : receivedValue;
-                    if (paid + 0.5 < total) {
-                      toast.error("Uang diterima kurang dari total tagihan");
-                      return;
-                    }
-                    if (!requireShift()) return;
-                    const record = payCafeTable(table.id, {
-                      payment: payMethod || activeMethods[0]?.name || "Cash",
-                      amountPaid: paid,
-                      discount: manualDisc,
-                    });
-                    if (!record) {
-                      toast.error("Pembayaran gagal diproses");
-                      return;
-                    }
-                    toast.success(`${table.name} lunas ${formatRupiah(record.total)}`, {
-                      description: `${record.payment} · kembalian ${formatRupiah(record.change ?? 0)}`,
-                    });
-                    setReceived("");
-                    setDiscValue("");
-                    setOpenId(null);
-                    setPaidRecord(record);
-                  }}
+                  onClick={handleCafePay}
                 >
-                  Bayar &amp; selesaikan
+                  {dueAmount <= 0
+                    ? "Sudah Lunas"
+                    : isPartial
+                      ? `Bayar ${formatRupiah(payTarget)}`
+                      : "Bayar & selesaikan"}
                 </Button>
               </DialogFooter>
+
             </>
           )}
         </DialogContent>
