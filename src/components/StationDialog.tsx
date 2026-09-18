@@ -444,7 +444,11 @@ export function StationDialog({
         amountPaid: amount,
       }));
       const remaining = Math.max(0, dueAmount - payTarget);
-      if (remaining <= 0) setWantPrint(true);
+      if (remaining <= 0) {
+        setWantPrint(true);
+        if (timeIsUp()) setAutoEnd(true);
+      }
+
       toast.success("Pembayaran Playing Card diterima", {
         description: `${formatRupiah(cardCharge)} dari kartu ${card.cardNumber}${
           (bill?.discount ?? 0) > 0 ? ` · potongan ${formatRupiah(bill?.discount ?? 0)}` : ""
