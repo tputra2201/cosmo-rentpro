@@ -115,73 +115,7 @@ function KasPage() {
         </TabsContent>
 
         <TabsContent value="riwayat" className="mt-4">
-          <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-            {cashEntries.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground">
-                Belum ada catatan kas.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Waktu</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Jenis</TableHead>
-                    <TableHead>Metode</TableHead>
-                    <TableHead>Catatan</TableHead>
-                    <TableHead className="text-right">Jumlah</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cashEntries.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="whitespace-nowrap">{timeOf(e.createdAt)}</TableCell>
-                      <TableCell>{e.categoryName}</TableCell>
-                      <TableCell>{e.group}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {e.payout
-                            ? e.direction === "in"
-                              ? "Kas masuk"
-                              : "Kas keluar"
-                            : e.direction === "in"
-                              ? "Pendapatan"
-                              : "Pengeluaran"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{e.payment}</TableCell>
-                      <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
-                      <TableCell
-                        className={
-                          e.direction === "in"
-                            ? "text-right font-semibold text-accent"
-                            : "text-right font-semibold text-destructive"
-                        }
-                      >
-                        {e.direction === "in" ? "+" : "-"}
-                        {formatRupiah(e.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          aria-label="Hapus catatan"
-                          onClick={() => {
-                            removeCashEntry(e.id);
-                            toast.success("Catatan kas dihapus");
-                          }}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </section>
+          <CashHistory />
         </TabsContent>
       </Tabs>
     </div>
