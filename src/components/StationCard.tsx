@@ -25,6 +25,15 @@ const statusLabel = {
   offline: "Offline",
 } as const;
 
+const statusNameColor = {
+  idle: "text-primary",
+  booked: "text-primary",
+  playing: "text-accent",
+  timeup: "text-destructive",
+  maintenance: "text-warning",
+  offline: "text-muted-foreground",
+} as const;
+
 export function StationCard({
   station,
   now,
@@ -86,7 +95,12 @@ export function StationCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+          <h3
+            className={cn(
+              "truncate font-display text-xl font-extrabold uppercase tracking-wide",
+              statusNameColor[status],
+            )}
+          >
             {station.name}
           </h3>
           <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -177,7 +191,7 @@ export function StationCard({
           <p
             className={cn(
               "font-display text-2xl font-extrabold",
-              paid > 0 && due <= 0 ? "text-accent" : "text-neon",
+              paid > 0 && due <= 0 ? statusNameColor[status] : "text-neon",
             )}
           >
             {paid > 0 && due <= 0 ? "Lunas" : formatRupiah(due)}
