@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Utensils, Receipt } from "lucide-react";
+import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
