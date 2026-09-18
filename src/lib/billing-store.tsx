@@ -3420,7 +3420,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             prev,
             { member: Boolean(input.member), card: methodsUsed.includes(CARD_PAYMENT_NAME) },
             input.discount,
+            table.promoIds,
           );
+
           const total = bill.total;
           const splits = input.payments?.length ? input.payments : [];
           const received = splits.length
