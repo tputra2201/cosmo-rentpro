@@ -40,7 +40,16 @@ import {
 import { SortableArea, SortableItem } from "@/components/Sortable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { PaidPrintDialog } from "@/components/PaidPrintDialog";
-import { labelItemsFor, printLabels } from "@/lib/print-docs";
+import {
+  labelItemsFor,
+  printLabels,
+  printReceipt,
+  receiptText,
+  type PrintStore,
+} from "@/lib/print-docs";
+import { BillPreviewDialog } from "@/components/BillPreviewDialog";
+import { printerFor } from "@/lib/printing";
+import { useStoreInfo } from "@/lib/store-info";
 import type { PrinterConfig } from "@/lib/printing";
 
 export function tableTotal(table: CafeTable) {
@@ -117,6 +126,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const [discValue, setDiscValue] = useState("");
   const [cardPart, setCardPart] = useState("");
   const [restPay, setRestPay] = useState("");
+  const [splitMode, setSplitMode] = useState(false);
+  const [splits, setSplits] = useState<{ method: string; amount: string }[]>([]);
+  const [billPreview, setBillPreview] = useState<string | null>(null);
 
   // Setiap kali meja lain dibuka atau dialog ditutup, form kembali kosong.
   useEffect(() => {
@@ -127,6 +139,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     setDiscValue("");
     setCardPart("");
     setRestPay("");
+    setSplitMode(false);
+    setSplits([]);
   }, [openId]);
 
 
@@ -155,6 +169,74 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
   const receivedValue = Number(received) || 0;
   const change = Math.max(0, receivedValue - total);
   const shortage = Math.max(0, total - receivedValue);
+
+  // Split Bill: satu tagihan dibagi ke beberapa metode pembayaran.
+  const splitRows = splits.map((row) => ({
+    method: row.method || activeMethods[0]?.name || "Cash",
+    amount: Math.max(0, Number(row.amount) || 0),
+  }));
+  const splitPaid = splitRows.reduce((sum, row) => sum + row.amount, 0);
+  const splitRemaining = Math.max(0, total - splitPaid);
+  const splitCardAmount = splitRows
+    .filter((row) => row.method === CARD_PAYMENT_NAME)
+    .reduce((sum, row) => sum + row.amount, 0);
+  const splitCard = findCardByNumber(playingCards, cardNumber);
+
+  /** Isi bill sementara meja untuk pratinjau dan cetak. */
+  const billRecord = (): HistoryRecord | null => {
+    if (!table) return null;
+    return {
+      id: `BILL-${table.id}-${Date.now()}`,
+      stationName: table.name,
+      console: "PS4",
+      mode: "open",
+      startAt: table.openedAt ?? now,
+      endAt: now,
+      minutes: 0,
+      rentalTotal: 0,
+      fnbTotal: bill.subtotal,
+      total: bill.total,
+      kind: "cafe",
+      tableName: table.name,
+      ...(bill.discount ? { discount: bill.discount } : {}),
+      ...(bill.promoName ? { promoName: bill.promoName } : {}),
+      ...(table.customerName ? { customerName: table.customerName } : {}),
+      orders: table.orders,
+      ongoing: true,
+    };
+  };
+
+  const previewBill = () => {
+    const printer = printerFor(printers, "receipt");
+    if (!printer) {
+      toast.error("Printer struk belum diatur di menu Printer");
+      return;
+    }
+    const record = billRecord();
+    if (!record) return;
+    setBillPreview(
+      receiptText({
+        record,
+        store: storeInfo as PrintStore,
+        printer,
+        layout: { ...receiptLayout, showPayment: false },
+        kind: "bill",
+      }),
+    );
+  };
+
+  const doPrintBill = () => {
+    const printer = printerFor(printers, "receipt");
+    const record = billRecord();
+    if (!printer || !record) return;
+    printReceipt({
+      record,
+      store: storeInfo as PrintStore,
+      printer,
+      layout: { ...receiptLayout, showPayment: false },
+      kind: "bill",
+    });
+  };
 
   return (
     <>
