@@ -294,6 +294,25 @@ export function StationDialog({
     : undefined;
   const dueAmount = ownDue + childrenDue;
   const isSettled = dueAmount <= 0;
+  // Setelah pelunasan saat waktu sudah habis: akhiri sesi & tutup panel sendiri.
+  useEffect(() => {
+    if (!autoEnd) return;
+    if (!station?.session) {
+      setAutoEnd(false);
+      return;
+    }
+    if (dueAmount > 0.5) return;
+    const record = stopSession(station.id);
+    setAutoEnd(false);
+    if (!record) return;
+    setWantPrint(false);
+    onOpenChange(false);
+    setPaidRecord(record);
+    toast.success(`${record.stationName} selesai`, {
+      description: `Total ${formatRupiah(record.total)} — ${record.payment}`,
+    });
+  }, [autoEnd, dueAmount, station, stopSession, onOpenChange]);
+
   const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
   // Baris tagihan TV lain yang sudah dipindah ke panel ini.
   const transferredLines = (session?.orders ?? []).filter(
