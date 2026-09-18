@@ -247,6 +247,8 @@ export type CafeTable = {
   orders: OrderItem[];
   /** Promo yang diberikan kasir untuk meja ini. */
   promoIds?: string[];
+  /** Waktu tagihan meja dinyatakan lunas; meja tetap terisi sampai sesi diakhiri. */
+  paidAt?: number;
   sort?: number;
 
 };
@@ -3327,7 +3329,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
-            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
+            t.id === tableId
+              ? (() => {
+                  const { paidAt: _paidAt, ...rest } = t;
+                  return {
+                    ...rest,
+                    orders: [],
+                    openedAt: null,
+                    customerName: "",
+                    notes: "",
+                    promoIds: [],
+                  };
+                })()
+              : t,
           ),
         })),
       voidSession: (stationId, reason) => {
@@ -3488,7 +3502,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               history: [completed, ...prev.history],
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
+                  ? {
+                      // Meja tetap terisi setelah lunas; kasir menutupnya lewat "Akhiri Sesi".
+                      ...t,
+                      orders: [],
+                      promoIds: [],
+                      openedAt: t.openedAt ?? endAt,
+                      paidAt: endAt,
+                    }
                   : t,
               ),
             },

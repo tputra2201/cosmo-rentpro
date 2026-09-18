@@ -1,4 +1,5 @@
-import { Gamepad2, Clock, Utensils, Infinity as InfinityIcon, Pause } from "lucide-react";
+import { Gamepad2, Clock, Utensils, Infinity as InfinityIcon, Pause, PlayCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -50,6 +51,8 @@ export function StationCard({
     promotions,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    pauseSession,
+    resumeSession,
   } = useBilling();
   const status = stationStatus(station, now, bookings);
   const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
@@ -80,11 +83,18 @@ export function StationCard({
   const due = Math.max(0, total - paid);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
-        "surface-panel group relative block w-full min-w-0 max-w-full overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
+        "surface-panel group cursor-pointer relative block w-full min-w-0 max-w-full overflow-hidden p-3 text-left transition-transform duration-200 hover:-translate-y-1",
         status === "idle" && "opacity-90 hover:glow-primary",
         status === "booked" && "border-primary/60 glow-primary",
         status === "playing" && "glow-accent",
@@ -209,6 +219,29 @@ export function StationCard({
           </span>
         )}
       </div>
-    </button>
+
+      {session && (
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          {isPaused(session) ? (
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => resumeSession(station.id)}
+            >
+              <PlayCircle className="size-4" /> Lanjutkan
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => pauseSession(station.id)}
+            >
+              <Pause className="size-4" /> Pause
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

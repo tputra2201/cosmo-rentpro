@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
+import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { PromoPicker } from "@/components/PromoPicker";
@@ -107,8 +107,6 @@ export function StationDialog({
     packages,
     defaultBonusMin,
     adjustBonusTime,
-    pauseSession,
-    resumeSession,
     customers,
     updateSessionCustomer,
     playingCards,
@@ -867,30 +865,6 @@ export function StationDialog({
                 <p className="mt-1 text-sm font-semibold text-warning">Timer dijeda</p>
               )}
               <div className="mt-3 flex flex-col items-center gap-1">
-                {isPaused(session) ? (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      resumeSession(station.id);
-                      toast.success(`Timer ${station.name} dilanjutkan`);
-                    }}
-                  >
-                    <PlayCircle className="size-4" /> Lanjutkan Timer
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      pauseSession(station.id);
-                      toast.info(`Timer ${station.name} dijeda`, {
-                        description: "Waktu jeda tidak dihitung sebagai waktu main.",
-                      });
-                    }}
-                  >
-                    <Pause className="size-4" /> Jeda Timer
-                  </Button>
-                )}
                 {pausedMsTotal(session, now) > 0 && (
                   <p className="text-xs text-muted-foreground">
                     Total jeda {formatClock(Math.floor(pausedMsTotal(session, now) / 1000))}
