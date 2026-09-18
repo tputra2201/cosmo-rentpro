@@ -135,6 +135,15 @@ export function useStoreSync(options: {
   state: BillingSnapshot;
   hydrated: boolean;
   enabled: boolean;
+  /**
+   * True bila data lokal benar-benar dibaca dari penyimpanan perangkat. False
+   * berarti aplikasi berjalan dari isi bawaan (penyimpanan kosong, penuh, atau
+   * rusak) — dalam keadaan itu perangkat wajib mengambil ulang data store dari
+   * pusat sebelum boleh mengirim apa pun.
+   */
+  storageLoaded: boolean;
+  /** Kunci pengaturan yang memang diubah di perangkat ini. */
+  dirtySettings: () => Set<string>;
   applyRemote: (apply: (prev: BillingSnapshot) => BillingSnapshot) => void;
   /**
    * Mengikat data lokal ke satu store. Kalau perangkat sebelumnya memegang data
@@ -142,7 +151,8 @@ export function useStoreSync(options: {
    */
   bindStore: (storeId: string, keepLocal?: boolean) => void;
 }): SyncStatus {
-  const { state, hydrated, enabled, applyRemote, bindStore } = options;
+  const { state, hydrated, enabled, storageLoaded, dirtySettings, applyRemote, bindStore } =
+    options;
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
