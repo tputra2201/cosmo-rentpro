@@ -144,6 +144,9 @@ export function StationDialog({
   );
   // Setelah tagihan lunas, tawarkan cetak struk walau sesi masih berjalan.
   const [wantPrint, setWantPrint] = useState(false);
+  // Waktu bermain sudah habis dan tagihan baru dilunasi: sesi ditutup otomatis.
+  const [autoEnd, setAutoEnd] = useState(false);
+
   const paidHistoryId = station?.session?.historyId;
   useEffect(() => {
     if (!wantPrint || !paidHistoryId) return;
