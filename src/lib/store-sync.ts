@@ -309,12 +309,10 @@ export function useStoreSync(options: {
       // dikirim sebelum perangkat ini menerima data store dari pusat.
       if (record.kind === SETTINGS_KIND && PROTECTED_SETTINGS.has(record.entity_id)) {
         if (!dirty.has(record.entity_id)) continue;
-        if (
-          !bootstrappedRef.current &&
-          isDefaultProtectedSetting(record.entity_id, record.payload)
-        ) {
-          continue;
-        }
+        // Isi bawaan aplikasi tidak pernah dikirim ke pusat. Perangkat yang
+        // datanya tergerus (penyimpanan penuh, data browser dibersihkan)
+        // karena itu tidak bisa lagi mengembalikan tarif store ke awal.
+        if (isDefaultProtectedSetting(record.entity_id, record.payload)) continue;
       }
       // Catat kolom mana yang diubah di perangkat ini, supaya kolom lain
       // tidak ikut menimpa perubahan perangkat lain pada baris yang sama.

@@ -53,6 +53,7 @@ const SETTINGS_KEYS = [
   "invoiceLayout",
   "rolePermissions",
   "operatingHours",
+  "sessionSecurity",
 ] as const;
 
 

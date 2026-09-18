@@ -2,8 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-
-const IDLE_MS = 5 * 60 * 1000;
+import { useBilling } from "@/lib/billing-store";
 const EVENTS = [
   "mousedown",
   "mousemove",
@@ -17,15 +16,18 @@ const EVENTS = [
 
 export function IdleLogout() {
   const { session, signOut } = useAuth();
+  const { sessionSecurity } = useBilling();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Halaman tampilan TV dibiarkan tetap menyala (tidak ada interaksi di sana).
   const exempt = pathname.startsWith("/tv") || pathname.startsWith("/auth");
+  // Menit idle diatur di Setup → Store. 0 berarti keluar otomatis dimatikan.
+  const idleMs = Math.max(0, Math.round(sessionSecurity.idleMinutes)) * 60 * 1000;
 
   useEffect(() => {
-    if (!session || exempt) return;
+    if (!session || exempt || idleMs <= 0) return;
 
     const logout = async () => {
       // Saat internet mati, masuk kembali tidak mungkin dilakukan. Jangan
@@ -35,7 +37,7 @@ export function IdleLogout() {
         return;
       }
       toast.info("Keluar otomatis", {
-        description: "Tidak ada aktivitas selama 5 menit.",
+        description: `Tidak ada aktivitas selama ${sessionSecurity.idleMinutes} menit. Timer rental tetap berjalan.`,
       });
       await signOut();
       navigate({ to: "/auth", replace: true });
@@ -43,7 +45,7 @@ export function IdleLogout() {
 
     const reset = () => {
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => void logout(), IDLE_MS);
+      timer.current = setTimeout(() => void logout(), idleMs);
     };
 
     reset();
@@ -52,7 +54,7 @@ export function IdleLogout() {
       if (timer.current) clearTimeout(timer.current);
       for (const ev of EVENTS) window.removeEventListener(ev, reset);
     };
-  }, [session, exempt, navigate, signOut]);
+  }, [session, exempt, idleMs, sessionSecurity.idleMinutes, navigate, signOut]);
 
   return null;
 }

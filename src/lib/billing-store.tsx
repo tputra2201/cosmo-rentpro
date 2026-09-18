@@ -27,6 +27,7 @@ import {
   normalizeHours,
   type OperatingHours,
 } from "./report-range";
+import { ALARM_SOUNDS, type AlarmSound } from "./alarm";
 
 /** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
@@ -126,6 +127,8 @@ export type Session = {
   paidAt?: number; // waktu tagihan dinyatakan lunas
   pausedAt?: number; // jika terisi, timer sedang dijeda
   pausedMs?: number; // akumulasi total waktu jeda
+  /** Tagihan sesi ini digabung dan dibayar dari panel TV induk berikut. */
+  mergedInto?: string;
 };
 
 
@@ -272,7 +275,78 @@ export type Promotion = {
   /** Jam mulai/selesai harian, format "HH:MM". Kosong berarti sepanjang hari. */
   startTime?: string;
   endTime?: string;
+  /** Jenis promo. Kosong berarti promo diskon (bentuk lama). */
+  kind?: PromoKind;
+  /** Bonus jam rental: bayar `payHours` jam dapat `bonusHours` jam. */
+  payHours?: number;
+  bonusHours?: number;
+  /** Buy one get one kafe: beli `buyQty` menu ini, dapat menu gratis. */
+  buyMenuId?: string;
+  buyQty?: number;
+  /** Menu hadiah untuk BOGO maupun promo menu gratis. */
+  freeMenuId?: string;
+  freeMenuQty?: number;
+  /** Promo menu gratis: minimal jam main sebelum hadiah diberikan. */
+  minHours?: number;
 };
+
+/** Jenis promo yang didukung aplikasi. */
+export type PromoKind = "discount" | "bonusHours" | "bogo" | "freeMenu";
+
+export const PROMO_KINDS: { id: PromoKind; label: string; hint: string }[] = [
+  { id: "discount", label: "Promo Diskon", hint: "Potongan persen atau nominal dari tagihan." },
+  {
+    id: "bonusHours",
+    label: "Bonus Jam Rental",
+    hint: "Bayar sekian jam, dapat tambahan jam gratis.",
+  },
+  {
+    id: "bogo",
+    label: "Buy One Get One (Kafe)",
+    hint: "Beli menu tertentu, dapat menu gratis otomatis.",
+  },
+  {
+    id: "freeMenu",
+    label: "Main X Jam Dapat Menu Gratis",
+    hint: "Rental minimal sekian jam, menu hadiah masuk pesanan.",
+  },
+];
+
+export const promoKind = (promo: Promotion): PromoKind => promo.kind ?? "discount";
+
+export const promoKindLabel = (kind: PromoKind) =>
+  PROMO_KINDS.find((item) => item.id === kind)?.label ?? "Promo Diskon";
+/** Pengaturan keamanan sesi: keluar otomatis dan alarm waktu habis. */
+export type SessionSecurity = {
+  /** Menit tanpa aktivitas sebelum keluar otomatis. 0 berarti dimatikan. */
+  idleMinutes: number;
+  /** Alarm suara saat waktu rental habis. */
+  alarmEnabled: boolean;
+  /** Nada alarm bawaan. */
+  alarmSound: AlarmSound;
+  /** Alarm berbunyi berulang sampai ditekan OK. */
+  alarmRepeat: boolean;
+};
+
+export const DEFAULT_SESSION_SECURITY: SessionSecurity = {
+  idleMinutes: 5,
+  alarmEnabled: true,
+  alarmSound: "beep",
+  alarmRepeat: true,
+};
+
+export function normalizeSessionSecurity(value?: Partial<SessionSecurity> | null): SessionSecurity {
+  const minutes = Number(value?.idleMinutes ?? DEFAULT_SESSION_SECURITY.idleMinutes);
+  return {
+    idleMinutes: Number.isFinite(minutes) ? Math.min(240, Math.max(0, Math.round(minutes))) : 5,
+    alarmEnabled: value?.alarmEnabled ?? true,
+    alarmSound: ALARM_SOUNDS.some((item) => item.id === value?.alarmSound)
+      ? (value?.alarmSound as AlarmSound)
+      : "beep",
+    alarmRepeat: value?.alarmRepeat ?? true,
+  };
+}
+
 export type PointEntry = { id: string; customerId: string; points: number; reason: string; createdAt: number };
 
 /** Kartu bermain (Playing Card) berchip RFID Mifare Classic 13,56 MHz. */
@@ -417,18 +491,64 @@ function parseClockValue(value?: string) {
   return hour * 60 + (Number.isFinite(minute) ? minute : 0);
 }
 
+/** Apakah promo ini sedang berada dalam periode tanggal dan jamnya? */
+export function promoInWindow(promo: Promotion, now: number) {
+  if (!promo.active) return false;
+  if (promo.startsAt > now || promo.endsAt < now) return false;
+  const current = minutesOfDay(now);
+  const from = parseClockValue(promo.startTime);
+  const to = parseClockValue(promo.endTime);
+  if (from === null || to === null) return true;
+  // Jendela yang melewati tengah malam tetap dihitung benar.
+  return from <= to ? current >= from && current <= to : current >= from || current <= to;
+}
+
 /** Diskon global (happy hour) yang sedang berjalan pada waktu `now`. */
 export function activeGlobalPromo(promotions: Promotion[], now: number) {
-  const current = minutesOfDay(now);
-  return promotions.find((promo) => {
-    if (!promo.active || !promo.auto) return false;
-    if (promo.startsAt > now || promo.endsAt < now) return false;
-    const from = parseClockValue(promo.startTime);
-    const to = parseClockValue(promo.endTime);
-    if (from === null || to === null) return true;
-    // Jendela yang melewati tengah malam tetap dihitung benar.
-    return from <= to ? current >= from && current <= to : current >= from || current <= to;
-  });
+  return promotions.find(
+    (promo) => promoKind(promo) === "discount" && Boolean(promo.auto) && promoInWindow(promo, now),
+  );
+}
+
+/** Promo jenis tertentu yang sedang berjalan. */
+export function activePromosOfKind(promotions: Promotion[], now: number, kind: PromoKind) {
+  return promotions.filter((promo) => promoKind(promo) === kind && promoInWindow(promo, now));
+}
+
+/** Tanda pada baris pesanan hadiah promo. */
+export const PROMO_FREE_TAG = "Promo";
+
+/** Baris pesanan gratis dari sebuah promo. */
+export function freeOrderLine(menu: MenuItem, qty: number, promoName: string): OrderItem {
+  return {
+    id: `promo-${menu.id}-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+    menuId: menu.id,
+    name: menu.name,
+    price: 0,
+    qty: Math.max(1, Math.round(qty)),
+    mods: [`${PROMO_FREE_TAG}: ${promoName}`],
+  };
+}
+
+/** Pesanan gratis dari promo Buy One Get One untuk satu menu yang baru dipesan. */
+export function bogoFreeOrders(
+  promotions: Promotion[],
+  menuList: MenuItem[],
+  now: number,
+  item: MenuItem,
+  qty: number,
+): OrderItem[] {
+  const out: OrderItem[] = [];
+  for (const promo of activePromosOfKind(promotions, now, "bogo")) {
+    if (promo.buyMenuId !== item.id) continue;
+    const need = Math.max(1, Math.round(promo.buyQty ?? 1));
+    const times = Math.floor(qty / need);
+    if (times <= 0) continue;
+    const gift = menuList.find((m) => m.id === (promo.freeMenuId || promo.buyMenuId));
+    if (!gift) continue;
+    out.push(freeOrderLine(gift, times * Math.max(1, Math.round(promo.freeMenuQty ?? 1)), promo.name));
+  }
+  return out;
 }
 
 export function promoDiscountAmount(promo: Promotion | undefined, base: number) {
@@ -720,6 +840,8 @@ type State = {
   businessDays: BusinessDay[];
   /** Jam buka dan tutup operasional store, dipakai untuk batas hari usaha. */
   operatingHours: OperatingHours;
+  /** Keluar otomatis saat menganggur dan alarm waktu habis. */
+  sessionSecurity: SessionSecurity;
   /** Log book aktivitas non-transaksi. */
   logEntries: LogEntry[];
   tvNotice: TvNotice;
@@ -835,6 +957,7 @@ const defaultState: State = {
   shifts: [],
   businessDays: [],
   operatingHours: DEFAULT_OPERATING_HOURS,
+  sessionSecurity: DEFAULT_SESSION_SECURITY,
   logEntries: [],
   tvNotice: defaultTvNotice,
   printers: defaultPrinters,
@@ -1316,6 +1439,7 @@ function migrateState(raw: unknown): State {
     shifts: parsed.shifts ?? defaultState.shifts,
     businessDays: parsed.businessDays ?? defaultState.businessDays,
     operatingHours: normalizeHours(parsed.operatingHours),
+    sessionSecurity: normalizeSessionSecurity(parsed.sessionSecurity),
     logEntries: parsed.logEntries ?? defaultState.logEntries,
     tvNotice: { ...defaultTvNotice, ...(parsed.tvNotice ?? {}) },
     printers: parsed.printers?.length ? parsed.printers : defaultPrinters,
@@ -1360,6 +1484,12 @@ type Ctx = State & {
   moveSession: (fromStationId: string, toStationId: string, newConsole?: string) => boolean;
   /** Pindahkan isi meja kafe (pesanan & pelanggan) ke meja lain yang kosong. */
   moveCafeTable: (fromTableId: string, toTableId: string) => boolean;
+  /** Gabungkan tagihan beberapa TV lain ke satu TV induk. */
+  mergeStations: (parentStationId: string, childStationIds: string[]) => boolean;
+  /** Lepas kembali semua TV yang digabung ke TV induk ini. */
+  unmergeStations: (parentStationId: string) => void;
+  /** Titipkan pesanan meja kafe ke sesi TV induk, lalu meja dikosongkan. */
+  linkCafeTable: (parentStationId: string, tableId: string) => boolean;
 
   setDefaultBonusMin: (minutes: number) => void;
   setTvNotice: (patch: Partial<TvNotice>) => void;
@@ -1539,6 +1669,8 @@ type Ctx = State & {
   closeBusinessDay: (input?: { note?: string }) => BusinessDay | null;
   /** Ubah jam buka/tutup operasional store. */
   setOperatingHours: (patch: Partial<OperatingHours>) => void;
+  /** Ubah pengaturan keluar otomatis & alarm waktu habis. */
+  setSessionSecurity: (patch: Partial<SessionSecurity>) => void;
   replaceAll: (data: unknown) => void;
 
   resetAll: () => void;
@@ -2083,7 +2215,27 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // rate snapshot needs access to rates; wrap it
   const startSessionWithRate = useCallback<Ctx["startSession"]>(
     (stationId, mode, durationMin, details) =>
-      update((prev) => ({
+      update((prev) => {
+        const startAt = Date.now();
+        const paidHours = mode === "prepaid" ? durationMin / 60 : 0;
+        // Promo bonus jam rental: jam tambahan tanpa menambah tagihan.
+        const bonusPromo = activePromosOfKind(prev.promotions, startAt, "bonusHours").find(
+          (promo) => paidHours >= Math.max(0.25, promo.payHours ?? 0),
+        );
+        const promoBonusMin = bonusPromo ? Math.round((bonusPromo.bonusHours ?? 0) * 60) : 0;
+        // Promo main X jam dapat menu gratis.
+        const giftOrders: OrderItem[] = [];
+        for (const promo of activePromosOfKind(prev.promotions, startAt, "freeMenu")) {
+          if (paidHours < Math.max(0.25, promo.minHours ?? 0)) continue;
+          const gift = prev.menu.find((m) => m.id === promo.freeMenuId);
+          if (gift) giftOrders.push(freeOrderLine(gift, promo.freeMenuQty ?? 1, promo.name));
+        }
+        const promoNames = [
+          ...(details?.promoName ? [details.promoName] : []),
+          ...(bonusPromo ? [bonusPromo.name] : []),
+          ...giftOrders.map((o) => o.mods?.[0]?.split(": ")[1] ?? "").filter(Boolean),
+        ];
+        return {
         ...prev,
         stations: prev.stations.map((s) =>
           s.id === stationId
@@ -2091,19 +2243,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 ...s,
                 session: {
                   mode,
-                  startAt: Date.now(),
+                  startAt,
                   durationMin: mode === "prepaid" ? durationMin : 0,
                   rate: prev.rates[s.console] ?? 0,
-                  orders: [],
+                  orders: giftOrders,
                     customerName: details?.customerName || "Umum",
                     customerPhone: details?.customerPhone || "",
                     member: details?.member || false,
                     packageName: details?.packageName || (mode === "open" ? "Open Time" : `${durationMin} Menit`),
                     notes: details?.notes || "",
-                    bonusMin: mode === "prepaid" ? (details?.bonusMin ?? prev.defaultBonusMin ?? 0) : 0,
+                    bonusMin:
+                      mode === "prepaid"
+                        ? (details?.bonusMin ?? prev.defaultBonusMin ?? 0) + promoBonusMin
+                        : 0,
                     ...(details?.customerId ? { customerId: details.customerId } : {}),
                     ...(details?.bookingId ? { bookingId: details.bookingId } : {}),
-                    ...(details?.promoName ? { promoName: details.promoName } : {}),
+                    ...(promoNames.length ? { promoName: promoNames.join(" · ") } : {}),
                     ...(details?.discountType ? { discountType: details.discountType } : {}),
                     ...(details?.discountValue !== undefined ? { discountValue: details.discountValue } : {}),
                     ...(details?.discountMax !== undefined ? { discountMax: details.discountMax } : {}),
@@ -2111,7 +2266,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               }
             : s,
         ),
-      })),
+        };
+      }),
     [update],
   );
   void startSession;
@@ -2420,28 +2576,33 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const addOrder = useCallback<Ctx["addOrder"]>(
     (stationId, item, qty, mods, priceAdd) =>
-      mapStation(stationId, (s) =>
-        s.session
-          ? {
-              ...s,
-              session: {
-                ...s.session,
-                orders: [
-                  ...s.session.orders,
-                  {
-                    id: `${item.id}-${Date.now()}`,
-                    menuId: item.id,
-                    name: item.name,
-                    price: item.price + (priceAdd ?? 0),
-                    qty,
-                    ...(mods && mods.length > 0 ? { mods } : {}),
-                  },
-                ],
-              },
-            }
-          : s,
-      ),
-    [mapStation],
+      update((prev) => ({
+        ...prev,
+        stations: prev.stations.map((s) =>
+          s.id === stationId && s.session
+            ? {
+                ...s,
+                session: {
+                  ...s.session,
+                  orders: [
+                    ...s.session.orders,
+                    {
+                      id: `${item.id}-${Date.now()}`,
+                      menuId: item.id,
+                      name: item.name,
+                      price: item.price + (priceAdd ?? 0),
+                      qty,
+                      ...(mods && mods.length > 0 ? { mods } : {}),
+                    },
+                    // Promo Buy One Get One: menu hadiah langsung ikut masuk.
+                    ...bogoFreeOrders(prev.promotions, prev.menu, Date.now(), item, qty),
+                  ],
+                },
+              }
+            : s,
+        ),
+      })),
+    [update],
   );
 
   const removeOrder = useCallback<Ctx["removeOrder"]>(
@@ -3052,6 +3213,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                       qty,
                       ...(mods && mods.length > 0 ? { mods } : {}),
                     },
+                    // Promo Buy One Get One: menu hadiah langsung ikut masuk.
+                    ...bogoFreeOrders(prev.promotions, prev.menu, Date.now(), item, qty),
                   ],
                 }
               : t,
@@ -3380,6 +3543,83 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           };
         });
         return moved;
+      },
+      mergeStations: (parentStationId, childStationIds) => {
+        let merged = false;
+        update((prev) => {
+          const parent = prev.stations.find((s) => s.id === parentStationId);
+          if (!parent?.session || parent.session.mergedInto) return prev;
+          const names: string[] = [];
+          const stations = prev.stations.map((s) => {
+            if (!childStationIds.includes(s.id) || s.id === parentStationId) return s;
+            if (!s.session || s.session.mergedInto || s.session.paidAt) return s;
+            names.push(s.name);
+            return { ...s, session: { ...s.session, mergedInto: parentStationId } };
+          });
+          if (!names.length) return prev;
+          merged = true;
+          return withLog(
+            { ...prev, stations },
+            "Gabung tagihan TV",
+            `${names.join(", ")} → ${parent.name}`,
+          );
+        });
+        return merged;
+      },
+      unmergeStations: (parentStationId) =>
+        update((prev) => {
+          const names = prev.stations
+            .filter((s) => s.session?.mergedInto === parentStationId)
+            .map((s) => s.name);
+          if (!names.length) return prev;
+          const parentName =
+            prev.stations.find((s) => s.id === parentStationId)?.name ?? "TV induk";
+          return withLog(
+            {
+              ...prev,
+              stations: prev.stations.map((s) => {
+                if (s.session?.mergedInto !== parentStationId) return s;
+                const { mergedInto: _drop, ...session } = s.session;
+                return { ...s, session };
+              }),
+            },
+            "Lepas gabungan tagihan TV",
+            `${names.join(", ")} dilepas dari ${parentName}`,
+          );
+        }),
+      linkCafeTable: (parentStationId, tableId) => {
+        let linked = false;
+        update((prev) => {
+          const parent = prev.stations.find((s) => s.id === parentStationId);
+          const table = prev.cafeTables.find((t) => t.id === tableId);
+          if (!parent?.session || !table || table.orders.length === 0) return prev;
+          linked = true;
+          // Pesanan meja dititipkan ke sesi TV induk dengan tanda meja asalnya,
+          // supaya rincian pesanan tetap terbaca di bill dan struk.
+          const moved = table.orders.map((order) => ({
+            ...order,
+            id: `${order.id}-link-${Date.now()}`,
+            mods: [...(order.mods ?? []), `Meja ${table.name}`],
+          }));
+          return withLog(
+            {
+              ...prev,
+              stations: prev.stations.map((s) =>
+                s.id === parentStationId && s.session
+                  ? { ...s, session: { ...s.session, orders: [...s.session.orders, ...moved] } }
+                  : s,
+              ),
+              cafeTables: prev.cafeTables.map((t) =>
+                t.id === tableId
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  : t,
+              ),
+            },
+            "Titip tagihan meja kafe",
+            `${table.name} → ${parent.name}`,
+          );
+        });
+        return linked;
       },
 
       addCustomer: (input) => {
@@ -3958,6 +4198,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             { ...prev, operatingHours: hours },
             "Ubah jam operasional store",
             `Buka ${hours.openHour}:00 · Tutup ${hours.closeHour}:00`,
+          );
+        }),
+      setSessionSecurity: (patch) =>
+        update((prev) => {
+          const next = normalizeSessionSecurity({ ...prev.sessionSecurity, ...patch });
+          return withLog(
+            { ...prev, sessionSecurity: next },
+            "Ubah keamanan sesi",
+            `${next.idleMinutes === 0 ? "Keluar otomatis dimatikan" : `Keluar otomatis ${next.idleMinutes} menit`} · Alarm ${next.alarmEnabled ? next.alarmSound : "mati"}`,
           );
         }),
       exportSnapshot: () => JSON.parse(JSON.stringify(state)) as State,

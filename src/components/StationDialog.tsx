@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -126,7 +127,12 @@ export function StationDialog({
     stations,
     moveSession,
     voidSession,
+    cafeTables,
+    mergeStations,
+    unmergeStations,
+    linkCafeTable,
   } = useBilling();
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   const { requireShift } = useShiftGate();
   const { store: storeInfo } = useStoreInfo(true);
@@ -266,8 +272,27 @@ export function StationDialog({
     ? pendingCardBill
     : billWithoutPendingCard;
   const sessionTotal = bill ? bill.total : 0;
-  const dueAmount = Math.max(0, sessionTotal - alreadyPaid);
+  const ownDue = Math.max(0, sessionTotal - alreadyPaid);
+  // TV lain yang tagihannya digabung ke panel ini.
+  const mergedChildren = stations.filter((s) => s.session?.mergedInto === station.id);
+  const childDue = (child: Station) => {
+    if (!child.session) return 0;
+    const childBill = sessionBill(child.session, now, child.console, priceCfg, {
+      member: Boolean(child.session.member),
+      card: false,
+    });
+    return Math.max(0, childBill.total - paidTotal(child.session));
+  };
+  const childrenDue = mergedChildren.reduce((sum, child) => sum + childDue(child), 0);
+  const mergedParent = session?.mergedInto
+    ? stations.find((s) => s.id === session.mergedInto)
+    : undefined;
+  const dueAmount = ownDue + childrenDue;
   const isSettled = dueAmount <= 0;
+  const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
+  const mergeCandidates = stations.filter(
+    (s) => s.id !== station.id && s.session && !s.session.mergedInto && !s.session.paidAt,
+  );
 
   const payTarget =
     payAmount === ""
@@ -349,6 +374,26 @@ export function StationDialog({
     return true;
   };
 
+  /**
+   * Bayar tagihan TV ini lebih dulu, sisanya dipakai melunasi TV lain yang
+   * digabung. Tiap TV tetap punya notanya sendiri supaya laporan per TV benar.
+   */
+  const settleSpread = (label: string, payload: (amount: number) => Parameters<typeof settleSession>[1]) => {
+    const ownPart = Math.min(payTarget, ownDue);
+    if (ownPart > 0) settleSession(station.id, payload(ownPart));
+    let rest = payTarget - ownPart;
+    for (const child of mergedChildren) {
+      if (rest <= 0.5) break;
+      const due = childDue(child);
+      const part = Math.min(rest, due);
+      if (part > 0) {
+        settleSession(child.id, { payment: label, amount: part, amountPaid: part });
+        if (part + 0.5 >= due) stopSession(child.id);
+      }
+      rest -= part;
+    }
+  };
+
   const handlePay = () => {
     if (!requireShift()) return;
     if (isCardPayment) {
@@ -357,11 +402,11 @@ export function StationDialog({
         toast.error("Saldo Playing Card tidak mencukupi");
         return;
       }
-      settleSession(station.id, {
+      settleSpread(CARD_PAYMENT_NAME, (amount) => ({
         payment: CARD_PAYMENT_NAME,
-        amount: payTarget,
-        amountPaid: cardCharge,
-      });
+        amount,
+        amountPaid: amount,
+      }));
       const remaining = Math.max(0, dueAmount - payTarget);
       if (remaining <= 0) setWantPrint(true);
       toast.success("Pembayaran Playing Card diterima", {
@@ -381,18 +426,19 @@ export function StationDialog({
           return;
         }
       }
-      settleSession(station.id, {
-        payments: rows,
-        amount: payTarget,
-        amountPaid: splitPaid,
-      });
-
+      const label = Array.from(new Set(rows.map((r) => r.method))).join(" + ");
+      settleSpread(label, (amount) => ({
+        payments: amount === payTarget ? rows : [{ method: label, amount }],
+        amount,
+        amountPaid: amount === payTarget ? splitPaid : amount,
+      }));
     } else {
-      settleSession(station.id, {
+      settleSpread(selectedPayment, (amount) => ({
         payment: selectedPayment,
-        amount: payTarget,
-        amountPaid: selectedPayment === "Cash" ? cashReceived : payTarget,
-      });
+        amount,
+        amountPaid:
+          selectedPayment === "Cash" && amount === payTarget ? cashReceived : amount,
+      }));
     }
     const sisa = Math.max(0, dueAmount - payTarget);
     if (sisa <= 0) setWantPrint(true);
@@ -1167,6 +1213,51 @@ export function StationDialog({
               </div>
             )}
 
+            {/* Gabung tagihan: TV lain dan meja kafe dibayar dari panel ini. */}
+            <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
+              {mergedParent ? (
+                <p className="text-sm text-muted-foreground">
+                  Tagihan TV ini digabung ke <strong>{mergedParent.name}</strong> — pembayarannya
+                  dilakukan dari panel {mergedParent.name}.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Gabung Tagihan</p>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
+                      Gabung Tagihan
+                    </Button>
+                  </div>
+                  {mergedChildren.length > 0 ? (
+                    <div className="space-y-1">
+                      {mergedChildren.map((child) => (
+                        <div key={child.id} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {child.name} · {child.session?.customerName || "Umum"}
+                          </span>
+                          <span className="font-semibold">{formatRupiah(childDue(child))}</span>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="text-xs text-destructive underline-offset-2 hover:underline"
+                        onClick={() => {
+                          unmergeStations(station.id);
+                          toast.success("Gabungan tagihan dilepas");
+                        }}
+                      >
+                        Lepas gabungan
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Satukan tagihan TV lain, atau titipkan pesanan meja kafe ke TV ini.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
             {!isSettled && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -1566,6 +1657,82 @@ export function StationDialog({
         }}
       />
     )}
+    <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Gabung Tagihan ke {station.name}</DialogTitle>
+          <DialogDescription>
+            Tagihan TV lain dibayar dari panel ini, dan pesanan meja kafe dititipkan ke sesi TV
+            ini. Bisa dilepas selama belum dibayar.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">TV yang sedang bermain</p>
+            {mergeCandidates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Tidak ada TV lain yang bisa digabung.</p>
+            ) : (
+              mergeCandidates.map((other) => (
+                <div
+                  key={other.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                >
+                  <span className="text-sm">
+                    {other.name} · {other.session?.customerName || "Umum"}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (mergeStations(station.id, [other.id]))
+                        toast.success(`${other.name} digabung ke ${station.name}`);
+                      else toast.error("TV ini tidak bisa digabung");
+                    }}
+                  >
+                    Gabung
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Meja kafe yang ada pesanan</p>
+            {openCafeTables.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Belum ada pesanan di meja kafe.</p>
+            ) : (
+              openCafeTables.map((table) => (
+                <div
+                  key={table.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-secondary/60 p-2"
+                >
+                  <span className="text-sm">
+                    {table.name} · {table.orders.length} pesanan
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (linkCafeTable(station.id, table.id))
+                        toast.success(`Pesanan ${table.name} dititipkan ke ${station.name}`);
+                      else toast.error("Pesanan meja ini tidak bisa dititipkan");
+                    }}
+                  >
+                    Titipkan
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setMergeOpen(false)}>
+            Tutup
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     {confirmDialog}
     </>
 

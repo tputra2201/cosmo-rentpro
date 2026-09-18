@@ -1,0 +1,1 @@
+revoke all on function public.guard_default_console_settings() from anon, authenticated, public;
