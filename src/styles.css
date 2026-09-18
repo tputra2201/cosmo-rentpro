@@ -213,44 +213,44 @@
   animation: expiry-blink 1.1s ease-in-out infinite;
 }
 
-/* ============ Tema terang (putih) ============ */
+/* ============ Tema terang (kuning lembut) ============ */
 .theme-terang {
   color-scheme: light;
-  --tint-1: 6%;
-  --tint-2: 5%;
-  --background: oklch(0.99 0.002 250);
-  --foreground: oklch(0.24 0.02 258);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.02 258);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.02 258);
-  --primary: oklch(0.52 0.17 250);
-  --primary-foreground: oklch(0.99 0.002 250);
-  --primary-glow: oklch(0.62 0.15 235);
-  --secondary: oklch(0.96 0.008 250);
-  --secondary-foreground: oklch(0.28 0.02 258);
-  --muted: oklch(0.96 0.008 250);
-  --muted-foreground: oklch(0.48 0.02 256);
+  --tint-1: 7%;
+  --tint-2: 6%;
+  --background: oklch(0.96 0.055 95);
+  --foreground: oklch(0.3 0.05 80);
+  --card: oklch(0.99 0.022 95);
+  --card-foreground: oklch(0.3 0.05 80);
+  --popover: oklch(0.99 0.022 95);
+  --popover-foreground: oklch(0.3 0.05 80);
+  --primary: oklch(0.55 0.12 70);
+  --primary-foreground: oklch(0.99 0.015 95);
+  --primary-glow: oklch(0.68 0.13 75);
+  --secondary: oklch(0.93 0.06 95);
+  --secondary-foreground: oklch(0.33 0.05 80);
+  --muted: oklch(0.93 0.05 95);
+  --muted-foreground: oklch(0.46 0.05 80);
   --accent: oklch(0.5 0.13 165);
-  --accent-foreground: oklch(0.99 0.002 250);
+  --accent-foreground: oklch(0.99 0.015 95);
   --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.99 0.002 250);
+  --destructive-foreground: oklch(0.99 0.015 95);
   --success: oklch(0.5 0.14 155);
-  --success-foreground: oklch(0.99 0.002 250);
-  --warning: oklch(0.6 0.14 75);
-  --warning-foreground: oklch(0.99 0.002 250);
-  --border: oklch(0.9 0.008 250);
-  --input: oklch(0.9 0.008 250);
-  --ring: oklch(0.52 0.17 250);
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.24 0.02 258);
-  --sidebar-accent: oklch(0.96 0.008 250);
-  --sidebar-accent-foreground: oklch(0.28 0.02 258);
-  --sidebar-border: oklch(0.9 0.008 250);
+  --success-foreground: oklch(0.99 0.015 95);
+  --warning: oklch(0.55 0.13 70);
+  --warning-foreground: oklch(0.99 0.015 95);
+  --border: oklch(0.87 0.06 95);
+  --input: oklch(0.88 0.06 95);
+  --ring: oklch(0.55 0.12 70);
+  --sidebar: oklch(0.99 0.022 95);
+  --sidebar-foreground: oklch(0.3 0.05 80);
+  --sidebar-accent: oklch(0.93 0.06 95);
+  --sidebar-accent-foreground: oklch(0.33 0.05 80);
+  --sidebar-border: oklch(0.87 0.06 95);
   --gradient-surface: linear-gradient(
     160deg,
-    oklch(1 0 0) 0%,
-    oklch(0.985 0.004 250) 100%
+    oklch(0.99 0.025 95) 0%,
+    oklch(0.965 0.05 95) 100%
   );
   --glow-primary: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
     0 8px 20px -12px color-mix(in oklab, var(--primary) 45%, transparent);
