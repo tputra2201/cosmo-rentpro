@@ -2770,8 +2770,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               }
             : s,
         ),
-      setConsoleDiscount: (name, patch) =>
-        markSettingsDirty("consoleDiscounts") ??
+      setConsoleDiscount: (name, patch) => {
+        markSettingsDirty("consoleDiscounts");
         update((prev) => ({
           ...prev,
           consoleDiscounts: {
@@ -2782,7 +2782,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ...patch,
             },
           },
-        })),
+        }));
+      },
       setSessionDiscount: (stationId, patch) =>
         mapStation(stationId, (s) =>
           s.session
