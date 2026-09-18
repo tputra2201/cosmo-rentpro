@@ -3701,8 +3701,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 },
               };
             if (!ids.includes(s.id)) return s;
-            const { session: _drop, ...rest } = s;
-            return rest;
+            return { ...s, session: null };
+
           });
           return withLog(
             { ...prev, stations },
