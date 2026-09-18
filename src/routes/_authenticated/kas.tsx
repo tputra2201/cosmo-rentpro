@@ -92,22 +92,22 @@ function KasPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold sm:text-4xl">Kas Lain &amp; Pengeluaran</h1>
-        <p className="text-sm text-muted-foreground">Hari usaha {rangeLabel(businessRange)}</p>
+        <p className="text-sm text-muted-foreground">Hari ini {rangeLabel(businessRange)}</p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
-          label="Pendapatan lain hari usaha ini"
+          label="Pendapatan lain hari ini"
           value={formatRupiah(incomeToday)}
           tone="accent"
         />
         <Stat
-          label="Pengeluaran hari usaha ini"
+          label="Pengeluaran hari ini"
           value={formatRupiah(expenseToday)}
           tone="danger"
         />
-        <Stat label="Kas masuk hari usaha ini (bukan pendapatan)" value={formatRupiah(payoutIn)} />
-        <Stat label="Kas keluar hari usaha ini (bukan biaya)" value={formatRupiah(payoutOut)} />
+        <Stat label="Kas masuk hari ini (bukan pendapatan)" value={formatRupiah(payoutIn)} />
+        <Stat label="Kas keluar hari ini (bukan biaya)" value={formatRupiah(payoutOut)} />
       </section>
 
 
