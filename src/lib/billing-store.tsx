@@ -2640,7 +2640,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!s.session) return s;
         const at = Date.now();
         const overdueSeconds = Math.max(0, -remainingSeconds(s.session, at));
-        const nextDuration = Math.max(1, s.session.durationMin + extraMin);
+        const originalMode = s.session.mode;
+        const baseDuration =
+          originalMode === "open"
+            ? Math.max(1, Math.ceil(elapsedSeconds(s.session, at) / 60))
+            : s.session.durationMin;
+        const nextDuration = Math.max(1, baseDuration + extraMin);
         return {
           ...s,
           session: {
@@ -2649,7 +2654,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             // Tagihan hanya berubah sebesar tombol yang dipilih. Waktu lewat
             // setelah 00:00 bukan durasi berbayar dan tidak boleh ikut ditagih.
             durationMin: nextDuration,
-            ...(extraMin > 0 && overdueSeconds > 0
+            ...(originalMode === "prepaid" && extraMin > 0 && overdueSeconds > 0
               ? { pausedMs: (s.session.pausedMs ?? 0) + overdueSeconds * 1000 }
               : {}),
           },
