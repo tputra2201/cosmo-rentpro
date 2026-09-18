@@ -55,6 +55,7 @@ export function StationCard({
     pauseSession,
     resumeSession,
   } = useBilling();
+  const allow = useCan();
   const status = stationStatus(station, now, bookings);
   const booking = station.session ? undefined : activeBooking(bookings, station.id, now);
   const session = station.session;
