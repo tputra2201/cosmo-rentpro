@@ -1213,7 +1213,14 @@ export function StationDialog({
               </div>
             )}
 
+            {/* Promo yang sedang berlaku, bisa diberikan satu atau beberapa sekaligus. */}
+            <PromoPicker
+              target={{ type: "station", id: station.id }}
+              {...(session.promoIds ? { promoIds: session.promoIds } : {})}
+            />
+
             {/* Gabung tagihan: TV lain dan meja kafe dibayar dari panel ini. */}
+
             <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
               {mergedParent ? (
                 <p className="text-sm text-muted-foreground">
