@@ -373,6 +373,26 @@ export function StationDialog({
     return true;
   };
 
+  /**
+   * Bayar tagihan TV ini lebih dulu, sisanya dipakai melunasi TV lain yang
+   * digabung. Tiap TV tetap punya notanya sendiri supaya laporan per TV benar.
+   */
+  const settleSpread = (label: string, payload: (amount: number) => Parameters<typeof settleSession>[1]) => {
+    const ownPart = Math.min(payTarget, ownDue);
+    if (ownPart > 0) settleSession(station.id, payload(ownPart));
+    let rest = payTarget - ownPart;
+    for (const child of mergedChildren) {
+      if (rest <= 0.5) break;
+      const due = childDue(child);
+      const part = Math.min(rest, due);
+      if (part > 0) {
+        settleSession(child.id, { payment: label, amount: part, amountPaid: part });
+        if (part + 0.5 >= due) stopSession(child.id);
+      }
+      rest -= part;
+    }
+  };
+
   const handlePay = () => {
     if (!requireShift()) return;
     if (isCardPayment) {
