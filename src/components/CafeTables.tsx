@@ -264,7 +264,18 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     });
   };
 
+  /** Klik kartu meja langsung membuka panel pesanan & pembayaran meja itu. */
+  const openTablePanel = (t: CafeTable) => {
+    setOpenId(t.id);
+    setPayMethod(activeMethods[0]?.name ?? "");
+    setReceived("");
+    if (!t.customerName?.trim()) {
+      updateCafeTable(t.id, { customerName: "Umum" });
+    }
+  };
+
   return (
+
     <>
       <ShiftLockedNotice className="mb-3" />
       <SortableArea
