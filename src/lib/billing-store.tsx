@@ -152,6 +152,9 @@ export type Session = {
   customerId?: string;
   bookingId?: string;
   promoName?: string;
+  /** Promo yang diberikan kasir untuk sesi ini. */
+  promoIds?: string[];
+
   discountType?: "percent" | "fixed";
   discountValue?: number;
   discountMax?: number;
