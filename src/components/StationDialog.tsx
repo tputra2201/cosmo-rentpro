@@ -292,9 +292,14 @@ export function StationDialog({
   const dueAmount = ownDue + childrenDue;
   const isSettled = dueAmount <= 0;
   const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
+  // Baris tagihan TV lain yang sudah dipindah ke panel ini.
+  const transferredLines = (session?.orders ?? []).filter(
+    (o) => o.linkedFrom?.type === "station",
+  );
   const mergeCandidates = stations.filter(
     (s) => s.id !== station.id && s.session && !s.session.mergedInto && !s.session.paidAt,
   );
+
 
   const payTarget =
     payAmount === ""
