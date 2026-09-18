@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Pause, PlayCircle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
+import { PromoPicker } from "@/components/PromoPicker";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -1213,7 +1215,14 @@ export function StationDialog({
               </div>
             )}
 
+            {/* Promo yang sedang berlaku, bisa diberikan satu atau beberapa sekaligus. */}
+            <PromoPicker
+              target={{ type: "station", id: station.id }}
+              {...(session.promoIds ? { promoIds: session.promoIds } : {})}
+            />
+
             {/* Gabung tagihan: TV lain dan meja kafe dibayar dari panel ini. */}
+
             <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
               {mergedParent ? (
                 <p className="text-sm text-muted-foreground">

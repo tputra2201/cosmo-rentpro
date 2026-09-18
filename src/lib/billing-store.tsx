@@ -152,6 +152,9 @@ export type Session = {
   customerId?: string;
   bookingId?: string;
   promoName?: string;
+  /** Promo yang diberikan kasir untuk sesi ini. */
+  promoIds?: string[];
+
   discountType?: "percent" | "fixed";
   discountValue?: number;
   discountMax?: number;
@@ -240,7 +243,10 @@ export type CafeTable = {
   notes: string;
   openedAt: number | null;
   orders: OrderItem[];
+  /** Promo yang diberikan kasir untuk meja ini. */
+  promoIds?: string[];
   sort?: number;
+
 };
 
 
@@ -548,6 +554,12 @@ export function activePromosOfKind(promotions: Promotion[], now: number, kind: P
   return promotions.filter((promo) => promoKind(promo) === kind && promoInWindow(promo, now));
 }
 
+/** Semua promo yang tanggal dan jamnya sedang berlaku. */
+export function activePromos(promotions: Promotion[], now: number) {
+  return promotions.filter((promo) => promoInWindow(promo, now));
+}
+
+
 /** Tanda pada baris pesanan hadiah promo. */
 export const PROMO_FREE_TAG = "Promo";
 
@@ -621,6 +633,8 @@ export function computeBill(input: {
   promotions: Promotion[];
   now: number;
   fallbackPercent?: number;
+  /** Promo diskon yang dipilih kasir (bisa beberapa sekaligus). */
+  promoIds?: string[];
   manual?: { type: DiscountType; value: number; max?: number };
 }): BillBreakdown {
   const fallback = input.fallbackPercent ?? 0;
@@ -633,9 +647,26 @@ export function computeBill(input: {
     Math.min(addon, Math.max(0, input.addonDiscount ?? 0)) +
     orderDiscountTotal(input.orders, input.menu, input.ctx, fallback);
   const afterItem = Math.max(0, subtotal - itemDiscount);
-  const promo = activeGlobalPromo(input.promotions, input.now);
-  const promoDiscount = promoDiscountAmount(promo, afterItem);
+  // Promo diskon: happy hour otomatis ditambah promo yang dipilih kasir.
+  // Beberapa promo bisa dipakai sekaligus, dihitung bertingkat.
+  const picked = (input.promoIds ?? [])
+    .map((id) => input.promotions.find((p) => p.id === id))
+    .filter((p): p is Promotion => Boolean(p) && promoKind(p!) === "discount");
+  const auto = activeGlobalPromo(input.promotions, input.now);
+  const promoList = [...(auto ? [auto] : []), ...picked].filter(
+    (p, i, arr) => arr.findIndex((x) => x.id === p.id) === i,
+  );
+  let promoDiscount = 0;
+  const promoNames: string[] = [];
+  for (const promo of promoList) {
+    const amount = promoDiscountAmount(promo, Math.max(0, afterItem - promoDiscount));
+    if (amount <= 0) continue;
+    promoDiscount += amount;
+    promoNames.push(promo.name);
+  }
+  promoDiscount = Math.min(afterItem, promoDiscount);
   const afterPromo = Math.max(0, afterItem - promoDiscount);
+
   const manual = input.manual;
   const manualRaw =
     !manual || !manual.value
@@ -653,7 +684,7 @@ export function computeBill(input: {
     subtotal,
     itemDiscount,
     promoDiscount,
-    promoName: promoDiscount > 0 && promo ? promo.name : "",
+    promoName: promoNames.join(" · "),
     manualDiscount,
     discount,
     total: Math.max(0, subtotal - discount),
@@ -1255,7 +1286,9 @@ export function sessionBill(
     promotions: cfg.promotions,
     now,
     fallbackPercent,
+    ...(session.promoIds?.length ? { promoIds: session.promoIds } : {}),
     ...(manual && manual.value ? { manual } : fallbackManual ? { manual: fallbackManual } : {}),
+
   });
 }
 
@@ -1266,6 +1299,7 @@ export function cafeBill(
   cfg: PriceConfig,
   ctx: DiscountContext,
   manual?: { type: DiscountType; value: number },
+  promoIds?: string[],
 ): BillBreakdown {
   return computeBill({
     rental: 0,
@@ -1276,7 +1310,9 @@ export function cafeBill(
     promotions: cfg.promotions,
     now,
     fallbackPercent: fallbackCardPercent(cfg, ctx),
+    ...(promoIds?.length ? { promoIds } : {}),
     ...(manual && manual.value ? { manual } : {}),
+
   });
 }
 
@@ -1529,6 +1565,11 @@ type Ctx = State & {
   unmergeCafeTables: (parentTableId: string) => void;
   /** Titipkan pesanan sesi TV ke meja kafe (rental tetap dibayar di panel TV). */
   linkStationToTable: (tableId: string, stationId: string) => boolean;
+  /** Berikan satu promo ke sesi TV atau meja kafe. */
+  givePromo: (target: { type: "station" | "table"; id: string }, promoId: string) => boolean;
+  /** Batalkan promo yang sudah diberikan. */
+  cancelPromo: (target: { type: "station" | "table"; id: string }, promoId: string) => void;
+
 
 
   setDefaultBonusMin: (minutes: number) => void;
@@ -3271,7 +3312,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({
           ...prev,
           cafeTables: prev.cafeTables.map((t) =>
-            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+            t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
           ),
         })),
       voidSession: (stationId, reason) => {
@@ -3330,7 +3371,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           const table = prev.cafeTables.find((t) => t.id === tableId);
           if (!table || table.orders.length === 0) return prev;
           const at = Date.now();
-          const bill = cafeBill(table.orders, at, prev, { member: false, card: false });
+          const bill = cafeBill(
+            table.orders,
+            at,
+            prev,
+            { member: false, card: false },
+            undefined,
+            table.promoIds,
+          );
+
           const made: VoidRecord = {
             id: `void-${at}-${Math.random().toString(36).slice(2, 7)}`,
             at,
@@ -3353,7 +3402,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               voids: [made, ...(prev.voids ?? [])],
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
                   : t,
               ),
             },
@@ -3379,7 +3428,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             prev,
             { member: Boolean(input.member), card: methodsUsed.includes(CARD_PAYMENT_NAME) },
             input.discount,
+            table.promoIds,
           );
+
           const total = bill.total;
           const splits = input.payments?.length ? input.payments : [];
           const received = splits.length
@@ -3419,7 +3470,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ...prev,
             history: [completed, ...prev.history],
             cafeTables: prev.cafeTables.map((t) =>
-              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" } : t,
+              t.id === tableId ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] } : t,
             ),
           };
         });
@@ -3569,7 +3620,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ...prev,
             cafeTables: prev.cafeTables.map((t) => {
               if (t.id === fromTableId)
-                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] };
               if (t.id === toTableId)
                 return {
                   ...t,
@@ -3696,7 +3747,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ),
               cafeTables: prev.cafeTables.map((t) =>
                 t.id === tableId
-                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "" }
+                  ? { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] }
                   : t,
               ),
             },
@@ -3740,7 +3791,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     openedAt: t.openedAt ?? Date.now(),
                   };
                 if (!ids.includes(t.id)) return t;
-                return { ...t, orders: [], openedAt: null, customerName: "", notes: "" };
+                return { ...t, orders: [], openedAt: null, customerName: "", notes: "", promoIds: [] };
               }),
             },
             "Gabung tagihan meja kafe",
@@ -3819,6 +3870,129 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         return true;
       },
+      givePromo: (target, promoId) => {
+        const at = Date.now();
+        const promo = state.promotions.find((p) => p.id === promoId);
+        if (!promo || !promoInWindow(promo, at)) return false;
+        const kind = promoKind(promo);
+        if (target.type === "station") {
+          const station = state.stations.find((s) => s.id === target.id);
+          if (!station?.session || station.session.paidAt) return false;
+          if (station.session.promoIds?.includes(promoId)) return false;
+        } else {
+          const table = state.cafeTables.find((t) => t.id === target.id);
+          if (!table) return false;
+          if (table.promoIds?.includes(promoId)) return false;
+          // Bonus jam rental hanya berlaku untuk sesi TV.
+          if (kind === "bonusHours") return false;
+        }
+        // Hadiah menu (BOGO & menu gratis) langsung masuk sebagai pesanan harga 0.
+        const gift = promo.freeMenuId
+          ? state.menu.find((m) => m.id === promo.freeMenuId)
+          : undefined;
+        const giftLines =
+          (kind === "freeMenu" || kind === "bogo") && gift
+            ? [freeOrderLine(gift, promo.freeMenuQty ?? 1, promo.name)]
+            : [];
+        const bonusMin =
+          kind === "bonusHours" ? Math.max(0, Math.round((promo.bonusHours ?? 0) * 60)) : 0;
+        update((prev) => {
+          const name =
+            target.type === "station"
+              ? (prev.stations.find((s) => s.id === target.id)?.name ?? "TV")
+              : (prev.cafeTables.find((t) => t.id === target.id)?.name ?? "Meja");
+          const next: State =
+            target.type === "station"
+              ? {
+                  ...prev,
+                  stations: prev.stations.map((s) => {
+                    if (s.id !== target.id || !s.session) return s;
+                    const ids = [...(s.session.promoIds ?? []), promoId];
+                    return {
+                      ...s,
+                      session: {
+                        ...s.session,
+                        promoIds: ids,
+                        orders: [...s.session.orders, ...giftLines],
+                        bonusMin: s.session.bonusMin + bonusMin,
+                        promoName: [s.session.promoName, promo.name]
+                          .filter(Boolean)
+                          .join(" · "),
+                      },
+                    };
+                  }),
+                }
+              : {
+                  ...prev,
+                  cafeTables: prev.cafeTables.map((t) =>
+                    t.id === target.id
+                      ? {
+                          ...t,
+                          promoIds: [...(t.promoIds ?? []), promoId],
+                          orders: [...t.orders, ...giftLines],
+                          openedAt: t.openedAt ?? at,
+                        }
+                      : t,
+                  ),
+                };
+          return withLog(
+            next,
+            "Berikan promo",
+            `${promo.name} (${promoKindLabel(kind)}) → ${name}`,
+          );
+        });
+        return true;
+      },
+      cancelPromo: (target, promoId) =>
+        update((prev) => {
+          const promo = prev.promotions.find((p) => p.id === promoId);
+          if (!promo) return prev;
+          const kind = promoKind(promo);
+          const giftTag = `${PROMO_FREE_TAG}: ${promo.name}`;
+          const dropGift = (orders: OrderItem[]) =>
+            orders.filter((o) => !(o.price === 0 && (o.mods ?? []).includes(giftTag)));
+          const bonusMin =
+            kind === "bonusHours" ? Math.max(0, Math.round((promo.bonusHours ?? 0) * 60)) : 0;
+          const name =
+            target.type === "station"
+              ? (prev.stations.find((s) => s.id === target.id)?.name ?? "TV")
+              : (prev.cafeTables.find((t) => t.id === target.id)?.name ?? "Meja");
+          const next: State =
+            target.type === "station"
+              ? {
+                  ...prev,
+                  stations: prev.stations.map((s) => {
+                    if (s.id !== target.id || !s.session) return s;
+                    if (!s.session.promoIds?.includes(promoId)) return s;
+                    const ids = s.session.promoIds.filter((id) => id !== promoId);
+                    const names = (s.session.promoName ?? "")
+                      .split(" · ")
+                      .filter((n) => n && n !== promo.name);
+                    return {
+                      ...s,
+                      session: {
+                        ...s.session,
+                        promoIds: ids,
+                        orders: dropGift(s.session.orders),
+                        bonusMin: Math.max(0, s.session.bonusMin - bonusMin),
+                        promoName: names.join(" · "),
+                      },
+                    };
+                  }),
+                }
+              : {
+                  ...prev,
+                  cafeTables: prev.cafeTables.map((t) => {
+                    if (t.id !== target.id || !t.promoIds?.includes(promoId)) return t;
+                    return {
+                      ...t,
+                      promoIds: t.promoIds.filter((id) => id !== promoId),
+                      orders: dropGift(t.orders),
+                    };
+                  }),
+                };
+          return withLog(next, "Batalkan promo", `${promo.name} dibatalkan dari ${name}`);
+        }),
 
 
       addCustomer: (input) => {

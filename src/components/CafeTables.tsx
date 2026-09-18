@@ -3,6 +3,8 @@ import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Utensils, Receipt } 
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
 import { VoidDialog } from "@/components/VoidDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
+import { PromoPicker } from "@/components/PromoPicker";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,6 +181,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     { consoleDiscounts, menu, promotions, cardDiscountPercent, cardMemberDiscountPercent },
     { member: Boolean(card?.member), card: Boolean(isCardPayment && card) },
     manualDisc,
+    table?.promoIds,
+
   );
   const total = bill.total;
   const cardCharge = isCardPayment
@@ -533,7 +537,14 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </div>
                 )}
 
+                {/* Promo berlaku: bisa diberikan satu atau beberapa sekaligus. */}
+                <PromoPicker
+                  target={{ type: "table", id: table.id }}
+                  {...(table.promoIds ? { promoIds: table.promoIds } : {})}
+                />
+
                 {/* Gabung tagihan: meja lain & pesanan sesi TV dibayar dari panel ini. */}
+
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
                   <span className="text-sm font-semibold">Gabung Tagihan</span>
                   <Button
