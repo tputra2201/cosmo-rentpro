@@ -1565,6 +1565,11 @@ type Ctx = State & {
   unmergeCafeTables: (parentTableId: string) => void;
   /** Titipkan pesanan sesi TV ke meja kafe (rental tetap dibayar di panel TV). */
   linkStationToTable: (tableId: string, stationId: string) => boolean;
+  /** Berikan satu promo ke sesi TV atau meja kafe. */
+  givePromo: (target: { type: "station" | "table"; id: string }, promoId: string) => boolean;
+  /** Batalkan promo yang sudah diberikan. */
+  cancelPromo: (target: { type: "station" | "table"; id: string }, promoId: string) => void;
+
 
 
   setDefaultBonusMin: (minutes: number) => void;
