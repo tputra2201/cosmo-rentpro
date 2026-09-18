@@ -282,6 +282,170 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
     });
   };
 
+  /**
+   * Terima pembayaran meja kafe: bisa lunas sekaligus atau sebagian (DP),
+   * persis seperti panel TV. DP tersimpan sebagai pembayaran diterima.
+   */
+  const handleCafePay = () => {
+    if (!table) return;
+    const tableId = table.id;
+    const tableName = table.name;
+    const finish = (
+      input: {
+        payment?: string;
+        payments?: { method: string; amount: number }[];
+        amountPaid: number;
+        member?: boolean;
+      },
+      description: string,
+    ) => {
+      if (isPartial) {
+        const ok = settleCafeTable(tableId, {
+          ...(input.payments ? { payments: input.payments } : {}),
+          ...(input.payment ? { payment: input.payment } : {}),
+          amount: payTarget,
+          amountPaid: input.amountPaid,
+        });
+        if (!ok) {
+          toast.error("Pembayaran gagal diproses");
+          return;
+        }
+        toast.success(`Pembayaran sebagian ${formatRupiah(payTarget)} diterima`, {
+          description: `${description} · sisa tagihan ${formatRupiah(dueAmount - payTarget)}`,
+        });
+        setReceived("");
+        setPayAmount("");
+        setCardNumber("");
+        setCardPart("");
+        setRestPay("");
+        setSplitMode(false);
+        setSplits([]);
+        return;
+      }
+      const record = payCafeTable(tableId, { ...input, discount: manualDisc });
+      if (!record) {
+        toast.error("Pembayaran gagal diproses");
+        return;
+      }
+      toast.success(`${tableName} lunas ${formatRupiah(record.total)}`, { description });
+      setReceived("");
+      setPayAmount("");
+      setCardNumber("");
+      setCardPart("");
+      setRestPay("");
+      setDiscValue("");
+      setSplitMode(false);
+      setSplits([]);
+      setOpenId(null);
+      setPaidRecord(record);
+    };
+
+    if (splitMode) {
+      const rows = splitRows.filter((row) => row.amount > 0);
+      if (rows.length === 0) {
+        toast.error("Isi jumlah tiap metode pembayaran");
+        return;
+      }
+      if (splitPaid + 0.5 < payTarget) {
+        toast.error(`Pembayaran masih kurang ${formatRupiah(splitRemaining)}`);
+        return;
+      }
+      if (splitCardAmount > 0) {
+        if (!splitCard) {
+          toast.error("Kartu belum terdaftar!", {
+            description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+          });
+          return;
+        }
+        if (!splitCard.active) {
+          toast.error("Kartu ini sedang diblokir");
+          return;
+        }
+        if (splitCard.balance + 0.5 < splitCardAmount) {
+          toast.error("Saldo kartu tidak mencukupi!");
+          return;
+        }
+      }
+      if (!requireShift()) return;
+      if (
+        splitCardAmount > 0 &&
+        splitCard &&
+        !chargeCard(splitCard.id, splitCardAmount, `Pembayaran ${tableName}`)
+      ) {
+        toast.error("Saldo kartu tidak mencukupi!");
+        return;
+      }
+      finish(
+        {
+          payments: rows,
+          amountPaid: splitPaid,
+          ...(splitCardAmount > 0 && splitCard ? { member: Boolean(splitCard.member) } : {}),
+        },
+        rows.map((row) => `${row.method} ${formatRupiah(row.amount)}`).join(" + "),
+      );
+      return;
+    }
+
+    if (isCardPayment) {
+      if (!card) {
+        toast.error("Kartu belum terdaftar!", {
+          description: "Scan kartu atau ketik nomor kartu yang sudah terdaftar.",
+        });
+        return;
+      }
+      if (!card.active) {
+        toast.error("Kartu ini sedang diblokir");
+        return;
+      }
+      if (card.balance + 0.5 < cardCharge) {
+        toast.error("Saldo kartu tidak mencukupi!", {
+          description: `Saldo ${formatRupiah(card.balance)}, dibutuhkan ${formatRupiah(cardCharge)}. Top up dulu atau bagi dengan metode lain.`,
+        });
+        return;
+      }
+      if (restAmount > 0 && otherMethods.length === 0) {
+        toast.error("Belum ada metode lain untuk sisa tagihan");
+        return;
+      }
+      if (cardCharge > 0 && !chargeCard(card.id, cardCharge, `Pembayaran ${tableName}`)) {
+        toast.error("Saldo kartu tidak mencukupi!");
+        return;
+      }
+      if (!requireShift()) return;
+      finish(
+        {
+          ...(restAmount > 0
+            ? {
+                payments: [
+                  { method: CARD_PAYMENT_NAME, amount: cardCharge },
+                  { method: restMethod, amount: restAmount },
+                ],
+              }
+            : { payment: CARD_PAYMENT_NAME }),
+          amountPaid: payTarget,
+          member: Boolean(card.member),
+        },
+        `Playing Card ${card.cardNumber} · dipotong ${formatRupiah(cardCharge)}${
+          restAmount > 0 ? ` · ${restMethod} ${formatRupiah(restAmount)}` : ""
+        }`,
+      );
+      return;
+    }
+
+    const paid = received === "" ? payTarget : receivedValue;
+    if (paid + 0.5 < payTarget) {
+      toast.error("Uang diterima kurang dari total tagihan");
+      return;
+    }
+    if (!requireShift()) return;
+    const method = payMethod || activeMethods[0]?.name || "Cash";
+    finish(
+      { payment: method, amountPaid: paid },
+      `${method} · kembalian ${formatRupiah(Math.max(0, paid - payTarget))}`,
+    );
+  };
+
+
   /** Klik kartu meja langsung membuka panel pesanan & pembayaran meja itu. */
   const openTablePanel = (t: CafeTable) => {
     setOpenId(t.id);
