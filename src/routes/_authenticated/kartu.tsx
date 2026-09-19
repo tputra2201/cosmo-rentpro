@@ -101,6 +101,7 @@ function BuyCardPanel() {
   const { requireShift } = useShiftGate();
   const [cardNumber, setCardNumber] = useState("");
   const [cardCode, setCardCode] = useState("");
+  const [cardUid, setCardUid] = useState("");
   const [price, setPrice] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -133,9 +134,15 @@ function BuyCardPanel() {
       toast.error("Nomor kartu itu sudah terdaftar");
       return;
     }
+    const uid = cardUid.trim();
+    if (uid && findCardByNumber(playingCards, uid)) {
+      toast.error("Nomor seri chip itu sudah dipakai kartu lain");
+      return;
+    }
     const card = buyPlayingCard({
       cardNumber: number,
       cardCode: cardCode.trim(),
+      cardUid: uid,
       customerName: name,
       customerPhone: phone,
       member,
@@ -153,6 +160,7 @@ function BuyCardPanel() {
     });
     setCardNumber("");
     setCardCode("");
+    setCardUid("");
     setName("");
     setPhone("");
     setMember(false);
@@ -180,6 +188,21 @@ function BuyCardPanel() {
           Huruf dan angka, tercetak di kartu. Muncul di pembayaran, saldo, riwayat, dan laporan.
         </p>
       </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="card-uid">Nomor seri chip (UID)</Label>
+        <Input
+          id="card-uid"
+          value={cardUid}
+          placeholder="Klik kolom ini, lalu tempelkan kartu ke pembaca USB"
+          onChange={(e) => setCardUid(e.target.value.trim().toUpperCase())}
+        />
+        <p className="text-xs text-muted-foreground">
+          Nomor yang diketik otomatis oleh pembaca kartu USB. Isi supaya kartu tetap dikenali
+          walau dibaca dari perangkat tanpa NFC bawaan. Boleh dikosongkan dan diisi nanti.
+        </p>
+      </div>
+
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -270,6 +293,7 @@ function CardListPanel() {
         (c) =>
           c.cardNumber.toLowerCase().includes(key) ||
           (c.cardCode ?? "").toLowerCase().includes(key) ||
+          (c.cardUid ?? "").toLowerCase().includes(key) ||
           c.customerName.toLowerCase().includes(key) ||
           c.customerPhone.includes(key),
       )
@@ -360,6 +384,27 @@ function CardListPanel() {
               <DetailField label="Nomor Kartu">
                 <p className="text-sm text-muted-foreground">{card.cardNumber}</p>
               </DetailField>
+              <DetailField label="Nomor seri chip (UID)">
+                <Input
+                  value={card.cardUid ?? ""}
+                  placeholder="Klik kolom ini, lalu tempelkan kartu ke pembaca USB"
+                  aria-label={`Nomor seri chip ${card.cardNumber}`}
+                  onChange={(e) => {
+                    const uid = e.target.value.trim().toUpperCase();
+                    const other = uid ? findCardByNumber(playingCards, uid) : undefined;
+                    if (other && other.id !== card.id) {
+                      toast.error(`Nomor itu sudah dipakai kartu ${other.cardNumber}`);
+                      return;
+                    }
+                    updatePlayingCard(card.id, { cardUid: uid });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nomor yang diketik pembaca kartu USB. Setelah diisi, kartu ini langsung dikenali
+                  saat ditempel di perangkat tanpa NFC bawaan.
+                </p>
+              </DetailField>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailField label="Nama pemegang">
                   <Input

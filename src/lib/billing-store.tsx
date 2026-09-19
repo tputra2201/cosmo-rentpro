@@ -401,6 +401,8 @@ export type PlayingCard = {
   cardNumber: string;
   /** Kode kartu (alfanumerik) yang dicetak/ditempel di kartu. */
   cardCode?: string;
+  /** Nomor seri chip (UID) yang diketik oleh pembaca kartu USB mode keyboard. */
+  cardUid?: string;
   customerId?: string;
   customerName: string;
   customerPhone: string;
@@ -451,13 +453,23 @@ export const CARD_FUNDING_METHODS = [
   "Transfer Bank Mandiri",
 ] as const;
 
-/** Cari kartu berdasarkan nomor kartu atau kode kartu (tidak peka huruf besar/kecil). */
+/** Bandingkan nomor tanpa peduli huruf besar/kecil, spasi, titik dua, atau tanda hubung. */
+export function normalizeCardKey(value: string) {
+  return value.trim().toLowerCase().replace(/[\s:-]/g, "");
+}
+
+/**
+ * Cari kartu berdasarkan nomor kartu, kode kartu, atau nomor seri chip (UID).
+ * Dengan begitu tap dari pembaca USB (yang mengetik UID) dan tap dari perangkat
+ * ber-NFC bawaan (yang membaca teks rekaman NFC Tools) menemukan kartu yang sama.
+ */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
-  const key = cardNumber.trim().toLowerCase();
+  const key = normalizeCardKey(cardNumber);
   if (!key) return undefined;
   return (
-    cards.find((c) => c.cardNumber.trim().toLowerCase() === key) ??
-    cards.find((c) => (c.cardCode ?? "").trim().toLowerCase() === key)
+    cards.find((c) => normalizeCardKey(c.cardNumber) === key) ??
+    cards.find((c) => normalizeCardKey(c.cardCode ?? "") === key) ??
+    cards.find((c) => normalizeCardKey(c.cardUid ?? "") === key)
   );
 }
 
@@ -1728,6 +1740,7 @@ type Ctx = State & {
   buyPlayingCard: (input: {
     cardNumber: string;
     cardCode?: string;
+    cardUid?: string;
     customerName?: string;
     customerPhone?: string;
     customerId?: string;
@@ -4488,6 +4501,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!cardNumber) return null;
         if (findCardByNumber(state.playingCards, cardNumber)) return null;
         const cardCode = input.cardCode?.trim() ?? "";
+        const cardUid = input.cardUid?.trim() ?? "";
+        if (cardUid && findCardByNumber(state.playingCards, cardUid)) return null;
         const now = Date.now();
         const topup = Math.max(0, Math.round(input.topup ?? 0));
         const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
@@ -4526,6 +4541,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           id: `card-${now}`,
           cardNumber,
           ...(cardCode ? { cardCode } : {}),
+          ...(cardUid ? { cardUid } : {}),
           ...(customerId ? { customerId } : {}),
           customerName: holderName || "Umum",
           customerPhone: holderPhone,
