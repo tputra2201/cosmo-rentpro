@@ -4501,6 +4501,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (!cardNumber) return null;
         if (findCardByNumber(state.playingCards, cardNumber)) return null;
         const cardCode = input.cardCode?.trim() ?? "";
+        const cardUid = input.cardUid?.trim() ?? "";
+        if (cardUid && findCardByNumber(state.playingCards, cardUid)) return null;
         const now = Date.now();
         const topup = Math.max(0, Math.round(input.topup ?? 0));
         const price = Math.max(0, Math.round(input.price ?? state.cardPrice));
