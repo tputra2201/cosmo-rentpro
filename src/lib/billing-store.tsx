@@ -401,6 +401,8 @@ export type PlayingCard = {
   cardNumber: string;
   /** Kode kartu (alfanumerik) yang dicetak/ditempel di kartu. */
   cardCode?: string;
+  /** Nomor seri chip (UID) yang diketik oleh pembaca kartu USB mode keyboard. */
+  cardUid?: string;
   customerId?: string;
   customerName: string;
   customerPhone: string;
