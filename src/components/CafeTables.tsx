@@ -482,7 +482,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
               id={t.id}
               handle={false}
               label={t.name}
-              className={`surface-panel p-3 ${filled ? "border-primary/50" : ""}`}
+              className={`surface-panel p-3 ${filled ? "border-accent/60 glow-accent" : ""}`}
             >
               <div
                 role="button"
@@ -499,7 +499,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-display text-xl font-extrabold uppercase tracking-wide text-primary">
+                    <p className={`truncate font-display text-xl font-extrabold uppercase tracking-wide ${filled ? "text-accent" : "text-primary"}`}>
                       {t.name}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
