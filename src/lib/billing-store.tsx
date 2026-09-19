@@ -491,6 +491,37 @@ export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
   );
 }
 
+/**
+ * Terapkan data cadangan kartu ke state.
+ * - replace: seluruh data kartu & riwayat kartu diganti isi cadangan.
+ * - merge: hanya kartu yang hilang (id/nomor belum ada) yang ditambahkan.
+ */
+function applyCardRestore<
+  T extends { playingCards: PlayingCard[]; cardEntries: CardEntry[] },
+>(prev: T, cards: PlayingCard[], entries: CardEntry[], mode: "replace" | "merge"): T {
+  const copyCards = JSON.parse(JSON.stringify(cards)) as PlayingCard[];
+  const copyEntries = JSON.parse(JSON.stringify(entries)) as CardEntry[];
+  if (mode === "replace") {
+    return { ...prev, playingCards: copyCards, cardEntries: copyEntries };
+  }
+  const ids = new Set(prev.playingCards.map((c) => c.id));
+  const keys = new Set(prev.playingCards.map((c) => normalizeCardKey(c.cardNumber)));
+  const missing = copyCards.filter(
+    (c) => !ids.has(c.id) && !keys.has(normalizeCardKey(c.cardNumber)),
+  );
+  if (!missing.length) return prev;
+  const missingIds = new Set(missing.map((c) => c.id));
+  const entryIds = new Set(prev.cardEntries.map((e) => e.id));
+  const addedEntries = copyEntries.filter(
+    (e) => missingIds.has(e.cardId) && !entryIds.has(e.id),
+  );
+  return {
+    ...prev,
+    playingCards: [...prev.playingCards, ...missing],
+    cardEntries: [...addedEntries, ...prev.cardEntries],
+  };
+}
+
 /** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
 export function cardDiscountPercentFor(
   card: PlayingCard,
