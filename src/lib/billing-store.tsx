@@ -1801,6 +1801,18 @@ type Ctx = State & {
   setCardDiscountPercent: (value: number) => void;
   setCardMemberDiscountPercent: (value: number) => void;
   setCardUsbReaderMode: (value: boolean) => void;
+  /** Buat cadangan data Playing Card sekarang. */
+  createCardBackup: (source?: "manual" | "closing") => CardBackup | null;
+  /** Pulihkan data kartu dari cadangan tersimpan. */
+  restoreCardBackup: (id: string, mode: "replace" | "merge") => boolean;
+  /** Pulihkan data kartu dari isi berkas cadangan. */
+  restoreCardBackupData: (
+    data: { cards: PlayingCard[]; entries: CardEntry[] },
+    mode: "replace" | "merge",
+    label?: string,
+  ) => boolean;
+  /** Hapus satu cadangan data kartu. */
+  removeCardBackup: (id: string) => void;
   addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
   updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
   removeBooking: (id: string) => void;
