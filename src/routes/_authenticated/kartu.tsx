@@ -9,6 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CardBackupPanel } from "@/components/CardBackupPanel";
 import { CardScanInput } from "@/components/CardScanInput";
 import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { Button } from "@/components/ui/button";
