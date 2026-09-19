@@ -31,6 +31,11 @@ async function gateway(path: string, init: RequestInit) {
   const text = await res.text();
   if (!res.ok) {
     console.error(`Google Drive gagal [${res.status}]: ${text}`);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        "Sambungan Google Drive sudah kedaluwarsa. Minta pemilik akun menghubungkan ulang Google Drive di Lovable, lalu coba lagi.",
+      );
+    }
     throw new Error(`Google Drive menolak permintaan [${res.status}]: ${text}`);
   }
   return text ? (JSON.parse(text) as Record<string, unknown>) : {};
