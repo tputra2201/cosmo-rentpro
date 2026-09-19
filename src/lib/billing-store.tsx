@@ -4541,6 +4541,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           id: `card-${now}`,
           cardNumber,
           ...(cardCode ? { cardCode } : {}),
+          ...(cardUid ? { cardUid } : {}),
           ...(customerId ? { customerId } : {}),
           customerName: holderName || "Umum",
           customerPhone: holderPhone,
