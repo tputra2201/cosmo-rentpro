@@ -181,6 +181,21 @@ function BuyCardPanel() {
         </p>
       </div>
 
+      <div className="space-y-1.5">
+        <Label htmlFor="card-uid">Nomor seri chip (UID)</Label>
+        <Input
+          id="card-uid"
+          value={cardUid}
+          placeholder="Klik kolom ini, lalu tempelkan kartu ke pembaca USB"
+          onChange={(e) => setCardUid(e.target.value.trim().toUpperCase())}
+        />
+        <p className="text-xs text-muted-foreground">
+          Nomor yang diketik otomatis oleh pembaca kartu USB. Isi supaya kartu tetap dikenali
+          walau dibaca dari perangkat tanpa NFC bawaan. Boleh dikosongkan dan diisi nanti.
+        </p>
+      </div>
+
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="card-price">Harga kartu</Label>
