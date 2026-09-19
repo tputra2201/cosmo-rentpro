@@ -28,6 +28,7 @@ import {
   type OperatingHours,
 } from "./report-range";
 import { ALARM_SOUNDS, type AlarmSound } from "./alarm";
+import { SETTINGS_KEYS } from "./sync-records";
 
 /** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
