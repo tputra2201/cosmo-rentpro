@@ -160,6 +160,7 @@ function BuyCardPanel() {
     });
     setCardNumber("");
     setCardCode("");
+    setCardUid("");
     setName("");
     setPhone("");
     setMember(false);
