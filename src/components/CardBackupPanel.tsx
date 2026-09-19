@@ -133,7 +133,7 @@ export function CardBackupPanel() {
           ? `Seluruh data kartu saat ini (${playingCards.length} kartu) diganti dengan isi backup ${new Date(backup.createdAt).toLocaleString("id-ID")}.`
           : `Hanya kartu yang hilang yang ditambahkan dari backup ${new Date(backup.createdAt).toLocaleString("id-ID")}. Kartu yang ada sekarang tidak diubah.`,
       actionLabel: "Restore",
-      requireTypedWord: mode === "replace" ? "RESTORE" : undefined,
+      ...(mode === "replace" ? { requireTypedWord: "RESTORE" } : {}),
       onConfirm: () => {
         if (restoreCardBackup(backup.id, mode)) toast.success("Data kartu dipulihkan");
         else toast.error("Backup tidak ditemukan");
@@ -168,7 +168,7 @@ export function CardBackupPanel() {
             ? "Seluruh data kartu saat ini diganti dengan isi berkas."
             : "Hanya kartu yang hilang yang ditambahkan dari berkas.",
         actionLabel: "Pulihkan",
-        requireTypedWord: mode === "replace" ? "RESTORE" : undefined,
+        ...(mode === "replace" ? { requireTypedWord: "RESTORE" } : {}),
         onConfirm: () => {
           if (restoreCardBackupData({ cards, entries }, mode, file.name))
             toast.success("Data kartu dipulihkan dari berkas");
