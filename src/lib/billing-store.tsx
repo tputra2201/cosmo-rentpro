@@ -2358,8 +2358,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
 
   const update = useCallback(
-    (fn: (draft: State) => State) => setState((prev) => fn(prev)),
-    [],
+    (fn: (draft: State) => State) =>
+      setState((prev) => {
+        const next = fn(prev);
+        // Catat pengaturan yang benar-benar berubah di perangkat ini. Hanya
+        // pengaturan bertanda inilah yang boleh dikirim ke pusat, sehingga
+        // perangkat lain tidak pernah menimpanya dengan isi bawaan.
+        const touched: string[] = [];
+        for (const key of SETTINGS_KEYS) {
+          if (prev[key] === next[key]) continue;
+          if (stableValue(prev[key]) === stableValue(next[key])) continue;
+          touched.push(key);
+        }
+        if (touched.length) markSettingsDirty(...touched);
+        return next;
+      }),
+    [markSettingsDirty],
   );
 
   const mapStation = useCallback(
