@@ -2183,14 +2183,30 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setState(migrateState(JSON.parse(raw)));
+        const loaded = migrateState(JSON.parse(raw));
+        setState(loaded);
         setStorageLoaded(true);
+        // Sekali saja: pengaturan yang isinya sudah berbeda dari bawaan aplikasi
+        // dianggap memang diatur di perangkat ini, supaya tetap bisa dikirim ke
+        // pusat setelah pembaruan aplikasi ini.
+        if (!localStorage.getItem(DIRTY_SEED_KEY)) {
+          const seeded: string[] = [];
+          for (const key of SETTINGS_KEYS) {
+            if (stableValue(loaded[key]) !== stableValue(defaultState[key])) seeded.push(key);
+          }
+          if (seeded.length) markSettingsDirty(...seeded);
+          try {
+            localStorage.setItem(DIRTY_SEED_KEY, "1");
+          } catch {
+            /* penyimpanan penuh: cukup berlaku selama aplikasi terbuka */
+          }
+        }
       }
     } catch {
       /* isi penyimpanan rusak: jalan dari bawaan, jangan tandai terbaca */
     }
     setHydrated(true);
-  }, []);
+  }, [markSettingsDirty]);
 
   useEffect(() => {
     if (!hydrated) return;
