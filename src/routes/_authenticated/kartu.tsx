@@ -549,9 +549,11 @@ function SettingsPanel() {
     cardPrice,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    cardUsbReaderMode,
     setCardPrice,
     setCardDiscountPercent,
     setCardMemberDiscountPercent,
+    setCardUsbReaderMode,
   } = useBilling();
 
   return (
@@ -595,6 +597,16 @@ function SettingsPanel() {
         Potongan dipakai otomatis saat kasir memilih pembayaran Playing Card. Kartu bertanda
         member memakai potongan member.
       </p>
+      <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
+        <div className="space-y-1">
+          <Label htmlFor="set-usb-reader">Mode pembaca USB (keyboard)</Label>
+          <p className="text-xs text-muted-foreground">
+            Untuk tablet/PC tanpa NFC yang memakai pembaca kartu USB: kolom nomor kartu fokus
+            otomatis dan ketikan cepat dari alat langsung terbaca saat panel kartu terbuka.
+          </p>
+        </div>
+        <Switch id="set-usb-reader" checked={cardUsbReaderMode} onCheckedChange={setCardUsbReaderMode} />
+      </div>
     </section>
   );
 }
