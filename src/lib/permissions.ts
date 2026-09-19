@@ -133,6 +133,9 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "kas.hapus", label: "Hapus catatan kas" },
       { key: "kartu.jual", label: "Jual Playing Card" },
       { key: "kartu.topup", label: "Top up saldo kartu" },
+      { key: "kartu.backup", label: "Buat / unduh backup saldo kartu" },
+      { key: "kartu.restore", label: "Restore backup saldo kartu" },
+      { key: "kartu.hapusbackup", label: "Hapus backup saldo kartu" },
     ],
   },
   {
