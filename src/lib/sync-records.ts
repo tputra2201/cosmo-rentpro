@@ -59,12 +59,13 @@ export const SETTINGS_KEYS = [
 
 
 /**
- * Pengaturan yang isinya mahal kalau hilang: Jenis Konsol, Tarif per Jam, dan
- * potongan harga per konsol. Baris ini hanya boleh dikirim ke pusat kalau
- * memang diubah di perangkat ini, supaya perangkat yang datanya tergerus
- * (penyimpanan browser penuh atau terpotong) tidak menimpanya dengan bawaan.
+ * Semua pengaturan store dilindungi: baris pengaturan hanya boleh dikirim ke
+ * pusat kalau memang diubah di perangkat ini. Dengan begitu perangkat yang
+ * datanya tergerus (penyimpanan browser penuh, data browser dibersihkan, atau
+ * perangkat baru) tidak pernah menimpa pengaturan store — termasuk Printer,
+ * layout struk, hak akses, jam operasional, dan tarif — dengan isi bawaan.
  */
-export const PROTECTED_SETTINGS = new Set(["consoleTypes", "rates", "consoleDiscounts"]);
+export const PROTECTED_SETTINGS = new Set<string>(SETTINGS_KEYS);
 
 /** Nilai bawaan aplikasi — salinan dari defaultState di billing-store. */
 const DEFAULT_PROTECTED: Record<string, unknown> = {
