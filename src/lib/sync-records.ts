@@ -36,7 +36,7 @@ type ListKind = keyof typeof LIST_KINDS;
 export const SETTINGS_KIND = "settings";
 export const SETTINGS_ID = "app";
 
-const SETTINGS_KEYS = [
+export const SETTINGS_KEYS = [
   "consoleTypes",
   "rates",
   "roundingRule",
