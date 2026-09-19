@@ -5201,13 +5201,34 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           closedByName: actorRef.current.name || shift.cashierName,
           ...(user?.id ? { closedById: user.id } : {}),
         };
-        update((prev) =>
-          withLog(
-            { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
-            "Tutup shift kasir",
-            `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
-          ),
-        );
+        update((prev) => {
+          // Setelah close out, data kartu langsung dicadangkan otomatis.
+          const cards = prev.playingCards ?? [];
+          const backup: CardBackup = {
+            id: `cardbk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            createdAt: Date.now(),
+            source: "closing",
+            actorName: closed.closedByName || closed.cashierName,
+            ...(actorRef.current.role ? { actorRole: actorRef.current.role } : {}),
+            cardCount: cards.length,
+            totalBalance: cards.reduce((sum, c) => sum + (c.balance ?? 0), 0),
+            cards: JSON.parse(JSON.stringify(cards)) as PlayingCard[],
+            entries: JSON.parse(JSON.stringify(prev.cardEntries ?? [])) as CardEntry[],
+          };
+          return withLog(
+            withLog(
+              {
+                ...prev,
+                shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
+                cardBackups: [backup, ...(prev.cardBackups ?? [])].slice(0, CARD_BACKUP_LIMIT),
+              },
+              "Tutup shift kasir",
+              `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+            ),
+            "Backup kartu otomatis (closing)",
+            `${backup.cardCount} kartu · total saldo ${formatRupiah(backup.totalBalance)}`,
+          );
+        });
         return closed;
       },
       activeBusinessDay,
