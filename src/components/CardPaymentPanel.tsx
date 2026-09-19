@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { PlusCircle, UserRound } from "lucide-react";
+import { Link2, PlusCircle, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CardScanInput } from "@/components/CardScanInput";
 import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { findCardByNumber, formatRupiah, useBilling } from "@/lib/billing-store";
@@ -25,12 +32,25 @@ export function CardPaymentPanel({
   discount?: number;
   inputId?: string;
 }) {
-  const { playingCards, topupCard } = useBilling();
+  const { playingCards, topupCard, updatePlayingCard } = useBilling();
   const card = findCardByNumber(playingCards, cardNumber);
   const shortage = card ? Math.max(0, need - card.balance) : 0;
   const notEnough = Boolean(card && card.balance + 0.5 < need);
   const [topup, setTopup] = useState("");
   const [topupPay, setTopupPay] = useState("Cash");
+  const [linkId, setLinkId] = useState("");
+
+  const linkUid = () => {
+    const target = playingCards.find((c) => c.id === linkId);
+    const uid = cardNumber.trim().toUpperCase();
+    if (!target || !uid) return;
+    updatePlayingCard(target.id, { cardUid: uid });
+    setLinkId("");
+    toast.success(`Nomor ${uid} ditautkan ke kartu ${target.cardNumber}`, {
+      description: "Tap berikutnya langsung dikenali.",
+    });
+  };
+
 
   const doTopup = () => {
     if (!card) return;
