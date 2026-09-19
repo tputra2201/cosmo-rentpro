@@ -44,6 +44,7 @@ export function TimeUpAlarm() {
   }, [activeKeys]);
 
   const due = useMemo(() => {
+    if (!signedIn) return null;
     return (
       stations.find(
         (station) =>
@@ -51,7 +52,7 @@ export function TimeUpAlarm() {
           !dismissed.includes(keyOf(station)),
       ) ?? null
     );
-  }, [stations, bookings, now, dismissed]);
+  }, [stations, bookings, now, dismissed, signedIn]);
 
   const key = due ? keyOf(due) : "";
 
