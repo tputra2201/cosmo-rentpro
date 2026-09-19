@@ -83,9 +83,6 @@ export function CardPaymentPanel({
                 <span className="block truncate text-xs font-semibold uppercase tracking-wider text-primary">
                   Kode: {card.cardCode?.trim() || "-"}
                 </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  Chip: {card.cardUid?.trim() || "belum direkam"}
-                </span>
                 <span className="block truncate text-muted-foreground">
                   {card.customerName || "Tanpa nama"}
                   {card.member ? " · Member" : ""}
