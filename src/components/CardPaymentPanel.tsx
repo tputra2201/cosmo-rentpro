@@ -1,16 +1,9 @@
 import { useState } from "react";
-import { Link2, PlusCircle, UserRound } from "lucide-react";
+import { PlusCircle, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CardScanInput } from "@/components/CardScanInput";
 import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { findCardByNumber, formatRupiah, useBilling } from "@/lib/billing-store";
@@ -32,24 +25,13 @@ export function CardPaymentPanel({
   discount?: number;
   inputId?: string;
 }) {
-  const { playingCards, topupCard, updatePlayingCard } = useBilling();
+  const { playingCards, topupCard } = useBilling();
   const card = findCardByNumber(playingCards, cardNumber);
   const shortage = card ? Math.max(0, need - card.balance) : 0;
   const notEnough = Boolean(card && card.balance + 0.5 < need);
   const [topup, setTopup] = useState("");
   const [topupPay, setTopupPay] = useState("Cash");
-  const [linkId, setLinkId] = useState("");
 
-  const linkUid = () => {
-    const target = playingCards.find((c) => c.id === linkId);
-    const uid = cardNumber.trim().toUpperCase();
-    if (!target || !uid) return;
-    updatePlayingCard(target.id, { cardUid: uid });
-    setLinkId("");
-    toast.success(`Nomor ${uid} ditautkan ke kartu ${target.cardNumber}`, {
-      description: "Tap berikutnya langsung dikenali.",
-    });
-  };
 
 
   const doTopup = () => {
@@ -83,37 +65,14 @@ export function CardPaymentPanel({
           Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
         </p>
       ) : !card ? (
-        <div className="space-y-2">
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
-            Kartu belum terdaftar!
-            <span className="mt-1 block break-all text-xs font-normal">
-              Nomor terbaca: {cardNumber.trim()} — kalau kartunya sudah pernah didaftarkan, pilih
-              kartunya di bawah supaya nomor ini dikenali lain kali.
-            </span>
-          </p>
-          <div className="space-y-1.5">
-            <Label htmlFor={`${inputId}-link`}>Nomor ini milik kartu mana?</Label>
-            <div className="flex gap-2">
-              <Select value={linkId} onValueChange={setLinkId}>
-                <SelectTrigger id={`${inputId}-link`} className="flex-1">
-                  <SelectValue placeholder="Pilih kartu terdaftar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {playingCards.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.cardCode?.trim() ? `${c.cardCode} · ` : ""}
-                      {c.cardNumber} — {c.customerName || "Umum"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button type="button" variant="secondary" disabled={!linkId} onClick={linkUid}>
-                <Link2 className="size-4" /> Tautkan
-              </Button>
-            </div>
-          </div>
-        </div>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+          Kartu belum terdaftar!
+          <span className="mt-1 block break-all text-xs font-normal">
+            Nomor terbaca: {cardNumber.trim()}
+          </span>
+        </p>
       ) : (
+
 
         <div className="space-y-2 text-sm">
           <div className="flex items-start justify-between gap-3">
@@ -123,9 +82,6 @@ export function CardPaymentPanel({
                 <span className="block truncate font-semibold">{card.cardNumber}</span>
                 <span className="block truncate text-xs font-semibold uppercase tracking-wider text-primary">
                   Kode: {card.cardCode?.trim() || "-"}
-                </span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  Chip: {card.cardUid?.trim() || "belum direkam"}
                 </span>
                 <span className="block truncate text-muted-foreground">
                   {card.customerName || "Tanpa nama"}
