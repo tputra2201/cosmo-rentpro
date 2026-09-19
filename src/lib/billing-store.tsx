@@ -1049,6 +1049,7 @@ const defaultState: State = {
   pointsPerRupiah: 10000,
   playingCards: [],
   cardEntries: [],
+  cardBackups: [],
   cardPrice: 10000,
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
