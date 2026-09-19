@@ -1740,6 +1740,7 @@ type Ctx = State & {
   buyPlayingCard: (input: {
     cardNumber: string;
     cardCode?: string;
+    cardUid?: string;
     customerName?: string;
     customerPhone?: string;
     customerId?: string;
