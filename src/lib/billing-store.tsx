@@ -1497,6 +1497,7 @@ function migrateState(raw: unknown): State {
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
     playingCards: parsed.playingCards ?? defaultState.playingCards,
     cardEntries: parsed.cardEntries ?? defaultState.cardEntries,
+    cardBackups: parsed.cardBackups ?? defaultState.cardBackups,
     cardPrice: parsed.cardPrice ?? defaultState.cardPrice,
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
