@@ -133,15 +133,9 @@ function BuyCardPanel() {
       toast.error("Nomor kartu itu sudah terdaftar");
       return;
     }
-    const uid = cardUid.trim();
-    if (uid && findCardByNumber(playingCards, uid)) {
-      toast.error("Nomor seri chip itu sudah dipakai kartu lain");
-      return;
-    }
     const card = buyPlayingCard({
       cardNumber: number,
       cardCode: cardCode.trim(),
-      cardUid: uid,
       customerName: name,
       customerPhone: phone,
       member,
