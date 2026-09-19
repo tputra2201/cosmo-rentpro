@@ -200,7 +200,7 @@ function ShiftPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shifts.map((s) => {
+              {sortedShifts.map((s) => {
                 const sum = shiftSummary(s, history, cashEntries, now);
                 const actual = s.cashActual ?? 0;
                 const diff = s.closedAt ? actual - sum.expected : 0;
