@@ -293,6 +293,7 @@ function CardListPanel() {
         (c) =>
           c.cardNumber.toLowerCase().includes(key) ||
           (c.cardCode ?? "").toLowerCase().includes(key) ||
+          (c.cardUid ?? "").toLowerCase().includes(key) ||
           c.customerName.toLowerCase().includes(key) ||
           c.customerPhone.includes(key),
       )
