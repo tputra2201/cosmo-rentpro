@@ -83,15 +83,38 @@ export function CardPaymentPanel({
           Tempelkan kartu ke alat pembaca, atau ketik nomor kartunya.
         </p>
       ) : !card ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
-          Kartu belum terdaftar!
-          <span className="mt-1 block break-all text-xs font-normal">
-            Nomor terbaca: {cardNumber.trim()} — daftarkan nomor ini di menu Playing Card, atau
-            pilih metode pembayaran lain.
-          </span>
-        </p>
-
+        <div className="space-y-2">
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
+            Kartu belum terdaftar!
+            <span className="mt-1 block break-all text-xs font-normal">
+              Nomor terbaca: {cardNumber.trim()} — kalau kartunya sudah pernah didaftarkan, pilih
+              kartunya di bawah supaya nomor ini dikenali lain kali.
+            </span>
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor={`${inputId}-link`}>Nomor ini milik kartu mana?</Label>
+            <div className="flex gap-2">
+              <Select value={linkId} onValueChange={setLinkId}>
+                <SelectTrigger id={`${inputId}-link`} className="flex-1">
+                  <SelectValue placeholder="Pilih kartu terdaftar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {playingCards.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.cardCode?.trim() ? `${c.cardCode} · ` : ""}
+                      {c.cardNumber} — {c.customerName || "Umum"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="secondary" disabled={!linkId} onClick={linkUid}>
+                <Link2 className="size-4" /> Tautkan
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
+
         <div className="space-y-2 text-sm">
           <div className="flex items-start justify-between gap-3">
             <span className="flex min-w-0 items-center gap-2">
