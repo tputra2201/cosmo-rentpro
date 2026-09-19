@@ -1,16 +1,9 @@
 import { useState } from "react";
-import { Link2, PlusCircle, UserRound } from "lucide-react";
+import { PlusCircle, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CardScanInput } from "@/components/CardScanInput";
 import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { findCardByNumber, formatRupiah, useBilling } from "@/lib/billing-store";
