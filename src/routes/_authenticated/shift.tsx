@@ -261,6 +261,13 @@ function CheckInCard({
   const [opened, setOpened] = useState(false);
   const [startCash, setStartCash] = useState(String(suggested));
 
+  // Angka anjuran bisa berubah setelah data tersinkron dari pusat.
+  const [lastSuggested, setLastSuggested] = useState(suggested);
+  if (lastSuggested !== suggested) {
+    setLastSuggested(suggested);
+    setStartCash(String(suggested));
+  }
+
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <div className="flex items-center gap-2">
