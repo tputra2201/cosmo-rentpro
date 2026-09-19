@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlarmClock } from "lucide-react";
 
 import { useBilling, stationStatus } from "@/lib/billing-store";
+import { useAuth } from "@/lib/auth";
 import { alarmCycleMs, playAlarm } from "@/lib/alarm";
 import { Button } from "@/components/ui/button";
 import {
