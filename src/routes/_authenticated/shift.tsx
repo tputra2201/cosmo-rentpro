@@ -65,8 +65,24 @@ function ShiftPage() {
   const { fullName, user, role } = useAuth();
 
   const active = shifts.find((s) => !s.closedAt) ?? null;
-  const lastClosed = shifts.find((s) => s.closedAt) ?? null;
+  // Urutan daftar shift bisa teracak setelah sinkronisasi, jadi shift terakhir
+  // ditentukan dari waktu tutup terbaru — bukan dari posisi di daftar.
+  const lastClosed = useMemo(
+    () =>
+      shifts
+        .filter((s) => s.closedAt)
+        .reduce<typeof shifts[number] | null>(
+          (best, s) => (!best || (s.closedAt ?? 0) > (best.closedAt ?? 0) ? s : best),
+          null,
+        ),
+    [shifts],
+  );
   const suggestedStart = lastClosed?.nextStartCash ?? 0;
+
+  const sortedShifts = useMemo(
+    () => [...shifts].sort((a, b) => b.openedAt - a.openedAt),
+    [shifts],
+  );
 
   const cashierName = fullName.trim() || user?.email || "Kasir";
 
