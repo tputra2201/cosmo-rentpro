@@ -453,13 +453,23 @@ export const CARD_FUNDING_METHODS = [
   "Transfer Bank Mandiri",
 ] as const;
 
-/** Cari kartu berdasarkan nomor kartu atau kode kartu (tidak peka huruf besar/kecil). */
+/** Bandingkan nomor tanpa peduli huruf besar/kecil, spasi, titik dua, atau tanda hubung. */
+export function normalizeCardKey(value: string) {
+  return value.trim().toLowerCase().replace(/[\s:-]/g, "");
+}
+
+/**
+ * Cari kartu berdasarkan nomor kartu, kode kartu, atau nomor seri chip (UID).
+ * Dengan begitu tap dari pembaca USB (yang mengetik UID) dan tap dari perangkat
+ * ber-NFC bawaan (yang membaca teks rekaman NFC Tools) menemukan kartu yang sama.
+ */
 export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
-  const key = cardNumber.trim().toLowerCase();
+  const key = normalizeCardKey(cardNumber);
   if (!key) return undefined;
   return (
-    cards.find((c) => c.cardNumber.trim().toLowerCase() === key) ??
-    cards.find((c) => (c.cardCode ?? "").trim().toLowerCase() === key)
+    cards.find((c) => normalizeCardKey(c.cardNumber) === key) ??
+    cards.find((c) => normalizeCardKey(c.cardCode ?? "") === key) ??
+    cards.find((c) => normalizeCardKey(c.cardUid ?? "") === key)
   );
 }
 
