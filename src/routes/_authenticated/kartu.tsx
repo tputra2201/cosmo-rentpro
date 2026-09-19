@@ -371,26 +371,6 @@ function CardListPanel() {
               <DetailField label="Nomor Kartu">
                 <p className="text-sm text-muted-foreground">{card.cardNumber}</p>
               </DetailField>
-              <DetailField label="Nomor seri chip (UID)">
-                <Input
-                  value={card.cardUid ?? ""}
-                  placeholder="Klik kolom ini, lalu tempelkan kartu ke pembaca USB"
-                  aria-label={`Nomor seri chip ${card.cardNumber}`}
-                  onChange={(e) => {
-                    const uid = e.target.value.trim().toUpperCase();
-                    const other = uid ? findCardByNumber(playingCards, uid) : undefined;
-                    if (other && other.id !== card.id) {
-                      toast.error(`Nomor itu sudah dipakai kartu ${other.cardNumber}`);
-                      return;
-                    }
-                    updatePlayingCard(card.id, { cardUid: uid });
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nomor yang diketik pembaca kartu USB. Setelah diisi, kartu ini langsung dikenali
-                  saat ditempel di perangkat tanpa NFC bawaan.
-                </p>
-              </DetailField>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailField label="Nama pemegang">
