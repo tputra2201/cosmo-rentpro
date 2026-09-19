@@ -28,6 +28,7 @@ import {
   type OperatingHours,
 } from "./report-range";
 import { ALARM_SOUNDS, type AlarmSound } from "./alarm";
+import { SETTINGS_KEYS } from "./sync-records";
 
 /** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
@@ -943,6 +944,24 @@ type State = {
 const STORAGE_KEY = "billing-ps-state-v1";
 /** Penanda pengaturan penting yang memang diubah dari perangkat ini. */
 const DIRTY_SETTINGS_KEY = "billing.settings-dirty-v1";
+/**
+ * Penanda bahwa pengaturan yang sudah berbeda dari bawaan pernah dicatat sekali
+ * sebagai "diubah di perangkat ini". Tanpa ini, perangkat yang sudah mengatur
+ * Printer sebelum pembaruan aplikasi tidak akan pernah mengirim pengaturannya.
+ */
+const DIRTY_SEED_KEY = "billing.settings-dirty-seed-v1";
+
+/** JSON dengan urutan kunci tetap, supaya urutan kunci tidak dianggap berubah. */
+function stableValue(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableValue).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableValue(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
 
 /** Pindahkan satu elemen array dari posisi `from` ke posisi `to`. */
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
@@ -2164,14 +2183,30 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setState(migrateState(JSON.parse(raw)));
+        const loaded = migrateState(JSON.parse(raw));
+        setState(loaded);
         setStorageLoaded(true);
+        // Sekali saja: pengaturan yang isinya sudah berbeda dari bawaan aplikasi
+        // dianggap memang diatur di perangkat ini, supaya tetap bisa dikirim ke
+        // pusat setelah pembaruan aplikasi ini.
+        if (!localStorage.getItem(DIRTY_SEED_KEY)) {
+          const seeded: string[] = [];
+          for (const key of SETTINGS_KEYS) {
+            if (stableValue(loaded[key]) !== stableValue(defaultState[key])) seeded.push(key);
+          }
+          if (seeded.length) markSettingsDirty(...seeded);
+          try {
+            localStorage.setItem(DIRTY_SEED_KEY, "1");
+          } catch {
+            /* penyimpanan penuh: cukup berlaku selama aplikasi terbuka */
+          }
+        }
       }
     } catch {
       /* isi penyimpanan rusak: jalan dari bawaan, jangan tandai terbaca */
     }
     setHydrated(true);
-  }, []);
+  }, [markSettingsDirty]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -2323,8 +2358,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
 
   const update = useCallback(
-    (fn: (draft: State) => State) => setState((prev) => fn(prev)),
-    [],
+    (fn: (draft: State) => State) =>
+      setState((prev) => {
+        const next = fn(prev);
+        // Catat pengaturan yang benar-benar berubah di perangkat ini. Hanya
+        // pengaturan bertanda inilah yang boleh dikirim ke pusat, sehingga
+        // perangkat lain tidak pernah menimpanya dengan isi bawaan.
+        const touched: string[] = [];
+        for (const key of SETTINGS_KEYS) {
+          if (prev[key] === next[key]) continue;
+          if (stableValue(prev[key]) === stableValue(next[key])) continue;
+          touched.push(key);
+        }
+        if (touched.length) markSettingsDirty(...touched);
+        return next;
+      }),
+    [markSettingsDirty],
   );
 
   const mapStation = useCallback(
