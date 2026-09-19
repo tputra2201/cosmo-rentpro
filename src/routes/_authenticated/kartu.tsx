@@ -9,6 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CardBackupPanel } from "@/components/CardBackupPanel";
 import { CardScanInput } from "@/components/CardScanInput";
 import { CardFundingSelect } from "@/components/CardFundingSelect";
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,9 @@ function KartuPage() {
         <TabsContent value="beli" className="mt-4">
           <BuyCardPanel />
         </TabsContent>
-        <TabsContent value="kartu" className="mt-4">
+        <TabsContent value="kartu" className="mt-4 space-y-6">
           <CardListPanel />
+          <CardBackupPanel />
         </TabsContent>
         <TabsContent value="riwayat" className="mt-4">
           <HistoryPanel />

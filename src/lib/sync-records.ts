@@ -22,6 +22,7 @@ export const LIST_KINDS = {
   cafe_table: "cafeTables",
   playing_card: "playingCards",
   card_entry: "cardEntries",
+  card_backup: "cardBackups",
   cash_category: "cashCategories",
   cash_group: "cashGroups",
   cash_entry: "cashEntries",

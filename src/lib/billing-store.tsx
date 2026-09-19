@@ -415,6 +415,23 @@ export type PlayingCard = {
   sort?: number;
 };
 
+/** Cadangan data Playing Card (kartu + saldo + riwayat transaksi kartu). */
+export type CardBackup = {
+  id: string;
+  createdAt: number;
+  /** manual = ditekan kasir, closing = otomatis saat close out shift. */
+  source: "manual" | "closing";
+  actorName: string;
+  actorRole?: string;
+  cardCount: number;
+  totalBalance: number;
+  cards: PlayingCard[];
+  entries: CardEntry[];
+};
+
+/** Jumlah cadangan kartu yang disimpan (yang paling lama dibuang). */
+export const CARD_BACKUP_LIMIT = 10;
+
 export type CardEntryType = "purchase" | "topup" | "payment" | "adjust";
 export type CardEntry = {
   id: string;
@@ -472,6 +489,37 @@ export function findCardByNumber(cards: PlayingCard[], cardNumber: string) {
     cards.find((c) => normalizeCardKey(c.cardCode ?? "") === key) ??
     cards.find((c) => normalizeCardKey(c.cardUid ?? "") === key)
   );
+}
+
+/**
+ * Terapkan data cadangan kartu ke state.
+ * - replace: seluruh data kartu & riwayat kartu diganti isi cadangan.
+ * - merge: hanya kartu yang hilang (id/nomor belum ada) yang ditambahkan.
+ */
+function applyCardRestore<
+  T extends { playingCards: PlayingCard[]; cardEntries: CardEntry[] },
+>(prev: T, cards: PlayingCard[], entries: CardEntry[], mode: "replace" | "merge"): T {
+  const copyCards = JSON.parse(JSON.stringify(cards)) as PlayingCard[];
+  const copyEntries = JSON.parse(JSON.stringify(entries)) as CardEntry[];
+  if (mode === "replace") {
+    return { ...prev, playingCards: copyCards, cardEntries: copyEntries };
+  }
+  const ids = new Set(prev.playingCards.map((c) => c.id));
+  const keys = new Set(prev.playingCards.map((c) => normalizeCardKey(c.cardNumber)));
+  const missing = copyCards.filter(
+    (c) => !ids.has(c.id) && !keys.has(normalizeCardKey(c.cardNumber)),
+  );
+  if (!missing.length) return prev;
+  const missingIds = new Set(missing.map((c) => c.id));
+  const entryIds = new Set(prev.cardEntries.map((e) => e.id));
+  const addedEntries = copyEntries.filter(
+    (e) => missingIds.has(e.cardId) && !entryIds.has(e.id),
+  );
+  return {
+    ...prev,
+    playingCards: [...prev.playingCards, ...missing],
+    cardEntries: [...addedEntries, ...prev.cardEntries],
+  };
 }
 
 /** Potongan harga (persen) untuk pembayaran memakai saldo Playing Card. */
@@ -913,6 +961,8 @@ type State = {
   pointsPerRupiah: number;
   playingCards: PlayingCard[];
   cardEntries: CardEntry[];
+  /** Cadangan data Playing Card (maksimal 10 terbaru). */
+  cardBackups: CardBackup[];
   cardPrice: number;
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
@@ -1030,6 +1080,7 @@ const defaultState: State = {
   pointsPerRupiah: 10000,
   playingCards: [],
   cardEntries: [],
+  cardBackups: [],
   cardPrice: 10000,
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
@@ -1477,6 +1528,7 @@ function migrateState(raw: unknown): State {
     pointsPerRupiah: parsed.pointsPerRupiah ?? defaultState.pointsPerRupiah,
     playingCards: parsed.playingCards ?? defaultState.playingCards,
     cardEntries: parsed.cardEntries ?? defaultState.cardEntries,
+    cardBackups: parsed.cardBackups ?? defaultState.cardBackups,
     cardPrice: parsed.cardPrice ?? defaultState.cardPrice,
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
@@ -1780,6 +1832,18 @@ type Ctx = State & {
   setCardDiscountPercent: (value: number) => void;
   setCardMemberDiscountPercent: (value: number) => void;
   setCardUsbReaderMode: (value: boolean) => void;
+  /** Buat cadangan data Playing Card sekarang. */
+  createCardBackup: (source?: "manual" | "closing") => CardBackup | null;
+  /** Pulihkan data kartu dari cadangan tersimpan. */
+  restoreCardBackup: (id: string, mode: "replace" | "merge") => boolean;
+  /** Pulihkan data kartu dari isi berkas cadangan. */
+  restoreCardBackupData: (
+    data: { cards: PlayingCard[]; entries: CardEntry[] },
+    mode: "replace" | "merge",
+    label?: string,
+  ) => boolean;
+  /** Hapus satu cadangan data kartu. */
+  removeCardBackup: (id: string) => void;
   addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
   updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
   removeBooking: (id: string) => void;
@@ -4795,6 +4859,70 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       setCardMemberDiscountPercent: (value) =>
         update((prev) => ({ ...prev, cardMemberDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
       setCardUsbReaderMode: (value) => update((prev) => ({ ...prev, cardUsbReaderMode: Boolean(value) })),
+      createCardBackup: (source = "manual") => {
+        const cards = state.playingCards ?? [];
+        const entries = state.cardEntries ?? [];
+        const backup: CardBackup = {
+          id: `cardbk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          createdAt: Date.now(),
+          source,
+          actorName: actorRef.current.name || "-",
+          ...(actorRef.current.role ? { actorRole: actorRef.current.role } : {}),
+          cardCount: cards.length,
+          totalBalance: cards.reduce((sum, c) => sum + (c.balance ?? 0), 0),
+          cards: JSON.parse(JSON.stringify(cards)) as PlayingCard[],
+          entries: JSON.parse(JSON.stringify(entries)) as CardEntry[],
+        };
+        update((prev) =>
+          withLog(
+            {
+              ...prev,
+              cardBackups: [backup, ...(prev.cardBackups ?? [])].slice(0, CARD_BACKUP_LIMIT),
+            },
+            source === "closing" ? "Backup kartu otomatis (closing)" : "Buat backup saldo kartu",
+            `${backup.cardCount} kartu · total saldo ${formatRupiah(backup.totalBalance)}`,
+          ),
+        );
+        return backup;
+      },
+      restoreCardBackup: (id, mode) => {
+        const backup = (state.cardBackups ?? []).find((b) => b.id === id);
+        if (!backup) return false;
+        update((prev) =>
+          withLog(
+            applyCardRestore(prev, backup.cards, backup.entries, mode),
+            "Restore backup saldo kartu",
+            `${new Date(backup.createdAt).toLocaleString("id-ID")} · ${
+              mode === "replace" ? "ganti semua data kartu" : "tambah kartu yang hilang"
+            } · ${backup.cardCount} kartu`,
+          ),
+        );
+        return true;
+      },
+      restoreCardBackupData: (data, mode, label) => {
+        const cards = Array.isArray(data.cards) ? data.cards : [];
+        if (!cards.length) return false;
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        update((prev) =>
+          withLog(
+            applyCardRestore(prev, cards, entries, mode),
+            "Pulihkan saldo kartu dari berkas",
+            `${label ? `${label} · ` : ""}${cards.length} kartu · ${
+              mode === "replace" ? "ganti semua data kartu" : "tambah kartu yang hilang"
+            }`,
+          ),
+        );
+        return true;
+      },
+      removeCardBackup: (id) =>
+        update((prev) => {
+          const target = (prev.cardBackups ?? []).find((b) => b.id === id);
+          return withLog(
+            { ...prev, cardBackups: (prev.cardBackups ?? []).filter((b) => b.id !== id) },
+            "Hapus backup saldo kartu",
+            target ? new Date(target.createdAt).toLocaleString("id-ID") : id,
+          );
+        }),
       addBooking: (input) => {
         const conflict = state.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
         if (conflict) return false;
@@ -5073,13 +5201,34 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           closedByName: actorRef.current.name || shift.cashierName,
           ...(user?.id ? { closedById: user.id } : {}),
         };
-        update((prev) =>
-          withLog(
-            { ...prev, shifts: prev.shifts.map((s) => (s.id === id ? closed : s)) },
-            "Tutup shift kasir",
-            `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
-          ),
-        );
+        update((prev) => {
+          // Setelah close out, data kartu langsung dicadangkan otomatis.
+          const cards = prev.playingCards ?? [];
+          const backup: CardBackup = {
+            id: `cardbk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            createdAt: Date.now(),
+            source: "closing",
+            actorName: closed.closedByName || closed.cashierName,
+            ...(actorRef.current.role ? { actorRole: actorRef.current.role } : {}),
+            cardCount: cards.length,
+            totalBalance: cards.reduce((sum, c) => sum + (c.balance ?? 0), 0),
+            cards: JSON.parse(JSON.stringify(cards)) as PlayingCard[],
+            entries: JSON.parse(JSON.stringify(prev.cardEntries ?? [])) as CardEntry[],
+          };
+          return withLog(
+            withLog(
+              {
+                ...prev,
+                shifts: prev.shifts.map((s) => (s.id === id ? closed : s)),
+                cardBackups: [backup, ...(prev.cardBackups ?? [])].slice(0, CARD_BACKUP_LIMIT),
+              },
+              "Tutup shift kasir",
+              `${closed.cashierName} · ditutup oleh ${closed.closedByName || "-"} · kas fisik ${formatRupiah(closed.cashActual ?? 0)}`,
+            ),
+            "Backup kartu otomatis (closing)",
+            `${backup.cardCount} kartu · total saldo ${formatRupiah(backup.totalBalance)}`,
+          );
+        });
         return closed;
       },
       activeBusinessDay,
