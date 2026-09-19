@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useBilling } from "@/lib/billing-store";
 
 type NdefRecord = { recordType: string; data?: ArrayBuffer; encoding?: string };
 type NdefReadEvent = { serialNumber?: string; message: { records: NdefRecord[] } };
@@ -32,9 +33,23 @@ function readCardNumber(event: NdefReadEvent) {
   return (event.serialNumber ?? "").replace(/:/g, "").toUpperCase();
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  const el = target as HTMLElement | null;
+  if (!el || !el.tagName) return false;
+  return (
+    el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.tagName === "SELECT" ||
+    el.isContentEditable
+  );
+}
+
 /**
- * Kolom nomor kartu: alat pembaca USB mengetik otomatis lalu Enter,
- * atau tekan tombol Scan NFC pada ponsel/alat pembaca NFC.
+ * Kolom nomor kartu. Tiga cara mengisi:
+ * 1. Pembaca kartu USB mode keyboard (HID): mengetik nomor lalu Enter — kolom
+ *    ini fokus otomatis, dan ketikan cepat tetap ditangkap walau fokus berpindah.
+ * 2. Tombol Scan NFC pada ponsel/tablet dengan NFC bawaan (Chrome Android).
+ * 3. Ketik manual lalu Enter.
  */
 export function CardScanInput({
   value,
@@ -51,18 +66,55 @@ export function CardScanInput({
   id?: string;
   autoFocus?: boolean;
 }) {
+  const { cardUsbReaderMode } = useBilling();
   const [scanning, setScanning] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const bufferRef = useRef<{ text: string; last: number }>({ text: "", last: 0 });
+  const canNfc = nfcSupported();
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Fokus otomatis supaya pembaca USB (mode keyboard) bisa langsung mengetik
+  // tanpa kasir menyentuh layar dulu.
+  useEffect(() => {
+    if (autoFocus || cardUsbReaderMode) inputRef.current?.focus();
+  }, [autoFocus, cardUsbReaderMode]);
+
+  // Tangkap ketikan cepat dari pembaca USB walau fokus tidak di kolom ini:
+  // karakter beruntun <100 md diakhiri Enter dianggap hasil scan kartu.
+  useEffect(() => {
+    if (!cardUsbReaderMode) return;
+    const onKey = (event: KeyboardEvent) => {
+      // Ketikan yang masuk ke kolom lain (atau kolom ini sendiri) dibiarkan
+      // mengalir normal — kolom ini sudah menangani Enter-nya sendiri.
+      if (isEditableTarget(event.target)) {
+        bufferRef.current = { text: "", last: 0 };
+        return;
+      }
+      const now = Date.now();
+      const buf = bufferRef.current;
+      if (event.key === "Enter") {
+        const text = buf.text;
+        bufferRef.current = { text: "", last: 0 };
+        if (text.length >= 4 && now - buf.last < 1000) {
+          event.preventDefault();
+          onChange(text);
+          onSubmit?.(text);
+          toast.success(`Kartu terbaca: ${text}`);
+        }
+        return;
+      }
+      if (event.key.length !== 1) return;
+      const text = now - buf.last < 100 ? buf.text + event.key : event.key;
+      bufferRef.current = { text, last: now };
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cardUsbReaderMode, onChange, onSubmit]);
+
   const startScan = async () => {
-    if (!nfcSupported()) {
-      toast.error("Perangkat ini belum bisa scan NFC", {
-        description: "Gunakan ponsel Android dengan Chrome, atau ketik nomor kartunya.",
-      });
-      return;
-    }
+    if (!canNfc) return;
     try {
       const Ctor = (window as unknown as { NDEFReader: new () => NdefReaderLike }).NDEFReader;
       const reader = new Ctor();
@@ -97,10 +149,11 @@ export function CardScanInput({
           <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id={id}
+            ref={inputRef}
             className="pl-9"
             autoFocus={autoFocus}
             value={value}
-            placeholder="Tempel kartu atau ketik nomor"
+            placeholder={canNfc ? "Tempel kartu atau ketik nomor" : "Tempel kartu ke pembaca USB atau ketik nomor"}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -110,10 +163,19 @@ export function CardScanInput({
             }}
           />
         </div>
-        <Button type="button" variant="secondary" onClick={startScan} disabled={scanning}>
-          <Nfc className="size-4" /> {scanning ? "Menunggu kartu" : "Scan NFC"}
-        </Button>
+        {canNfc && (
+          <Button type="button" variant="secondary" onClick={startScan} disabled={scanning}>
+            <Nfc className="size-4" /> {scanning ? "Menunggu kartu" : "Scan NFC"}
+          </Button>
+        )}
       </div>
+      {!canNfc && (
+        <p className="text-xs text-muted-foreground">
+          Perangkat ini tidak memiliki NFC bawaan, jadi tombol Scan NFC tidak tersedia. Gunakan
+          pembaca kartu USB mode keyboard (tempel kartu, nomor terisi otomatis) atau ketik nomor
+          kartu lalu Enter.
+        </p>
+      )}
     </div>
   );
 }

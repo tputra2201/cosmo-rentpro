@@ -903,6 +903,8 @@ type State = {
   cardPrice: number;
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
+  /** Mode pembaca kartu USB (keyboard): fokus otomatis + tangkap ketikan cepat. */
+  cardUsbReaderMode: boolean;
   cashCategories: CashCategory[];
   cashGroups: CashGroup[];
   cashEntries: CashEntry[];
@@ -1000,6 +1002,7 @@ const defaultState: State = {
   cardPrice: 10000,
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
+  cardUsbReaderMode: true,
   cashCategories: [
     { id: "cc-lain", name: "Pendapatan Lain", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
@@ -1447,6 +1450,7 @@ function migrateState(raw: unknown): State {
     cardDiscountPercent: parsed.cardDiscountPercent ?? defaultState.cardDiscountPercent,
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
+    cardUsbReaderMode: parsed.cardUsbReaderMode ?? defaultState.cardUsbReaderMode,
     cashCategories: (() => {
       const list = (parsed.cashCategories?.length
         ? parsed.cashCategories
@@ -1743,6 +1747,7 @@ type Ctx = State & {
   setCardPrice: (value: number) => void;
   setCardDiscountPercent: (value: number) => void;
   setCardMemberDiscountPercent: (value: number) => void;
+  setCardUsbReaderMode: (value: boolean) => void;
   addBooking: (input: Omit<Booking, "id" | "status">) => boolean;
   updateBooking: (id: string, patch: Partial<Omit<Booking, "id">>) => boolean;
   removeBooking: (id: string) => void;
@@ -2008,6 +2013,10 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
     action: "Ubah potongan member playing card",
     detail: `${txt(a[0])}%`,
     coalesce: true,
+  }),
+  setCardUsbReaderMode: (a) => ({
+    action: "Ubah mode pembaca USB kartu",
+    detail: a[0] ? "Aktif" : "Nonaktif",
   }),
   setReceiptLayout: (a) => ({
     action: "Ubah tata letak struk",
@@ -4720,6 +4729,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({ ...prev, cardDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
       setCardMemberDiscountPercent: (value) =>
         update((prev) => ({ ...prev, cardMemberDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
+      setCardUsbReaderMode: (value) => update((prev) => ({ ...prev, cardUsbReaderMode: Boolean(value) })),
       addBooking: (input) => {
         const conflict = state.bookings.some((item) => item.stationId === input.stationId && item.status !== "cancelled" && item.status !== "completed" && input.startAt < item.endAt && input.endAt > item.startAt);
         if (conflict) return false;

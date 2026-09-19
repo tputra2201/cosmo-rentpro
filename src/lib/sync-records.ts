@@ -46,6 +46,7 @@ const SETTINGS_KEYS = [
   "cardPrice",
   "cardDiscountPercent",
   "cardMemberDiscountPercent",
+  "cardUsbReaderMode",
   "consoleDiscounts",
   "tvNotice",
   "printers",
