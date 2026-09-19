@@ -930,6 +930,8 @@ type State = {
   pointsPerRupiah: number;
   playingCards: PlayingCard[];
   cardEntries: CardEntry[];
+  /** Cadangan data Playing Card (maksimal 10 terbaru). */
+  cardBackups: CardBackup[];
   cardPrice: number;
   cardDiscountPercent: number;
   cardMemberDiscountPercent: number;
