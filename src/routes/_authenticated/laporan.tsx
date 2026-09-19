@@ -170,7 +170,6 @@ function LaporanPage() {
             targetRef={reportRef}
             title={`Laporan ${storeName}`}
             periodText={`Periode: ${rangeLabel(range)}`}
-            folderName={storeName}
           />
         </div>
       </div>

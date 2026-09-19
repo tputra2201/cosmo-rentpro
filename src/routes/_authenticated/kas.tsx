@@ -187,7 +187,6 @@ function CashHistory() {
             targetRef={printRef}
             title={`Riwayat Kas ${storeName}`}
             periodText={`Periode ${rangeLabel(range)}`}
-            folderName={storeName}
           />
         </div>
       </div>
