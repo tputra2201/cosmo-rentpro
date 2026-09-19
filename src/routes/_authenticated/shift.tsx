@@ -65,8 +65,24 @@ function ShiftPage() {
   const { fullName, user, role } = useAuth();
 
   const active = shifts.find((s) => !s.closedAt) ?? null;
-  const lastClosed = shifts.find((s) => s.closedAt) ?? null;
+  // Urutan daftar shift bisa teracak setelah sinkronisasi, jadi shift terakhir
+  // ditentukan dari waktu tutup terbaru — bukan dari posisi di daftar.
+  const lastClosed = useMemo(
+    () =>
+      shifts
+        .filter((s) => s.closedAt)
+        .reduce<typeof shifts[number] | null>(
+          (best, s) => (!best || (s.closedAt ?? 0) > (best.closedAt ?? 0) ? s : best),
+          null,
+        ),
+    [shifts],
+  );
   const suggestedStart = lastClosed?.nextStartCash ?? 0;
+
+  const sortedShifts = useMemo(
+    () => [...shifts].sort((a, b) => b.openedAt - a.openedAt),
+    [shifts],
+  );
 
   const cashierName = fullName.trim() || user?.email || "Kasir";
 
@@ -184,7 +200,7 @@ function ShiftPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shifts.map((s) => {
+              {sortedShifts.map((s) => {
                 const sum = shiftSummary(s, history, cashEntries, now);
                 const actual = s.cashActual ?? 0;
                 const diff = s.closedAt ? actual - sum.expected : 0;
@@ -244,6 +260,13 @@ function CheckInCard({
 }) {
   const [opened, setOpened] = useState(false);
   const [startCash, setStartCash] = useState(String(suggested));
+
+  // Angka anjuran bisa berubah setelah data tersinkron dari pusat.
+  const [lastSuggested, setLastSuggested] = useState(suggested);
+  if (lastSuggested !== suggested) {
+    setLastSuggested(suggested);
+    setStartCash(String(suggested));
+  }
 
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
