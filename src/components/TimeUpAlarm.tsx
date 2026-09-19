@@ -16,11 +16,13 @@ import {
 
 /**
  * Popup dan alarm saat waktu rental habis.
- * Tetap muncul walau layar sedang di halaman masuk (misal setelah keluar
- * otomatis), karena timer sesi terus berjalan sesuai jam sebenarnya.
+ * Hanya muncul bila ada pengguna yang sedang masuk — perangkat yang berada di
+ * halaman masuk (sudah keluar) tidak lagi menampilkan notifikasi ini.
  */
 export function TimeUpAlarm() {
   const { stations, bookings, now, sessionSecurity } = useBilling();
+  const { session } = useAuth();
+  const signedIn = Boolean(session);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   // Satu kali konfirmasi berlaku untuk sesi tersebut, jadi popup tidak muncul
