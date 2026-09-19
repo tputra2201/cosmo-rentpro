@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlarmClock } from "lucide-react";
 
 import { useBilling, stationStatus } from "@/lib/billing-store";
+import { useAuth } from "@/lib/auth";
 import { alarmCycleMs, playAlarm } from "@/lib/alarm";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,11 +16,13 @@ import {
 
 /**
  * Popup dan alarm saat waktu rental habis.
- * Tetap muncul walau layar sedang di halaman masuk (misal setelah keluar
- * otomatis), karena timer sesi terus berjalan sesuai jam sebenarnya.
+ * Hanya muncul bila ada pengguna yang sedang masuk — perangkat yang berada di
+ * halaman masuk (sudah keluar) tidak lagi menampilkan notifikasi ini.
  */
 export function TimeUpAlarm() {
   const { stations, bookings, now, sessionSecurity } = useBilling();
+  const { session } = useAuth();
+  const signedIn = Boolean(session);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   // Satu kali konfirmasi berlaku untuk sesi tersebut, jadi popup tidak muncul
@@ -41,6 +44,7 @@ export function TimeUpAlarm() {
   }, [activeKeys]);
 
   const due = useMemo(() => {
+    if (!signedIn) return null;
     return (
       stations.find(
         (station) =>
@@ -48,7 +52,7 @@ export function TimeUpAlarm() {
           !dismissed.includes(keyOf(station)),
       ) ?? null
     );
-  }, [stations, bookings, now, dismissed]);
+  }, [stations, bookings, now, dismissed, signedIn]);
 
   const key = due ? keyOf(due) : "";
 
