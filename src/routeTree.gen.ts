@@ -35,6 +35,7 @@ import { Route as AuthenticatedTvRouteImport } from './routes/_authenticated/tv'
 import { Route as ApiPublicClientIpRouteImport } from './routes/api/public/client-ip'
 import { Route as ApiPublicManifestRouteImport } from './routes/api/public/manifest'
 import { Route as ApiPublicStoreRegistryRouteImport } from './routes/api/public/store-registry'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -165,6 +166,12 @@ const ApiPublicStoreRegistryRoute = ApiPublicStoreRegistryRouteImport.update({
   path: '/api/public/store-registry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/atur-sandi': typeof AturSandiRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/api/public/client-ip': typeof ApiPublicClientIpRoute
   '/api/public/manifest': typeof ApiPublicManifestRoute
   '/api/public/store-registry': typeof ApiPublicStoreRegistryRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/atur-sandi'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
+    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/_authenticated'
@@ -332,6 +344,7 @@ export interface FileRouteTypes {
     | '/api/public/client-ip'
     | '/api/public/manifest'
     | '/api/public/store-registry'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -342,6 +355,7 @@ export interface RootRouteChildren {
   ApiPublicClientIpRoute: typeof ApiPublicClientIpRoute
   ApiPublicManifestRoute: typeof ApiPublicManifestRoute
   ApiPublicStoreRegistryRoute: typeof ApiPublicStoreRegistryRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -528,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStoreRegistryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -586,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicClientIpRoute: ApiPublicClientIpRoute,
   ApiPublicManifestRoute: ApiPublicManifestRoute,
   ApiPublicStoreRegistryRoute: ApiPublicStoreRegistryRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
