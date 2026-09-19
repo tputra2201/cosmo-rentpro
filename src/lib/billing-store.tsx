@@ -415,6 +415,23 @@ export type PlayingCard = {
   sort?: number;
 };
 
+/** Cadangan data Playing Card (kartu + saldo + riwayat transaksi kartu). */
+export type CardBackup = {
+  id: string;
+  createdAt: number;
+  /** manual = ditekan kasir, closing = otomatis saat close out shift. */
+  source: "manual" | "closing";
+  actorName: string;
+  actorRole?: string;
+  cardCount: number;
+  totalBalance: number;
+  cards: PlayingCard[];
+  entries: CardEntry[];
+};
+
+/** Jumlah cadangan kartu yang disimpan (yang paling lama dibuang). */
+export const CARD_BACKUP_LIMIT = 10;
+
 export type CardEntryType = "purchase" | "topup" | "payment" | "adjust";
 export type CardEntry = {
   id: string;
