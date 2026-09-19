@@ -3583,26 +3583,25 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       },
       settleCafeTable: (tableId, input) => {
         if (!shiftOpen) return null;
-        let created: Settlement | null = null;
+        const amount = Math.max(0, Math.round(input.amount));
+        if (amount <= 0) return null;
+        const at = Date.now();
+        const label = input.payments?.length
+          ? Array.from(new Set(input.payments.map((p) => p.method))).join(" + ")
+          : input.payment || "Cash";
+        const settlement: Settlement = {
+          id: `cafepay-${at}-${Math.random().toString(36).slice(2, 7)}`,
+          at,
+          payment: label,
+          ...(input.payments?.length ? { payments: input.payments } : {}),
+          amount,
+          amountPaid: Math.max(0, Math.round(input.amountPaid || amount)),
+          change: Math.max(0, Math.round((input.amountPaid || amount) - amount)),
+        };
+        if (!stateRef.current.cafeTables.some((t) => t.id === tableId)) return null;
         update((prev) => {
           const table = prev.cafeTables.find((t) => t.id === tableId);
           if (!table) return prev;
-          const amount = Math.max(0, Math.round(input.amount));
-          if (amount <= 0) return prev;
-          const at = Date.now();
-          const label = input.payments?.length
-            ? Array.from(new Set(input.payments.map((p) => p.method))).join(" + ")
-            : input.payment || "Cash";
-          const settlement: Settlement = {
-            id: `cafepay-${at}-${Math.random().toString(36).slice(2, 7)}`,
-            at,
-            payment: label,
-            ...(input.payments?.length ? { payments: input.payments } : {}),
-            amount,
-            amountPaid: Math.max(0, Math.round(input.amountPaid || amount)),
-            change: Math.max(0, Math.round((input.amountPaid || amount) - amount)),
-          };
-          created = settlement;
           return {
             ...prev,
             cafeTables: prev.cafeTables.map((t) =>
@@ -3616,7 +3615,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ),
           };
         });
-        return created;
+        return settlement;
       },
       removeCafeSettlement: (tableId, settlementId) =>
         update((prev) => ({
@@ -3631,38 +3630,40 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ),
         })),
       cancelCafeRemainder: (tableId) => {
-        let record: HistoryRecord | null = null;
-        setState((prev) => {
+        const at = Date.now();
+        const compute = (prev: State): { record: HistoryRecord | null; next: State } => {
           const table = prev.cafeTables.find((t) => t.id === tableId);
-          if (!table) return prev;
-          const at = Date.now();
+          if (!table) return { record: null, next: prev };
           const prior = table.settlements ?? [];
           const paid = prior.reduce((sum, s) => sum + s.amount, 0);
           if (paid <= 0) {
             // Belum ada pembayaran: seluruh pesanan meja dibatalkan.
-            return withLog(
-              {
-                ...prev,
-                cafeTables: prev.cafeTables.map((t) =>
-                  t.id === tableId
-                    ? (() => {
-                        const { paidAt: _paidAt, ...rest } = t;
-                        return {
-                          ...rest,
-                          orders: [],
-                          openedAt: null,
-                          customerName: "",
-                          notes: "",
-                          promoIds: [],
-                          settlements: [],
-                        };
-                      })()
-                    : t,
-                ),
-              },
-              "Batalkan pesanan meja kafe",
-              `${table.name} · ${table.orders.length} item`,
-            );
+            return {
+              record: null,
+              next: withLog(
+                {
+                  ...prev,
+                  cafeTables: prev.cafeTables.map((t) =>
+                    t.id === tableId
+                      ? (() => {
+                          const { paidAt: _paidAt, ...rest } = t;
+                          return {
+                            ...rest,
+                            orders: [],
+                            openedAt: null,
+                            customerName: "",
+                            notes: "",
+                            promoIds: [],
+                            settlements: [],
+                          };
+                        })()
+                      : t,
+                  ),
+                },
+                "Batalkan pesanan meja kafe",
+                `${table.name} · ${table.orders.length} item`,
+              ),
+            };
           }
           const splits: PaymentSplit[] = prior.flatMap((s) =>
             s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
@@ -3692,28 +3693,33 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             kind: "cafe",
             tableName: table.name,
           };
-          record = completed;
-          return withLog(
-            {
-              ...prev,
-              history: [completed, ...prev.history],
-              cafeTables: prev.cafeTables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      orders: [],
-                      promoIds: [],
-                      settlements: [],
-                      openedAt: t.openedAt ?? at,
-                      paidAt: at,
-                    }
-                  : t,
-              ),
-            },
-            "Batalkan sisa tagihan meja kafe",
-            `${table.name} · sudah dibayar ${formatRupiah(paid)} · sisa tagihan dibatalkan`,
-          );
-        });
+          return {
+            record: completed,
+            next: withLog(
+              {
+                ...prev,
+                history: [completed, ...prev.history],
+                cafeTables: prev.cafeTables.map((t) =>
+                  t.id === tableId
+                    ? {
+                        ...t,
+                        orders: [],
+                        promoIds: [],
+                        settlements: [],
+                        openedAt: t.openedAt ?? at,
+                        paidAt: at,
+                      }
+                    : t,
+                ),
+              },
+              "Batalkan sisa tagihan meja kafe",
+              `${table.name} · sudah dibayar ${formatRupiah(paid)} · sisa tagihan dibatalkan`,
+            ),
+          };
+        };
+        const { record } = compute(stateRef.current);
+        if (!stateRef.current.cafeTables.some((t) => t.id === tableId)) return null;
+        setState((prev) => compute(prev).next);
         return record;
       },
 
