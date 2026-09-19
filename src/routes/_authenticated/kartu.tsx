@@ -101,7 +101,6 @@ function BuyCardPanel() {
   const { requireShift } = useShiftGate();
   const [cardNumber, setCardNumber] = useState("");
   const [cardCode, setCardCode] = useState("");
-  const [cardUid, setCardUid] = useState("");
   const [price, setPrice] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
