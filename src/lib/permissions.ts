@@ -242,6 +242,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "kas.tambah",
     "kartu.jual",
     "kartu.topup",
+    "kartu.backup",
     "pelanggan.kelola",
     "cetak.struk",
     "cetak.label",
