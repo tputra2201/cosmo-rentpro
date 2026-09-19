@@ -82,8 +82,9 @@ function KartuPage() {
         <TabsContent value="beli" className="mt-4">
           <BuyCardPanel />
         </TabsContent>
-        <TabsContent value="kartu" className="mt-4">
+        <TabsContent value="kartu" className="mt-4 space-y-6">
           <CardListPanel />
+          <CardBackupPanel />
         </TabsContent>
         <TabsContent value="riwayat" className="mt-4">
           <HistoryPanel />
