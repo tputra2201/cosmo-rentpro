@@ -622,6 +622,14 @@ export function activePromosOfKind(promotions: Promotion[], now: number, kind: P
   return promotions.filter((promo) => promoKind(promo) === kind && promoInWindow(promo, now));
 }
 
+/**
+ * Promo jenis tertentu yang berlaku sendiri (otomatis).
+ * Promo tanpa tanda otomatis hanya jalan bila kasir memberikannya manual.
+ */
+export function autoPromosOfKind(promotions: Promotion[], now: number, kind: PromoKind) {
+  return activePromosOfKind(promotions, now, kind).filter((promo) => Boolean(promo.auto));
+}
+
 /** Semua promo yang tanggal dan jamnya sedang berlaku. */
 export function activePromos(promotions: Promotion[], now: number) {
   return promotions.filter((promo) => promoInWindow(promo, now));
@@ -652,7 +660,7 @@ export function bogoFreeOrders(
   qty: number,
 ): OrderItem[] {
   const out: OrderItem[] = [];
-  for (const promo of activePromosOfKind(promotions, now, "bogo")) {
+  for (const promo of autoPromosOfKind(promotions, now, "bogo")) {
     if (promo.buyMenuId !== item.id) continue;
     const need = Math.max(1, Math.round(promo.buyQty ?? 1));
     const times = Math.floor(qty / need);
@@ -2477,13 +2485,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const startAt = Date.now();
         const paidHours = mode === "prepaid" ? durationMin / 60 : 0;
         // Promo bonus jam rental: jam tambahan tanpa menambah tagihan.
-        const bonusPromo = activePromosOfKind(prev.promotions, startAt, "bonusHours").find(
+        const bonusPromo = autoPromosOfKind(prev.promotions, startAt, "bonusHours").find(
           (promo) => paidHours >= Math.max(0.25, promo.payHours ?? 0),
         );
         const promoBonusMin = bonusPromo ? Math.round((bonusPromo.bonusHours ?? 0) * 60) : 0;
         // Promo main X jam dapat menu gratis.
         const giftOrders: OrderItem[] = [];
-        for (const promo of activePromosOfKind(prev.promotions, startAt, "freeMenu")) {
+        for (const promo of autoPromosOfKind(prev.promotions, startAt, "freeMenu")) {
           if (paidHours < Math.max(0.25, promo.minHours ?? 0)) continue;
           const gift = prev.menu.find((m) => m.id === promo.freeMenuId);
           if (gift) giftOrders.push(freeOrderLine(gift, promo.freeMenuQty ?? 1, promo.name));
