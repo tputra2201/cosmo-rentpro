@@ -622,6 +622,14 @@ export function activePromosOfKind(promotions: Promotion[], now: number, kind: P
   return promotions.filter((promo) => promoKind(promo) === kind && promoInWindow(promo, now));
 }
 
+/**
+ * Promo jenis tertentu yang berlaku sendiri (otomatis).
+ * Promo tanpa tanda otomatis hanya jalan bila kasir memberikannya manual.
+ */
+export function autoPromosOfKind(promotions: Promotion[], now: number, kind: PromoKind) {
+  return activePromosOfKind(promotions, now, kind).filter((promo) => Boolean(promo.auto));
+}
+
 /** Semua promo yang tanggal dan jamnya sedang berlaku. */
 export function activePromos(promotions: Promotion[], now: number) {
   return promotions.filter((promo) => promoInWindow(promo, now));
