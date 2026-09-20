@@ -98,8 +98,17 @@ export function CardScanInput({
             scannedRef.current = false;
             onChange(e.target.value);
           }}
-          onFocus={() => {
-            if (value.trim()) scannedRef.current = true;
+          onFocus={(e) => {
+            if (!value.trim()) return;
+            scannedRef.current = true;
+            // Pilih seluruh nomor: scan baru menggantinya, tapi klik di posisi
+            // tertentu (atau tombol panah) mengecilkan pilihan sehingga kasir
+            // bisa mengoreksi satu digit tanpa menghapus semua.
+            e.currentTarget.select();
+          }}
+          onPointerDown={() => {
+            // Sentuhan/klik = niat mengedit manual, bukan menempelkan kartu.
+            scannedRef.current = false;
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -108,12 +117,18 @@ export function CardScanInput({
               onSubmit?.(value);
               return;
             }
-            // Kartu baru ditempel sementara nomor lama masih ada: ganti, jangan
-            // disambung.
-            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && scannedRef.current) {
-              e.preventDefault();
+            // Kartu baru ditempel sementara nomor lama masih ada dan kasir tidak
+            // menyentuh kolom: pilih semua lalu biarkan ketikan menggantinya
+            // (bukan disambung). Koreksi manual tidak terpengaruh karena
+            // scannedRef sudah dimatikan oleh klik/ketikan biasa.
+            if (
+              scannedRef.current &&
+              ((e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) ||
+                e.key === "Backspace" ||
+                e.key === "Delete")
+            ) {
               scannedRef.current = false;
-              onChange(e.key);
+              e.currentTarget.select();
             }
           }}
         />
