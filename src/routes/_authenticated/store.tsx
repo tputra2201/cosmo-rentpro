@@ -546,6 +546,13 @@ function OperatingHoursSection() {
 function SessionSecuritySection() {
   const { sessionSecurity, setSessionSecurity } = useBilling();
   const [minutes, setMinutes] = useState(String(sessionSecurity.idleMinutes));
+  const [custom, setCustom] = useState<CustomAlarm | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setCustom(getCustomAlarm());
+  }, []);
+
 
   return (
     <div className="surface-panel grid gap-4 p-5">
