@@ -510,7 +510,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
                       {filled ? "Terisi" : "Kosong"}
                     </Badge>
-                    {t.paidAt && t.orders.length === 0 && (
+                    {t.paidAt && (
                       <Badge variant="outline" className="border-current text-[10px] text-accent">
                         Lunas
                       </Badge>
