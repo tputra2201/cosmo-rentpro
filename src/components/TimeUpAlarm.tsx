@@ -3,7 +3,7 @@ import { AlarmClock } from "lucide-react";
 
 import { useBilling, stationStatus } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
-import { alarmCycleMs, playAlarm } from "@/lib/alarm";
+import { alarmCycleMs, playAlarm, stopAlarm } from "@/lib/alarm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
