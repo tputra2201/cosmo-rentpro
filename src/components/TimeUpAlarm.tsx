@@ -59,14 +59,26 @@ export function TimeUpAlarm() {
 
   useEffect(() => {
     if (!key || !sessionSecurity.alarmEnabled) return;
-    playAlarm(sessionSecurity.alarmSound);
-    if (!sessionSecurity.alarmRepeat) return;
+    const play = () => playAlarm(sessionSecurity.alarmSound, sessionSecurity.alarmVolume);
+    play();
+    if (!sessionSecurity.alarmRepeat) {
+      return () => stopAlarm();
+    }
     const timer = setInterval(
-      () => playAlarm(sessionSecurity.alarmSound),
+      play,
       Math.max(1500, alarmCycleMs(sessionSecurity.alarmSound) + 1500),
     );
-    return () => clearInterval(timer);
-  }, [key, sessionSecurity.alarmEnabled, sessionSecurity.alarmSound, sessionSecurity.alarmRepeat]);
+    return () => {
+      clearInterval(timer);
+      stopAlarm();
+    };
+  }, [
+    key,
+    sessionSecurity.alarmEnabled,
+    sessionSecurity.alarmSound,
+    sessionSecurity.alarmVolume,
+    sessionSecurity.alarmRepeat,
+  ]);
 
   if (!due) return null;
 
