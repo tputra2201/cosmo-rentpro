@@ -510,7 +510,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Badge variant={filled ? "default" : "secondary"} className="text-[10px]">
                       {filled ? "Terisi" : "Kosong"}
                     </Badge>
-                    {t.paidAt && t.orders.length === 0 && (
+                    {t.paidAt && (
                       <Badge variant="outline" className="border-current text-[10px] text-accent">
                         Lunas
                       </Badge>
@@ -557,7 +557,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                   </Button>
                 )}
 
-                {t.orders.length > 0 && allow("kafe.void") && (
+                {t.orders.length > 0 && !t.paidAt && allow("kafe.void") && (
                   <Button
                     size="sm"
                     variant="destructive"
@@ -569,8 +569,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <Ban className="size-4" /> VOID
                   </Button>
                 )}
-                {/* Sesi meja hanya bisa diakhiri kalau tidak ada tagihan tersisa. */}
-                {filled && t.orders.length === 0 && allow("kafe.akhiri") && (
+                {/* Sesi meja bisa diakhiri kalau sudah lunas atau tidak ada tagihan. */}
+                {filled && (t.paidAt || t.orders.length === 0) && allow("kafe.akhiri") && (
                   <Button
                     size="sm"
                     variant="outline"
