@@ -371,6 +371,8 @@ export type SessionSecurity = {
   alarmEnabled: boolean;
   /** Nada alarm bawaan. */
   alarmSound: AlarmSound;
+  /** Kekencangan alarm 1–10. */
+  alarmVolume: number;
   /** Alarm berbunyi berulang sampai ditekan OK. */
   alarmRepeat: boolean;
 };
@@ -379,17 +381,20 @@ export const DEFAULT_SESSION_SECURITY: SessionSecurity = {
   idleMinutes: 5,
   alarmEnabled: true,
   alarmSound: "beep",
+  alarmVolume: 10,
   alarmRepeat: true,
 };
 
 export function normalizeSessionSecurity(value?: Partial<SessionSecurity> | null): SessionSecurity {
   const minutes = Number(value?.idleMinutes ?? DEFAULT_SESSION_SECURITY.idleMinutes);
+  const volume = Number(value?.alarmVolume ?? DEFAULT_SESSION_SECURITY.alarmVolume);
   return {
     idleMinutes: Number.isFinite(minutes) ? Math.min(240, Math.max(0, Math.round(minutes))) : 5,
     alarmEnabled: value?.alarmEnabled ?? true,
     alarmSound: ALARM_SOUNDS.some((item) => item.id === value?.alarmSound)
       ? (value?.alarmSound as AlarmSound)
       : "beep",
+    alarmVolume: Number.isFinite(volume) ? Math.min(10, Math.max(1, Math.round(volume))) : 10,
     alarmRepeat: value?.alarmRepeat ?? true,
   };
 }
