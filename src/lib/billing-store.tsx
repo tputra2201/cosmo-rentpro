@@ -3778,14 +3778,15 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       removeCafeSettlement: (tableId, settlementId) =>
         update((prev) => ({
           ...prev,
-          cafeTables: prev.cafeTables.map((t) =>
-            t.id === tableId
-              ? {
-                  ...t,
-                  settlements: (t.settlements ?? []).filter((s) => s.id !== settlementId),
-                }
-              : t,
-          ),
+          cafeTables: prev.cafeTables.map((t) => {
+            if (t.id !== tableId) return t;
+            // Pembayaran dihapus → meja kembali punya tagihan, tanda lunas dilepas.
+            const { paidAt: _paidAt, ...rest } = t;
+            return {
+              ...rest,
+              settlements: (t.settlements ?? []).filter((s) => s.id !== settlementId),
+            };
+          }),
         })),
       cancelCafeRemainder: (tableId) => {
         const at = Date.now();
