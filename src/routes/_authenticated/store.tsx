@@ -607,11 +607,82 @@ function SessionSecuritySection() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => playAlarm(sessionSecurity.alarmSound)}
+              onClick={() => playAlarm(sessionSecurity.alarmSound, sessionSecurity.alarmVolume)}
             >
               Coba nada
             </Button>
+            <Button type="button" variant="ghost" onClick={() => stopAlarm()}>
+              Stop
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Pilih “Sirine Keras”, “Klakson Keras”, atau “Darurat” untuk suara paling kencang.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="alarm-volume">Kekencangan alarm (1–10)</Label>
+          <Input
+            id="alarm-volume"
+            type="number"
+            min={1}
+            max={10}
+            value={sessionSecurity.alarmVolume}
+            onChange={(e) =>
+              setSessionSecurity({
+                alarmVolume: Math.min(10, Math.max(1, Number(e.target.value) || 1)),
+              })
+            }
+          />
+          <p className="text-xs text-muted-foreground">
+            Naikkan juga volume perangkat agar terdengar sampai area rental.
+          </p>
+        </div>
+        <div className="grid gap-2">
+          <Label>Nada dari perangkat ini</Label>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              try {
+                const saved = await saveCustomAlarm(file);
+                setCustom(saved);
+                setSessionSecurity({ alarmSound: "custom" });
+                toast.success(`Nada alarm diganti: ${saved.name}`);
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Gagal memakai berkas suara");
+              }
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+              Pilih berkas suara
+            </Button>
+            {custom ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  clearCustomAlarm();
+                  setCustom(null);
+                  if (sessionSecurity.alarmSound === "custom")
+                    setSessionSecurity({ alarmSound: "sirenKeras" });
+                  toast.success("Nada dari perangkat dihapus");
+                }}
+              >
+                Hapus
+              </Button>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {custom
+              ? `Terpasang: ${custom.name} (tersimpan di perangkat ini saja, maksimal 3 MB).`
+              : "Belum ada. Pilih lagu atau nada MP3/WAV dari perangkat, maksimal 3 MB."}
+          </p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
