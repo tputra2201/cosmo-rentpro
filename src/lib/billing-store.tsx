@@ -3698,6 +3698,23 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             kind: "cafe",
             tableName: table.name,
           };
+          // Pelunasan dicatat sebagai pembayaran diterima supaya rincian pesanan
+          // tetap tampil di panel meja sampai sesi diakhiri (sama seperti meja TV).
+          const paySettlement: Settlement | null =
+            due > 0
+              ? {
+                  id: `cafepay-${endAt}-${Math.random().toString(36).slice(2, 7)}`,
+                  at: endAt,
+                  payment:
+                    Array.from(new Set(nowSplits.map((p) => p.method))).join(" + ") ||
+                    input.payment ||
+                    "Cash",
+                  ...(nowSplits.length > 1 ? { payments: nowSplits } : {}),
+                  amount: due,
+                  amountPaid: Math.round(received),
+                  change: Math.max(0, Math.round(received - due)),
+                }
+              : null;
           return {
             record: completed,
             next: {
@@ -3708,9 +3725,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                   ? {
                       // Meja tetap terisi setelah lunas; kasir menutupnya lewat "Akhiri Sesi".
                       ...t,
-                      orders: [],
-                      promoIds: [],
-                      settlements: [],
+                      settlements: paySettlement ? [...prior, paySettlement] : prior,
                       openedAt: t.openedAt ?? endAt,
                       paidAt: endAt,
                     }
