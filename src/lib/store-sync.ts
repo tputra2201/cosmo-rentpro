@@ -61,6 +61,44 @@ const FRESH_KEY = "billing-sync-fresh-v1";
 
 const EPOCH = "1970-01-01T00:00:00Z";
 
+type RemoteRow = {
+  kind: string;
+  entity_id: string;
+  payload: Record<string, unknown>;
+  deleted: boolean;
+  updated_at: string;
+};
+
+/**
+ * Ambil SEMUA baris store per halaman. Pusat hanya mengembalikan maksimal
+ * 1000 baris per permintaan; tanpa ini store dengan data banyak kehilangan
+ * sebagian unit TV/menu dan tampilannya berubah-ubah.
+ */
+async function fetchAllStoreData(
+  storeId: string,
+  since: string | null,
+): Promise<{ data: RemoteRow[]; error: { message: string } | null }> {
+  const PAGE = 1000;
+  const all: RemoteRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    let q = supabase
+      .from("store_data")
+      .select("kind, entity_id, payload, deleted, updated_at")
+      .eq("store_id", storeId);
+    if (since) q = q.gt("updated_at", since);
+    const { data, error } = await q
+      .order("updated_at", { ascending: true })
+      .order("kind", { ascending: true })
+      .order("entity_id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return { data: all, error };
+    const rows = (data ?? []) as RemoteRow[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return { data: all, error: null };
+}
+
 type Shadow = Record<string, string>;
 /** Baris yang menunggu dikirim, plus daftar kolom yang benar-benar diubah di perangkat ini. */
 type Pending = SyncRecord & { fields?: string[] };
