@@ -304,7 +304,9 @@ function CloseOutForm({
 }) {
   const [actual, setActual] = useState("");
   const [note, setNote] = useState("");
-  const [nextStart, setNextStart] = useState(String(shift.startCash));
+  // Next start cash mengikuti cash actual yang diinput kasir; 0 bila belum diisi.
+  const [nextStart, setNextStart] = useState("0");
+  const [nextStartEdited, setNextStartEdited] = useState(false);
 
   const actualValue = Number(actual);
   const balance = useMemo(
