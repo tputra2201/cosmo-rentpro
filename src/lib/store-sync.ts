@@ -471,13 +471,14 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
-        // Kalau data lokal baru saja dikosongkan (perangkat baru/ganti store),
-        // isi pusat menjadi satu-satunya sumber. Kalau perangkat ini sudah
-        // memegang data store yang sama — misalnya transaksi yang dibuat saat
-        // internet mati — data itu dipertahankan dan hanya ditimpa per baris.
-        const isFresh = localStorage.getItem(FRESH_KEY) === storeId;
+        // Baseline lengkap harus mengganti seluruh daftar hasil sinkron lama.
+        // Kalau hanya ditumpuk, baris lokal yang sudah tidak ada di pusat tetap
+        // hidup dan perangkat dapat terus menampilkan baseline bawaan/parsial.
+        // Perubahan offline tetap aman karena antrean lokal diterapkan kembali
+        // di atas baseline pusat, lalu dikirim pada tahap sinkron berikutnya.
+        const pendingRecords = Object.values(outboxRef.current);
         applyRemote((prev) =>
-          applyRecords(isFresh ? clearSyncedLists(prev) : prev, records),
+          applyRecords(applyRecords(clearSyncedLists(prev), records), pendingRecords),
         );
         noteShadow(records);
         const newest = remote.at(-1)?.updated_at;
