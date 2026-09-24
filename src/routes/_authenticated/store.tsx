@@ -825,9 +825,15 @@ function EarlyEndOfDaySection() {
             <Button
               variant="destructive"
               onClick={() => {
-                if (!note.trim()) return toast.error("Isi alasan End of Day lebih awal");
+                if (!note.trim()) {
+                  toast.error("Isi alasan End of Day lebih awal");
+                  return;
+                }
                 const row = closeBusinessDay({ note });
-                if (!row) return toast.error("Gagal, pastikan semua shift sudah ditutup");
+                if (!row) {
+                  toast.error("Gagal, pastikan semua shift sudah ditutup");
+                  return;
+                }
                 setConfirm(false);
                 setNote("");
                 toast.success("Hari usaha ditutup lebih awal");
