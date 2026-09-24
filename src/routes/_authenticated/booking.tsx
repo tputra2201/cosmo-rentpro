@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, Clock, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,7 +75,8 @@ function BookingPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [start, setStart] = useState(localInputValue(initialStart));
-  const [duration, setDuration] = useState("60");
+  const [durHours, setDurHours] = useState("1");
+  const [durMinutes, setDurMinutes] = useState("0");
   const [notes, setNotes] = useState("");
   const [addonRows, setAddonRows] = useState<BookingAddon[]>([]);
   const [dp, setDp] = useState("");
