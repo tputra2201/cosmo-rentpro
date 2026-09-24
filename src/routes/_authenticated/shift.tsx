@@ -375,7 +375,10 @@ function CloseOutForm({
             type="number"
             min={0}
             value={nextStart}
-            onChange={(e) => setNextStart(e.target.value)}
+            onChange={(e) => {
+              setNextStart(e.target.value);
+              setNextStartEdited(true);
+            }}
           />
         </div>
       </div>
