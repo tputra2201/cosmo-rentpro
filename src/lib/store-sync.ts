@@ -400,11 +400,7 @@ export function useStoreSync(options: {
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
     void (async () => {
-      const { data, error: bootstrapError } = await supabase
-        .from("store_data")
-        .select("kind, entity_id, payload, deleted, updated_at")
-        .eq("store_id", storeId)
-        .order("updated_at", { ascending: true });
+      const { data, error: bootstrapError } = await fetchAllStoreData(storeId, null);
       if (cancelled) return;
       if (bootstrapError) {
         setError(bootstrapError.message);
@@ -519,12 +515,7 @@ export function useStoreSync(options: {
       // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
       // yang datanya masih lama akan menimpa perubahan perangkat lain.
       const since = localStorage.getItem(SINCE_KEY) ?? EPOCH;
-      const { data, error: pullError } = await supabase
-        .from("store_data")
-        .select("kind, entity_id, payload, deleted, updated_at")
-        .eq("store_id", storeId)
-        .gt("updated_at", since)
-        .order("updated_at", { ascending: true });
+      const { data, error: pullError } = await fetchAllStoreData(storeId, since);
       if (pullError) throw new Error(pullError.message);
       const remote = (data ?? []) as {
         kind: string;
