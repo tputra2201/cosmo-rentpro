@@ -344,7 +344,10 @@ function CloseOutForm({
             min={0}
             value={actual}
             placeholder="0"
-            onChange={(e) => setActual(e.target.value)}
+            onChange={(e) => {
+              setActual(e.target.value);
+              if (!nextStartEdited) setNextStart(e.target.value);
+            }}
           />
         </div>
         <Field
