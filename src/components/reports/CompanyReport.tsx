@@ -30,6 +30,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cashEntries,
     cardEntries,
     menu,
+    shifts,
   } = useBilling();
 
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
@@ -117,6 +118,14 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   for (const e of cash) {
     if (e.direction === "in" && !e.payout) bump(incomeRows, e.categoryName, e.amount, 1);
   }
+
+  // Uang kas awal periode: start cash shift pertama yang check-in pada periode ini.
+  // Nilai ini tidak dijumlahkan bila ada beberapa shift, karena uang tunai di laci
+  // berpindah utuh dari shift sebelumnya ke shift berikutnya.
+  const shiftInRange = shifts
+    .filter((s) => inRange(s.openedAt, range))
+    .sort((a, b) => a.openedAt - b.openedAt);
+  const startCash = shiftInRange[0]?.startCash ?? 0;
 
   const cashPayments = payments.get("Cash")?.amount ?? 0;
   const cashIn = cash
@@ -208,12 +217,13 @@ export function CompanyReport({ range }: { range: ReportRange }) {
       </Section>
 
       <Section title="Tutup kas (uang tunai)">
+        <Line label="Start cash" value={formatRupiah(startCash)} />
         <Line label="Penjualan tunai" value={formatRupiah(cashPayments)} />
         <Line label="Kas masuk lain" value={formatRupiah(cashIn)} />
         <Line label="Kas keluar" value={`- ${formatRupiah(cashOut)}`} />
         <Line
           label="Perkiraan uang tunai di kasir"
-          value={formatRupiah(cashPayments + cashIn - cashOut)}
+          value={formatRupiah(startCash + cashPayments + cashIn - cashOut)}
           strong
         />
         {(payoutIn > 0 || payoutOut > 0) && (
