@@ -217,12 +217,13 @@ export function CompanyReport({ range }: { range: ReportRange }) {
       </Section>
 
       <Section title="Tutup kas (uang tunai)">
+        <Line label="Start cash" value={formatRupiah(startCash)} />
         <Line label="Penjualan tunai" value={formatRupiah(cashPayments)} />
         <Line label="Kas masuk lain" value={formatRupiah(cashIn)} />
         <Line label="Kas keluar" value={`- ${formatRupiah(cashOut)}`} />
         <Line
           label="Perkiraan uang tunai di kasir"
-          value={formatRupiah(cashPayments + cashIn - cashOut)}
+          value={formatRupiah(startCash + cashPayments + cashIn - cashOut)}
           strong
         />
         {(payoutIn > 0 || payoutOut > 0) && (
