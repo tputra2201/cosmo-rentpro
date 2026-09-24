@@ -217,6 +217,16 @@ export function useStoreSync(options: {
   const blockedUntilRef = useRef(0);
   /** Sudah pernah mengambil seluruh data store pada sesi ini. */
   const bootstrappedRef = useRef(false);
+  /**
+   * Kapan terakhir perangkat ini mencocokkan SELURUH data store dengan pusat.
+   * Pengambilan berdasarkan "perubahan sejak ..." bisa melewatkan baris bila
+   * jejak waktu perangkat sempat maju (jam meleset, halaman ditutup saat
+   * pengambilan, penyimpanan penuh). Pencocokan penuh berkala menutup celah itu
+   * tanpa perlu tindakan dari pengguna.
+   */
+  const lastAuditRef = useRef(0);
+  const AUDIT_EVERY_MS = 3 * 60 * 1000;
+
 
 
   stateRef.current = state;
