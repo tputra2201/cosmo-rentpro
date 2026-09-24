@@ -574,9 +574,15 @@ export function useStoreSync(options: {
 
       // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
       // yang datanya masih lama akan menimpa perubahan perangkat lain.
-      const since = localStorage.getItem(SINCE_KEY) ?? EPOCH;
+      // Setiap beberapa menit, cocokkan seluruh data store (bukan hanya yang
+      // berubah) supaya daftar TV, shift, dan menu selalu utuh di semua
+      // perangkat walau ada baris yang pernah terlewat.
+      const auditNow = Date.now() - lastAuditRef.current >= AUDIT_EVERY_MS;
+      const since = auditNow ? null : (localStorage.getItem(SINCE_KEY) ?? EPOCH);
       const { data, error: pullError } = await fetchAllStoreData(storeId, since);
       if (pullError) throw new Error(pullError.message);
+      if (auditNow) lastAuditRef.current = Date.now();
+
       const remote = (data ?? []) as {
         kind: string;
         entity_id: string;
