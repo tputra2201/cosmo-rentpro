@@ -142,6 +142,7 @@ type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
 
 function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: BookingItem; stationName: string; locked?: boolean; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
   const { now, stations, addonRentals, startSession, updateBooking, addSessionAddon, settleSession, addCashEntry } = useBilling();
+  const [open, setOpen] = useState(false);
   const dpAmount = Math.max(0, Math.round(item.dpAmount ?? 0));
   const addonText = (item.addons ?? [])
     .map((row) => {
