@@ -140,6 +140,14 @@ function BookingPage() {
 
 type BookingItem = ReturnType<typeof useBilling>["bookings"][number];
 
+/** Baris informasi pada panel detail reservasi: label di kiri, isinya di kanan (menumpuk di layar kecil). */
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="grid gap-0.5 sm:grid-cols-[140px_minmax(0,1fr)] sm:gap-3">
+    <span className="text-xs font-medium text-muted-foreground sm:pt-0.5">{label}</span>
+    <span className="min-w-0 break-words text-sm leading-relaxed">{children}</span>
+  </div>;
+}
+
 function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: BookingItem; stationName: string; locked?: boolean; onStatus: (status: BookingStatus) => void; onDelete: () => void }) {
   const { now, stations, addonRentals, startSession, updateBooking, addSessionAddon, settleSession, addCashEntry } = useBilling();
   const [open, setOpen] = useState(false);
@@ -196,17 +204,27 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
     toast.success(`${item.customerName} check-in di ${station.name} · ${minutes} menit`);
   };
 
-  return <article className="surface-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
-    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Tutup detail reservasi" : "Buka detail reservasi"}>
-      <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge><ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}/></div>
-      <p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>
-      {item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}
-    </button>
-    <div className="flex shrink-0 gap-2">{item.status === "confirmed" && allow("booking.checkin") && <Button size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>}{!readOnly && <>{allow("booking.ubah") && <EditBookingDialog item={item}/>}{item.status !== "completed" && item.status !== "cancelled" && allow("booking.batal") && <Button size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan reservasi"><XCircle className="size-4"/></Button>}{allow("booking.hapus") && <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus reservasi"><Trash2 className="size-4"/></Button>}</>}</div>
-    {open && <div className="w-full space-y-1 border-t pt-3 text-sm sm:order-last">
-      <p className="font-medium">DP: {dpAmount > 0 ? `${formatRupiah(dpAmount)} · ${item.dpPayment || "Cash"}${item.dpUsedAt ? " · sudah dipakai" : " · dipakai otomatis saat check-in"}` : "tidak ada"}</p>
-      {addonText && <p className="text-muted-foreground">Additional rental: {addonText}</p>}
-      {item.notes && <p className="text-muted-foreground">{item.notes}</p>}
+  const actions: React.ReactNode[] = [];
+  if (item.status === "confirmed" && allow("booking.checkin")) actions.push(<Button key="checkin" size="sm" onClick={checkIn} disabled={!ready}><CheckCircle2 className="size-4"/> Check-in</Button>);
+  if (!readOnly) {
+    if (allow("booking.ubah")) actions.push(<EditBookingDialog key="edit" item={item}/>);
+    if (item.status !== "completed" && item.status !== "cancelled" && allow("booking.batal")) actions.push(<Button key="cancel" size="icon" variant="outline" onClick={() => onStatus("cancelled")} aria-label="Batalkan reservasi"><XCircle className="size-4"/></Button>);
+    if (allow("booking.hapus")) actions.push(<Button key="delete" size="icon" variant="ghost" onClick={onDelete} aria-label="Hapus reservasi"><Trash2 className="size-4"/></Button>);
+  }
+
+  return <article className="surface-panel p-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Tutup detail reservasi" : "Buka detail reservasi"}>
+        <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.customerName}</h3><Badge variant={item.status === "cancelled" ? "destructive" : "outline"}>{statusLabel[item.status]}</Badge><ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}/></div>
+        <p className="mt-1 text-sm text-muted-foreground"><Clock className="mr-1 inline size-3.5"/>{new Date(item.startAt).toLocaleString("id-ID", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} – {new Date(item.endAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} · {stationName} · {minutes} menit</p>
+        {item.status === "confirmed" && !ready && <p className="mt-1 text-xs text-warning">Check-in tersedia mulai {opensAt}</p>}
+      </button>
+      {actions.length > 0 && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+    {open && <div className="mt-3 space-y-2.5 border-t pt-3">
+      <DetailRow label="DP">{dpAmount > 0 ? <span className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="font-semibold">{formatRupiah(dpAmount)}</span><span className="text-muted-foreground">· {item.dpPayment || "Cash"}</span><Badge variant={item.dpUsedAt ? "secondary" : "outline"} className="text-[11px]">{item.dpUsedAt ? "Sudah dipakai" : "Dipakai otomatis saat check-in"}</Badge></span> : <span className="text-muted-foreground">tidak ada</span>}</DetailRow>
+      {addonText && <DetailRow label="Additional rental">{addonText}</DetailRow>}
+      {item.notes && <DetailRow label="Catatan">{item.notes}</DetailRow>}
     </div>}
   </article>;
 }
