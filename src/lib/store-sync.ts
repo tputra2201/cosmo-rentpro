@@ -172,6 +172,9 @@ export type SyncStatus = {
   lastSyncedAt: number | null;
   error: string | null;
   flushNow: () => void;
+  /** Paksa cocokkan ulang seluruh data store dengan pusat sekarang. */
+  resyncNow: () => void;
+
 };
 
 export function useStoreSync(options: {
