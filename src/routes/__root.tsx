@@ -358,15 +358,17 @@ function AppShell() {
             <>
               <div className="flex items-center gap-2">
                 <DeveloperStoreSwitcher enabled={Boolean(session)} />
-                <span
+                <button
+                  type="button"
+                  onClick={() => sync.resyncNow()}
                   title={
                     sync.online
                       ? sync.pending > 0
-                        ? `${sync.pending} perubahan menunggu terkirim`
-                        : "Data tersimpan di pusat"
+                        ? `${sync.pending} perubahan menunggu terkirim — tekan untuk menyegarkan data`
+                        : "Data tersimpan di pusat — tekan untuk menyegarkan data"
                       : "Mode luring — data disimpan di perangkat dan dikirim otomatis saat internet kembali"
                   }
-                  className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:inline-flex ${
+                  className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition hover:brightness-110 sm:inline-flex ${
                     sync.online
                       ? sync.pending > 0
                         ? "border-warning/50 bg-warning/10 text-warning"
@@ -374,13 +376,16 @@ function AppShell() {
                       : "border-destructive/50 bg-destructive/10 text-destructive"
                   }`}
                 >
-                  {sync.online ? (sync.pending > 0 ? <RefreshCw className="size-3 animate-spin" /> : <Wifi className="size-3" />) : <WifiOff className="size-3" />}
+                  {sync.online ? (sync.syncing || sync.pending > 0 ? <RefreshCw className="size-3 animate-spin" /> : <Wifi className="size-3" />) : <WifiOff className="size-3" />}
                   {sync.online
                     ? sync.pending > 0
                       ? `Mengirim ${sync.pending}`
-                      : "Tersinkron"
+                      : sync.syncing
+                        ? "Menyegarkan"
+                        : "Tersinkron"
                     : "Mode luring"}
-                </span>
+                </button>
+
                 <div className="min-w-0 max-w-[9rem] text-right sm:max-w-none">
                   <p className="truncate text-sm font-medium leading-tight">
                     {fullName || user?.email}
