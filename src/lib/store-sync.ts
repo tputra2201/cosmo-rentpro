@@ -172,6 +172,9 @@ export type SyncStatus = {
   lastSyncedAt: number | null;
   error: string | null;
   flushNow: () => void;
+  /** Paksa cocokkan ulang seluruh data store dengan pusat sekarang. */
+  resyncNow: () => void;
+
 };
 
 export function useStoreSync(options: {
@@ -217,6 +220,16 @@ export function useStoreSync(options: {
   const blockedUntilRef = useRef(0);
   /** Sudah pernah mengambil seluruh data store pada sesi ini. */
   const bootstrappedRef = useRef(false);
+  /**
+   * Kapan terakhir perangkat ini mencocokkan SELURUH data store dengan pusat.
+   * Pengambilan berdasarkan "perubahan sejak ..." bisa melewatkan baris bila
+   * jejak waktu perangkat sempat maju (jam meleset, halaman ditutup saat
+   * pengambilan, penyimpanan penuh). Pencocokan penuh berkala menutup celah itu
+   * tanpa perlu tindakan dari pengguna.
+   */
+  const lastAuditRef = useRef(0);
+  const AUDIT_EVERY_MS = 3 * 60 * 1000;
+
 
 
   stateRef.current = state;
@@ -564,9 +577,15 @@ export function useStoreSync(options: {
 
       // 1. Ambil perubahan dari pusat lebih dulu. Kalau mengirim dulu, perangkat
       // yang datanya masih lama akan menimpa perubahan perangkat lain.
-      const since = localStorage.getItem(SINCE_KEY) ?? EPOCH;
+      // Setiap beberapa menit, cocokkan seluruh data store (bukan hanya yang
+      // berubah) supaya daftar TV, shift, dan menu selalu utuh di semua
+      // perangkat walau ada baris yang pernah terlewat.
+      const auditNow = Date.now() - lastAuditRef.current >= AUDIT_EVERY_MS;
+      const since = auditNow ? null : (localStorage.getItem(SINCE_KEY) ?? EPOCH);
       const { data, error: pullError } = await fetchAllStoreData(storeId, since);
       if (pullError) throw new Error(pullError.message);
+      if (auditNow) lastAuditRef.current = Date.now();
+
       const remote = (data ?? []) as {
         kind: string;
         entity_id: string;
@@ -723,6 +742,29 @@ export function useStoreSync(options: {
     };
   }, [storeId, readyStoreId, enabled, sync]);
 
+  // Dengarkan perubahan pusat secara langsung: begitu kasir mengubah sesuatu di
+  // tablet, perangkat lain menyusul dalam hitungan detik, tanpa menunggu
+  // pemeriksaan berkala.
+  useEffect(() => {
+    if (!storeId || readyStoreId !== storeId || !enabled) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = supabase
+      .channel(`store-data-${storeId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_data", filter: `store_id=eq.${storeId}` },
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => void sync(), 800);
+        },
+      )
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [storeId, readyStoreId, enabled, sync]);
+
   return {
     online,
     syncing,
@@ -731,5 +773,10 @@ export function useStoreSync(options: {
     lastSyncedAt,
     error,
     flushNow: () => void sync(),
+    resyncNow: () => {
+      lastAuditRef.current = 0;
+      void sync();
+    },
   };
+
 }
