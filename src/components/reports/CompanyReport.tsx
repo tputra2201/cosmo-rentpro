@@ -30,6 +30,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cashEntries,
     cardEntries,
     menu,
+    shifts,
   } = useBilling();
 
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
@@ -117,6 +118,14 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   for (const e of cash) {
     if (e.direction === "in" && !e.payout) bump(incomeRows, e.categoryName, e.amount, 1);
   }
+
+  // Uang kas awal periode: start cash shift pertama yang check-in pada periode ini.
+  // Nilai ini tidak dijumlahkan bila ada beberapa shift, karena uang tunai di laci
+  // berpindah utuh dari shift sebelumnya ke shift berikutnya.
+  const shiftInRange = shifts
+    .filter((s) => inRange(s.openedAt, range))
+    .sort((a, b) => a.openedAt - b.openedAt);
+  const startCash = shiftInRange[0]?.startCash ?? 0;
 
   const cashPayments = payments.get("Cash")?.amount ?? 0;
   const cashIn = cash
