@@ -304,7 +304,9 @@ function CloseOutForm({
 }) {
   const [actual, setActual] = useState("");
   const [note, setNote] = useState("");
-  const [nextStart, setNextStart] = useState(String(shift.startCash));
+  // Next start cash mengikuti cash actual yang diinput kasir; 0 bila belum diisi.
+  const [nextStart, setNextStart] = useState("0");
+  const [nextStartEdited, setNextStartEdited] = useState(false);
 
   const actualValue = Number(actual);
   const balance = useMemo(
@@ -342,7 +344,10 @@ function CloseOutForm({
             min={0}
             value={actual}
             placeholder="0"
-            onChange={(e) => setActual(e.target.value)}
+            onChange={(e) => {
+              setActual(e.target.value);
+              if (!nextStartEdited) setNextStart(e.target.value);
+            }}
           />
         </div>
         <Field
@@ -370,7 +375,10 @@ function CloseOutForm({
             type="number"
             min={0}
             value={nextStart}
-            onChange={(e) => setNextStart(e.target.value)}
+            onChange={(e) => {
+              setNextStart(e.target.value);
+              setNextStartEdited(true);
+            }}
           />
         </div>
       </div>
