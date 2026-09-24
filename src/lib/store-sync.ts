@@ -742,6 +742,29 @@ export function useStoreSync(options: {
     };
   }, [storeId, readyStoreId, enabled, sync]);
 
+  // Dengarkan perubahan pusat secara langsung: begitu kasir mengubah sesuatu di
+  // tablet, perangkat lain menyusul dalam hitungan detik, tanpa menunggu
+  // pemeriksaan berkala.
+  useEffect(() => {
+    if (!storeId || readyStoreId !== storeId || !enabled) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = supabase
+      .channel(`store-data-${storeId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_data", filter: `store_id=eq.${storeId}` },
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => void sync(), 800);
+        },
+      )
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [storeId, readyStoreId, enabled, sync]);
+
   return {
     online,
     syncing,
@@ -750,5 +773,10 @@ export function useStoreSync(options: {
     lastSyncedAt,
     error,
     flushNow: () => void sync(),
+    resyncNow: () => {
+      lastAuditRef.current = 0;
+      void sync();
+    },
   };
+
 }
