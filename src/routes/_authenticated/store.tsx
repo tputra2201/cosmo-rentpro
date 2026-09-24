@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizeDevices, useStoreInfo, type AllowedDevice } from "@/lib/store-info";
 
 import { useBilling } from "@/lib/billing-store";
+import { useAuth } from "@/lib/auth";
 import { useDeviceAccess } from "@/lib/device-guard";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -788,6 +789,66 @@ const fields: {
   },
 ];
 
+function EarlyEndOfDaySection() {
+  const { role } = useAuth();
+  const { activeBusinessDay, closeBusinessDay, shifts, operatingHours } = useBilling();
+  const [note, setNote] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  if (role !== "manager" && role !== "admin") return null;
+  const shiftOpen = shifts.some((s) => !s.closedAt);
+  const pad = (h: number) => `${String(h).padStart(2, "0")}:00`;
+  return (
+    <section className="surface-panel grid gap-3 p-5">
+      <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+        <Clock className="size-5" /> End of Day lebih awal
+      </h2>
+      <p className="text-sm text-muted-foreground">
+        End of Day berjalan otomatis setiap hari pukul {pad(operatingHours.closeHour)}.
+        Gunakan tombol ini hanya bila hari usaha harus ditutup lebih cepat. Setelah
+        ditutup di sini, sistem tidak akan menutup lagi pada pukul {pad(operatingHours.closeHour)}.
+      </p>
+      {!activeBusinessDay ? (
+        <p className="text-sm">Tidak ada hari usaha yang sedang berjalan.</p>
+      ) : shiftOpen ? (
+        <p className="text-sm text-destructive">
+          Masih ada shift kasir yang berjalan. Minta kasir close out dulu.
+        </p>
+      ) : !confirm ? (
+        <Button variant="destructive" className="w-fit" onClick={() => setConfirm(true)}>
+          Tutup hari usaha sekarang
+        </Button>
+      ) : (
+        <div className="grid gap-2 sm:max-w-md">
+          <Label htmlFor="eod-note">Alasan (wajib)</Label>
+          <Input id="eod-note" value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!note.trim()) {
+                  toast.error("Isi alasan End of Day lebih awal");
+                  return;
+                }
+                const row = closeBusinessDay({ note });
+                if (!row) {
+                  toast.error("Gagal, pastikan semua shift sudah ditutup");
+                  return;
+                }
+                setConfirm(false);
+                setNote("");
+                toast.success("Hari usaha ditutup lebih awal");
+              }}
+            >
+              Ya, tutup sekarang
+            </Button>
+            <Button variant="ghost" onClick={() => setConfirm(false)}>Batal</Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function StorePage() {
   const { store, loading } = useStoreInfo(true);
   const form: StoreForm = store
@@ -834,6 +895,7 @@ function StorePage() {
       </div>
 
       <OperatingHoursSection />
+      <EarlyEndOfDaySection />
       <SessionSecuritySection />
 
       <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />
