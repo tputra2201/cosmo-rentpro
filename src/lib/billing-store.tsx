@@ -3049,23 +3049,31 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // Jaring pengaman: bila End of Day lupa dijalankan, hari usaha ditutup
   // otomatis tepat pada jam tutup operasional yang diatur di Setup → Store.
   useEffect(() => {
-    if (!activeBusinessDay || shiftOpen) return;
+    if (!activeBusinessDay) return;
     const limit = autoCloseAt(activeBusinessDay.openedAt, state.operatingHours);
     if (now < limit) return;
-    update((prev) =>
-      withLog(
-        {
-          ...prev,
-          businessDays: (prev.businessDays ?? []).map((d) =>
-            d.id === activeBusinessDay.id
-              ? { ...d, closedAt: limit, autoClosed: true, closedByName: "Sistem" }
-              : d,
-          ),
-        },
+    update((prev) => {
+      const day = (prev.businessDays ?? []).find((d) => d.id === activeBusinessDay.id);
+      if (!day || day.closedAt) return prev;
+      const stillOpen = prev.shifts.some((s) => !s.closedAt);
+      // Bila kasir masih bertugas melewati jam tutup, hari usaha baru langsung dibuka.
+      const nextDay: BusinessDay | null = stillOpen
+        ? { id: `bday-${limit}`, openedAt: limit }
+        : null;
+      const closedList = (prev.businessDays ?? []).map((d) =>
+        d.id === day.id
+          ? { ...d, closedAt: limit, autoClosed: true, closedByName: "Sistem" }
+          : d,
+      );
+      const next = withLog(
+        { ...prev, businessDays: nextDay ? [nextDay, ...closedList] : closedList },
         "End of Day otomatis",
-        `Hari usaha ${new Date(activeBusinessDay.openedAt).toLocaleDateString("id-ID")} ditutup otomatis oleh sistem`,
-      ),
-    );
+        `Hari usaha ${new Date(day.openedAt).toLocaleDateString("id-ID")} ditutup otomatis oleh sistem pada jam tutup operasional`,
+      );
+      return nextDay
+        ? withLog(next, "Buka hari usaha", new Date(limit).toLocaleString("id-ID"))
+        : next;
+    });
   }, [activeBusinessDay, shiftOpen, now, state.operatingHours, update, withLog]);
 
 
@@ -5193,7 +5201,16 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           startCash: Math.max(0, Math.round(input.startCash)),
         };
         // Shift pertama sekaligus membuka hari usaha baru.
-        const openDay = (state.businessDays ?? []).some((d) => !d.closedAt)
+        // Bila Manager sudah End of Day lebih awal, check-in sebelum jam tutup
+        // operasional masih termasuk hari usaha yang sama — tidak dibuka lagi.
+        const coveredByEarlyEod = (state.businessDays ?? []).some(
+          (d) =>
+            d.closedAt &&
+            !d.autoClosed &&
+            stamp < autoCloseAt(d.openedAt, state.operatingHours),
+        );
+        const openDay =
+          (state.businessDays ?? []).some((d) => !d.closedAt) || coveredByEarlyEod
           ? null
           : ({ id: `bday-${stamp}`, openedAt: stamp } satisfies BusinessDay);
         update((prev) => {
@@ -5268,7 +5285,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const closed: BusinessDay = {
           ...day,
           closedAt: Date.now(),
-          closedByName: actorRef.current.name || "Kasir",
+          closedByName: actorRef.current.name || "Manager",
           ...(user?.id ? { closedById: user.id } : {}),
           ...(input?.note?.trim() ? { note: input.note.trim() } : {}),
         };
@@ -5280,8 +5297,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 d.id === day.id ? closed : d,
               ),
             },
-            "End of Day",
-            `Hari usaha ${new Date(day.openedAt).toLocaleDateString("id-ID")} ditutup oleh ${closed.closedByName}`,
+            "End of Day lebih awal (Manager)",
+            `Hari usaha ${new Date(day.openedAt).toLocaleDateString("id-ID")} ditutup oleh ${closed.closedByName}${closed.note ? ` · ${closed.note}` : ""}. End of Day otomatis jam tutup dilewati.`,
           ),
         );
         return closed;

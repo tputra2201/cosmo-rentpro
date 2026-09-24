@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarCheck, ClipboardCheck, LogIn, Wallet } from "lucide-react";
+import { ClipboardCheck, LogIn, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,6 @@ import {
 } from "@/components/ui/table";
 import { formatRupiah, shiftSummary, useBilling } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
-import { CompanyReport } from "@/components/reports/CompanyReport";
-import { businessDateKey, type ReportRange } from "@/lib/report-range";
 
 export const Route = createFileRoute("/_authenticated/shift")({
   head: () => ({
@@ -59,8 +57,6 @@ function ShiftPage() {
     openShift,
     closeShift,
     activeBusinessDay,
-    closeBusinessDay,
-    operatingHours,
   } = useBilling();
   const { fullName, user, role } = useAuth();
 
@@ -85,19 +81,6 @@ function ShiftPage() {
   );
 
   const cashierName = fullName.trim() || user?.email || "Kasir";
-
-  // Rentang laporan untuk hari usaha yang sedang berjalan.
-  const dayRange = useMemo<ReportRange | null>(() => {
-    if (!activeBusinessDay) return null;
-    const key = businessDateKey(activeBusinessDay.openedAt, operatingHours);
-    return {
-      mode: "day",
-      from: key,
-      to: key,
-      hours: operatingHours,
-      endOverride: now,
-    };
-  }, [activeBusinessDay, operatingHours, now]);
 
   const dayShifts = activeBusinessDay
     ? shifts.filter((s) => s.openedAt >= activeBusinessDay.openedAt)
@@ -149,35 +132,6 @@ function ShiftPage() {
           }}
         />
       )}
-
-      {!active && activeBusinessDay && dayRange && (
-        <section className="surface-panel space-y-4 p-4 sm:p-6">
-          <div className="flex items-center gap-2">
-            <CalendarCheck className="size-5 text-primary" />
-            <h2 className="text-lg font-semibold">End of Day</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Shift terakhir sudah ditutup. Periksa rekap di bawah, lalu tutup hari
-            usaha agar siklus laporan hari ini selesai.
-          </p>
-
-          <CompanyReport range={dayRange} />
-
-          <Button
-            onClick={() => {
-              const row = closeBusinessDay();
-              if (!row) {
-                toast.error("End of Day gagal, pastikan semua shift sudah ditutup");
-                return;
-              }
-              toast.success("Hari usaha ditutup. Selamat beristirahat!");
-            }}
-          >
-            <CalendarCheck className="size-4" /> Tutup Hari Usaha
-          </Button>
-        </section>
-      )}
-
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold">Riwayat shift</h2>

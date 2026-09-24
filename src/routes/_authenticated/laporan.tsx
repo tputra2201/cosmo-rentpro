@@ -112,7 +112,7 @@ function dateTimeOf(ts: number) {
 function LaporanPage() {
   const [pickedRange, setRange] = useState<ReportRange>(() => defaultRange("day"));
   const { role } = useAuth();
-  const { rolePermissions, operatingHours, businessDays, now } = useBilling();
+  const { rolePermissions, operatingHours } = useBilling();
 
   // Tanggal yang dipilih dibaca sebagai hari usaha: mulai jam buka store
   // sampai jam tutup keesokan harinya. Bila hari usaha itu sudah ditutup
@@ -124,13 +124,8 @@ function LaporanPage() {
       to: pickedRange.to,
       hours: operatingHours,
     };
-    if (base.mode !== "day" || base.from !== base.to) return base;
-    const day = (businessDays ?? []).find(
-      (d) => businessDateKey(d.openedAt, operatingHours) === base.from,
-    );
-    if (!day) return base;
-    return { ...base, endOverride: day.closedAt ?? now };
-  }, [pickedRange, operatingHours, businessDays, now]);
+    return base;
+  }, [pickedRange, operatingHours]);
 
   const { store } = useStoreInfo(true);
   const storeName = store?.store_name?.trim() || "RenToPlay";
