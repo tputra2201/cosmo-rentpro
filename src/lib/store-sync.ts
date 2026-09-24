@@ -57,6 +57,11 @@ const SHADOW_KEY = "billing-sync-shadow-v1";
 const SINCE_KEY = "billing-sync-since-v1";
 const STORE_KEY = "billing-sync-store-v1";
 const FRESH_KEY = "billing-sync-fresh-v1";
+// Naikkan versi ini bila cara pengambilan data pusat berubah. Perangkat yang
+// pernah menyimpan cursor dari versi lama wajib mengambil baseline lengkap
+// sekali lagi; cursor lama tidak dapat menemukan baris yang dulu terlewat.
+const BASELINE_KEY = "billing-sync-baseline-v1";
+const BASELINE_VERSION = "all-pages-v1";
 
 
 const EPOCH = "1970-01-01T00:00:00Z";
@@ -414,11 +419,13 @@ export function useStoreSync(options: {
       Object.keys(shadowRef.current).length > 0 ||
       Object.keys(outboxRef.current).length > 0 ||
       Boolean(localStorage.getItem(SINCE_KEY));
+    const hasCompleteBaseline =
+      localStorage.getItem(BASELINE_KEY) === `${storeId}:${BASELINE_VERSION}`;
     // Jejak sinkron lama hanya bisa dipercaya bila data lokalnya juga benar-benar
     // terbaca. Kalau data lokal hilang (penyimpanan penuh/rusak) sementara
     // jejaknya masih ada, perangkat ini akan mengirim isi bawaan ke pusat —
     // inilah yang membuat Jenis Konsol & Tarif ter-reset. Paksa ambil ulang.
-    if (hasSyncHistory && storageLoaded) {
+    if (hasSyncHistory && storageLoaded && hasCompleteBaseline) {
       bootstrappedRef.current = true;
       setReadyStoreId(storeId);
       return;
@@ -464,19 +471,23 @@ export function useStoreSync(options: {
           payload: row.payload ?? {},
           deleted: row.deleted,
         }));
-        // Kalau data lokal baru saja dikosongkan (perangkat baru/ganti store),
-        // isi pusat menjadi satu-satunya sumber. Kalau perangkat ini sudah
-        // memegang data store yang sama — misalnya transaksi yang dibuat saat
-        // internet mati — data itu dipertahankan dan hanya ditimpa per baris.
-        const isFresh = localStorage.getItem(FRESH_KEY) === storeId;
+        // Baseline lengkap harus mengganti seluruh daftar hasil sinkron lama.
+        // Kalau hanya ditumpuk, baris lokal yang sudah tidak ada di pusat tetap
+        // hidup dan perangkat dapat terus menampilkan baseline bawaan/parsial.
+        // Perubahan offline tetap aman karena antrean lokal diterapkan kembali
+        // di atas baseline pusat, lalu dikirim pada tahap sinkron berikutnya.
+        const pendingRecords = Object.values(outboxRef.current);
         applyRemote((prev) =>
-          applyRecords(isFresh ? clearSyncedLists(prev) : prev, records),
+          applyRecords(applyRecords(clearSyncedLists(prev), records), pendingRecords),
         );
         noteShadow(records);
         const newest = remote.at(-1)?.updated_at;
         if (newest) localStorage.setItem(SINCE_KEY, newest);
       }
       localStorage.removeItem(FRESH_KEY);
+      // Ditulis hanya setelah seluruh halaman berhasil diterapkan. Perangkat
+      // dengan data parsial dari versi lama otomatis mengulang proses ini.
+      localStorage.setItem(BASELINE_KEY, `${storeId}:${BASELINE_VERSION}`);
       bootstrappedRef.current = true;
       setError(null);
       setReadyStoreId(storeId);
@@ -528,6 +539,7 @@ export function useStoreSync(options: {
         localStorage.removeItem(SHADOW_KEY);
         localStorage.removeItem(OUTBOX_KEY);
         localStorage.removeItem(SINCE_KEY);
+        localStorage.removeItem(BASELINE_KEY);
         localStorage.setItem(STORE_KEY, currentStoreId);
         localStorage.setItem(FRESH_KEY, currentStoreId);
 
