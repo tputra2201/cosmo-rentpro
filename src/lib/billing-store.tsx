@@ -2246,6 +2246,25 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       /* penanda rusak: anggap belum ada perubahan lokal */
     }
   }, []);
+  const [printerPrefs, setPrinterPrefs] = useState<Record<string, DevicePrinterPref>>({});
+  useEffect(() => {
+    const saved = loadDevicePrinterPrefs();
+    // Perangkat lama: ambil cara cetak yang terakhir tampil sebagai milik perangkat ini.
+    if (Object.keys(saved).length === 0) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const printers = raw ? (JSON.parse(raw)?.printers as PrinterConfig[] | undefined) : undefined;
+        for (const p of printers ?? []) {
+          if (p?.id && (p.mode || p.bluetoothAddress))
+            saved[p.id] = { mode: p.mode, bluetoothAddress: p.bluetoothAddress };
+        }
+        if (Object.keys(saved).length) saveDevicePrinterPrefs(saved);
+      } catch {
+        /* abaikan */
+      }
+    }
+    setPrinterPrefs(saved);
+  }, []);
   const markSettingsDirty = useCallback((...keys: string[]) => {
     for (const key of keys) dirtyRef.current.add(key);
     try {
@@ -3081,6 +3100,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       ...state,
+      printers: withDevicePrinterPrefs(state.printers, printerPrefs),
       now,
       activeShift,
       shiftOpen,
@@ -3955,11 +3975,24 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           };
           return { ...prev, printers: [...prev.printers, printer] };
         }),
-      updatePrinter: (id, patch) =>
+      updatePrinter: (id, patch) => {
+        const { mode, bluetoothAddress, ...shared } = patch;
+        if (mode !== undefined || bluetoothAddress !== undefined) {
+          setPrinterPrefs((prev) => {
+            const cur = { ...(prev[id] ?? {}) };
+            if (mode !== undefined) cur.mode = mode;
+            if (bluetoothAddress !== undefined) cur.bluetoothAddress = bluetoothAddress;
+            const next = { ...prev, [id]: cur };
+            saveDevicePrinterPrefs(next);
+            return next;
+          });
+        }
+        if (Object.keys(shared).length === 0) return;
         update((prev) => ({
           ...prev,
-          printers: prev.printers.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+          printers: prev.printers.map((p) => (p.id === id ? { ...p, ...shared } : p)),
+        }));
+      },
       removePrinter: (id) =>
         update((prev) => ({ ...prev, printers: prev.printers.filter((p) => p.id !== id) })),
       setReceiptLayout: (patch) =>
@@ -5338,6 +5371,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }),
     [
       state,
+      printerPrefs,
       now,
       activeShift,
       activeBusinessDay,

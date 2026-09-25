@@ -119,6 +119,47 @@ export function labelLayout(printer: PrinterConfig): LabelLayout {
   return { ...defaultLabelLayout, ...(printer.labelLayout ?? {}) };
 }
 
+/**
+ * Cara mencetak & printer Bluetooth terpilih adalah milik tiap perangkat:
+ * disimpan di perangkat ini saja, sehingga sinkronisasi dari perangkat lain
+ * tidak pernah mengembalikannya ke pengaturan awal.
+ */
+export type DevicePrinterPref = { mode?: PrintMode; bluetoothAddress?: string };
+const DEVICE_PREF_KEY = "billing.printer-device-prefs-v1";
+
+export function loadDevicePrinterPrefs(): Record<string, DevicePrinterPref> {
+  if (typeof localStorage === "undefined") return {};
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(DEVICE_PREF_KEY) ?? "{}");
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, DevicePrinterPref>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveDevicePrinterPrefs(prefs: Record<string, DevicePrinterPref>) {
+  try {
+    localStorage.setItem(DEVICE_PREF_KEY, JSON.stringify(prefs));
+  } catch {
+    /* penyimpanan penuh */
+  }
+}
+
+export function withDevicePrinterPrefs(
+  printers: PrinterConfig[],
+  prefs: Record<string, DevicePrinterPref>,
+): PrinterConfig[] {
+  return printers.map((p) => {
+    const pref = prefs[p.id];
+    if (!pref) return p;
+    return {
+      ...p,
+      ...(pref.mode !== undefined ? { mode: pref.mode } : {}),
+      ...(pref.bluetoothAddress !== undefined ? { bluetoothAddress: pref.bluetoothAddress } : {}),
+    };
+  });
+}
+
 export function printMode(printer: PrinterConfig): PrintMode {
   if (printer.mode === "android") return isAndroidPrintAvailable() ? "android" : "system";
   if (printer.mode === "rawbt" || printer.mode === "bluetooth" || printer.mode === "usb")
