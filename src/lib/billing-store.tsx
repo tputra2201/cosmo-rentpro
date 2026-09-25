@@ -22,6 +22,12 @@ import {
   type PrinterConfig,
 } from "./printing";
 import {
+  loadDevicePrinterPrefs,
+  saveDevicePrinterPrefs,
+  withDevicePrinterPrefs,
+  type DevicePrinterPref,
+} from "./printing";
+import {
   DEFAULT_OPERATING_HOURS,
   businessDate,
   normalizeHours,
