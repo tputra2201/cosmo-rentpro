@@ -124,7 +124,7 @@ export function labelLayout(printer: PrinterConfig): LabelLayout {
  * disimpan di perangkat ini saja, sehingga sinkronisasi dari perangkat lain
  * tidak pernah mengembalikannya ke pengaturan awal.
  */
-export type DevicePrinterPref = { mode?: PrintMode; bluetoothAddress?: string };
+export type DevicePrinterPref = { mode?: PrintMode | undefined; bluetoothAddress?: string | undefined };
 const DEVICE_PREF_KEY = "billing.printer-device-prefs-v1";
 
 export function loadDevicePrinterPrefs(): Record<string, DevicePrinterPref> {
