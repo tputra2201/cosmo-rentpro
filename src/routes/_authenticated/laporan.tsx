@@ -258,10 +258,21 @@ function LaporanPage() {
 }
 
 function ReceiptReport({ range }: { range: ReportRange }) {
-  const { history: rawHistory, cashEntries, clearHistory, addLog } = useBilling();
+  const {
+    history: rawHistory,
+    cashEntries,
+    clearHistory,
+    addLog,
+    paymentMethods,
+    updateCashEntry,
+    removeCashEntry,
+    rolePermissions,
+  } = useBilling();
   const { role: myRole } = useAuth();
   const canClearHistory =
     myRole === "manager" || myRole === "installer" || myRole === "admin";
+  const canEditCash = can(myRole, "kas.tambah", rolePermissions);
+  const canDeleteCash = can(myRole, "kas.hapus", rolePermissions);
   const { confirm, dialog: confirmDialog } = useConfirm();
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const history = [...rawHistory]
