@@ -1211,6 +1211,8 @@ function cardSaleCashEntry(
     note: `Penjualan kartu ${cardNumber}`,
     createdAt: stamp,
     ...(actor ? { createdBy: actor } : {}),
+    ...(link?.cardId ? { cardId: link.cardId } : {}),
+    ...(link?.cardEntryId ? { cardEntryId: link.cardEntryId } : {}),
   };
 }
 
