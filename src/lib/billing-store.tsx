@@ -5221,37 +5221,90 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return row;
       },
       updateCashEntry: (id, patch) =>
-        update((prev) => ({
-          ...prev,
-          cashEntries: prev.cashEntries.map((item) => {
-            if (item.id !== id) return item;
-            const category = patch.categoryId
-              ? prev.cashCategories.find((c) => c.id === patch.categoryId)
-              : undefined;
-            return {
-              ...item,
-              ...(patch.amount !== undefined ? { amount: Math.max(0, Math.round(patch.amount)) } : {}),
-              ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
-              ...(patch.note !== undefined ? { note: patch.note } : {}),
-              ...(category
-                ? {
-                    categoryId: category.id,
-                    categoryName: category.name,
-                    group: category.group,
-                    direction: category.direction,
-                    payout: category.payout,
-                  }
-                : {}),
-            };
-          }),
-        })),
+        update((prev) => {
+          const before = prev.cashEntries.find((item) => item.id === id);
+          const next = {
+            ...prev,
+            cashEntries: prev.cashEntries.map((item) => {
+              if (item.id !== id) return item;
+              const category = patch.categoryId
+                ? prev.cashCategories.find((c) => c.id === patch.categoryId)
+                : undefined;
+              return {
+                ...item,
+                ...(patch.amount !== undefined ? { amount: Math.max(0, Math.round(patch.amount)) } : {}),
+                ...(patch.payment !== undefined ? { payment: patch.payment } : {}),
+                ...(patch.note !== undefined ? { note: patch.note } : {}),
+                ...(category
+                  ? {
+                      categoryId: category.id,
+                      categoryName: category.name,
+                      group: category.group,
+                      direction: category.direction,
+                      payout: category.payout,
+                    }
+                  : {}),
+              };
+            }),
+            // Riwayat kartu ikut menyesuaikan metode bayar yang baru.
+            cardEntries:
+              before?.cardEntryId && patch.payment !== undefined
+                ? prev.cardEntries.map((e) =>
+                    e.id === before.cardEntryId
+                      ? {
+                          ...e,
+                          note: `${e.note.split(" · ")[0] ?? e.note} · ${patch.payment}`,
+                        }
+                      : e,
+                  )
+                : prev.cardEntries,
+          };
+          if (!before) return next;
+          const changes: string[] = [];
+          if (patch.payment !== undefined && patch.payment !== before.payment)
+            changes.push(`metode ${before.payment} → ${patch.payment}`);
+          if (patch.amount !== undefined && Math.round(patch.amount) !== before.amount)
+            changes.push(
+              `jumlah ${formatRupiah(before.amount)} → ${formatRupiah(Math.round(patch.amount))}`,
+            );
+          if (patch.note !== undefined && patch.note !== before.note) changes.push("catatan diubah");
+          if (!changes.length) return next;
+          return withLog(
+            next,
+            "Ubah catatan kas",
+            `${before.categoryName} · ${changes.join(", ")}`,
+          );
+        }),
       removeCashEntry: (id) =>
         update((prev) => {
           const target = prev.cashEntries.find((item) => item.id === id);
+          if (!target) return prev;
+          // Kalau catatan ini lahir dari kartu, riwayat dan saldo kartu ikut
+          // dikembalikan supaya semua laporan tetap cocok satu sama lain.
+          const linked = target.cardEntryId
+            ? prev.cardEntries.find((e) => e.id === target.cardEntryId)
+            : undefined;
+          const revert = linked?.type === "topup" ? linked.amount : 0;
           return withLog(
-            { ...prev, cashEntries: prev.cashEntries.filter((item) => item.id !== id) },
+            {
+              ...prev,
+              cashEntries: prev.cashEntries.filter((item) => item.id !== id),
+              cardEntries: linked
+                ? prev.cardEntries.filter((e) => e.id !== linked.id)
+                : prev.cardEntries,
+              playingCards:
+                revert > 0 && target.cardId
+                  ? prev.playingCards.map((c) =>
+                      c.id === target.cardId
+                        ? { ...c, balance: Math.max(0, c.balance - revert) }
+                        : c,
+                    )
+                  : prev.playingCards,
+            },
             "Hapus catatan kas",
-            target ? `${target.categoryName} · ${formatRupiah(target.amount)}` : id,
+            `${target.categoryName} · ${formatRupiah(target.amount)}${
+              revert > 0 ? ` · saldo kartu dikurangi ${formatRupiah(revert)}` : ""
+            }`,
           );
         }),
       openShift: (input) => {
