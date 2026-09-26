@@ -5239,17 +5239,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           openedAt: stamp,
           startCash: Math.max(0, Math.round(input.startCash)),
         };
-        // Shift pertama sekaligus membuka hari usaha baru.
-        // Bila Manager sudah End of Day lebih awal, check-in sebelum jam tutup
-        // operasional masih termasuk hari usaha yang sama — tidak dibuka lagi.
-        const coveredByEarlyEod = (state.businessDays ?? []).some(
-          (d) =>
-            d.closedAt &&
-            !d.autoClosed &&
-            stamp < autoCloseAt(d.openedAt, state.operatingHours),
-        );
+        // Shift pertama sekaligus membuka hari usaha baru — termasuk setelah
+        // Manager melakukan End of Day lebih awal. Hari usaha yang sudah
+        // ditutup tidak ditutup lagi oleh sistem, jadi tidak ada EOD dobel.
         const openDay =
-          (state.businessDays ?? []).some((d) => !d.closedAt) || coveredByEarlyEod
+          (state.businessDays ?? []).some((d) => !d.closedAt)
           ? null
           : ({ id: `bday-${stamp}`, openedAt: stamp } satisfies BusinessDay);
         update((prev) => {
