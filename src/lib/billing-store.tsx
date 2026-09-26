@@ -4783,8 +4783,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           cashEntries: (() => {
             const method = input.payment?.trim() || "Cash";
             const rows = [
-              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method, actorRef.current.name),
-              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method, actorRef.current.name),
+              cardSaleCashEntry(prev.cashCategories, price, cardNumber, now, method, actorRef.current.name, {
+                cardId: card.id,
+                cardEntryId: `ce-${now}`,
+              }),
+              cardTopupCashEntry(prev.cashCategories, topup, cardNumber, now, method, actorRef.current.name, {
+                cardId: card.id,
+                cardEntryId: `ce-${now}-topup`,
+              }),
             ].filter(Boolean) as CashEntry[];
             return rows.length ? [...rows, ...prev.cashEntries] : prev.cashEntries;
           })(),
