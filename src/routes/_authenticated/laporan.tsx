@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import {
   businessDate,
   defaultRange,
+  todayValue,
   inRange,
   rangeLabel,
   type OperatingHours,
