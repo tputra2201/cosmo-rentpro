@@ -547,6 +547,12 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     size="sm"
                     onClick={() => {
                       if (!requireShift()) return;
+                      if (t.paidAt) {
+                        // Tagihan sudah lunas: pesanan baru harus di sesi baru supaya
+                        // tidak ikut terhapus tanpa tertagih saat "Akhiri Sesi".
+                        toast.error(`${t.name} sudah lunas. Akhiri sesi dulu untuk pesanan baru.`);
+                        return;
+                      }
                       if (!t.customerName?.trim()) {
                         updateCafeTable(t.id, { customerName: "Umum" });
                       }

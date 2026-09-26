@@ -106,10 +106,6 @@ export function CardScanInput({
             // bisa mengoreksi satu digit tanpa menghapus semua.
             e.currentTarget.select();
           }}
-          onPointerDown={() => {
-            // Sentuhan/klik = niat mengedit manual, bukan menempelkan kartu.
-            scannedRef.current = false;
-          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
