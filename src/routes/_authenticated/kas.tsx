@@ -144,7 +144,8 @@ function KasPage() {
 
 /** Riwayat kas per periode hari usaha, dipisah kas masuk dan kas keluar. */
 function CashHistory() {
-  const { cashEntries, operatingHours, removeCashEntry } = useBilling();
+  const { cashEntries, operatingHours, removeCashEntry, updateCashEntry, paymentMethods } =
+    useBilling();
   const { store } = useStoreInfo(true);
   const storeName = store?.store_name?.trim() || "RenToPlay";
   const { confirm, dialog } = useConfirm();
