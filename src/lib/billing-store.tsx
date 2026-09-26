@@ -818,6 +818,10 @@ export type CashEntry = {
   createdAt: number;
   /** Nama pelaku yang mencatat entri ini (kosong untuk data lama). */
   createdBy?: string;
+  /** Kartu playing card yang jadi sumber catatan ini (jual kartu / top-up). */
+  cardId?: string;
+  /** Riwayat kartu yang berpasangan, supaya hapus/edit ikut berdampak. */
+  cardEntryId?: string;
 };
 
 /**
@@ -1150,6 +1154,7 @@ function cardTopupCashEntry(
   stamp: number,
   payment = "Cash",
   actor?: string,
+  link?: { cardId?: string; cardEntryId?: string },
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
