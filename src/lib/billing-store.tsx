@@ -4838,17 +4838,27 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }),
 
       removePlayingCard: (id) =>
-        update((prev) =>
-          withLog(
+        update((prev) => {
+          const card = prev.playingCards.find((c) => c.id === id);
+          // Catatan kas yang lahir dari kartu ini ikut dihapus supaya laporan
+          // tidak lagi menampilkan uang masuk untuk kartu yang sudah tidak ada.
+          const linkedCash = prev.cashEntries.filter((e) => e.cardId === id);
+          const cashTotal = linkedCash.reduce((s, e) => s + e.amount, 0);
+          return withLog(
             {
               ...prev,
               playingCards: prev.playingCards.filter((c) => c.id !== id),
               cardEntries: prev.cardEntries.filter((e) => e.cardId !== id),
+              cashEntries: prev.cashEntries.filter((e) => e.cardId !== id),
             },
             "Hapus playing card",
-            prev.playingCards.find((c) => c.id === id)?.cardNumber ?? id,
-          ),
-        ),
+            `${card?.cardNumber ?? id}${
+              linkedCash.length
+                ? ` · ${linkedCash.length} catatan kas ${formatRupiah(cashTotal)} ikut dihapus`
+                : ""
+            }`,
+          );
+        }),
       topupCard: (id, amount, note, payment) => {
         if (!shiftOpen) return false;
         const value = Math.round(amount);
