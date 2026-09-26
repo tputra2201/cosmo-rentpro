@@ -207,8 +207,20 @@ function CashHistory() {
           <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
           <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
         </section>
-        <CashGroup title="Kas masuk" list={incoming} onRemove={remove} />
-        <CashGroup title="Kas keluar" list={outgoing} onRemove={remove} />
+        <CashGroup
+          title="Kas masuk"
+          list={incoming}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+        <CashGroup
+          title="Kas keluar"
+          list={outgoing}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
       </div>
       {dialog}
     </div>
@@ -221,10 +233,14 @@ function CashGroup({
   title,
   list,
   onRemove,
+  methods,
+  onPayment,
 }: {
   title: string;
   list: CashEntry[];
   onRemove: (entry: CashEntry) => void;
+  methods: string[];
+  onPayment: (entry: CashEntry, value: string) => void;
 }) {
   const allow = useCan();
   const total = list.reduce((s, e) => s + e.amount, 0);
