@@ -169,7 +169,9 @@ function CashHistory() {
   const remove = (entry: CashEntry) => {
     confirm({
       title: `Hapus catatan ${entry.categoryName}?`,
-      description: "Data ini tidak bisa dikembalikan.",
+      description: entry.cardId
+        ? "Catatan kas dan riwayat kartunya ikut dihapus. Kalau ini top-up, saldo kartu dikembalikan."
+        : "Data ini tidak bisa dikembalikan.",
       destructive: true,
       onConfirm: () => {
         removeCashEntry(entry.id);
@@ -177,6 +179,13 @@ function CashHistory() {
       },
     });
   };
+
+  const changePayment = (entry: CashEntry, value: string) => {
+    if (value === entry.payment) return;
+    updateCashEntry(entry.id, { payment: value });
+    toast.success(`Metode diubah ke ${value}`);
+  };
+  const methodNames = paymentMethods.map((m) => m.name);
 
   return (
     <div className="space-y-4">
