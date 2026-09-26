@@ -1176,6 +1176,8 @@ function cardTopupCashEntry(
     note: `Top up kartu ${cardNumber}`,
     createdAt: stamp,
     ...(actor ? { createdBy: actor } : {}),
+    ...(link?.cardId ? { cardId: link.cardId } : {}),
+    ...(link?.cardEntryId ? { cardEntryId: link.cardEntryId } : {}),
   };
 }
 
@@ -1187,6 +1189,7 @@ function cardSaleCashEntry(
   stamp: number,
   payment = "Cash",
   actor?: string,
+  link?: { cardId?: string; cardEntryId?: string },
 ): CashEntry | null {
   if (amount <= 0) return null;
   const category =
