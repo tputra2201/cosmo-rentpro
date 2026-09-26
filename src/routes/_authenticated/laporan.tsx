@@ -403,6 +403,9 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                 <TableHead>Metode</TableHead>
                 <TableHead>Catatan</TableHead>
                 <TableHead className="text-right">Jumlah</TableHead>
+                {(canEditCash || canDeleteCash) && (
+                  <TableHead className="text-right">Aksi</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
