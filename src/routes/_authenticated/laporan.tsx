@@ -424,7 +424,34 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                         ? "Pendapatan"
                         : "Pengeluaran"}
                   </TableCell>
-                  <TableCell>{e.payment}</TableCell>
+                  <TableCell>
+                    {canEditCash ? (
+                      <Select
+                        value={e.payment}
+                        onValueChange={(value) => {
+                          if (value === e.payment) return;
+                          updateCashEntry(e.id, { payment: value });
+                          toast.success(`Metode diubah ke ${value}`);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-32" aria-label={`Metode ${e.categoryName}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(paymentMethods.some((m) => m.name === e.payment)
+                            ? paymentMethods.map((m) => m.name)
+                            : [e.payment, ...paymentMethods.map((m) => m.name)]
+                          ).map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      e.payment
+                    )}
+                  </TableCell>
                   <TableCell>{e.note || "-"}</TableCell>
                   <TableCell
                     className={
@@ -436,6 +463,32 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                     {e.direction === "in" ? "+" : "-"}
                     {formatRupiah(e.amount)}
                   </TableCell>
+                  {(canEditCash || canDeleteCash) && (
+                    <TableCell className="text-right">
+                      {canDeleteCash && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Hapus catatan ${e.categoryName}`}
+                          onClick={() =>
+                            confirm({
+                              title: `Hapus catatan ${e.categoryName}?`,
+                              description: e.cardId
+                                ? "Catatan kas dan riwayat kartunya ikut dihapus. Kalau ini top-up, saldo kartu dikembalikan."
+                                : "Catatan ini akan hilang dari laporan dan tidak bisa dikembalikan.",
+                              destructive: true,
+                              onConfirm: () => {
+                                removeCashEntry(e.id);
+                                toast.success("Catatan kas dihapus");
+                              },
+                            })
+                          }
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
