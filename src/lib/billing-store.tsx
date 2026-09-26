@@ -4893,6 +4893,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               stamp,
               method,
               actorRef.current.name,
+              { cardId: id, cardEntryId: `ce-${stamp}` },
             );
             return row ? [row, ...prev.cashEntries] : prev.cashEntries;
           })(),
