@@ -283,7 +283,29 @@ function CashGroup({
                         : "Pengeluaran"}
                   </Badge>
                 </TableCell>
-                <TableCell>{e.payment}</TableCell>
+                <TableCell>
+                  {allow("kas.tambah") ? (
+                    <Select value={e.payment} onValueChange={(v) => onPayment(e, v)}>
+                      <SelectTrigger
+                        className="h-8 w-32"
+                        aria-label={`Metode ${e.categoryName}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(methods.includes(e.payment) ? methods : [e.payment, ...methods]).map(
+                          (name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    e.payment
+                  )}
+                </TableCell>
                 <TableCell>{e.createdBy || "-"}</TableCell>
                 <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
                 <TableCell
