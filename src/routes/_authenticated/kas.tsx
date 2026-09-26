@@ -144,7 +144,8 @@ function KasPage() {
 
 /** Riwayat kas per periode hari usaha, dipisah kas masuk dan kas keluar. */
 function CashHistory() {
-  const { cashEntries, operatingHours, removeCashEntry } = useBilling();
+  const { cashEntries, operatingHours, removeCashEntry, updateCashEntry, paymentMethods } =
+    useBilling();
   const { store } = useStoreInfo(true);
   const storeName = store?.store_name?.trim() || "RenToPlay";
   const { confirm, dialog } = useConfirm();
@@ -168,7 +169,9 @@ function CashHistory() {
   const remove = (entry: CashEntry) => {
     confirm({
       title: `Hapus catatan ${entry.categoryName}?`,
-      description: "Data ini tidak bisa dikembalikan.",
+      description: entry.cardId
+        ? "Catatan kas dan riwayat kartunya ikut dihapus. Kalau ini top-up, saldo kartu dikembalikan."
+        : "Data ini tidak bisa dikembalikan.",
       destructive: true,
       onConfirm: () => {
         removeCashEntry(entry.id);
@@ -176,6 +179,13 @@ function CashHistory() {
       },
     });
   };
+
+  const changePayment = (entry: CashEntry, value: string) => {
+    if (value === entry.payment) return;
+    updateCashEntry(entry.id, { payment: value });
+    toast.success(`Metode diubah ke ${value}`);
+  };
+  const methodNames = paymentMethods.map((m) => m.name);
 
   return (
     <div className="space-y-4">
@@ -197,8 +207,20 @@ function CashHistory() {
           <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
           <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
         </section>
-        <CashGroup title="Kas masuk" list={incoming} onRemove={remove} />
-        <CashGroup title="Kas keluar" list={outgoing} onRemove={remove} />
+        <CashGroup
+          title="Kas masuk"
+          list={incoming}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+        <CashGroup
+          title="Kas keluar"
+          list={outgoing}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
       </div>
       {dialog}
     </div>
@@ -211,10 +233,14 @@ function CashGroup({
   title,
   list,
   onRemove,
+  methods,
+  onPayment,
 }: {
   title: string;
   list: CashEntry[];
   onRemove: (entry: CashEntry) => void;
+  methods: string[];
+  onPayment: (entry: CashEntry, value: string) => void;
 }) {
   const allow = useCan();
   const total = list.reduce((s, e) => s + e.amount, 0);
@@ -257,7 +283,29 @@ function CashGroup({
                         : "Pengeluaran"}
                   </Badge>
                 </TableCell>
-                <TableCell>{e.payment}</TableCell>
+                <TableCell>
+                  {allow("kas.tambah") ? (
+                    <Select value={e.payment} onValueChange={(v) => onPayment(e, v)}>
+                      <SelectTrigger
+                        className="h-8 w-32"
+                        aria-label={`Metode ${e.categoryName}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(methods.includes(e.payment) ? methods : [e.payment, ...methods]).map(
+                          (name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    e.payment
+                  )}
+                </TableCell>
                 <TableCell>{e.createdBy || "-"}</TableCell>
                 <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
                 <TableCell

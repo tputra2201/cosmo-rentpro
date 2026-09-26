@@ -337,7 +337,9 @@ function CardListPanel() {
         ]}
         onRemove={(c) => {
           removePlayingCard(c.id);
-          toast.success(`Kartu ${c.cardNumber} dihapus`);
+          toast.success(
+            `Kartu ${c.cardNumber} dihapus beserta catatan kas penjualan dan top-upnya`,
+          );
         }}
         detailTitle={(c) => `Kartu ${c.cardNumber}`}
         detailDescription={(c) => `Kode: ${c.cardCode?.trim() || "-"}`}
