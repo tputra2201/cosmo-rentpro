@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
 import {
   businessDate,
   defaultRange,
+  todayValue,
   inRange,
   rangeLabel,
   type OperatingHours,
@@ -109,9 +110,24 @@ function dateTimeOf(ts: number) {
 }
 
 function LaporanPage() {
-  const [pickedRange, setRange] = useState<ReportRange>(() => defaultRange("day"));
   const { role } = useAuth();
-  const { rolePermissions, operatingHours } = useBilling();
+  const { rolePermissions, operatingHours, activeBusinessDay } = useBilling();
+  const [pickedRange, setRangeState] = useState<ReportRange>(() => defaultRange("day"));
+  const [touched, setTouched] = useState(false);
+  const setRange = (r: ReportRange) => {
+    setTouched(true);
+    setRangeState(r);
+  };
+  // Tanggal awal laporan mengikuti hari usaha yang sedang berjalan (tanggal
+  // kalender saat hari usaha dibuka) dan jam operasional toko sebenarnya.
+  useEffect(() => {
+    if (touched) return;
+    const base = defaultRange("day", operatingHours);
+    if (activeBusinessDay) {
+      const v = todayValue("day", new Date(activeBusinessDay.openedAt));
+      setRangeState({ ...base, from: v, to: v });
+    } else setRangeState(base);
+  }, [touched, operatingHours, activeBusinessDay?.openedAt]);
 
   // Tanggal yang dipilih dibaca sebagai hari usaha: mulai jam buka store
   // sampai jam tutup keesokan harinya. Bila hari usaha itu sudah ditutup
