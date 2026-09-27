@@ -227,8 +227,8 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
         if (m) addCafeOrder(table.id, m, Math.max(1, row.qty));
       }
       if (dpAmount > 0 && !item.dpUsedAt) {
-        const paid = settleCafeTable(table.id, { payment: item.dpPayment || "Cash", amount: dpAmount, amountPaid: dpAmount });
-        if (paid) {
+        if (shiftOpen) {
+          settleCafeTable(table.id, { payment: item.dpPayment || "Cash", amount: dpAmount, amountPaid: dpAmount });
           addCashEntry({ categoryId: BOOKING_DP_USED_CATEGORY_ID, amount: dpAmount, payment: item.dpPayment || "Cash", note: `DP reservasi ${item.customerName} dipakai di Meja ${table.name}` });
           updateBooking(item.id, { status: "checked-in", dpUsedAt: Date.now() });
           toast.success(`${item.customerName} check-in di Meja ${table.name} · DP ${formatRupiah(dpAmount)} sudah dipakai`);
