@@ -294,9 +294,14 @@ export type BookingAddon = {
   /** Durasi khusus item ini (menit). Kosong = ikut lama sesi. */
   minutes?: number;
 };
+/** Makanan/minuman yang dipesan bersama reservasi. */
+export type BookingOrder = { menuId: string; qty: number };
 export type Booking = {
   id: string;
+  /** Id unit TV, atau id meja kafe bila target = "table". */
   stationId: string;
+  /** Jenis tempat yang direservasi (default: unit TV). */
+  target?: "station" | "table";
   customerId?: string;
   customerName: string;
   customerPhone: string;
@@ -306,6 +311,8 @@ export type Booking = {
   status: BookingStatus;
   /** Additional Rental yang otomatis masuk sesi saat check-in. */
   addons?: BookingAddon[];
+  /** Pesanan F&B yang otomatis masuk panel TV/meja saat check-in. */
+  orders?: BookingOrder[];
   /** Uang muka (DP) yang sudah disetor pelanggan. */
   dpAmount?: number;
   /** Metode pembayaran DP. */
