@@ -48,6 +48,51 @@ function AddonRowsEditor({ rows, onChange }: { rows: BookingAddon[]; onChange: (
   </div>;
 }
 
+/** Baris pemesanan makanan & minuman untuk reservasi. */
+function OrderRowsEditor({ rows, onChange }: { rows: BookingOrder[]; onChange: (next: BookingOrder[]) => void }) {
+  const { menu } = useBilling();
+  const [pick, setPick] = useState("");
+  const [qty, setQty] = useState("1");
+  const add = () => {
+    const item = menu.find((m) => m.id === pick);
+    if (!item) { toast.error("Pilih menu makanan/minuman"); return; }
+    const count = Math.max(1, Math.round(Number(qty) || 1));
+    const existing = rows.findIndex((r) => r.menuId === item.id);
+    onChange(existing >= 0 ? rows.map((r, i) => i === existing ? { ...r, qty: r.qty + count } : r) : [...rows, { menuId: item.id, qty: count }]);
+    setPick(""); setQty("1");
+  };
+  if (menu.length === 0) return <p className="text-sm text-muted-foreground">Belum ada menu di Setup Price → Menu.</p>;
+  const total = rows.reduce((sum, r) => sum + (menu.find((m) => m.id === r.menuId)?.price ?? 0) * r.qty, 0);
+  return <div className="space-y-2">
+    {rows.map((row, index) => {
+      const item = menu.find((m) => m.id === row.menuId);
+      return <div key={`${row.menuId}-${index}`} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+        <span className="min-w-0 truncate">{item?.name ?? "Menu"} × {row.qty} · {formatRupiah((item?.price ?? 0) * row.qty)}</span>
+        <Button type="button" size="icon" variant="ghost" aria-label="Hapus pesanan" onClick={() => onChange(rows.filter((_, i) => i !== index))}><Trash2 className="size-4 text-destructive"/></Button>
+      </div>;
+    })}
+    <div className="grid gap-2 grid-cols-[1fr_70px_auto]">
+      <Select value={pick} onValueChange={setPick}><SelectTrigger><SelectValue placeholder="Pilih menu"/></SelectTrigger><SelectContent>{menu.map((m) => <SelectItem key={m.id} value={m.id}>{m.name} · {formatRupiah(m.price)}</SelectItem>)}</SelectContent></Select>
+      <Input type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} aria-label="Jumlah"/>
+      <Button type="button" variant="outline" onClick={add} aria-label="Tambah pesanan"><Plus className="size-4"/></Button>
+    </div>
+    {rows.length > 0 && <p className="text-xs text-muted-foreground">Total pesanan {formatRupiah(total)} · masuk otomatis saat check-in</p>}
+  </div>;
+}
+
+/** Pilihan tempat: unit TV atau meja kafe. Nilai "s:<id>" / "t:<id>". */
+function PlaceSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { stations, cafeTables } = useBilling();
+  return <Select value={value} onValueChange={onChange}><SelectTrigger><SelectValue placeholder="Pilih unit / meja"/></SelectTrigger><SelectContent>
+    <SelectGroup><SelectLabel>Unit TV</SelectLabel>{stations.map((s) => <SelectItem key={s.id} value={`s:${s.id}`}>{s.name} · {s.console}</SelectItem>)}</SelectGroup>
+    {cafeTables.length > 0 && <SelectGroup><SelectLabel>Meja Kafe</SelectLabel>{cafeTables.map((t) => <SelectItem key={t.id} value={`t:${t.id}`}>Meja {t.name}{t.area ? ` · ${t.area}` : ""}</SelectItem>)}</SelectGroup>}
+  </SelectContent></Select>;
+}
+
+const placeKey = (item: { stationId: string; target?: "station" | "table" }) => `${item.target === "table" ? "t" : "s"}:${item.stationId}`;
+const parsePlace = (key: string) => ({ target: (key.startsWith("t:") ? "table" : "station") as "station" | "table", stationId: key.slice(2) });
+
+
 export const Route = createFileRoute("/_authenticated/booking")({
   head: () => ({ meta: [
     { title: "Reservasi Rental — RenToPlay" },
