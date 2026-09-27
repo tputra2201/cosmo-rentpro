@@ -325,13 +325,16 @@ function CloseOutForm({
         <Field label="Nama kasir" value={shift.cashierName} />
         <Field label="Opening kasir" value={clock(shift.openedAt)} />
         <Field label="Closing kasir" value={clock(Date.now())} />
-        <Field label="Start cash" value={formatRupiah(shift.startCash)} />
-        <Field label="Paid in" value={formatRupiah(summary.paidIn)} />
-        <Field label="Paid out" value={formatRupiah(summary.paidOut)} />
-        <Field label="Cash from sales" value={formatRupiah(summary.sales)} />
-        <Field label="Expenses" value={formatRupiah(summary.expenses)} />
-        <Field label="Cash expected" value={formatRupiah(summary.expected)} highlight />
+        <Field label="Start cash (kas awal)" value={formatRupiah(shift.startCash)} />
+        <Field label="+ Penjualan & pendapatan lain tunai" value={formatRupiah(summary.sales)} />
+        <Field label="+ Titipan masuk tunai (DP, top-up)" value={formatRupiah(summary.paidIn)} />
+        <Field label="− Titipan dipakai / keluar tunai" value={formatRupiah(summary.paidOut)} />
+        <Field label="− Pengeluaran tunai" value={formatRupiah(summary.expenses)} />
+        <Field label="= Cash expected (harus ada di laci)" value={formatRupiah(summary.expected)} highlight />
       </div>
+
+      <NonCashBox from={shift.openedAt} />
+
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
