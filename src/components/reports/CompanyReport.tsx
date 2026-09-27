@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { addonAmount, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { addonAmount, formatRupiah, shiftSummary, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 type Row = { label: string; amount: number; qty?: number };
@@ -140,6 +140,16 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     .reduce((s, e) => s + Math.abs(e.amount), 0);
   const cardTopup = cards.filter((e) => e.type === "topup").reduce((s, e) => s + Math.abs(e.amount), 0);
 
+  const depositRows = new Map<string, Row>();
+  for (const e of cash) {
+    if (!e.payout) continue;
+    const sign = e.direction === "in" ? 1 : -1;
+    bump(depositRows, `${e.categoryName} · ${e.payment}`, sign * e.amount, 1);
+  }
+  const methodRows = new Map<string, Row>();
+  for (const [, r] of payments) bump(methodRows, r.label, r.amount, r.qty ?? 0);
+  for (const e of cash) bump(methodRows, e.payment || "Cash", e.direction === "in" ? e.amount : -e.amount, 1);
+
   const printRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -233,6 +243,50 @@ export function CompanyReport({ range }: { range: ReportRange }) {
           />
         )}
       </Section>
+
+      <Section title="Titipan pelanggan (DP reservasi & deposit kartu)">
+        <p className="mb-2 text-xs text-muted-foreground">Titipan bukan pendapatan. DP menjadi penjualan saat pelanggan check-in.</p>
+        <Rows rows={sorted(depositRows)} countLabel="Catatan" />
+      </Section>
+
+      <Section title="Uang diterima per metode (cocokkan dengan laci & rekening)">
+        <Rows rows={sorted(methodRows)} countLabel="Transaksi" />
+      </Section>
+
+      <Section title="Close out kasir">
+        {shiftInRange.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Tidak ada shift pada periode ini.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kasir</TableHead>
+                  <TableHead className="text-right">Expected</TableHead>
+                  <TableHead className="text-right">Actual</TableHead>
+                  <TableHead className="text-right">Selisih</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shiftInRange.map((s) => {
+                  const sum = shiftSummary(s, history, cashEntries);
+                  const closed = s.closedAt != null;
+                  const diff = closed ? (s.cashActual ?? 0) - sum.expected : 0;
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell>{s.cashierName}{closed ? "" : " (masih buka)"}</TableCell>
+                      <TableCell className="text-right">{formatRupiah(sum.expected)}</TableCell>
+                      <TableCell className="text-right">{closed ? formatRupiah(s.cashActual ?? 0) : "-"}</TableCell>
+                      <TableCell className={diff < 0 ? "text-right text-destructive" : "text-right"}>{closed ? formatRupiah(diff) : "-"}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Section>
+
 
       <Section title="Ringkasan akhir">
         <Line label="Penjualan bersih" value={formatRupiah(netSales)} />

@@ -325,13 +325,16 @@ function CloseOutForm({
         <Field label="Nama kasir" value={shift.cashierName} />
         <Field label="Opening kasir" value={clock(shift.openedAt)} />
         <Field label="Closing kasir" value={clock(Date.now())} />
-        <Field label="Start cash" value={formatRupiah(shift.startCash)} />
-        <Field label="Paid in" value={formatRupiah(summary.paidIn)} />
-        <Field label="Paid out" value={formatRupiah(summary.paidOut)} />
-        <Field label="Cash from sales" value={formatRupiah(summary.sales)} />
-        <Field label="Expenses" value={formatRupiah(summary.expenses)} />
-        <Field label="Cash expected" value={formatRupiah(summary.expected)} highlight />
+        <Field label="Start cash (kas awal)" value={formatRupiah(shift.startCash)} />
+        <Field label="+ Penjualan & pendapatan lain tunai" value={formatRupiah(summary.sales)} />
+        <Field label="+ Titipan masuk tunai (DP, top-up)" value={formatRupiah(summary.paidIn)} />
+        <Field label="− Titipan dipakai / keluar tunai" value={formatRupiah(summary.paidOut)} />
+        <Field label="− Pengeluaran tunai" value={formatRupiah(summary.expenses)} />
+        <Field label="= Cash expected (harus ada di laci)" value={formatRupiah(summary.expected)} highlight />
       </div>
+
+      <NonCashBox from={shift.openedAt} />
+
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -441,6 +444,36 @@ function Field({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+/** Ringkasan uang non-tunai selama shift: sekadar info, tidak masuk hitungan laci. */
+function NonCashBox({ from }: { from: number }) {
+  const { history, cashEntries } = useBilling();
+  const to = Date.now();
+  const within = (t: number) => t >= from && t <= to;
+  const rows = new Map<string, number>();
+  const add = (m: string, v: number) => rows.set(m, (rows.get(m) ?? 0) + v);
+  for (const h of history) {
+    if (!within(h.paidAt ?? h.endAt)) continue;
+    if (h.payments?.length) for (const p of h.payments) { if (p.method !== "Cash") add(p.method, p.amount); }
+    else if ((h.payment || "Cash") !== "Cash") add(h.payment!, h.total);
+  }
+  for (const e of cashEntries) {
+    if (!within(e.createdAt) || e.payment === "Cash") continue;
+    add(e.payment, e.direction === "in" ? e.amount : -e.amount);
+  }
+  const list = [...rows.entries()].filter(([, v]) => v !== 0);
+  if (list.length === 0) return null;
+  return (
+    <div className="rounded-md border border-dashed p-3 text-sm">
+      <p className="mb-1 font-medium">Pembayaran non-tunai (tidak masuk laci, hanya info)</p>
+      {list.map(([m, v]) => (
+        <div key={m} className="flex justify-between text-muted-foreground">
+          <span>{m}</span><span>{formatRupiah(v)}</span>
+        </div>
+      ))}
     </div>
   );
 }
