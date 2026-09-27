@@ -94,6 +94,12 @@ export function CardScanInput({
           autoFocus={autoFocus}
           value={value}
           placeholder="Tempelkan kartu ke pembaca, atau ketik nomor"
+          // Klik ke dalam kolom berarti kasir ingin mengoreksi manual: matikan
+          // tanda "hasil scan" supaya ketikan berikutnya menyisipkan digit di
+          // posisi kursor, bukan menimpa seluruh nomor.
+          onPointerDown={() => {
+            scannedRef.current = false;
+          }}
           onChange={(e) => {
             scannedRef.current = false;
             onChange(e.target.value);
