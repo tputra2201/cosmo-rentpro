@@ -328,8 +328,8 @@ function CloseOutForm({
         <Field label="Start cash (kas awal)" value={formatRupiah(shift.startCash)} />
         <Field label="+ Penjualan & pendapatan lain tunai" value={formatRupiah(summary.sales)} />
         <Field label="+ Titipan masuk tunai (DP, top-up)" value={formatRupiah(summary.paidIn)} />
-        <Field label="− Titipan dipakai / keluar tunai" value={formatRupiah(summary.paidOut)} />
-        <Field label="− Pengeluaran tunai" value={formatRupiah(summary.expenses)} />
+        <Field label="− DP tunai terpakai & ambil kas owner" value={formatRupiah(summary.paidOut)} />
+        <Field label="− Biaya toko dibayar tunai" value={formatRupiah(summary.expenses)} />
         <Field label="= Cash expected (harus ada di laci)" value={formatRupiah(summary.expected)} highlight />
       </div>
 
