@@ -22,6 +22,7 @@ import { Route as AuthenticatedKartuRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedKasRouteImport } from './routes/_authenticated/kas'
 import { Route as AuthenticatedKasirRouteImport } from './routes/_authenticated/kasir'
 import { Route as AuthenticatedLaporanRouteImport } from './routes/_authenticated/laporan'
+import { Route as AuthenticatedPayinoutRouteImport } from './routes/_authenticated/payinout'
 import { Route as AuthenticatedPelangganRouteImport } from './routes/_authenticated/pelanggan'
 import { Route as AuthenticatedPembayaranRouteImport } from './routes/_authenticated/pembayaran'
 import { Route as AuthenticatedPenggunaRouteImport } from './routes/_authenticated/pengguna'
@@ -99,6 +100,11 @@ const AuthenticatedKasirRoute = AuthenticatedKasirRouteImport.update({
 const AuthenticatedLaporanRoute = AuthenticatedLaporanRouteImport.update({
   id: '/laporan',
   path: '/laporan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPayinoutRoute = AuthenticatedPayinoutRouteImport.update({
+  id: '/payinout',
+  path: '/payinout',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPelangganRoute = AuthenticatedPelangganRouteImport.update({
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/kas': typeof AuthenticatedKasRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
+  '/payinout': typeof AuthenticatedPayinoutRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/kas': typeof AuthenticatedKasRoute
   '/kasir': typeof AuthenticatedKasirRoute
   '/laporan': typeof AuthenticatedLaporanRoute
+  '/payinout': typeof AuthenticatedPayinoutRoute
   '/pelanggan': typeof AuthenticatedPelangganRoute
   '/pembayaran': typeof AuthenticatedPembayaranRoute
   '/pengguna': typeof AuthenticatedPenggunaRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/_authenticated/kas': typeof AuthenticatedKasRoute
   '/_authenticated/kasir': typeof AuthenticatedKasirRoute
   '/_authenticated/laporan': typeof AuthenticatedLaporanRoute
+  '/_authenticated/payinout': typeof AuthenticatedPayinoutRoute
   '/_authenticated/pelanggan': typeof AuthenticatedPelangganRoute
   '/_authenticated/pembayaran': typeof AuthenticatedPembayaranRoute
   '/_authenticated/pengguna': typeof AuthenticatedPenggunaRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/kas'
     | '/kasir'
     | '/laporan'
+    | '/payinout'
     | '/pelanggan'
     | '/pembayaran'
     | '/pengguna'
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/kas'
     | '/kasir'
     | '/laporan'
+    | '/payinout'
     | '/pelanggan'
     | '/pembayaran'
     | '/pengguna'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kas'
     | '/_authenticated/kasir'
     | '/_authenticated/laporan'
+    | '/_authenticated/payinout'
     | '/_authenticated/pelanggan'
     | '/_authenticated/pembayaran'
     | '/_authenticated/pengguna'
@@ -451,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLaporanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payinout': {
+      id: '/_authenticated/payinout'
+      path: '/payinout'
+      fullPath: '/payinout'
+      preLoaderRoute: typeof AuthenticatedPayinoutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pelanggan': {
       id: '/_authenticated/pelanggan'
       path: '/pelanggan'
@@ -561,6 +580,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKasRoute: typeof AuthenticatedKasRoute
   AuthenticatedKasirRoute: typeof AuthenticatedKasirRoute
   AuthenticatedLaporanRoute: typeof AuthenticatedLaporanRoute
+  AuthenticatedPayinoutRoute: typeof AuthenticatedPayinoutRoute
   AuthenticatedPelangganRoute: typeof AuthenticatedPelangganRoute
   AuthenticatedPembayaranRoute: typeof AuthenticatedPembayaranRoute
   AuthenticatedPenggunaRoute: typeof AuthenticatedPenggunaRoute
@@ -583,6 +603,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKasRoute: AuthenticatedKasRoute,
   AuthenticatedKasirRoute: AuthenticatedKasirRoute,
   AuthenticatedLaporanRoute: AuthenticatedLaporanRoute,
+  AuthenticatedPayinoutRoute: AuthenticatedPayinoutRoute,
   AuthenticatedPelangganRoute: AuthenticatedPelangganRoute,
   AuthenticatedPembayaranRoute: AuthenticatedPembayaranRoute,
   AuthenticatedPenggunaRoute: AuthenticatedPenggunaRoute,
