@@ -326,7 +326,7 @@ export function StationDialog({
     });
   }, [autoEnd, dueAmount, station, stopSession, onOpenChange]);
 
-  const openCafeTables = cafeTables.filter((t) => t.orders.length > 0);
+  const openCafeTables = businessProfile?.modules?.cafe === false ? [] : cafeTables.filter((t) => t.orders.length > 0);
   // Baris tagihan TV lain yang sudah dipindah ke panel ini.
   const transferredLines = (session?.orders ?? []).filter(
     (o) => o.linkedFrom?.type === "station",
