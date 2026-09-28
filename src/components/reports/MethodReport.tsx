@@ -77,7 +77,7 @@ export function MethodReport({
       key: e.id,
       at: e.createdAt,
       method: e.payment,
-      source: e.direction === "in" ? "Kas masuk" : "Kas keluar",
+      source: e.direction === "in" ? "PAY-IN" : "PAY-OUT",
       detail: `${e.categoryName}${e.note ? ` · ${e.note}` : ""}`,
       amount: e.direction === "in" ? e.amount : -e.amount,
     });

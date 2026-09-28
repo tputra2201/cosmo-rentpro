@@ -374,8 +374,8 @@ function ReceiptReport({ range }: { range: ReportRange }) {
           value={formatRupiah(sum(today, "addonTotal"))}
         />
         <Stat label="Makanan & minuman" value={formatRupiah(sum(today, "fnbTotal"))} />
-        <Stat label="Pendapatan lain" value={formatRupiah(otherIncome)} />
-        <Stat label="Pengeluaran" value={formatRupiah(expense)} />
+        <Stat label="OTHER REVENUE" value={formatRupiah(otherIncome)} />
+        <Stat label="EXPENSES (BIAYA)" value={formatRupiah(expense)} />
         <Stat
           label="Total pendapatan periode ini"
           value={formatRupiah(sum(today, "total") + otherIncome)}
@@ -389,14 +389,14 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
       {(payoutIn > 0 || payoutOut > 0) && (
         <p className="text-sm text-muted-foreground">
-          Perpindahan uang kas periode ini (tidak dihitung pendapatan/biaya): masuk{" "}
-          {formatRupiah(payoutIn)} · keluar {formatRupiah(payoutOut)}.
+          PAY-IN / PAY-OUT periode ini (tidak dihitung sebagai REVENUE / EXPENSES): PAY-IN{" "}
+          {formatRupiah(payoutIn)} · PAY-OUT {formatRupiah(payoutOut)}.
         </p>
       )}
 
       {cashToday.length > 0 && (
         <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold">Kas lain &amp; pengeluaran periode ini</h2>
+          <h2 className="mb-4 text-lg font-semibold">Finance — PAY-IN &amp; PAY-OUT periode ini</h2>
           <Table>
             <TableHeader>
               <TableRow>
@@ -423,11 +423,11 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                   <TableCell>
                     {e.payout
                       ? e.direction === "in"
-                        ? "Kas masuk"
-                        : "Kas keluar"
+                        ? "PAY-IN"
+                        : "PAY-OUT"
                       : e.direction === "in"
-                        ? "Pendapatan"
-                        : "Pengeluaran"}
+                        ? "OTHER REVENUE"
+                        : "EXPENSES (BIAYA)"}
                   </TableCell>
                   <TableCell>
                     {canEditCash ? (

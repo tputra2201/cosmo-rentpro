@@ -88,7 +88,7 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
         />
         <Stat label="Dibayar tunai" value={formatRupiah(cashExpense)} note="keluar dari laci kasir" />
         <Stat
-          label="Pay-Out lain"
+          label="PAY-OUT LAIN"
           value={formatRupiah(totalPayout)}
           note="Prive / setoran & titipan dipakai"
         />
@@ -102,10 +102,10 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
       />
 
       <GroupTables
-        title="Pay-Out lain (Prive / setoran & titipan dipakai)"
+        title="PAY-OUT LAIN (PRIVE / SETORAN & TITIPAN DIPAKAI)"
         groups={payoutGroups}
         total={totalPayout}
-        emptyText="Belum ada pay-out lain pada periode ini."
+        emptyText="Belum ada PAY-OUT lain pada periode ini."
       />
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
