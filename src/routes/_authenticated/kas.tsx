@@ -31,6 +31,7 @@ import {
   type CashEntry,
   type CashGroup,
 } from "@/lib/billing-store";
+import { CARD_SALE_CATEGORY_ID } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCan } from "@/lib/use-can";
@@ -279,7 +280,9 @@ function CashGroup({
                         ? "PAY-IN"
                         : "PAY-OUT"
                       : e.direction === "in"
-                        ? "OTHER REVENUE"
+                        ? e.categoryId === CARD_SALE_CATEGORY_ID
+                          ? "SALES · PLAYING CARD"
+                          : "OTHER REVENUE"
                         : "EXPENSES (BIAYA)"}
                   </Badge>
                 </TableCell>
