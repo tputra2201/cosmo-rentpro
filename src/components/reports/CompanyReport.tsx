@@ -42,7 +42,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cashEntries,
     menu,
     shifts,
+    businessProfile,
   } = useBilling();
+  const salesLabels = businessProfile.salesLabels;
 
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const records = history.filter((h) => inRange(paidTime(h), range));
@@ -197,9 +199,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
 
       <Section title="REVENUE">
         <Subheading>SALES</Subheading>
-        <Line label="RENTAL" value={formatRupiah(rentalGross)} />
-        <Line label="F&B" value={formatRupiah(fnbGross)} />
-        <Line label="ADDITIONAL RENTAL" value={formatRupiah(addonGross)} />
+        <Line label={salesLabels.rental} value={formatRupiah(rentalGross)} />
+        <Line label={salesLabels.fnb} value={formatRupiah(fnbGross)} />
+        <Line label={salesLabels.addon} value={formatRupiah(addonGross)} />
         {cashSalesRows.size === 0 ? (
           <Line label="PLAYING CARD SALES" value={formatRupiah(0)} />
         ) : (

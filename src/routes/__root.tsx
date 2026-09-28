@@ -257,7 +257,7 @@ function AppShell() {
   const { store } = useStoreInfo(Boolean(session));
   const developer = useDeveloper(Boolean(session));
   const branding = useBranding();
-  const { sync, shifts, rolePermissions } = useBilling();
+  const { sync, shifts, rolePermissions, businessProfile } = useBilling();
   const needCheckIn = {
     done: shifts.some((s) => !s.closedAt) || pathname === "/shift",
   };
@@ -306,6 +306,10 @@ function AppShell() {
   }, [pathname, navigate]);
 
   const allowed = (path: string) => {
+    const mods = businessProfile.modules;
+    if (path === "/kafe" && !mods.cafe) return false;
+    if (path === "/booking" && !mods.booking) return false;
+    if (path === "/kartu" && !mods.playingCard) return false;
     const key = MENU_PERMISSION[path];
     if (!key) return true;
     return can(role, key, rolePermissions);

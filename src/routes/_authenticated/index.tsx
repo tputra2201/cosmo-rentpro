@@ -46,6 +46,7 @@ function Dashboard() {
     addonRentals,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    businessProfile,
   } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -136,7 +137,7 @@ function Dashboard() {
             membayar. Kartu bisa digeser untuk mengatur posisinya.
           </p>
         </div>
-        <CafeTables />
+        {businessProfile.modules.cafe && <CafeTables />}
       </section>
 
       <StationDialog
