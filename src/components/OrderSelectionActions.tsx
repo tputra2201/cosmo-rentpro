@@ -62,7 +62,8 @@ export function OrderSelectionActions({
     paymentMethods,
     payOrderItems,
     transferOrders,
-    cafeTables,
+    cafeTables: allCafeTables,
+    businessProfile,
     stations,
     menu,
     promotions,
@@ -95,6 +96,7 @@ export function OrderSelectionActions({
     { member: Boolean(card?.member), card: Boolean(isCard && card) },
   );
   const total = bill.total;
+  const cafeTables = businessProfile?.modules?.cafe === false ? [] : allCafeTables;
   const receivedValue = received === "" ? total : Math.max(0, Number(received) || 0);
 
   // Tujuan transfer: meja kafe lain dan TV yang sesinya masih berjalan.

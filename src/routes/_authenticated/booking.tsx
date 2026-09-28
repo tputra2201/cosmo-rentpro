@@ -82,7 +82,8 @@ function OrderRowsEditor({ rows, onChange }: { rows: BookingOrder[]; onChange: (
 
 /** Pilihan tempat: unit TV atau meja kafe. Nilai "s:<id>" / "t:<id>". */
 function PlaceSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const { stations, cafeTables } = useBilling();
+  const { stations, cafeTables: allT, businessProfile } = useBilling();
+  const cafeTables = businessProfile?.modules?.cafe === false ? [] : allT;
   return <Select value={value} onValueChange={onChange}><SelectTrigger><SelectValue placeholder="Pilih unit / meja"/></SelectTrigger><SelectContent>
     <SelectGroup><SelectLabel>Unit TV</SelectLabel>{stations.map((s) => <SelectItem key={s.id} value={`s:${s.id}`}>{s.name} · {s.console}</SelectItem>)}</SelectGroup>
     {cafeTables.length > 0 && <SelectGroup><SelectLabel>Meja Kafe</SelectLabel>{cafeTables.map((t) => <SelectItem key={t.id} value={`t:${t.id}`}>Meja {t.name}{t.area ? ` · ${t.area}` : ""}</SelectItem>)}</SelectGroup>}

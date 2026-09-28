@@ -131,6 +131,7 @@ function Dashboard() {
         ))}
       </SortableArea>
 
+      {businessProfile.modules.cafe && (
       <section className="space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Meja Kafe</h2>
@@ -139,8 +140,9 @@ function Dashboard() {
             membayar. Kartu bisa digeser untuk mengatur posisinya.
           </p>
         </div>
-        {businessProfile.modules.cafe && <CafeTables />}
+        <CafeTables />
       </section>
+      )}
 
       <StationDialog
         key={selectedId ?? "kosong"}
