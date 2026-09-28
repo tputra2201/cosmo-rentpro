@@ -292,6 +292,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
   const otherIncome = cashSum((e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID);
+  const cardSalesTotal = cashSum((e) => e.direction === "in" && !e.payout && e.categoryId === CARD_SALE_CATEGORY_ID);
   const expense = cashSum((e) => e.direction === "out" && !e.payout);
   const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
   const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
@@ -374,15 +375,16 @@ function ReceiptReport({ range }: { range: ReportRange }) {
           value={formatRupiah(sum(today, "addonTotal"))}
         />
         <Stat label="Makanan & minuman" value={formatRupiah(sum(today, "fnbTotal"))} />
+        <Stat label="PLAYING CARD SALES" value={formatRupiah(cardSalesTotal)} />
         <Stat label="OTHER REVENUE" value={formatRupiah(otherIncome)} />
         <Stat label="EXPENSES (BIAYA)" value={formatRupiah(expense)} />
         <Stat
           label="Total pendapatan periode ini"
-          value={formatRupiah(sum(today, "total") + otherIncome)}
+          value={formatRupiah(sum(today, "total") + cardSalesTotal + otherIncome)}
         />
         <Stat
           label="Sisa bersih periode ini"
-          value={formatRupiah(sum(today, "total") + otherIncome - expense)}
+          value={formatRupiah(sum(today, "total") + cardSalesTotal + otherIncome - expense)}
           highlight
         />
       </section>
