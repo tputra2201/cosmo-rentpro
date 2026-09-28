@@ -203,7 +203,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
         <Line label={salesLabels.fnb} value={formatRupiah(fnbGross)} />
         <Line label={salesLabels.addon} value={formatRupiah(addonGross)} />
         {cashSalesRows.size === 0 ? (
-          <Line label="PLAYING CARD SALES" value={formatRupiah(0)} />
+          businessProfile?.modules?.playingCard === false ? null : (
+            <Line label="PLAYING CARD SALES" value={formatRupiah(0)} />
+          )
         ) : (
           sorted(cashSalesRows).map((r) => (
             <Line key={r.label} label={r.label} value={formatRupiah(r.amount)} />
