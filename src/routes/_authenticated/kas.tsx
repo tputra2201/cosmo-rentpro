@@ -569,7 +569,7 @@ function GroupEditor({ direction }: { direction: CashDirection }) {
           <Input
             id={`grp-name-${direction}`}
             value={name}
-            placeholder={direction === "in" ? "Misal: Pendapatan Lain" : "Misal: Operasional"}
+            placeholder={direction === "in" ? "Misal: OTHER REVENUE" : "Misal: Operasional"}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
