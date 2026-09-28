@@ -1,0 +1,723 @@
+import { useMemo, useRef, useState } from "react";
+import { ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { ShiftLockedNotice, useShiftGate } from "@/components/ShiftGate";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  formatRupiah,
+  useBilling,
+  type CashCategory,
+  type CashDirection,
+  type CashEntry,
+  type CashGroup,
+} from "@/lib/billing-store";
+import { CARD_SALE_CATEGORY_ID } from "@/lib/billing-store";
+import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { useCan } from "@/lib/use-can";
+import { ReportRangePicker } from "@/components/reports/ReportRangePicker";
+import { ExportExcelButton } from "@/components/reports/ExportExcelButton";
+import { useStoreInfo } from "@/lib/store-info";
+import { defaultRange, inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
+
+function timeOf(ts: number) {
+  return new Date(ts).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+
+/** Riwayat Finance per periode hari usaha, dipisah PAY-IN dan PAY-OUT. */
+export function CashHistory() {
+  const { cashEntries, operatingHours, removeCashEntry, updateCashEntry, paymentMethods } =
+    useBilling();
+  const { store } = useStoreInfo(true);
+  const storeName = store?.store_name?.trim() || "RenToPlay";
+  const { confirm, dialog } = useConfirm();
+  const printRef = useRef<HTMLDivElement>(null);
+  const [picked, setPicked] = useState<ReportRange>(() => defaultRange("day"));
+  const range = useMemo<ReportRange>(
+    () => ({ mode: picked.mode, from: picked.from, to: picked.to, hours: operatingHours }),
+    [picked, operatingHours],
+  );
+
+  const rows = useMemo(
+    () => cashEntries.filter((e) => inRange(e.createdAt, range)),
+    [cashEntries, range],
+  );
+  const incoming = rows.filter((e) => e.direction === "in");
+  const outgoing = rows.filter((e) => e.direction === "out");
+  const total = (list: CashEntry[]) => list.reduce((s, e) => s + e.amount, 0);
+  const totalIn = total(incoming);
+  const totalOut = total(outgoing);
+
+  const remove = (entry: CashEntry) => {
+    confirm({
+      title: `Hapus catatan ${entry.categoryName}?`,
+      description: entry.cardId
+        ? "Catatan kas dan riwayat kartunya ikut dihapus. Kalau ini top-up, saldo kartu dikembalikan."
+        : "Data ini tidak bisa dikembalikan.",
+      destructive: true,
+      onConfirm: () => {
+        removeCashEntry(entry.id);
+        toast.success("Catatan kas dihapus");
+      },
+    });
+  };
+
+  const changePayment = (entry: CashEntry, value: string) => {
+    if (value === entry.payment) return;
+    updateCashEntry(entry.id, { payment: value });
+    toast.success(`Metode diubah ke ${value}`);
+  };
+  const methodNames = paymentMethods.map((m) => m.name);
+
+  return (
+    <div className="space-y-4">
+      <ReportRangePicker range={picked} onChange={setPicked} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">Periode {rangeLabel(range)}</p>
+        <div className="flex flex-wrap gap-2">
+          <ExportExcelButton
+            targetRef={printRef}
+            title={`Riwayat Kas ${storeName}`}
+            periodText={`Periode ${rangeLabel(range)}`}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6" ref={printRef}>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Stat label="TOTAL PAY-IN" value={formatRupiah(totalIn)} tone="accent" />
+          <Stat label="TOTAL PAY-OUT" value={formatRupiah(totalOut)} tone="danger" />
+          <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
+        </section>
+        <CashGroup
+          title="PAY-IN"
+          list={incoming}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+        <CashGroup
+          title="PAY-OUT"
+          list={outgoing}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+      </div>
+      {dialog}
+    </div>
+  );
+}
+
+/** Tabel satu kelompok kas. Didefinisikan di luar CashHistory agar posisi
+ *  geser horizontal di HP tidak ke-reset setiap kali data di-refresh. */
+function CashGroup({
+  title,
+  list,
+  onRemove,
+  methods,
+  onPayment,
+}: {
+  title: string;
+  list: CashEntry[];
+  onRemove: (entry: CashEntry) => void;
+  methods: string[];
+  onPayment: (entry: CashEntry, value: string) => void;
+}) {
+  const allow = useCan();
+  const total = list.reduce((s, e) => s + e.amount, 0);
+  return (
+    <section className="surface-panel overflow-x-auto p-4 sm:p-6">
+      <SetupHeading title={title} />
+      {list.length === 0 ? (
+        <p className="py-6 text-center text-muted-foreground">
+          Tidak ada catatan pada periode ini.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Jenis</TableHead>
+              <TableHead>Metode</TableHead>
+              <TableHead>Pelaku</TableHead>
+              <TableHead>Catatan</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="whitespace-nowrap">{timeOf(e.createdAt)}</TableCell>
+                <TableCell>{e.categoryName}</TableCell>
+                <TableCell>{e.group}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {e.payout
+                      ? e.direction === "in"
+                        ? "PAY-IN"
+                        : "PAY-OUT"
+                      : e.direction === "in"
+                        ? e.categoryId === CARD_SALE_CATEGORY_ID
+                          ? "SALES · PLAYING CARD"
+                          : "OTHER REVENUE"
+                        : "EXPENSES (BIAYA)"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {allow("kas.tambah") ? (
+                    <Select value={e.payment} onValueChange={(v) => onPayment(e, v)}>
+                      <SelectTrigger
+                        className="h-8 w-32"
+                        aria-label={`Metode ${e.categoryName}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(methods.includes(e.payment) ? methods : [e.payment, ...methods]).map(
+                          (name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    e.payment
+                  )}
+                </TableCell>
+                <TableCell>{e.createdBy || "-"}</TableCell>
+                <TableCell className="max-w-48 truncate">{e.note || "-"}</TableCell>
+                <TableCell
+                  className={
+                    e.direction === "in"
+                      ? "text-right font-semibold text-accent"
+                      : "text-right font-semibold text-destructive"
+                  }
+                >
+                  {e.direction === "in" ? "+" : "-"}
+                  {formatRupiah(e.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {allow("kas.hapus") && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Hapus catatan"
+                      onClick={() => onRemove(e)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell className="font-semibold">Total</TableCell>
+              <TableCell colSpan={6} />
+              <TableCell className="text-right font-semibold">
+                {formatRupiah(total)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableBody>
+        </Table>
+      )}
+    </section>
+  );
+}
+
+export function EntryForm({ direction }: { direction: CashDirection }) {
+  const { cashCategories, paymentMethods, addCashEntry } = useBilling();
+  const { requireShift } = useShiftGate();
+  // Item otomatis sistem (penjualan & top up kartu, DP reservasi) tidak boleh dicatat manual.
+  const SYSTEM_IDS = new Set(["cc-jual-kartu", "cc-topup-card", "cc-dp-reservasi", "cc-dp-reservasi-pakai"]);
+  const options = cashCategories.filter(
+    (c) => c.direction === direction && c.active && !SYSTEM_IDS.has(c.id),
+  );
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((c) => `${c.name} ${c.group}`.toLowerCase().includes(q));
+  }, [options, search]);
+  const [categoryId, setCategoryId] = useState(options[0]?.id ?? "");
+  const [amount, setAmount] = useState("");
+  const [payment, setPayment] = useState("Cash");
+  const [note, setNote] = useState("");
+  const active = options.find((c) => c.id === categoryId);
+
+  const submit = () => {
+    const value = Number(amount);
+    if (!categoryId || !Number.isFinite(value) || value <= 0) {
+      toast.error("Pilih item dan isi jumlah uang");
+      return;
+    }
+    if (!requireShift()) return;
+    const row = addCashEntry({ categoryId, amount: value, payment, note });
+    if (!row) {
+      toast.error("Catatan gagal disimpan");
+      return;
+    }
+    setAmount("");
+    setNote("");
+    toast.success(
+      `${row.categoryName} ${formatRupiah(row.amount)} dicatat`,
+    );
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <div className="flex items-center gap-2">
+        {direction === "in" ? (
+          <ArrowDownCircle className="size-5 text-accent" />
+        ) : (
+          <ArrowUpCircle className="size-5 text-destructive" />
+        )}
+        <h2 className="text-lg font-semibold">
+          {direction === "in" ? "Catat PAY-IN" : "Catat PAY-OUT"}
+        </h2>
+      </div>
+
+      <ShiftLockedNotice />
+
+      {options.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Belum ada item. Tambahkan dulu di tab Item &amp; Kategori.
+        </p>
+      ) : (
+        <>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium" htmlFor={`kas-search-${direction}`}>
+              Cari item
+            </label>
+            <Input
+              id={`kas-search-${direction}`}
+              value={search}
+              placeholder="Ketik huruf awal nama item…"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Item</label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filtered.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Tidak ada item yang cocok
+                    </div>
+                  ) : (
+                    filtered.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} · {c.group}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor={`kas-amount-${direction}`}>
+                Jumlah uang
+              </label>
+              <Input
+                id={`kas-amount-${direction}`}
+                type="number"
+                min={0}
+                value={amount}
+                placeholder="0"
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Metode</label>
+              <Select value={payment} onValueChange={setPayment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih metode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods
+                    .filter((p) => p.active)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor={`kas-note-${direction}`}>
+                Catatan
+              </label>
+              <Input
+                id={`kas-note-${direction}`}
+                value={note}
+                placeholder="Misal: tagihan listrik bulan ini"
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {active?.payout && (
+            <p className="text-sm text-warning">
+              Item ini ditandai perpindahan uang kas, jadi tidak dihitung sebagai
+              {direction === "in" ? " pendapatan" : " biaya"} di laporan.
+            </p>
+          )}
+
+          <Button onClick={submit}>
+            <Plus className="size-4" /> Simpan catatan
+          </Button>
+        </>
+      )}
+    </section>
+  );
+}
+
+export function GroupEditor({ direction }: { direction: CashDirection }) {
+  const { cashGroups, cashCategories, addCashGroup, updateCashGroup, removeCashGroup } =
+    useBilling();
+  const rows = cashGroups.filter((g) => g.direction === direction);
+  const [name, setName] = useState("");
+
+  const add = () => {
+    const row = addCashGroup({ name, direction });
+    if (!row) {
+      toast.error("Nama kategori kosong atau sudah ada");
+      return;
+    }
+    setName("");
+    toast.success(`Kategori ${row.name} ditambahkan`);
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading
+        title={direction === "in" ? "Kategori PAY-IN" : "Kategori PAY-OUT"}
+        as="h2"
+      />
+
+      <SetupTable<CashGroup>
+        items={rows}
+        getId={(g) => g.id}
+        getLabel={(g) => g.name}
+        columns={[
+          {
+            key: "name",
+            header: "Nama Kategori",
+            render: (g) => <span className="font-bold text-foreground">{g.name}</span>,
+          },
+          {
+            key: "count",
+            header: "Jumlah Item",
+            render: (g) =>
+              cashCategories.filter(
+                (c) => c.direction === direction && c.group === g.name,
+              ).length,
+          },
+        ]}
+        onRemove={(g) => {
+          if (!removeCashGroup(g.id)) {
+            toast.error("Kategori ini masih dipakai item, pindahkan itemnya dulu");
+            return;
+          }
+          toast.success(`Kategori ${g.name} dihapus`);
+        }}
+        detailTitle={(g) => g.name}
+        detailDescription={() => "Ubah nama kategori ini."}
+        emptyText="Belum ada kategori."
+        renderDetail={(g) => (
+          <DetailField
+            label="Nama kategori"
+            hint="Semua item yang memakai kategori ini ikut berubah."
+          >
+            <Input
+              value={g.name}
+              aria-label={`Nama kategori ${g.name}`}
+              onChange={(e) => updateCashGroup(g.id, { name: e.target.value })}
+            />
+          </DetailField>
+        )}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor={`grp-name-${direction}`}>
+            Nama kategori
+          </label>
+          <Input
+            id={`grp-name-${direction}`}
+            value={name}
+            placeholder={direction === "in" ? "Misal: OTHER REVENUE" : "Misal: Operasional"}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <Button onClick={add}>
+          <Plus className="size-4" /> Tambah kategori
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+export function CategoryEditor({ direction }: { direction: CashDirection }) {
+  const {
+    cashCategories,
+    cashGroups,
+    cashEntries,
+    addCashCategory,
+    updateCashCategory,
+    removeCashCategory,
+  } = useBilling();
+  const rows = cashCategories.filter((c) => c.direction === direction);
+  const groups = useMemo(
+    () => cashGroups.filter((g) => g.direction === direction && g.active),
+    [cashGroups, direction],
+  );
+  const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
+  const [payout, setPayout] = useState(false);
+
+  const add = () => {
+    if (!group) {
+      toast.error("Pilih kategori dulu");
+      return;
+    }
+    const row = addCashCategory({ name, direction, payout, group });
+    if (!row) {
+      toast.error("Nama item kosong atau sudah ada");
+      return;
+    }
+    setName("");
+    setGroup("");
+    setPayout(false);
+    toast.success(`${row.name} ditambahkan`);
+  };
+
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading
+        title={direction === "in" ? "Item PAY-IN" : "Item PAY-OUT"}
+        as="h2"
+      />
+
+      <SetupTable<CashCategory>
+        items={rows}
+        getId={(c) => c.id}
+        getLabel={(c) => c.name}
+        columns={[
+          {
+            key: "name",
+            header: "Nama Item",
+            render: (c) => <span className="font-bold text-foreground">{c.name}</span>,
+          },
+          {
+            key: "group",
+            header: "Kategori",
+            hideOnMobile: true,
+            render: (c) => c.group || "—",
+          },
+          {
+            key: "payout",
+            header: "Perpindahan Kas",
+            hideOnMobile: true,
+            render: (c) =>
+              c.payout ? (
+                <span className="text-accent">Ya</span>
+              ) : (
+                <span className="text-muted-foreground">Tidak</span>
+              ),
+          },
+          {
+            key: "active",
+            header: "Status",
+            render: (c) =>
+              c.active ? (
+                <span className="font-semibold text-accent">Aktif</span>
+              ) : (
+                <span className="text-muted-foreground">Nonaktif</span>
+              ),
+          },
+        ]}
+        onRemove={(c) => {
+          if (cashEntries.some((e) => e.categoryId === c.id)) {
+            toast.error("Item ini sudah dipakai, nonaktifkan saja");
+            return;
+          }
+          removeCashCategory(c.id);
+          toast.success(`${c.name} dihapus`);
+        }}
+        detailTitle={(c) => c.name}
+        detailDescription={() => "Ubah nama, kategori, dan status item ini."}
+        emptyText="Belum ada item."
+        renderDetail={(c) => (
+          <>
+            <DetailField label="Nama item">
+              <Input
+                value={c.name}
+                aria-label={`Nama item ${c.name}`}
+                onChange={(e) => updateCashCategory(c.id, { name: e.target.value })}
+              />
+            </DetailField>
+            <DetailField label="Kategori">
+              <Select
+                value={c.group}
+                onValueChange={(v) => updateCashCategory(c.id, { group: v })}
+              >
+                <SelectTrigger aria-label={`Kategori ${c.name}`}>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.name}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </DetailField>
+            <DetailField label="Perpindahan uang kas saja" hint={`Tidak dihitung sebagai ${direction === "in" ? "pendapatan" : "biaya"} di laporan.`}>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={c.payout}
+                  onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
+                  aria-label={`Perpindahan kas ${c.name}`}
+                />
+                Perpindahan kas
+              </label>
+            </DetailField>
+            <DetailField label="Status">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={c.active}
+                  onCheckedChange={(v) => updateCashCategory(c.id, { active: v })}
+                  aria-label={`Aktifkan ${c.name}`}
+                />
+                {c.active ? "Aktif" : "Nonaktif"}
+              </label>
+            </DetailField>
+          </>
+        )}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor={`cat-name-${direction}`}>
+            Nama item
+          </label>
+          <Input
+            id={`cat-name-${direction}`}
+            value={name}
+            placeholder={direction === "in" ? "Misal: Sewa Stik" : "Misal: Pembelian Gas"}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Kategori</label>
+          <Select value={group} onValueChange={setGroup} disabled={groups.length === 0}>
+            <SelectTrigger aria-label={`Kategori item ${direction}`}>
+              <SelectValue
+                placeholder={groups.length === 0 ? "Buat kategori dulu" : "Pilih kategori"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.name}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={add}>
+          <Plus className="size-4" /> Tambah
+        </Button>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <Switch checked={payout} onCheckedChange={setPayout} />
+        Perpindahan uang kas saja (tidak dihitung{" "}
+        {direction === "in" ? "pendapatan" : "biaya"})
+      </label>
+    </section>
+  );
+}
+
+export function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "accent" | "danger";
+}) {
+  return (
+    <div className="surface-panel p-5">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p
+        className={
+          tone === "accent"
+            ? "font-display text-2xl font-bold text-accent"
+            : tone === "danger"
+              ? "font-display text-2xl font-bold text-destructive"
+              : "font-display text-2xl font-bold"
+        }
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export function TodayStats() {
+  const { cashEntries, operatingHours } = useBilling();
+  const businessRange = useMemo<ReportRange>(() => defaultRange("day", operatingHours), [operatingHours]);
+  const today = useMemo(() => cashEntries.filter((e) => inRange(e.createdAt, businessRange)), [cashEntries, businessRange]);
+  const sum = (pick: (e: CashEntry) => boolean) => today.filter(pick).reduce((s, e) => s + e.amount, 0);
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">Hari ini {rangeLabel(businessRange)}</p>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="OTHER REVENUE hari ini" value={formatRupiah(sum((e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID))} tone="accent" />
+        <Stat label="EXPENSES (BIAYA) hari ini" value={formatRupiah(sum((e) => e.direction === "out" && !e.payout))} tone="danger" />
+        <Stat label="PAY-IN hari ini (bukan revenue)" value={formatRupiah(sum((e) => e.direction === "in" && !!e.payout))} />
+        <Stat label="PAY-OUT hari ini (bukan expenses)" value={formatRupiah(sum((e) => e.direction === "out" && !!e.payout))} />
+      </section>
+    </>
+  );
+}
