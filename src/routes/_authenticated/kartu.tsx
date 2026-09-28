@@ -283,7 +283,7 @@ function CardListPanel() {
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <SetupHeading
         title="Data dan Saldo"
-        description="Klik tombol detail untuk melihat data lengkap kartu dan riwayat transaksinya."
+        description="Seluruh data kartu beserta saldonya. Klik judul Kode Kartu, Nama Pemegang, atau Saldo untuk mengurutkan, dan tombol detail untuk data lengkap serta riwayat transaksinya."
       />
       <CardScanInput value={search} onChange={setSearch} label="Cari / scan kartu" id="card-search" />
 
@@ -297,6 +297,7 @@ function CardListPanel() {
           {
             key: "code",
             header: "Kode Kartu",
+            sortValue: (c) => (c.cardCode?.trim() || c.cardNumber).toLowerCase(),
             render: (c) => (
               <div className="min-w-0">
                 <span className="font-bold text-foreground">{c.cardCode?.trim() || "-"}</span>
@@ -307,6 +308,7 @@ function CardListPanel() {
           {
             key: "holder",
             header: "Nama Pemegang",
+            sortValue: (c) => (c.customerName || "Umum").toLowerCase(),
             render: (c) => (
               <div className="min-w-0">
                 <span className="truncate">{c.customerName || "Umum"}</span>
@@ -317,8 +319,38 @@ function CardListPanel() {
             ),
           },
           {
+            key: "phone",
+            header: "Nomor HP",
+            hideOnMobile: true,
+            render: (c) => (
+              <span className="text-muted-foreground">{c.customerPhone || "-"}</span>
+            ),
+          },
+          {
+            key: "member",
+            header: "Tipe",
+            hideOnMobile: true,
+            render: (c) => (
+              <span className={c.member ? "font-semibold text-primary" : "text-muted-foreground"}>
+                {c.member ? "Member" : "Reguler"}
+              </span>
+            ),
+          },
+          {
+            key: "created",
+            header: "Terdaftar",
+            hideOnMobile: true,
+            sortValue: (c) => c.createdAt,
+            render: (c) => (
+              <span className="text-xs text-muted-foreground">
+                {new Date(c.createdAt).toLocaleString("id-ID")}
+              </span>
+            ),
+          },
+          {
             key: "balance",
             header: "Saldo",
+            sortValue: (c) => c.balance,
             render: (c) => (
               <span className="font-semibold text-accent">{formatRupiah(c.balance)}</span>
             ),
@@ -335,6 +367,26 @@ function CardListPanel() {
               ),
           },
         ]}
+        footer={
+          <tfoot className="bg-secondary/70">
+            <tr className="border-t border-border">
+              <td className="px-3 py-3 text-xs font-bold uppercase tracking-wide text-primary" colSpan={2}>
+                Total Card: {list.length} kartu
+              </td>
+              <td className="hidden px-3 py-3 sm:table-cell" colSpan={3} />
+              <td className="px-3 py-3">
+                <span className="block text-xs font-bold uppercase tracking-wide text-primary">
+                  Total Saldo
+                </span>
+                <span className="font-display text-base font-semibold text-accent">
+                  {formatRupiah(list.reduce((sum, c) => sum + c.balance, 0))}
+                </span>
+              </td>
+              <td className="hidden sm:table-cell" />
+              <td />
+            </tr>
+          </tfoot>
+        }
         onRemove={(c) => {
           removePlayingCard(c.id);
           toast.success(
