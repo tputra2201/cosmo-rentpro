@@ -12,7 +12,6 @@ import {
   addonAmount,
   BOOKING_DP_CATEGORY_ID,
   BOOKING_DP_USED_CATEGORY_ID,
-  CARD_PAYMENT_NAME,
   CARD_SALE_CATEGORY_ID,
   CARD_TOPUP_CATEGORY_ID,
   formatRupiah,
@@ -116,10 +115,6 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
   const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
   const expense = cashSum((e) => e.direction === "out" && !e.payout);
-  const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
-  const ownerPayout = cashSum(
-    (e) => e.direction === "out" && e.payout && e.categoryId !== BOOKING_DP_USED_CATEGORY_ID,
-  );
 
   const expenseRows = new Map<string, Row>();
   for (const e of cash) {
@@ -130,13 +125,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     if (e.direction === "in" && !e.payout) bump(incomeRows, e.categoryName, e.amount, 1);
   }
 
-  // Uang kas awal periode: start cash shift pertama yang check-in pada periode ini.
-  // Nilai ini tidak dijumlahkan bila ada beberapa shift, karena uang tunai di laci
-  // berpindah utuh dari shift sebelumnya ke shift berikutnya.
   const shiftInRange = shifts
     .filter((s) => inRange(s.openedAt, range))
     .sort((a, b) => a.openedAt - b.openedAt);
-  const startCash = shiftInRange[0]?.startCash ?? 0;
 
   const cardSales = cashSum(
     (e) => e.direction === "in" && e.categoryId === CARD_SALE_CATEGORY_ID,
