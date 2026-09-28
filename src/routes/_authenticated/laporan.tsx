@@ -274,6 +274,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
     updateCashEntry,
     removeCashEntry,
     rolePermissions,
+    businessProfile,
   } = useBilling();
   const { role: myRole } = useAuth();
   const canClearHistory =
