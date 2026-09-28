@@ -438,7 +438,7 @@ function AppShell() {
                           }}
                         >
                           <Icon className="size-4 shrink-0" />
-                          <span className="truncate">{label === "TV Connect" ? `${businessProfile.unitLabel || "TV"} Connect` : label}</span>
+                          <span className="truncate">{label}</span>
                         </Link>
                       ))}
                     </nav>
@@ -483,7 +483,7 @@ function AppShell() {
                   activeProps={{ className: "bg-secondary text-primary" }}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {label === "TV Connect" ? `${businessProfile.unitLabel || "TV"} Connect` : label}
+                  {label}
                 </Link>
               ))}
               {setups.length > 0 && (
