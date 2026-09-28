@@ -4811,7 +4811,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             type: "purchase",
             amount: price,
             balanceAfter: 0,
-            note: "Pembelian kartu baru",
+            note: "Penjualan kartu baru",
             createdAt: now,
           },
         ];

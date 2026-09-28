@@ -67,11 +67,13 @@ export function CashHistory() {
     () => cashEntries.filter((e) => inRange(e.createdAt, range)),
     [cashEntries, range],
   );
-  const incoming = rows.filter((e) => e.direction === "in");
-  const outgoing = rows.filter((e) => e.direction === "out");
+  const revenue = rows.filter((e) => e.direction === "in" && !e.payout);
+  const incoming = rows.filter((e) => e.direction === "in" && e.payout);
+  const expenses = rows.filter((e) => e.direction === "out" && !e.payout);
+  const outgoing = rows.filter((e) => e.direction === "out" && e.payout);
   const total = (list: CashEntry[]) => list.reduce((s, e) => s + e.amount, 0);
-  const totalIn = total(incoming);
-  const totalOut = total(outgoing);
+  const totalIn = total(incoming) + total(revenue);
+  const totalOut = total(outgoing) + total(expenses);
 
   const remove = (entry: CashEntry) => {
     confirm({
@@ -110,19 +112,33 @@ export function CashHistory() {
 
       <div className="space-y-6" ref={printRef}>
         <section className="grid gap-4 sm:grid-cols-3">
-          <Stat label="TOTAL PAY-IN" value={formatRupiah(totalIn)} tone="accent" />
-          <Stat label="TOTAL PAY-OUT" value={formatRupiah(totalOut)} tone="danger" />
+          <Stat label="TOTAL UANG MASUK" value={formatRupiah(totalIn)} tone="accent" />
+          <Stat label="TOTAL UANG KELUAR" value={formatRupiah(totalOut)} tone="danger" />
           <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
         </section>
         <CashGroup
-          title="PAY-IN"
+          title="SALES & OTHER REVENUE"
+          list={revenue}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+        <CashGroup
+          title="PAY-IN (TITIPAN)"
           list={incoming}
           onRemove={remove}
           methods={methodNames}
           onPayment={changePayment}
         />
         <CashGroup
-          title="PAY-OUT"
+          title="EXPENSES (BIAYA)"
+          list={expenses}
+          onRemove={remove}
+          methods={methodNames}
+          onPayment={changePayment}
+        />
+        <CashGroup
+          title="PAY-OUT LAIN (PRIVE / SETORAN)"
           list={outgoing}
           onRemove={remove}
           methods={methodNames}
