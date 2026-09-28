@@ -70,10 +70,10 @@ export function ShiftReport({ range }: { range: ReportRange }) {
       ) : (
         <>
           <section className="grid gap-4 sm:grid-cols-4">
-            <Stat label="Cash dari penjualan" value={formatRupiah(totals.sales)} />
-            <Stat label="Pengeluaran" value={formatRupiah(totals.expenses)} />
-            <Stat label="Cash expected" value={formatRupiah(totals.expected)} />
-            <Stat label="Selisih kas" value={formatRupiah(totals.balance)} highlight />
+            <Stat label="Cash Sales + Other Revenue" value={formatRupiah(totals.sales)} />
+            <Stat label="Expenses (Biaya)" value={formatRupiah(totals.expenses)} />
+            <Stat label="Cash Expected" value={formatRupiah(totals.expected)} />
+            <Stat label="Balance Cash" value={formatRupiah(totals.balance)} highlight />
           </section>
 
           <section className="surface-panel overflow-x-auto p-4 sm:p-6">
@@ -84,16 +84,16 @@ export function ShiftReport({ range }: { range: ReportRange }) {
                   <TableHead>Close out oleh</TableHead>
                   <TableHead>Opening</TableHead>
                   <TableHead>Closing</TableHead>
-                  <TableHead className="text-right">Start cash</TableHead>
-                  <TableHead className="text-right">Paid in</TableHead>
-                  <TableHead className="text-right">Paid out</TableHead>
-                  <TableHead className="text-right">Cash penjualan</TableHead>
-                  <TableHead className="text-right">Expenses</TableHead>
-                  <TableHead className="text-right">Expected</TableHead>
-                  <TableHead className="text-right">Actual</TableHead>
-                  <TableHead className="text-right">Selisih</TableHead>
-                  <TableHead>Catatan selisih</TableHead>
-                  <TableHead className="text-right">Next start cash</TableHead>
+                  <TableHead className="text-right">Start Cash</TableHead>
+                  <TableHead className="text-right">Cash In</TableHead>
+                  <TableHead className="text-right">Cash Out</TableHead>
+                  <TableHead className="text-right">Cash Sales + Other Revenue</TableHead>
+                  <TableHead className="text-right">Expenses (Biaya)</TableHead>
+                  <TableHead className="text-right">Cash Expected</TableHead>
+                  <TableHead className="text-right">Cash Actual</TableHead>
+                  <TableHead className="text-right">Balance Cash</TableHead>
+                  <TableHead>Balance Note</TableHead>
+                  <TableHead className="text-right">Next Start Cash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
