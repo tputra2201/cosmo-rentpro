@@ -85,7 +85,7 @@ function KasPage() {
   const sum = (rows: CashEntry[], pick: (e: CashEntry) => boolean) =>
     rows.filter(pick).reduce((s, e) => s + e.amount, 0);
 
-  const incomeToday = sum(today, (e) => e.direction === "in" && !e.payout);
+  const incomeToday = sum(today, (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID);
   const expenseToday = sum(today, (e) => e.direction === "out" && !e.payout);
   const payoutIn = sum(today, (e) => e.direction === "in" && e.payout);
   const payoutOut = sum(today, (e) => e.direction === "out" && e.payout);

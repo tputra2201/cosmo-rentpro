@@ -66,7 +66,7 @@ import { can } from "@/lib/permissions";
 import { useStoreInfo } from "@/lib/store-info";
 import { printReceipt, type PrintStore } from "@/lib/print-docs";
 import { printerFor } from "@/lib/printing";
-import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { CARD_SALE_CATEGORY_ID, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 
 
 export const Route = createFileRoute("/_authenticated/laporan")({
@@ -291,7 +291,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
   const cashToday = cashEntries.filter((e) => inRange(e.createdAt, range));
   const cashSum = (pick: (e: (typeof cashEntries)[number]) => boolean) =>
     cashToday.filter(pick).reduce((s, e) => s + e.amount, 0);
-  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
+  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID);
   const expense = cashSum((e) => e.direction === "out" && !e.payout);
   const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
   const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
@@ -426,7 +426,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
                         ? "PAY-IN"
                         : "PAY-OUT"
                       : e.direction === "in"
-                        ? "OTHER REVENUE"
+                        ? e.categoryId === CARD_SALE_CATEGORY_ID ? "SALES · PLAYING CARD" : "OTHER REVENUE"
                         : "EXPENSES (BIAYA)"}
                   </TableCell>
                   <TableCell>
