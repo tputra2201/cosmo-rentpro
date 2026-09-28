@@ -153,7 +153,7 @@ function BookingPage() {
     const ok = addBooking({ stationId, target, ...(customerId ? { customerId } : {}), customerName: name.trim(), customerPhone: phone.trim(), startAt, endAt: startAt + minutes * 60000, notes, ...(target === "station" && addonRows.length ? { addons: addonRows } : {}), ...(orderRows.length ? { orders: orderRows } : {}), ...(dpAmount > 0 ? { dpAmount, dpPayment } : {}) });
     if (!ok) { toast.error("Jadwal bentrok dengan reservasi lain pada unit/meja tersebut"); return; }
     if (dpAmount > 0) {
-      const cash = addCashEntry({ categoryId: BOOKING_DP_CATEGORY_ID, amount: dpAmount, payment: dpPayment, note: `DP reservasi ${name.trim()}` });
+      const cash = addCashEntry({ categoryId: BOOKING_DP_CATEGORY_ID, source: "booking-dp", amount: dpAmount, payment: dpPayment, note: `DP reservasi ${name.trim()}` });
       if (!cash) toast.error("DP belum tercatat di kas — buka shift kasir lebih dulu");
     }
     toast.success("Reservasi berhasil ditambahkan"); setName(""); setPhone(""); setCustomerId(""); setNotes(""); setAddonRows([]); setOrderRows([]); setDp("");
@@ -229,7 +229,7 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
       if (dpAmount > 0 && !item.dpUsedAt) {
         if (shiftOpen) {
           settleCafeTable(table.id, { payment: item.dpPayment || "Cash", amount: dpAmount, amountPaid: dpAmount });
-          addCashEntry({ categoryId: BOOKING_DP_USED_CATEGORY_ID, amount: dpAmount, payment: item.dpPayment || "Cash", note: `DP reservasi ${item.customerName} dipakai di Meja ${table.name}` });
+          addCashEntry({ categoryId: BOOKING_DP_USED_CATEGORY_ID, source: "booking-dp-used", amount: dpAmount, payment: item.dpPayment || "Cash", note: `DP reservasi ${item.customerName} dipakai di Meja ${table.name}` });
           updateBooking(item.id, { status: "checked-in", dpUsedAt: Date.now() });
           toast.success(`${item.customerName} check-in di Meja ${table.name} · DP ${formatRupiah(dpAmount)} sudah dipakai`);
           return;
@@ -267,6 +267,7 @@ function BookingRow({ item, stationName, locked, onStatus, onDelete }: { item: B
         });
         addCashEntry({
           categoryId: BOOKING_DP_USED_CATEGORY_ID,
+          source: "booking-dp-used",
           amount: dpAmount,
           payment: item.dpPayment || "Cash",
           note: `DP reservasi ${item.customerName} dipakai di ${station.name}`,

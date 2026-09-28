@@ -14,6 +14,8 @@ import {
   BOOKING_DP_USED_CATEGORY_ID,
   CARD_SALE_CATEGORY_ID,
   CARD_TOPUP_CATEGORY_ID,
+  entryAccount,
+  entrySource,
   formatRupiah,
   shiftSummary,
   useBilling,
@@ -114,9 +116,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const cashSum = (pick: (e: (typeof cash)[number]) => boolean) =>
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
   const otherIncome = cashSum(
-    (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID,
+    (e) => e.direction === "in" && entryAccount(e) === "other",
   );
-  const expense = cashSum((e) => e.direction === "out" && !e.payout);
+  const expense = cashSum((e) => e.direction === "out" && entryAccount(e) === "expense");
 
   const expenseRows = new Map<string, Row>();
   for (const e of cash) {
@@ -124,7 +126,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   }
   const incomeRows = new Map<string, Row>();
   for (const e of cash) {
-    if (e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID) {
+    if (e.direction === "in" && entryAccount(e) === "other") {
       bump(incomeRows, e.categoryName, e.amount, 1);
     }
   }
@@ -133,16 +135,20 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     .filter((s) => inRange(s.openedAt, range))
     .sort((a, b) => a.openedAt - b.openedAt);
 
-  const cardSales = cashSum(
-    (e) => e.direction === "in" && e.categoryId === CARD_SALE_CATEGORY_ID,
-  );
+  const cardSales = cashSum((e) => e.direction === "in" && entryAccount(e) === "sales");
+  const cashSalesRows = new Map<string, Row>();
+  for (const e of cash) {
+    if (e.direction === "in" && entryAccount(e) === "sales") {
+      bump(cashSalesRows, entrySource(e) === "card-sale" ? "PLAYING CARD SALES" : e.categoryName.toUpperCase(), e.amount, 1);
+    }
+  }
 
   const payInRows = new Map<string, Row>();
   for (const e of cash) {
     if (e.direction !== "in" || !e.payout) continue;
-    const label = e.categoryId === BOOKING_DP_CATEGORY_ID
+    const label = entrySource(e) === "booking-dp"
       ? "DP RESERVASI"
-      : e.categoryId === CARD_TOPUP_CATEGORY_ID
+      : entrySource(e) === "card-topup"
         ? "TOP UP PLAYING CARD"
         : "TAMBAHAN KAS MASUK";
     bump(payInRows, label, e.amount, 1);
@@ -152,7 +158,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   for (const e of cash) {
     if (e.direction !== "out") continue;
     if (!e.payout) bump(payOutRows, "EXPENSES (BIAYA)", e.amount, 1);
-    else if (e.categoryId !== BOOKING_DP_USED_CATEGORY_ID) {
+    else if (entrySource(e) !== "booking-dp-used") {
       bump(payOutRows, "PRIVE / SETORAN TUNAI (KE OWNER / BANK)", e.amount, 1);
     }
   }
@@ -163,7 +169,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const paymentRows = new Map<string, Row>();
   for (const [, r] of salePayments) bump(paymentRows, r.label, r.amount, r.qty ?? 0);
   for (const e of cash) {
-    if (e.categoryId === BOOKING_DP_USED_CATEGORY_ID && e.direction === "out") {
+    if (entrySource(e) === "booking-dp-used" && e.direction === "out") {
       bump(paymentRows, e.payment || "Cash", -e.amount, -1);
       bump(paymentRows, "DP RESERVASI TERPAKAI", e.amount, 1);
     }
@@ -194,7 +200,13 @@ export function CompanyReport({ range }: { range: ReportRange }) {
         <Line label="RENTAL" value={formatRupiah(rentalGross)} />
         <Line label="F&B" value={formatRupiah(fnbGross)} />
         <Line label="ADDITIONAL RENTAL" value={formatRupiah(addonGross)} />
-        <Line label="PLAYING CARD SALES" value={formatRupiah(cardSales)} />
+        {cashSalesRows.size === 0 ? (
+          <Line label="PLAYING CARD SALES" value={formatRupiah(0)} />
+        ) : (
+          sorted(cashSalesRows).map((r) => (
+            <Line key={r.label} label={r.label} value={formatRupiah(r.amount)} />
+          ))
+        )}
         {discount > 0 && <Line label="DISCOUNT" value={`- ${formatRupiah(discount)}`} />}
         <Line label="TOTAL SALES" value={formatRupiah(netSales + cardSales)} strong />
         <Subheading>OTHER REVENUE</Subheading>

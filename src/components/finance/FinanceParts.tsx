@@ -30,7 +30,15 @@ import {
   type CashEntry,
   type CashGroup,
 } from "@/lib/billing-store";
-import { CARD_SALE_CATEGORY_ID } from "@/lib/billing-store";
+import {
+  ACCOUNTS_BY_DIRECTION,
+  CASH_ACCOUNT_LABEL,
+  MODULE_SOURCES,
+  categoryAccount,
+  entryAccount,
+  resolveModuleCategory,
+  type CashAccount,
+} from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCan } from "@/lib/use-can";
@@ -67,10 +75,10 @@ export function CashHistory() {
     () => cashEntries.filter((e) => inRange(e.createdAt, range)),
     [cashEntries, range],
   );
-  const revenue = rows.filter((e) => e.direction === "in" && !e.payout);
-  const incoming = rows.filter((e) => e.direction === "in" && e.payout);
-  const expenses = rows.filter((e) => e.direction === "out" && !e.payout);
-  const outgoing = rows.filter((e) => e.direction === "out" && e.payout);
+  const revenue = rows.filter((e) => e.direction === "in" && entryAccount(e) !== "payin");
+  const incoming = rows.filter((e) => e.direction === "in" && entryAccount(e) === "payin");
+  const expenses = rows.filter((e) => e.direction === "out" && entryAccount(e) === "expense");
+  const outgoing = rows.filter((e) => e.direction === "out" && entryAccount(e) === "payout");
   const total = (list: CashEntry[]) => list.reduce((s, e) => s + e.amount, 0);
   const totalIn = total(incoming) + total(revenue);
   const totalOut = total(outgoing) + total(expenses);
@@ -197,15 +205,7 @@ function CashGroup({
                 <TableCell>{e.group}</TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {e.payout
-                      ? e.direction === "in"
-                        ? "PAY-IN"
-                        : "PAY-OUT"
-                      : e.direction === "in"
-                        ? e.categoryId === CARD_SALE_CATEGORY_ID
-                          ? "SALES · PLAYING CARD"
-                          : "OTHER REVENUE"
-                        : "EXPENSES (BIAYA)"}
+                    {CASH_ACCOUNT_LABEL[entryAccount(e)]}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -276,9 +276,9 @@ export function EntryForm({ direction }: { direction: CashDirection }) {
   const { cashCategories, paymentMethods, addCashEntry } = useBilling();
   const { requireShift } = useShiftGate();
   // Item otomatis sistem (penjualan & top up kartu, DP reservasi) tidak boleh dicatat manual.
-  const SYSTEM_IDS = new Set(["cc-jual-kartu", "cc-topup-card", "cc-dp-reservasi", "cc-dp-reservasi-pakai"]);
+  const SYSTEM_IDS = new Set(MODULE_SOURCES.map((m) => m.defaultId));
   const options = cashCategories.filter(
-    (c) => c.direction === direction && c.active && !SYSTEM_IDS.has(c.id),
+    (c) => c.direction === direction && c.active && !SYSTEM_IDS.has(c.id) && !c.mapFor,
   );
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => {
@@ -408,10 +408,9 @@ export function EntryForm({ direction }: { direction: CashDirection }) {
             </div>
           </div>
 
-          {active?.payout && (
-            <p className="text-sm text-warning">
-              Item ini ditandai perpindahan uang kas, jadi tidak dihitung sebagai
-              {direction === "in" ? " pendapatan" : " biaya"} di laporan.
+          {active && (
+            <p className="text-sm text-muted-foreground">
+              Masuk ke pos <span className="font-semibold text-foreground">{CASH_ACCOUNT_LABEL[categoryAccount(active)]}</span> di laporan.
             </p>
           )}
 
@@ -526,21 +525,21 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
   );
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
-  const [payout, setPayout] = useState(false);
+  const accounts = ACCOUNTS_BY_DIRECTION[direction];
+  const [account, setAccount] = useState<CashAccount>(accounts[direction === "in" ? 1 : 0] ?? "other");
 
   const add = () => {
     if (!group) {
       toast.error("Pilih kategori dulu");
       return;
     }
-    const row = addCashCategory({ name, direction, payout, group });
+    const row = addCashCategory({ name, direction, account, group });
     if (!row) {
       toast.error("Nama item kosong atau sudah ada");
       return;
     }
     setName("");
     setGroup("");
-    setPayout(false);
     toast.success(`${row.name} ditambahkan`);
   };
 
@@ -568,15 +567,11 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
             render: (c) => c.group || "—",
           },
           {
-            key: "payout",
-            header: "Perpindahan Kas",
-            hideOnMobile: true,
-            render: (c) =>
-              c.payout ? (
-                <span className="text-accent">Ya</span>
-              ) : (
-                <span className="text-muted-foreground">Tidak</span>
-              ),
+            key: "account",
+            header: "Pos Akun",
+            render: (c) => (
+              <Badge variant="outline">{CASH_ACCOUNT_LABEL[categoryAccount(c)]}</Badge>
+            ),
           },
           {
             key: "active",
@@ -626,15 +621,13 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
                 </SelectContent>
               </Select>
             </DetailField>
-            <DetailField label="Perpindahan uang kas saja" hint={`Tidak dihitung sebagai ${direction === "in" ? "pendapatan" : "biaya"} di laporan.`}>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Switch
-                  checked={c.payout}
-                  onCheckedChange={(v) => updateCashCategory(c.id, { payout: v })}
-                  aria-label={`Perpindahan kas ${c.name}`}
-                />
-                Perpindahan kas
-              </label>
+            <DetailField label="Pos akun" hint="Menentukan item ini masuk tabel mana di laporan.">
+              <AccountSelect
+                direction={direction}
+                value={categoryAccount(c)}
+                onChange={(v) => updateCashCategory(c.id, { account: v })}
+                label={`Pos akun ${c.name}`}
+              />
             </DetailField>
             <DetailField label="Status">
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -650,7 +643,7 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
         )}
       />
 
-      <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+      <div className="grid gap-3 sm:grid-cols-5 sm:items-end">
         <div className="space-y-1.5 sm:col-span-2">
           <label className="text-sm font-medium" htmlFor={`cat-name-${direction}`}>
             Nama item
@@ -679,16 +672,102 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Pos akun</label>
+          <AccountSelect direction={direction} value={account} onChange={setAccount} label={`Pos akun item baru ${direction}`} />
+        </div>
         <Button onClick={add}>
           <Plus className="size-4" /> Tambah
         </Button>
       </div>
+    </section>
+  );
+}
 
-      <label className="flex items-center gap-2 text-sm">
-        <Switch checked={payout} onCheckedChange={setPayout} />
-        Perpindahan uang kas saja (tidak dihitung{" "}
-        {direction === "in" ? "pendapatan" : "biaya"})
-      </label>
+const ACCOUNT_HINT: Record<CashAccount, string> = {
+  sales: "Omzet penjualan utama toko",
+  other: "Pendapatan pendukung (denda, sewa alat, jasa)",
+  payin: "Uang masuk bukan omzet (titipan, DP, modal owner)",
+  expense: "Biaya operasional, mengurangi laba",
+  payout: "Uang keluar bukan biaya (prive, setoran)",
+};
+
+function AccountSelect({
+  direction,
+  value,
+  onChange,
+  label,
+}: {
+  direction: CashDirection;
+  value: CashAccount;
+  onChange: (v: CashAccount) => void;
+  label: string;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as CashAccount)}>
+      <SelectTrigger aria-label={label}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {ACCOUNTS_BY_DIRECTION[direction].map((a) => (
+          <SelectItem key={a} value={a}>
+            <span className="font-semibold">{CASH_ACCOUNT_LABEL[a]}</span>
+            <span className="ml-2 text-xs text-muted-foreground">{ACCOUNT_HINT[a]}</span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Account Mapping: modul otomatis diarahkan ke item pilihan store. */
+export function AccountMapping() {
+  const { cashCategories, updateCashCategory } = useBilling();
+  return (
+    <section className="surface-panel space-y-4 p-4 sm:p-6">
+      <SetupHeading title="Account Mapping (Pemetaan Akun Modul)" as="h2" />
+      <p className="text-sm text-muted-foreground">
+        Pilih item yang dipakai saat modul mencatat uang secara otomatis. Nama item
+        dan pos akunnya mengikuti pengaturan Anda di Uang Masuk / Uang Keluar.
+      </p>
+      <div className="divide-y divide-border rounded-md border border-border">
+        {MODULE_SOURCES.map((m) => {
+          const current = resolveModuleCategory(cashCategories, m.source);
+          const choices = cashCategories.filter((c) => c.direction === m.direction);
+          const value = choices.some((c) => c.id === current.id) ? current.id : "";
+          return (
+            <div key={m.source} className="grid gap-2 p-3 sm:grid-cols-[1fr_1.4fr] sm:items-center">
+              <div>
+                <p className="font-semibold text-foreground">{m.label}</p>
+                <p className="text-xs text-muted-foreground">{m.hint}</p>
+              </div>
+              <div className="space-y-1">
+                <Select
+                  value={value}
+                  onValueChange={(id) => updateCashCategory(id, { mapFor: m.source })}
+                >
+                  <SelectTrigger aria-label={`Akun untuk ${m.label}`}>
+                    <SelectValue placeholder={`${current.name} (bawaan)`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {choices.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} · {CASH_ACCOUNT_LABEL[categoryAccount(c)]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Masuk pos <span className="font-semibold">{CASH_ACCOUNT_LABEL[current.account]}</span>
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Rental, F&B, dan Additional Rental selalu masuk pos SALES.
+      </p>
     </section>
   );
 }
@@ -729,10 +808,10 @@ export function TodayStats() {
     <>
       <p className="text-sm text-muted-foreground">Hari ini {rangeLabel(businessRange)}</p>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="OTHER REVENUE hari ini" value={formatRupiah(sum((e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID))} tone="accent" />
-        <Stat label="EXPENSES (BIAYA) hari ini" value={formatRupiah(sum((e) => e.direction === "out" && !e.payout))} tone="danger" />
-        <Stat label="PAY-IN hari ini (bukan revenue)" value={formatRupiah(sum((e) => e.direction === "in" && !!e.payout))} />
-        <Stat label="PAY-OUT hari ini (bukan expenses)" value={formatRupiah(sum((e) => e.direction === "out" && !!e.payout))} />
+        <Stat label="OTHER REVENUE hari ini" value={formatRupiah(sum((e) => e.direction === "in" && entryAccount(e) === "other"))} tone="accent" />
+        <Stat label="EXPENSES (BIAYA) hari ini" value={formatRupiah(sum((e) => e.direction === "out" && entryAccount(e) === "expense"))} tone="danger" />
+        <Stat label="PAY-IN hari ini (bukan revenue)" value={formatRupiah(sum((e) => e.direction === "in" && entryAccount(e) === "payin"))} />
+        <Stat label="PAY-OUT hari ini (bukan expenses)" value={formatRupiah(sum((e) => e.direction === "out" && entryAccount(e) === "payout"))} />
       </section>
     </>
   );
