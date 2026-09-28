@@ -312,6 +312,8 @@ function CloseOutForm({
     input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
   ) => unknown;
 }) {
+  const { businessProfile } = useBilling();
+  const cardOn = businessProfile?.modules?.playingCard !== false;
   const [actual, setActual] = useState("");
   const [note, setNote] = useState("");
   // Next start cash mengikuti cash actual yang diinput kasir; 0 bila belum diisi.
@@ -383,7 +385,9 @@ function CloseOutForm({
         <MoneyLine label="CASH SALES" value={summary.cashSales} hint="Rental, kafe, dan penjualan Playing Card tunai" />
         <MoneyLine label="OTHER REVENUE" value={summary.otherRevenue} />
         <MoneyLine label="TAMBAHAN KAS MASUK" value={summary.additionalCashIn} />
-        <MoneyLine label="TOP UP PLAYING CARD" value={summary.cardTopup} />
+        {(cardOn || summary.cardTopup !== 0) && (
+          <MoneyLine label="TOP UP PLAYING CARD" value={summary.cardTopup} />
+        )}
         <MoneyLine label="DP RESERVASI MASUK" value={summary.bookingDp} hint="DP tunai yang diterima pada shift ini" />
         <MoneyLine label="TOTAL CASH IN" value={shift.startCash + summary.sales + summary.paidIn} strong />
       </MoneySection>

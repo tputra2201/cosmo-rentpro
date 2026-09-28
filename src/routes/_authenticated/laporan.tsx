@@ -112,7 +112,7 @@ function dateTimeOf(ts: number) {
 
 function LaporanPage() {
   const { role } = useAuth();
-  const { rolePermissions, operatingHours, activeBusinessDay } = useBilling();
+  const { rolePermissions, operatingHours, activeBusinessDay, businessProfile } = useBilling();
   const [pickedRange, setRangeState] = useState<ReportRange>(() => defaultRange("day"));
   const [touched, setTouched] = useState(false);
   const setRange = (r: ReportRange) => {
@@ -162,7 +162,9 @@ function LaporanPage() {
     { value: "statistik", label: "Statistik", key: "laporan.statistik" },
     { value: "void", label: "Laporan VOID", key: "laporan.void" },
     { value: "perangkat", label: "Transaksi per Perangkat", key: "laporan.perangkat" },
-  ].filter((t) => allow(t.key));
+  ]
+    .filter((t) => allow(t.key))
+    .filter((t) => t.value !== "kartu" || businessProfile?.modules?.playingCard !== false);
   const first = tabs[0]?.value ?? "nota";
   const reportRef = useRef<HTMLDivElement>(null);
 
