@@ -41,6 +41,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
+import { ExpenseReport } from "@/components/reports/ExpenseReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { CashierReport } from "@/components/reports/CashierReport";
@@ -152,6 +153,7 @@ function LaporanPage() {
     { value: "company", label: "Company Report", key: "laporan.company" },
     { value: "kartu", label: "Laporan Playing Card", key: "laporan.card" },
     { value: "shift", label: "Cash Close Out", key: "laporan.shift" },
+    { value: "expense", label: "Expense Reports", key: "laporan.expense" },
     { value: "member", label: "Laporan Membership", key: "laporan.membership" },
     { value: "qris", label: "Pembayaran QRIS", key: "laporan.qris" },
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
@@ -213,6 +215,9 @@ function LaporanPage() {
         </TabsContent>
         <TabsContent value="shift" className="mt-6">
           <ShiftReport range={range} />
+        </TabsContent>
+        <TabsContent value="expense" className="mt-6">
+          <ExpenseReport range={range} />
         </TabsContent>
         <TabsContent value="member" className="mt-6">
           <MembershipReport range={range} />
