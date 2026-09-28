@@ -1,3 +1,4 @@
+import { useUnitLabel } from "@/lib/billing-store";
 import { useEffect, useState } from "react";
 import { Ban, Play, Square, Plus, Trash2, Timer, Infinity as InfinityIcon, CheckCircle2, Wallet, AlertTriangle, Printer as PrinterIcon } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
@@ -89,6 +90,7 @@ export function StationDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const unit = useUnitLabel();
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const allow = useCan();
   const {
@@ -519,7 +521,7 @@ export function StationDialog({
         description:
           dueAmount > 0
             ? `Sisa tagihan ${formatRupiah(dueAmount)} harus dibayar dulu`
-            : "Coba tutup lalu buka kembali kartu TV ini, atau muat ulang halaman.",
+            : `Coba tutup lalu buka kembali kartu ${unit} ini, atau muat ulang halaman.`,
       });
       return;
     }
@@ -633,7 +635,7 @@ export function StationDialog({
               <div className="flex items-start gap-2 rounded-md border border-warning/60 bg-warning/10 p-3 text-sm text-warning">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <p>
-                  TV ini telah direservasi oleh <strong>{upcomingBooking.customerName}</strong> yang akan Check-In pada jam{" "}
+                  {unit} ini telah direservasi oleh <strong>{upcomingBooking.customerName}</strong> yang akan Check-In pada jam{" "}
                   {new Date(upcomingBooking.startAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                   {upcomingBooking.customerPhone ? ` (${upcomingBooking.customerPhone})` : ""}.
                 </p>
@@ -947,7 +949,7 @@ export function StationDialog({
                       });
                     }}
                   >
-                    Pindah TV
+                    Pindah {unit}
                   </Button>
                 </div>
               </div>
@@ -1089,7 +1091,7 @@ export function StationDialog({
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Durasi dikosongkan = ikut lama sesi TV. Isi menitnya bila sewa tambahan lebih
+                  Durasi dikosongkan = ikut lama sesi {unit}. Isi menitnya bila sewa tambahan lebih
                   singkat, misal 60 menit.
                 </p>
                 {(session.addons ?? []).length > 0 && (
@@ -1323,7 +1325,7 @@ export function StationDialog({
             <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
               {mergedParent ? (
                 <p className="text-sm text-muted-foreground">
-                  Tagihan TV ini digabung ke <strong>{mergedParent.name}</strong> — pembayarannya
+                  Tagihan {unit} ini digabung ke <strong>{mergedParent.name}</strong> — pembayarannya
                   dilakukan dari panel {mergedParent.name}.
                 </p>
               ) : (
@@ -1345,13 +1347,13 @@ export function StationDialog({
                         </div>
                       ))}
                       <p className="text-xs text-muted-foreground">
-                        TV asalnya sudah kembali tersedia dan bisa dijual lagi. Untuk membatalkan,
+                        {unit} asalnya sudah kembali tersedia dan bisa dijual lagi. Untuk membatalkan,
                         hapus barisnya di daftar pesanan.
                       </p>
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Satukan tagihan TV lain, atau titipkan pesanan meja kafe ke TV ini. TV yang
+                      Satukan tagihan {unit} lain, atau titipkan pesanan meja kafe ke {unit} ini. {unit} yang
                       tagihannya dipindah langsung tersedia kembali.
                     </p>
                   )}
@@ -1768,15 +1770,15 @@ export function StationDialog({
         <DialogHeader>
           <DialogTitle>Gabung Tagihan ke {station.name}</DialogTitle>
           <DialogDescription>
-            Tagihan TV lain dibayar dari panel ini, dan pesanan meja kafe dititipkan ke sesi TV
+            Tagihan {unit} lain dibayar dari panel ini, dan pesanan meja kafe dititipkan ke sesi {unit}
             ini. Bisa dilepas selama belum dibayar.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <p className="text-sm font-semibold">TV yang sedang bermain</p>
+            <p className="text-sm font-semibold">{unit} yang sedang bermain</p>
             {mergeCandidates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Tidak ada TV lain yang bisa digabung.</p>
+              <p className="text-sm text-muted-foreground">Tidak ada {unit} lain yang bisa digabung.</p>
             ) : (
               mergeCandidates.map((other) => (
                 <div
@@ -1793,7 +1795,7 @@ export function StationDialog({
                     onClick={() => {
                       if (mergeStations(station.id, [other.id]))
                         toast.success(`${other.name} digabung ke ${station.name}`);
-                      else toast.error("TV ini tidak bisa digabung");
+                      else toast.error(`${unit} ini tidak bisa digabung`);
                     }}
                   >
                     Gabung

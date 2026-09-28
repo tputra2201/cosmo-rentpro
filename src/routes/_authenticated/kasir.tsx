@@ -1,3 +1,4 @@
+import { useUnitLabel } from "@/lib/billing-store";
 import { createFileRoute } from "@tanstack/react-router";
 import { Gamepad2, Receipt, Utensils } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/kasir")({
 
 
 function KasirPage() {
+  const unit = useUnitLabel();
   const { stations, rates, consoleTypes, now } = useBilling();
 
   const active = stations.filter((s) => s.session);
@@ -82,7 +84,7 @@ function KasirPage() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-lg font-semibold tracking-wide">
-            TV Sedang Aktif ({active.length})
+            {unit} Sedang Aktif ({active.length})
           </h2>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Total berjalan</p>
@@ -95,7 +97,7 @@ function KasirPage() {
         {active.length === 0 ? (
           <Card className="surface-panel">
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Belum ada TV yang sedang bermain.
+              Belum ada {unit} yang sedang bermain.
             </CardContent>
           </Card>
         ) : (

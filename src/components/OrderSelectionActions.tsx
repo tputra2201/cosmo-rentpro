@@ -1,3 +1,4 @@
+import { useUnitLabel } from "@/lib/billing-store";
 import { useState } from "react";
 import { ArrowRightLeft, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export function OrderSelectionActions({
   onDone: () => void;
   onPaid?: (record: HistoryRecord) => void;
 }) {
+  const unit = useUnitLabel();
   const {
     paymentMethods,
     payOrderItems,
@@ -107,7 +109,7 @@ export function OrderSelectionActions({
           !s.session.paidAt &&
           !(source.type === "station" && s.id === source.id),
       )
-      .map((s) => ({ key: `station:${s.id}`, label: `TV ${s.name}` })),
+      .map((s) => ({ key: `station:${s.id}`, label: `${unit} ${s.name}` })),
   ];
 
   const closeAll = () => {
@@ -283,7 +285,7 @@ export function OrderSelectionActions({
           <DialogHeader>
             <DialogTitle>Transfer item pesanan</DialogTitle>
             <DialogDescription>
-              {orders.length} item dari {sourceName} dipindah ke meja kafe atau TV lain beserta
+              {orders.length} item dari {sourceName} dipindah ke meja kafe atau {unit} lain beserta
               tagihannya.
             </DialogDescription>
           </DialogHeader>
@@ -291,7 +293,7 @@ export function OrderSelectionActions({
             <Label>Tujuan</Label>
             <Select value={target} onValueChange={setTarget}>
               <SelectTrigger>
-                <SelectValue placeholder="Pilih meja atau TV tujuan…" />
+                <SelectValue placeholder={`Pilih meja atau ${unit} tujuan…`} />
               </SelectTrigger>
               <SelectContent>
                 {targets.length === 0 ? (
