@@ -42,17 +42,17 @@ import { defaultRange, inRange, rangeLabel, type ReportRange } from "@/lib/repor
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
     meta: [
-      { title: "Kas Lain & Pengeluaran — RenToPlay" },
+      { title: "Finance — PAY-IN & PAY-OUT — RenToPlay" },
       {
         name: "description",
         content:
-          "Catat pendapatan lain, pengeluaran operasional, serta setoran dan pengambilan uang kas owner yang tidak dihitung sebagai untung atau biaya.",
+          "Catat revenue lain, expenses, PAY-IN, dan PAY-OUT dalam satu halaman Finance.",
       },
-      { property: "og:title", content: "Kas Lain & Pengeluaran — RenToPlay" },
+      { property: "og:title", content: "Finance — PAY-IN & PAY-OUT — RenToPlay" },
       {
         property: "og:description",
         content:
-          "Pemasukan lain, biaya operasional, dan perpindahan uang kas dalam satu halaman.",
+          "Revenue lain, expenses, PAY-IN, dan PAY-OUT dalam satu halaman Finance.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -92,30 +92,30 @@ function KasPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold sm:text-4xl">Kas Lain &amp; Pengeluaran</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Finance</h1>
         <p className="text-sm text-muted-foreground">Hari ini {rangeLabel(businessRange)}</p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
-          label="Pendapatan lain hari ini"
+          label="OTHER REVENUE hari ini"
           value={formatRupiah(incomeToday)}
           tone="accent"
         />
         <Stat
-          label="Pengeluaran hari ini"
+          label="EXPENSES (BIAYA) hari ini"
           value={formatRupiah(expenseToday)}
           tone="danger"
         />
-        <Stat label="Kas masuk hari ini (bukan pendapatan)" value={formatRupiah(payoutIn)} />
-        <Stat label="Kas keluar hari ini (bukan biaya)" value={formatRupiah(payoutOut)} />
+        <Stat label="PAY-IN hari ini (bukan revenue)" value={formatRupiah(payoutIn)} />
+        <Stat label="PAY-OUT hari ini (bukan expenses)" value={formatRupiah(payoutOut)} />
       </section>
 
 
       <Tabs defaultValue="in">
         <TabsList className="flex w-full flex-wrap">
-          <TabsTrigger value="in">Uang masuk</TabsTrigger>
-          <TabsTrigger value="out">Uang keluar</TabsTrigger>
+          <TabsTrigger value="in">PAY-IN</TabsTrigger>
+          <TabsTrigger value="out">PAY-OUT</TabsTrigger>
           <TabsTrigger value="kategori">Item &amp; Kategori</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
         </TabsList>
@@ -142,7 +142,7 @@ function KasPage() {
   );
 }
 
-/** Riwayat kas per periode hari usaha, dipisah kas masuk dan kas keluar. */
+/** Riwayat Finance per periode hari usaha, dipisah PAY-IN dan PAY-OUT. */
 function CashHistory() {
   const { cashEntries, operatingHours, removeCashEntry, updateCashEntry, paymentMethods } =
     useBilling();
@@ -203,19 +203,19 @@ function CashHistory() {
 
       <div className="space-y-6" ref={printRef}>
         <section className="grid gap-4 sm:grid-cols-3">
-          <Stat label="Total kas masuk" value={formatRupiah(totalIn)} tone="accent" />
-          <Stat label="Total kas keluar" value={formatRupiah(totalOut)} tone="danger" />
+          <Stat label="TOTAL PAY-IN" value={formatRupiah(totalIn)} tone="accent" />
+          <Stat label="TOTAL PAY-OUT" value={formatRupiah(totalOut)} tone="danger" />
           <Stat label="Selisih" value={formatRupiah(totalIn - totalOut)} />
         </section>
         <CashGroup
-          title="Kas masuk"
+          title="PAY-IN"
           list={incoming}
           onRemove={remove}
           methods={methodNames}
           onPayment={changePayment}
         />
         <CashGroup
-          title="Kas keluar"
+          title="PAY-OUT"
           list={outgoing}
           onRemove={remove}
           methods={methodNames}
@@ -276,11 +276,11 @@ function CashGroup({
                   <Badge variant="outline">
                     {e.payout
                       ? e.direction === "in"
-                        ? "Kas masuk"
-                        : "Kas keluar"
+                        ? "PAY-IN"
+                        : "PAY-OUT"
                       : e.direction === "in"
-                        ? "Pendapatan"
-                        : "Pengeluaran"}
+                        ? "OTHER REVENUE"
+                        : "EXPENSES (BIAYA)"}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -391,7 +391,7 @@ function EntryForm({ direction }: { direction: CashDirection }) {
           <ArrowUpCircle className="size-5 text-destructive" />
         )}
         <h2 className="text-lg font-semibold">
-          {direction === "in" ? "Catat uang masuk" : "Catat uang keluar"}
+          {direction === "in" ? "Catat PAY-IN" : "Catat PAY-OUT"}
         </h2>
       </div>
 
@@ -514,7 +514,7 @@ function GroupEditor({ direction }: { direction: CashDirection }) {
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <SetupHeading
-        title={direction === "in" ? "Kategori uang masuk" : "Kategori uang keluar"}
+        title={direction === "in" ? "Kategori PAY-IN" : "Kategori PAY-OUT"}
         as="h2"
       />
 
@@ -618,7 +618,7 @@ function CategoryEditor({ direction }: { direction: CashDirection }) {
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <SetupHeading
-        title={direction === "in" ? "Item uang masuk" : "Item uang keluar"}
+        title={direction === "in" ? "Item PAY-IN" : "Item PAY-OUT"}
         as="h2"
       />
 
