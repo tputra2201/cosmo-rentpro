@@ -248,7 +248,7 @@ function BackupPage() {
           <h2 className="text-lg font-semibold">Reset Semua Transaksi</h2>
           <p className="text-sm text-muted-foreground">
             Menghapus seluruh transaksi, sesi berjalan, pesanan meja, reservasi,
-            playing card, uang masuk/keluar, shift, hari usaha, poin, dan log
+            playing card, PAY-IN/PAY-OUT, shift, hari usaha, poin, dan log
             aktivitas. Semua data di menu Setup tetap tersimpan.
           </p>
         </div>
@@ -279,7 +279,7 @@ function BackupPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset semua transaksi?</AlertDialogTitle>
             <AlertDialogDescription>
-              Seluruh transaksi, reservasi, playing card, uang masuk/keluar,
+              Seluruh transaksi, reservasi, playing card, PAY-IN/PAY-OUT,
               shift, dan riwayat terkait transaksi akan dihapus. Data di menu
               Setup tidak berubah.
             </AlertDialogDescription>

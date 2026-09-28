@@ -130,8 +130,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     items: [
       { key: "shift.checkin", label: "Check-in shift" },
       { key: "shift.closeout", label: "Cash close out" },
-      { key: "kas.tambah", label: "Catat kas masuk / keluar" },
-      { key: "kas.hapus", label: "Hapus catatan kas" },
+      { key: "kas.tambah", label: "Catat PAY-IN / PAY-OUT" },
+      { key: "kas.hapus", label: "Hapus catatan PAY-IN / PAY-OUT" },
       { key: "kartu.jual", label: "Jual Playing Card" },
       { key: "kartu.topup", label: "Top up saldo kartu" },
       { key: "kartu.backup", label: "Buat / unduh backup saldo kartu" },
