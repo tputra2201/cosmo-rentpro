@@ -216,6 +216,9 @@ function LaporanPage() {
         <TabsContent value="shift" className="mt-6">
           <ShiftReport range={range} />
         </TabsContent>
+        <TabsContent value="expense" className="mt-6">
+          <ExpenseReport range={range} />
+        </TabsContent>
         <TabsContent value="member" className="mt-6">
           <MembershipReport range={range} />
         </TabsContent>
