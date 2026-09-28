@@ -108,52 +108,77 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
         emptyText="Belum ada PAY-OUT lain pada periode ini."
       />
 
-      <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-accent text-base font-bold">DETAIL TRANSAKSI EXPENSES (BIAYA)</h3>
-        {expenses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Belum ada EXPENSES (BIAYA) pada periode ini.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Waktu</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Metode</TableHead>
-                <TableHead>Keterangan</TableHead>
-                <TableHead>Dicatat oleh</TableHead>
-                <TableHead className="text-right">Jumlah</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...expenses]
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="whitespace-nowrap">{timeText(e.createdAt)}</TableCell>
-                    <TableCell>{e.group?.trim() || "Lain-lain"}</TableCell>
-                    <TableCell>{e.categoryName}</TableCell>
-                    <TableCell>{e.payment}</TableCell>
-                    <TableCell>{e.note || "—"}</TableCell>
-                    <TableCell>{e.createdBy || "—"}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatRupiah(e.amount)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              <TableRow>
-                <TableCell colSpan={6} className="font-bold">
-                  Total
-                </TableCell>
-                <TableCell className="text-right font-bold">{formatRupiah(totalExpense)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        )}
-      </section>
+      <DetailTable
+        title="DETAIL TRANSAKSI EXPENSES (BIAYA)"
+        entries={expenses}
+        total={totalExpense}
+        emptyText="Belum ada EXPENSES (BIAYA) pada periode ini."
+      />
+      <DetailTable
+        title="DETAIL TRANSAKSI PAY-OUT LAIN (PRIVE / SETORAN & TITIPAN DIPAKAI)"
+        entries={payouts}
+        total={totalPayout}
+        emptyText="Belum ada PAY-OUT lain pada periode ini."
+      />
     </div>
+  );
+}
+
+function DetailTable({
+  title,
+  entries,
+  total,
+  emptyText,
+}: {
+  title: string;
+  entries: CashEntry[];
+  total: number;
+  emptyText: string;
+}) {
+  return (
+    <section className="surface-panel overflow-x-auto p-4 sm:p-6">
+      <h3 className="mb-4 text-accent text-base font-bold">{title}</h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Metode</TableHead>
+              <TableHead>Keterangan</TableHead>
+              <TableHead>Dicatat oleh</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...entries]
+              .sort((a, b) => b.createdAt - a.createdAt)
+              .map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell className="whitespace-nowrap">{timeText(e.createdAt)}</TableCell>
+                  <TableCell>{e.group?.trim() || "Lain-lain"}</TableCell>
+                  <TableCell>{e.categoryName}</TableCell>
+                  <TableCell>{e.payment}</TableCell>
+                  <TableCell>{e.note || "—"}</TableCell>
+                  <TableCell>{e.createdBy || "—"}</TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatRupiah(e.amount)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            <TableRow>
+              <TableCell colSpan={6} className="font-bold">
+                Total
+              </TableCell>
+              <TableCell className="text-right font-bold">{formatRupiah(total)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      )}
+    </section>
   );
 }
 
