@@ -789,6 +789,42 @@ const fields: {
   },
 ];
 
+function ModulesSection() {
+  const { role } = useAuth();
+  const { businessProfile, setBusinessProfile } = useBilling();
+  if (role !== "manager" && role !== "admin") return null;
+  const rows = [
+    ["cafe", "Kafe (F&B)", "Menu kafe, meja kafe, dan pesanan makanan/minuman."],
+    ["booking", "Reservasi", "Pemesanan jadwal dan DP reservasi."],
+    ["playingCard", "Playing Card", "Kartu pelanggan, penjualan kartu, dan top up saldo."],
+  ] as const;
+  return (
+    <section className="surface-panel space-y-4 p-5">
+      <div>
+        <h2 className="font-display text-lg font-bold">Modul Aktif</h2>
+        <p className="text-sm text-muted-foreground">
+          Matikan modul yang tidak dipakai store ini. Menunya disembunyikan, data lama tetap aman.
+        </p>
+      </div>
+      <div className="divide-y divide-border rounded-md border border-border">
+        {rows.map(([key, label, hint]) => (
+          <label key={key} className="flex items-center justify-between gap-3 p-3">
+            <span>
+              <span className="block font-semibold">{label}</span>
+              <span className="block text-xs text-muted-foreground">{hint}</span>
+            </span>
+            <Switch
+              checked={businessProfile.modules[key]}
+              onCheckedChange={(v) => setBusinessProfile({ modules: { [key]: v } })}
+              aria-label={`Modul ${label}`}
+            />
+          </label>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function EarlyEndOfDaySection() {
   const { role } = useAuth();
   const { activeBusinessDay, closeBusinessDay, shifts, operatingHours } = useBilling();
@@ -896,6 +932,7 @@ function StorePage() {
 
       <OperatingHoursSection />
       <EarlyEndOfDaySection />
+      <ModulesSection />
       <SessionSecuritySection />
 
       <LogoSection storeId={store?.id} logoUrl={store?.logo_url ?? ""} />

@@ -42,7 +42,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     cashEntries,
     menu,
     shifts,
+    businessProfile,
   } = useBilling();
+  const salesLabels = businessProfile.salesLabels;
 
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const records = history.filter((h) => inRange(paidTime(h), range));

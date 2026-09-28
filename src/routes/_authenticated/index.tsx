@@ -46,6 +46,7 @@ function Dashboard() {
     addonRentals,
     cardDiscountPercent,
     cardMemberDiscountPercent,
+    businessProfile,
   } = useBilling();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
