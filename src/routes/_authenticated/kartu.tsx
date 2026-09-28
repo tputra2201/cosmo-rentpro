@@ -41,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/kartu")({
       {
         name: "description",
         content:
-          "Manajemen Playing Card rental PS: pembelian kartu baru, data pelanggan, top-up saldo, riwayat pemakaian, dan potongan harga khusus.",
+          "Manajemen Playing Card rental PS: penjualan kartu baru, data pelanggan, top-up saldo, riwayat pemakaian, dan potongan harga khusus.",
       },
       { property: "og:title", content: "Playing Card — RenToPlay" },
       {
@@ -167,7 +167,7 @@ function BuyCardPanel() {
 
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
-      <SetupHeading title="Pembelian Kartu Baru" description="Daftarkan kartu baru beserta pemegang dan saldo awal." />
+      <SetupHeading title="Penjualan Kartu Baru" description="Daftarkan kartu baru beserta pemegang dan saldo awal." />
       <CardScanInput value={cardNumber} onChange={setCardNumber} autoFocus />
 
       <div className="space-y-1.5">
@@ -536,7 +536,7 @@ function CardListPanel() {
   );
 }
 const TYPE_LABEL: Record<string, string> = {
-  purchase: "Pembelian kartu",
+  purchase: "Penjualan kartu",
   topup: "Top-up",
   payment: "Pembayaran",
   adjust: "Penyesuaian",

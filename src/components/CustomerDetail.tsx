@@ -21,7 +21,7 @@ import {
 } from "@/lib/billing-store";
 
 const CARD_TYPE_LABEL: Record<string, string> = {
-  purchase: "Pembelian kartu",
+  purchase: "Penjualan kartu",
   topup: "Top-up",
   payment: "Pembayaran",
   adjust: "Penyesuaian",
