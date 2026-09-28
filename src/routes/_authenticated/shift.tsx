@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -146,10 +156,10 @@ function ShiftPage() {
                 <TableHead>Kasir</TableHead>
                 <TableHead>Opening</TableHead>
                 <TableHead>Closing</TableHead>
-                <TableHead className="text-right">Start cash</TableHead>
-                <TableHead className="text-right">Expected</TableHead>
-                <TableHead className="text-right">Actual</TableHead>
-                <TableHead className="text-right">Selisih</TableHead>
+                <TableHead className="text-right">Kas Awal</TableHead>
+                <TableHead className="text-right">Kas Seharusnya</TableHead>
+                <TableHead className="text-right">Kas Fisik</TableHead>
+                <TableHead className="text-right">Selisih Kas</TableHead>
                 <TableHead>Catatan</TableHead>
               </TableRow>
             </TableHeader>
@@ -307,31 +317,82 @@ function CloseOutForm({
   // Next start cash mengikuti cash actual yang diinput kasir; 0 bila belum diisi.
   const [nextStart, setNextStart] = useState("0");
   const [nextStartEdited, setNextStartEdited] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const actualValue = Number(actual);
   const balance = useMemo(
     () => (Number.isFinite(actualValue) ? actualValue - summary.expected : 0),
     [actualValue, summary.expected],
   );
+  const nextStartValue = Number(nextStart);
+  const cashToDeposit = Number.isFinite(actualValue) && Number.isFinite(nextStartValue)
+    ? actualValue - nextStartValue
+    : 0;
+
+  const validate = () => {
+    if (!actual.trim() || !Number.isFinite(actualValue) || actualValue < 0) {
+      toast.error("Isi jumlah uang fisik di laci");
+      return false;
+    }
+    if (!Number.isFinite(nextStartValue) || nextStartValue < 0) {
+      toast.error("Isi kas awal shift berikutnya");
+      return false;
+    }
+    if (nextStartValue > actualValue) {
+      toast.error("Kas awal berikutnya tidak boleh melebihi uang fisik di laci");
+      return false;
+    }
+    if (balance !== 0 && !note.trim()) {
+      toast.error("Ada selisih kas, isi catatan selisih dulu");
+      return false;
+    }
+    return true;
+  };
+
+  const submitClose = () => {
+    const row = onClose(shift.id, {
+      cashActual: actualValue,
+      balanceNote: note,
+      nextStartCash: nextStartValue,
+    });
+    if (!row) {
+      toast.error("Tutup shift gagal");
+      return;
+    }
+    setActual("");
+    setNote("");
+    setConfirmOpen(false);
+    toast.success(`Shift ${shift.cashierName} ditutup`);
+  };
 
   return (
     <section className="surface-panel space-y-5 p-4 sm:p-6">
       <div className="flex items-center gap-2">
         <ClipboardCheck className="size-5 text-primary" />
-        <h2 className="text-lg font-semibold">Cash close out</h2>
+        <h2 className="text-lg font-semibold">Cash Close Out</h2>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Nama kasir" value={shift.cashierName} />
-        <Field label="Opening kasir" value={clock(shift.openedAt)} />
-        <Field label="Closing kasir" value={clock(Date.now())} />
-        <Field label="Start cash (kas awal)" value={formatRupiah(shift.startCash)} />
-        <Field label="+ Penjualan & pendapatan lain tunai" value={formatRupiah(summary.sales)} />
-        <Field label="+ Titipan masuk tunai (DP, top-up)" value={formatRupiah(summary.paidIn)} />
-        <Field label="− DP tunai terpakai & ambil kas owner" value={formatRupiah(summary.paidOut)} />
-        <Field label="− Biaya toko dibayar tunai" value={formatRupiah(summary.expenses)} />
-        <Field label="= Cash expected (harus ada di laci)" value={formatRupiah(summary.expected)} highlight />
+        <Field label="Opening Shift" value={clock(shift.openedAt)} />
+        <Field label="Closing Shift" value={clock(Date.now())} />
       </div>
+
+      <MoneySection title="CASH IN">
+        <MoneyLine label="START CASH" value={shift.startCash} />
+        <MoneyLine label="CASH SALES" value={summary.cashSales} hint="Rental, kafe, dan penjualan Playing Card tunai" />
+        <MoneyLine label="OTHER REVENUE" value={summary.otherRevenue} />
+        <MoneyLine label="TAMBAHAN KAS MASUK" value={summary.additionalCashIn} />
+        <MoneyLine label="TOP UP PLAYING CARD" value={summary.cardTopup} />
+        <MoneyLine label="DP RESERVASI MASUK" value={summary.bookingDp} hint="DP tunai yang diterima pada shift ini" />
+        <MoneyLine label="TOTAL CASH IN" value={shift.startCash + summary.sales + summary.paidIn} strong />
+      </MoneySection>
+
+      <MoneySection title="CASH OUT">
+        <MoneyLine label="EXPENSES (BIAYA)" value={summary.expenses} />
+        <MoneyLine label="PRIVE / SETORAN TUNAI" value={summary.ownerDeposit} hint="Ke owner atau bank" />
+        <MoneyLine label="TOTAL CASH OUT" value={summary.expenses + summary.ownerDeposit} strong />
+      </MoneySection>
 
       <NonCashBox from={shift.openedAt} />
 
@@ -339,7 +400,7 @@ function CloseOutForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <label className="text-sm font-medium" htmlFor="cash-actual">
-            Cash actual (hitung fisik laci)
+            CASH ACTUAL (hasil hitung fisik uang di laci)
           </label>
           <Input
             id="cash-actual"
@@ -354,13 +415,13 @@ function CloseOutForm({
           />
         </div>
         <Field
-          label="Balance cash (actual - expected)"
+          label="BALANCE CASH (selisih)"
           value={formatRupiah(balance)}
           tone={balance === 0 ? undefined : balance > 0 ? "accent" : "danger"}
         />
         <div className="space-y-1.5">
           <label className="text-sm font-medium" htmlFor="balance-note">
-            Balance note
+            BALANCE NOTE
           </label>
           <Input
             id="balance-note"
@@ -371,7 +432,7 @@ function CloseOutForm({
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium" htmlFor="next-start">
-            Next start cash
+            NEXT START CASH
           </label>
           <Input
             id="next-start"
@@ -386,34 +447,60 @@ function CloseOutForm({
         </div>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="CASH EXPECTED (uang yang harus ada di laci)" value={formatRupiah(summary.expected)} highlight />
+        <Field label="SETORAN KE OWNER / BANK" value={formatRupiah(cashToDeposit)} highlight />
+      </div>
+
       <Button
         onClick={() => {
-          if (!actual.trim() || !Number.isFinite(actualValue) || actualValue < 0) {
-            toast.error("Isi jumlah cash actual di laci");
-            return;
-          }
-          if (balance !== 0 && !note.trim()) {
-            toast.error("Ada selisih uang, isi balance note dulu");
-            return;
-          }
-          const next = Number(nextStart);
-          const row = onClose(shift.id, {
-            cashActual: actualValue,
-            balanceNote: note,
-            nextStartCash: Number.isFinite(next) ? next : 0,
-          });
-          if (!row) {
-            toast.error("Close out gagal");
-            return;
-          }
-          setActual("");
-          setNote("");
-          toast.success(`Shift ${shift.cashierName} ditutup`);
+          if (validate()) setConfirmOpen(true);
         }}
       >
-        Close out
+        Close Out
       </Button>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Tutup Shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              Periksa kembali ringkasan uang sebelum shift ditutup.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 rounded-md border p-4 text-sm">
+            <MoneyLine label="CASH EXPECTED" value={summary.expected} />
+            <MoneyLine label="CASH ACTUAL" value={actualValue} />
+            <MoneyLine label="BALANCE CASH" value={balance} strong />
+            <MoneyLine label="NEXT START CASH" value={nextStartValue} />
+            <MoneyLine label="SETORAN KE OWNER / BANK" value={cashToDeposit} strong />
+            {note.trim() && <p className="border-t pt-2 text-muted-foreground">Catatan: {note.trim()}</p>}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal / Cek Lagi</AlertDialogCancel>
+            <AlertDialogAction onClick={submitClose}>Ya, Tutup Shift Sekarang</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
+  );
+}
+
+function MoneySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border p-4">
+      <h3 className="mb-3 text-sm font-bold text-accent">{title}</h3>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function MoneyLine({ label, value, strong, hint }: { label: string; value: number; strong?: boolean; hint?: string }) {
+  return (
+    <div className={strong ? "flex items-end justify-between gap-4 border-t pt-2 font-bold" : "flex items-end justify-between gap-4 text-sm"}>
+      <span>{label}{hint && <span className="block text-xs font-normal text-muted-foreground">{hint}</span>}</span>
+      <span className="whitespace-nowrap">{formatRupiah(value)}</span>
+    </div>
   );
 }
 
@@ -467,8 +554,9 @@ function NonCashBox({ from }: { from: number }) {
   const list = [...rows.entries()].filter(([, v]) => v !== 0);
   if (list.length === 0) return null;
   return (
-    <div className="rounded-md border border-dashed p-3 text-sm">
-      <p className="mb-1 font-medium">Pembayaran non-tunai (tidak masuk laci, hanya info)</p>
+    <div className="rounded-md border border-dashed p-4 text-sm">
+      <p className="mb-2 font-bold">PEMBAYARAN NON-TUNAI</p>
+      <p className="mb-2 text-xs text-muted-foreground">Tidak masuk laci, hanya informasi.</p>
       {list.map(([m, v]) => (
         <div key={m} className="flex justify-between text-muted-foreground">
           <span>{m}</span><span>{formatRupiah(v)}</span>

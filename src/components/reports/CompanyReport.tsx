@@ -8,7 +8,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { addonAmount, formatRupiah, shiftSummary, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import {
+  addonAmount,
+  BOOKING_DP_CATEGORY_ID,
+  BOOKING_DP_USED_CATEGORY_ID,
+  CARD_SALE_CATEGORY_ID,
+  CARD_TOPUP_CATEGORY_ID,
+  formatRupiah,
+  shiftSummary,
+  useBilling,
+  type HistoryRecord,
+} from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 type Row = { label: string; amount: number; qty?: number };
@@ -28,7 +38,6 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const {
     history,
     cashEntries,
-    cardEntries,
     menu,
     shifts,
   } = useBilling();
@@ -36,7 +45,6 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const paidTime = (h: HistoryRecord) => h.paidAt ?? h.endAt;
   const records = history.filter((h) => inRange(paidTime(h), range));
   const cash = cashEntries.filter((e) => inRange(e.createdAt, range));
-  const cards = cardEntries.filter((e) => inRange(e.createdAt, range));
 
   const rentalGross = records.reduce((s, h) => s + h.rentalTotal, 0);
   const addonGross = records.reduce((s, h) => s + (h.addonTotal ?? 0), 0);
@@ -44,12 +52,12 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   const discount = records.reduce((s, h) => s + (h.discount ?? 0), 0);
   const netSales = records.reduce((s, h) => s + h.total, 0);
 
-  const payments = new Map<string, Row>();
+  const salePayments = new Map<string, Row>();
   for (const h of records) {
     if (h.payments?.length) {
-      for (const p of h.payments) bump(payments, p.method || "Cash", p.amount, 1);
+      for (const p of h.payments) bump(salePayments, p.method || "Cash", p.amount, 1);
     } else {
-      bump(payments, h.payment || "Cash", h.total, 1);
+      bump(salePayments, h.payment || "Cash", h.total, 1);
     }
   }
 
@@ -105,10 +113,10 @@ export function CompanyReport({ range }: { range: ReportRange }) {
 
   const cashSum = (pick: (e: (typeof cash)[number]) => boolean) =>
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
-  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
+  const otherIncome = cashSum(
+    (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID,
+  );
   const expense = cashSum((e) => e.direction === "out" && !e.payout);
-  const payoutIn = cashSum((e) => e.direction === "in" && e.payout);
-  const payoutOut = cashSum((e) => e.direction === "out" && e.payout);
 
   const expenseRows = new Map<string, Row>();
   for (const e of cash) {
@@ -116,39 +124,55 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   }
   const incomeRows = new Map<string, Row>();
   for (const e of cash) {
-    if (e.direction === "in" && !e.payout) bump(incomeRows, e.categoryName, e.amount, 1);
+    if (e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID) {
+      bump(incomeRows, e.categoryName, e.amount, 1);
+    }
   }
 
-  // Uang kas awal periode: start cash shift pertama yang check-in pada periode ini.
-  // Nilai ini tidak dijumlahkan bila ada beberapa shift, karena uang tunai di laci
-  // berpindah utuh dari shift sebelumnya ke shift berikutnya.
   const shiftInRange = shifts
     .filter((s) => inRange(s.openedAt, range))
     .sort((a, b) => a.openedAt - b.openedAt);
-  const startCash = shiftInRange[0]?.startCash ?? 0;
 
-  const cashPayments = payments.get("Cash")?.amount ?? 0;
-  const cashIn = cash
-    .filter((e) => e.direction === "in" && e.payment === "Cash")
-    .reduce((s, e) => s + e.amount, 0);
-  const cashOut = cash
-    .filter((e) => e.direction === "out" && e.payment === "Cash")
-    .reduce((s, e) => s + e.amount, 0);
+  const cardSales = cashSum(
+    (e) => e.direction === "in" && e.categoryId === CARD_SALE_CATEGORY_ID,
+  );
 
-  const cardSales = cards
-    .filter((e) => e.type === "purchase")
-    .reduce((s, e) => s + Math.abs(e.amount), 0);
-  const cardTopup = cards.filter((e) => e.type === "topup").reduce((s, e) => s + Math.abs(e.amount), 0);
-
-  const depositRows = new Map<string, Row>();
+  const payInRows = new Map<string, Row>();
   for (const e of cash) {
-    if (!e.payout) continue;
-    const sign = e.direction === "in" ? 1 : -1;
-    bump(depositRows, `${e.categoryName} · ${e.payment}`, sign * e.amount, 1);
+    if (e.direction !== "in" || !e.payout) continue;
+    const label = e.categoryId === BOOKING_DP_CATEGORY_ID
+      ? "DP RESERVASI"
+      : e.categoryId === CARD_TOPUP_CATEGORY_ID
+        ? "TOP UP PLAYING CARD"
+        : "TAMBAHAN KAS MASUK";
+    bump(payInRows, label, e.amount, 1);
   }
-  const methodRows = new Map<string, Row>();
-  for (const [, r] of payments) bump(methodRows, r.label, r.amount, r.qty ?? 0);
-  for (const e of cash) bump(methodRows, e.payment || "Cash", e.direction === "in" ? e.amount : -e.amount, 1);
+
+  const payOutRows = new Map<string, Row>();
+  for (const e of cash) {
+    if (e.direction !== "out") continue;
+    if (!e.payout) bump(payOutRows, "EXPENSES (BIAYA)", e.amount, 1);
+    else if (e.categoryId !== BOOKING_DP_USED_CATEGORY_ID) {
+      bump(payOutRows, "PRIVE / SETORAN TUNAI (KE OWNER / BANK)", e.amount, 1);
+    }
+  }
+
+  // DP yang dipakai adalah cara melunasi nota, bukan penerimaan kas baru.
+  // Pindahkan nilainya dari metode awal ke baris khusus agar pembayaran tetap
+  // sama dengan pendapatan tanpa membuat uang laci terhitung dua kali.
+  const paymentRows = new Map<string, Row>();
+  for (const [, r] of salePayments) bump(paymentRows, r.label, r.amount, r.qty ?? 0);
+  for (const e of cash) {
+    if (e.categoryId === BOOKING_DP_USED_CATEGORY_ID && e.direction === "out") {
+      bump(paymentRows, e.payment || "Cash", -e.amount, -1);
+      bump(paymentRows, "DP RESERVASI TERPAKAI", e.amount, 1);
+    }
+    if (e.direction === "in" && !e.payout) {
+      bump(paymentRows, e.payment || "Cash", e.amount, 1);
+    }
+  }
+  const visiblePaymentRows = sorted(paymentRows).filter((row) => Math.abs(row.amount) > 0.5);
+  const totalRevenue = netSales + cardSales + otherIncome;
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -165,23 +189,35 @@ export function CompanyReport({ range }: { range: ReportRange }) {
         />
       </div>
 
-      <Section title="Penjualan">
-        <Line label="Rental" value={formatRupiah(rentalGross)} />
-        <Line label="Additional Rental" value={formatRupiah(addonGross)} />
-        <Line label="Makanan &amp; minuman" value={formatRupiah(fnbGross)} />
-        <Line
-          label="Penjualan kotor"
-          value={formatRupiah(rentalGross + addonGross + fnbGross)}
-        />
-        <Line label="Potongan harga" value={`- ${formatRupiah(discount)}`} />
-        <Line label="Penjualan bersih" value={formatRupiah(netSales)} strong />
-        <Line label="Jumlah nota" value={String(records.length)} />
-        <Line label="Penjualan Playing Card" value={formatRupiah(cardSales)} />
-        <Line label="Top-up Playing Card (deposit)" value={formatRupiah(cardTopup)} />
+      <Section title="REVENUE">
+        <Subheading>SALES</Subheading>
+        <Line label="RENTAL" value={formatRupiah(rentalGross)} />
+        <Line label="F&B" value={formatRupiah(fnbGross)} />
+        <Line label="ADDITIONAL RENTAL" value={formatRupiah(addonGross)} />
+        <Line label="PLAYING CARD SALES" value={formatRupiah(cardSales)} />
+        {discount > 0 && <Line label="DISCOUNT" value={`- ${formatRupiah(discount)}`} />}
+        <Line label="TOTAL SALES" value={formatRupiah(netSales + cardSales)} strong />
+        <Subheading>OTHER REVENUE</Subheading>
+        <Rows rows={sorted(incomeRows)} countLabel="Transaksi" hideTotal />
+        <Line label="TOTAL OTHER REVENUE" value={formatRupiah(otherIncome)} strong />
+        <Line label="TOTAL REVENUE" value={formatRupiah(totalRevenue)} strong accent />
       </Section>
 
-      <Section title="Pembayaran">
-        <Rows rows={sorted(payments)} countLabel="Nota" />
+      <Section title="PAYMENTS">
+        <Rows rows={visiblePaymentRows} countLabel="Transaksi" totalLabel="TOTAL PAYMENTS" />
+        <p className="pt-2 text-xs text-muted-foreground">
+          Total Payments = Total Revenue
+        </p>
+      </Section>
+
+      <Section title="PAY-IN">
+        <p className="mb-2 text-xs text-muted-foreground">Uang masuk yang bukan pendapatan.</p>
+        <Rows rows={sorted(payInRows)} countLabel="Transaksi" totalLabel="TOTAL PAY-IN" />
+      </Section>
+
+      <Section title="PAY-OUT">
+        <p className="mb-2 text-xs text-muted-foreground">Biaya toko dan uang tunai yang disetorkan.</p>
+        <Rows rows={sorted(payOutRows)} countLabel="Transaksi" totalLabel="TOTAL PAY-OUT" />
       </Section>
 
       <Section title="Potongan harga">
@@ -216,44 +252,12 @@ export function CompanyReport({ range }: { range: ReportRange }) {
         <Rows rows={sorted(items)} countLabel="Jumlah" />
       </Section>
 
-      <Section title="Pendapatan lain">
-        <Rows rows={sorted(incomeRows)} countLabel="Catatan" />
-        <Line label="Total pendapatan lain" value={formatRupiah(otherIncome)} strong />
-      </Section>
-
-      <Section title="Pengeluaran">
+      <Section title="Rincian Expenses (Biaya)">
         <Rows rows={sorted(expenseRows)} countLabel="Catatan" />
-        <Line label="Total pengeluaran" value={formatRupiah(expense)} strong />
+        <Line label="TOTAL EXPENSES (BIAYA)" value={formatRupiah(expense)} strong />
       </Section>
 
-      <Section title="Tutup kas (uang tunai)">
-        <Line label="Start cash" value={formatRupiah(startCash)} />
-        <Line label="Penjualan tunai" value={formatRupiah(cashPayments)} />
-        <Line label="Kas masuk lain" value={formatRupiah(cashIn)} />
-        <Line label="Kas keluar" value={`- ${formatRupiah(cashOut)}`} />
-        <Line
-          label="Perkiraan uang tunai di kasir"
-          value={formatRupiah(startCash + cashPayments + cashIn - cashOut)}
-          strong
-        />
-        {(payoutIn > 0 || payoutOut > 0) && (
-          <Line
-            label="Perpindahan kas (bukan pendapatan)"
-            value={`masuk ${formatRupiah(payoutIn)} · keluar ${formatRupiah(payoutOut)}`}
-          />
-        )}
-      </Section>
-
-      <Section title="Titipan pelanggan (DP reservasi & deposit kartu)">
-        <p className="mb-2 text-xs text-muted-foreground">Titipan bukan pendapatan. DP menjadi penjualan saat pelanggan check-in.</p>
-        <Rows rows={sorted(depositRows)} countLabel="Catatan" />
-      </Section>
-
-      <Section title="Uang diterima per metode (cocokkan dengan laci & rekening)">
-        <Rows rows={sorted(methodRows)} countLabel="Transaksi" />
-      </Section>
-
-      <Section title="Close out kasir">
+      <Section title="CASH CLOSE OUT">
         {shiftInRange.length === 0 ? (
           <p className="text-sm text-muted-foreground">Tidak ada shift pada periode ini.</p>
         ) : (
@@ -262,9 +266,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Kasir</TableHead>
-                  <TableHead className="text-right">Expected</TableHead>
-                  <TableHead className="text-right">Actual</TableHead>
-                  <TableHead className="text-right">Selisih</TableHead>
+                  <TableHead className="text-right">Cash Expected</TableHead>
+                  <TableHead className="text-right">Cash Actual</TableHead>
+                  <TableHead className="text-right">Balance Cash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -288,14 +292,14 @@ export function CompanyReport({ range }: { range: ReportRange }) {
       </Section>
 
 
-      <Section title="Ringkasan akhir">
-        <Line label="Penjualan bersih" value={formatRupiah(netSales)} />
-        <Line label="Pendapatan lain" value={formatRupiah(otherIncome)} />
-        <Line label="Pengeluaran" value={`- ${formatRupiah(expense)}`} />
+      <Section title="RINGKASAN AKHIR">
+        <Line label="TOTAL REVENUE" value={formatRupiah(totalRevenue)} />
+        <Line label="TOTAL EXPENSES (BIAYA)" value={`- ${formatRupiah(expense)}`} />
         <Line
-          label="Sisa bersih periode ini"
-          value={formatRupiah(netSales + otherIncome - expense)}
+          label="PENDAPATAN SETELAH BIAYA"
+          value={formatRupiah(totalRevenue - expense)}
           strong
+          accent
         />
       </Section>
     </div>
@@ -313,7 +317,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Line({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Subheading({ children }: { children: React.ReactNode }) {
+  return <p className="border-b pb-1 pt-3 text-xs font-bold text-muted-foreground">{children}</p>;
+}
+
+function Line({ label, value, strong, accent }: { label: string; value: string; strong?: boolean; accent?: boolean }) {
   return (
     <div
       className={
@@ -323,12 +331,12 @@ function Line({ label, value, strong }: { label: string; value: string; strong?:
       }
     >
       <span>{label}</span>
-      <span className={strong ? "text-accent" : "font-medium"}>{value}</span>
+      <span className={accent ? "font-bold text-accent" : strong ? "font-semibold" : "font-medium"}>{value}</span>
     </div>
   );
 }
 
-function Rows({ rows, countLabel }: { rows: Row[]; countLabel: string }) {
+function Rows({ rows, countLabel, totalLabel = "Total", hideTotal = false }: { rows: Row[]; countLabel: string; totalLabel?: string; hideTotal?: boolean }) {
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">Tidak ada data pada periode ini.</p>;
   }
@@ -351,11 +359,13 @@ function Rows({ rows, countLabel }: { rows: Row[]; countLabel: string }) {
               <TableCell className="text-right">{formatRupiah(r.amount)}</TableCell>
             </TableRow>
           ))}
-          <TableRow>
-            <TableCell className="font-semibold">Total</TableCell>
-            <TableCell />
-            <TableCell className="text-right font-semibold">{formatRupiah(total)}</TableCell>
-          </TableRow>
+          {!hideTotal && (
+            <TableRow>
+              <TableCell className="font-semibold">{totalLabel}</TableCell>
+              <TableCell />
+              <TableCell className="text-right font-semibold">{formatRupiah(total)}</TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

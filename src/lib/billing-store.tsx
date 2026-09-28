@@ -1244,6 +1244,12 @@ function cashOfRecord(record: HistoryRecord) {
 }
 
 export type ShiftSummary = {
+  cashSales: number;
+  otherRevenue: number;
+  additionalCashIn: number;
+  cardTopup: number;
+  bookingDp: number;
+  ownerDeposit: number;
   paidIn: number;
   paidOut: number;
   sales: number;
@@ -1272,18 +1278,57 @@ export function shiftSummary(
   const sum = (pick: (e: CashEntry) => boolean) =>
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
 
-  const paidIn = sum((e) => e.direction === "in" && e.payout);
-  const otherIncome = sum((e) => e.direction === "in" && !e.payout);
-  const paidOut = sum((e) => e.direction === "out" && e.payout);
+  const cardSales = sum((e) => e.direction === "in" && e.categoryId === CARD_SALE_CATEGORY_ID);
+  const bookingDpUsed = sum(
+    (e) => e.direction === "out" && e.categoryId === BOOKING_DP_USED_CATEGORY_ID,
+  );
+  const otherRevenue = sum(
+    (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID,
+  );
+  const cardTopup = sum(
+    (e) => e.direction === "in" && e.categoryId === CARD_TOPUP_CATEGORY_ID,
+  );
+  const bookingDp = sum(
+    (e) => e.direction === "in" && e.categoryId === BOOKING_DP_CATEGORY_ID,
+  );
+  const additionalCashIn = sum(
+    (e) =>
+      e.direction === "in" &&
+      e.payout &&
+      e.categoryId !== CARD_TOPUP_CATEGORY_ID &&
+      e.categoryId !== BOOKING_DP_CATEGORY_ID,
+  );
+  const ownerDeposit = sum(
+    (e) => e.direction === "out" && e.payout && e.categoryId !== BOOKING_DP_USED_CATEGORY_ID,
+  );
+  const paidIn = additionalCashIn + cardTopup + bookingDp;
+  const paidOut = ownerDeposit + bookingDpUsed;
   const expenses = sum((e) => e.direction === "out" && !e.payout);
-  const salesTotal = sales + otherIncome;
+  // DP yang dipakai sudah berada di rincian pembayaran nota. Kurangi dari
+  // penerimaan penjualan shift ini karena uang fisiknya masuk saat reservasi.
+  const cashSales = Math.max(0, sales + cardSales - bookingDpUsed);
+  const salesTotal = cashSales + otherRevenue;
 
   return {
+    cashSales,
+    otherRevenue,
+    additionalCashIn,
+    cardTopup,
+    bookingDp,
+    ownerDeposit,
     paidIn,
     paidOut,
     sales: salesTotal,
     expenses,
-    expected: shift.startCash + paidIn - paidOut + salesTotal - expenses,
+    expected:
+      shift.startCash +
+      cashSales +
+      otherRevenue +
+      additionalCashIn +
+      cardTopup +
+      bookingDp -
+      expenses -
+      ownerDeposit,
   };
 }
 
