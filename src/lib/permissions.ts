@@ -207,6 +207,7 @@ export const defaultRolePermissions: Record<AppRole, string[]> = {
     "laporan.company",
     "laporan.card",
     "laporan.shift",
+    "laporan.expense",
     "laporan.membership",
     "laporan.qris",
     "laporan.transfer",
