@@ -113,7 +113,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
 
   const cashSum = (pick: (e: (typeof cash)[number]) => boolean) =>
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
-  const otherIncome = cashSum((e) => e.direction === "in" && !e.payout);
+  const otherIncome = cashSum(
+    (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID,
+  );
   const expense = cashSum((e) => e.direction === "out" && !e.payout);
 
   const expenseRows = new Map<string, Row>();
@@ -122,7 +124,9 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   }
   const incomeRows = new Map<string, Row>();
   for (const e of cash) {
-    if (e.direction === "in" && !e.payout) bump(incomeRows, e.categoryName, e.amount, 1);
+    if (e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID) {
+      bump(incomeRows, e.categoryName, e.amount, 1);
+    }
   }
 
   const shiftInRange = shifts
