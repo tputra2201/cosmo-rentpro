@@ -240,7 +240,7 @@ export function StationDialog({
   const session = station.session;
   const rate = rates[station.console] ?? 0;
   const chosenPackage = packages.find((item) => item.id === packageId);
-  const upcomingBooking = session
+  const upcomingBooking = session || businessProfile?.modules?.booking === false
     ? undefined
     : bookings
         .filter(

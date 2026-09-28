@@ -460,7 +460,7 @@ function AppShell() {
                               }}
                             >
                               <Icon className="size-4 shrink-0" />
-                              <span className="truncate">{label}</span>
+                              <span className="truncate">{label === "TV Connect" ? `${businessProfile.unitLabel || "TV"} Connect` : label}</span>
                             </Link>
                           ))}
                         </nav>
@@ -500,7 +500,7 @@ function AppShell() {
                       <DropdownMenuItem key={to} asChild>
                         <Link to={to} className="flex items-center gap-2">
                           <Icon className="size-4 shrink-0" />
-                          {label}
+                          {label === "TV Connect" ? `${businessProfile.unitLabel || "TV"} Connect` : label}
                         </Link>
                       </DropdownMenuItem>
                     ))}
