@@ -481,6 +481,85 @@ export const BOOKING_DP_CATEGORY_ID = "cc-dp-reservasi";
 /** DP reservasi yang dipakai saat check-in: kas keluar, bukan biaya. */
 export const BOOKING_DP_USED_CATEGORY_ID = "cc-dp-reservasi-pakai";
 
+/**
+ * Pos akun baku (Chart of Accounts). Nama akun bebas diatur store, tapi setiap
+ * item wajib memilih salah satu pos ini supaya laporan tetap seimbang.
+ */
+export type CashAccount = "sales" | "other" | "payin" | "expense" | "payout";
+export const CASH_ACCOUNT_LABEL: Record<CashAccount, string> = {
+  sales: "SALES",
+  other: "OTHER REVENUE",
+  payin: "PAY-IN (TITIPAN)",
+  expense: "EXPENSES (BIAYA)",
+  payout: "PAY-OUT LAIN (PRIVE / SETORAN)",
+};
+export const ACCOUNTS_BY_DIRECTION: Record<CashDirection, CashAccount[]> = {
+  in: ["sales", "other", "payin"],
+  out: ["expense", "payout"],
+};
+export function isPayoutAccount(a: CashAccount) {
+  return a === "payin" || a === "payout";
+}
+
+/** Modul yang mencatat kas otomatis dan bisa dipetakan ke akun pilihan store. */
+export type ModuleSource = "card-sale" | "card-topup" | "booking-dp" | "booking-dp-used";
+export const MODULE_SOURCES: {
+  source: ModuleSource;
+  label: string;
+  hint: string;
+  direction: CashDirection;
+  account: CashAccount;
+  defaultId: string;
+  defaultName: string;
+  defaultGroup: string;
+}[] = [
+  { source: "card-sale", label: "Penjualan Kartu Baru", hint: "Harga kartu saat kartu baru dijual.", direction: "in", account: "sales", defaultId: "cc-jual-kartu", defaultName: "Penjualan Playing Card", defaultGroup: "Playing Card" },
+  { source: "card-topup", label: "Top Up Saldo Kartu", hint: "Saldo titipan pelanggan di kartu.", direction: "in", account: "payin", defaultId: "cc-topup-card", defaultName: "Top Up Playing Card", defaultGroup: "Playing Card" },
+  { source: "booking-dp", label: "DP Reservasi", hint: "Uang muka saat reservasi dibuat.", direction: "in", account: "payin", defaultId: "cc-dp-reservasi", defaultName: "DP Reservasi", defaultGroup: "DP Reservasi" },
+  { source: "booking-dp-used", label: "DP Reservasi Terpakai", hint: "DP yang memotong tagihan saat check-in.", direction: "out", account: "payout", defaultId: "cc-dp-reservasi-pakai", defaultName: "DP Reservasi dipakai", defaultGroup: "DP Reservasi" },
+];
+
+/** Sumber modul sebuah catatan kas (termasuk data lama berdasarkan id bawaan). */
+export function entrySource(e: { source?: ModuleSource; categoryId: string }): ModuleSource | undefined {
+  if (e.source) return e.source;
+  return MODULE_SOURCES.find((m) => m.defaultId === e.categoryId)?.source;
+}
+
+/** Pos akun sebuah item kas; data lama diturunkan dari arah + tanda payout. */
+export function categoryAccount(c: {
+  account?: CashAccount;
+  direction: CashDirection;
+  payout: boolean;
+  id?: string;
+  categoryId?: string;
+  source?: ModuleSource;
+}): CashAccount {
+  if (c.account && ACCOUNTS_BY_DIRECTION[c.direction].includes(c.account)) return c.account;
+  const src = c.source ?? MODULE_SOURCES.find((m) => m.defaultId === (c.categoryId ?? c.id))?.source;
+  if (src === "card-sale") return "sales";
+  if (c.direction === "in") return c.payout ? "payin" : "other";
+  return c.payout ? "payout" : "expense";
+}
+export const entryAccount = categoryAccount;
+
+/** Item kas yang dipakai sebuah modul: pemetaan store → item bawaan → cadangan. */
+export function resolveModuleCategory(categories: CashCategory[], source: ModuleSource) {
+  const meta = MODULE_SOURCES.find((m) => m.source === source)!;
+  const mapped = categories.find((c) => c.mapFor === source && c.direction === meta.direction);
+  const found = mapped ?? categories.find((c) => c.id === meta.defaultId);
+  const cat = found ?? {
+    id: meta.defaultId,
+    name: meta.defaultName,
+    group: meta.defaultGroup,
+    direction: meta.direction,
+    payout: isPayoutAccount(meta.account),
+    account: meta.account,
+    active: true,
+  };
+  const account = found ? categoryAccount(found) : meta.account;
+  return { ...cat, account, payout: isPayoutAccount(account) };
+}
+
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
 export const CARD_FUNDING_METHODS = [
   "Cash",
@@ -798,6 +877,10 @@ export type CashCategory = {
   name: string;
   direction: CashDirection;
   payout: boolean;
+  /** Pos akun baku; kosong untuk data lama (diturunkan dari `payout`). */
+  account?: CashAccount;
+  /** Modul otomatis yang memakai item ini (Account Mapping). */
+  mapFor?: ModuleSource;
   group: string;
   active: boolean;
   sort?: number;
@@ -829,6 +912,10 @@ export type CashEntry = {
   cardId?: string;
   /** Riwayat kartu yang berpasangan, supaya hapus/edit ikut berdampak. */
   cardEntryId?: string;
+  /** Pos akun saat dicatat. */
+  account?: CashAccount;
+  /** Modul otomatis yang membuat catatan ini. */
+  source?: ModuleSource;
 };
 
 /**
@@ -1164,13 +1251,7 @@ function cardTopupCashEntry(
   link?: { cardId?: string; cardEntryId?: string },
 ): CashEntry | null {
   if (amount <= 0) return null;
-  const category =
-    categories.find((item) => item.id === CARD_TOPUP_CATEGORY_ID) ?? {
-      id: CARD_TOPUP_CATEGORY_ID,
-      name: "Top Up Playing Card",
-      group: "Playing Card",
-      payout: true,
-    };
+  const category = resolveModuleCategory(categories, "card-topup");
   return {
     id: `cash-topup-${stamp}`,
     categoryId: category.id,
@@ -1178,6 +1259,8 @@ function cardTopupCashEntry(
     group: category.group,
     direction: "in",
     payout: category.payout,
+    account: category.account,
+    source: "card-topup",
     amount,
     payment,
     note: `Top up kartu ${cardNumber}`,
@@ -1199,13 +1282,7 @@ function cardSaleCashEntry(
   link?: { cardId?: string; cardEntryId?: string },
 ): CashEntry | null {
   if (amount <= 0) return null;
-  const category =
-    categories.find((item) => item.id === CARD_SALE_CATEGORY_ID) ?? {
-      id: CARD_SALE_CATEGORY_ID,
-      name: "Penjualan Playing Card",
-      group: "Playing Card",
-      payout: false,
-    };
+  const category = resolveModuleCategory(categories, "card-sale");
   return {
     id: `cash-cardsale-${stamp}`,
     categoryId: category.id,
@@ -1213,6 +1290,8 @@ function cardSaleCashEntry(
     group: category.group,
     direction: "in",
     payout: category.payout,
+    account: category.account,
+    source: "card-sale",
     amount,
     payment,
     note: `Penjualan kartu ${cardNumber}`,
@@ -1278,32 +1357,26 @@ export function shiftSummary(
   const sum = (pick: (e: CashEntry) => boolean) =>
     cash.filter(pick).reduce((s, e) => s + e.amount, 0);
 
-  const cardSales = sum((e) => e.direction === "in" && e.categoryId === CARD_SALE_CATEGORY_ID);
-  const bookingDpUsed = sum(
-    (e) => e.direction === "out" && e.categoryId === BOOKING_DP_USED_CATEGORY_ID,
-  );
-  const otherRevenue = sum(
-    (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID,
-  );
-  const cardTopup = sum(
-    (e) => e.direction === "in" && e.categoryId === CARD_TOPUP_CATEGORY_ID,
-  );
-  const bookingDp = sum(
-    (e) => e.direction === "in" && e.categoryId === BOOKING_DP_CATEGORY_ID,
-  );
+  const acc = (e: CashEntry) => entryAccount(e);
+  const src = (e: CashEntry) => entrySource(e);
+  const cardSales = sum((e) => e.direction === "in" && acc(e) === "sales");
+  const bookingDpUsed = sum((e) => e.direction === "out" && src(e) === "booking-dp-used");
+  const otherRevenue = sum((e) => e.direction === "in" && acc(e) === "other");
+  const cardTopup = sum((e) => e.direction === "in" && src(e) === "card-topup");
+  const bookingDp = sum((e) => e.direction === "in" && src(e) === "booking-dp");
   const additionalCashIn = sum(
     (e) =>
       e.direction === "in" &&
-      e.payout &&
-      e.categoryId !== CARD_TOPUP_CATEGORY_ID &&
-      e.categoryId !== BOOKING_DP_CATEGORY_ID,
+      acc(e) === "payin" &&
+      src(e) !== "card-topup" &&
+      src(e) !== "booking-dp",
   );
   const ownerDeposit = sum(
-    (e) => e.direction === "out" && e.payout && e.categoryId !== BOOKING_DP_USED_CATEGORY_ID,
+    (e) => e.direction === "out" && acc(e) === "payout" && src(e) !== "booking-dp-used",
   );
   const paidIn = additionalCashIn + cardTopup + bookingDp;
   const paidOut = ownerDeposit + bookingDpUsed;
-  const expenses = sum((e) => e.direction === "out" && !e.payout);
+  const expenses = sum((e) => e.direction === "out" && acc(e) === "expense");
   // DP yang dipakai sudah berada di rincian pembayaran nota. Kurangi dari
   // penerimaan penjualan shift ini karena uang fisiknya masuk saat reservasi.
   const cashSales = Math.max(0, sales + cardSales - bookingDpUsed);
@@ -1939,6 +2012,7 @@ type Ctx = State & {
     name: string;
     direction: CashDirection;
     payout?: boolean;
+    account?: CashAccount;
     group?: string;
   }) => CashCategory | null;
   updateCashCategory: (id: string, patch: Partial<Omit<CashCategory, "id">>) => void;
@@ -1948,6 +2022,8 @@ type Ctx = State & {
   removeCashGroup: (id: string) => boolean;
   addCashEntry: (input: {
     categoryId: string;
+    /** Bila diisi, item diambil dari Account Mapping modul ini. */
+    source?: ModuleSource;
     amount: number;
     payment?: string;
     note?: string;
@@ -5180,7 +5256,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           id: `cash-cat-${Date.now()}`,
           name,
           direction: input.direction,
-          payout: Boolean(input.payout),
+          payout: input.account ? isPayoutAccount(input.account) : Boolean(input.payout),
+          ...(input.account ? { account: input.account } : {}),
           group: input.group?.trim() ? input.group.trim() : "Lainnya",
           active: true,
         };
@@ -5190,9 +5267,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       updateCashCategory: (id, patch) =>
         update((prev) => ({
           ...prev,
-          cashCategories: prev.cashCategories.map((item) =>
-            item.id === id ? { ...item, ...patch } : item,
-          ),
+          cashCategories: prev.cashCategories.map((item) => {
+            if (item.id !== id) {
+              // Satu modul hanya boleh dipetakan ke satu item.
+              return patch.mapFor && item.mapFor === patch.mapFor
+                ? { ...item, mapFor: undefined }
+                : item;
+            }
+            const next = { ...item, ...patch };
+            if (patch.account) next.payout = isPayoutAccount(patch.account);
+            return next;
+          }),
         })),
       removeCashCategory: (id) =>
         update((prev) =>
@@ -5253,7 +5338,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       },
       addCashEntry: (input) => {
         if (!shiftOpen) return null;
-        const category = state.cashCategories.find((item) => item.id === input.categoryId);
+        const category = input.source
+          ? resolveModuleCategory(state.cashCategories, input.source)
+          : state.cashCategories.find((item) => item.id === input.categoryId);
         const amount = Math.max(0, Math.round(input.amount));
         if (!category || amount <= 0) return null;
         const row: CashEntry = {
@@ -5262,7 +5349,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           categoryName: category.name,
           group: category.group,
           direction: category.direction,
-          payout: category.payout,
+          payout: categoryAccount(category) === "payin" || categoryAccount(category) === "payout",
+          account: categoryAccount(category),
+          ...(input.source ? { source: input.source } : {}),
           amount,
           payment: input.payment?.trim() ? input.payment.trim() : "Cash",
           note: input.note?.trim() ?? "",
@@ -5293,7 +5382,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                       categoryName: category.name,
                       group: category.group,
                       direction: category.direction,
-                      payout: category.payout,
+                      payout: isPayoutAccount(categoryAccount(category)),
+                      account: categoryAccount(category),
                     }
                   : {}),
               };
