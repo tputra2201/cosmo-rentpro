@@ -283,7 +283,7 @@ function CardListPanel() {
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <SetupHeading
         title="Data dan Saldo"
-        description="Klik tombol detail untuk melihat data lengkap kartu dan riwayat transaksinya."
+        description="Seluruh data kartu beserta saldonya. Klik judul Kode Kartu, Nama Pemegang, atau Saldo untuk mengurutkan, dan tombol detail untuk data lengkap serta riwayat transaksinya."
       />
       <CardScanInput value={search} onChange={setSearch} label="Cari / scan kartu" id="card-search" />
 
