@@ -313,7 +313,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
 
 
   const exportCsv = () => {
-    const header = ["Tanggal", "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "Additional Rental", "F&B", "Total"];
+    const header = ["Tanggal", businessProfile?.unitLabel || "TV", "Pelanggan", "Paket", "Pembayaran", "Durasi", "Rental", "Additional Rental", "F&B", "Total"];
     const rows = history.map((h) => [new Date(h.endAt).toLocaleString("id-ID"), h.stationName, h.customerName ?? "Umum", h.packageName ?? h.mode, h.payment ?? "Cash", h.minutes, h.rentalTotal, h.addonTotal ?? 0, h.fnbTotal, h.total]);
     const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -523,7 +523,7 @@ function ReceiptReport({ range }: { range: ReportRange }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Jam</TableHead>
-                  <TableHead>TV</TableHead>
+                  <TableHead>{businessProfile?.unitLabel || "TV"}</TableHead>
                   <TableHead>Pelanggan</TableHead>
                   <TableHead>Kasir</TableHead>
                   <TableHead>Mode</TableHead>
