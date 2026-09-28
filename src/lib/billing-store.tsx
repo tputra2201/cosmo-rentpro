@@ -564,10 +564,13 @@ export function resolveModuleCategory(categories: CashCategory[], source: Module
 export type BusinessProfile = {
   modules: { cafe: boolean; booking: boolean; playingCard: boolean };
   salesLabels: { rental: string; fnb: string; addon: string };
+  /** Sebutan unit sewa di layar, misal "TV", "Meja", "Lapangan". */
+  unitLabel: string;
 };
 export const DEFAULT_BUSINESS_PROFILE: BusinessProfile = {
   modules: { cafe: true, booking: true, playingCard: true },
   salesLabels: { rental: "RENTAL", fnb: "F&B", addon: "ADDITIONAL RENTAL" },
+  unitLabel: "TV",
 };
 
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
@@ -1703,6 +1706,7 @@ function migrateState(raw: unknown): State {
     businessProfile: {
       modules: { ...DEFAULT_BUSINESS_PROFILE.modules, ...(parsed.businessProfile?.modules ?? {}) },
       salesLabels: { ...DEFAULT_BUSINESS_PROFILE.salesLabels, ...(parsed.businessProfile?.salesLabels ?? {}) },
+      unitLabel: parsed.businessProfile?.unitLabel?.trim() || DEFAULT_BUSINESS_PROFILE.unitLabel,
     },
     cashCategories: (() => {
       const list = (parsed.cashCategories?.length
@@ -2004,6 +2008,7 @@ type Ctx = State & {
   setBusinessProfile: (patch: {
     modules?: Partial<BusinessProfile["modules"]>;
     salesLabels?: Partial<BusinessProfile["salesLabels"]>;
+    unitLabel?: string;
   }) => void;
   setCardUsbReaderMode: (value: boolean) => void;
   /** Buat cadangan data Playing Card sekarang. */
@@ -5120,6 +5125,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           businessProfile: {
             modules: { ...prev.businessProfile.modules, ...(patch.modules ?? {}) },
             salesLabels: { ...prev.businessProfile.salesLabels, ...(patch.salesLabels ?? {}) },
+            unitLabel: patch.unitLabel ?? prev.businessProfile.unitLabel,
           },
         })),
       setCardUsbReaderMode: (value) => update((prev) => ({ ...prev, cardUsbReaderMode: Boolean(value) })),
@@ -5732,4 +5738,10 @@ export function playAlarm() {
   } catch {
     /* audio not available */
   }
+}
+
+
+/** Sebutan unit sewa store ini (bawaan "TV"). */
+export function useUnitLabel() {
+  return useBilling().businessProfile.unitLabel.trim() || "TV";
 }

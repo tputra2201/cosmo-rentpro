@@ -1,3 +1,4 @@
+import { useUnitLabel } from "@/lib/billing-store";
 import { useEffect, useState } from "react";
 import { Ban, Coffee, Link2, Plus, Printer, Trash2, Unlink, Receipt } from "lucide-react";
 import { OrderDraftDialog } from "@/components/OrderDraftDialog";
@@ -62,6 +63,7 @@ export function tableTotal(table: CafeTable) {
 }
 
 export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
+  const unit = useUnitLabel();
   const { confirm: confirmAction, dialog: confirmDialog } = useConfirm();
   const allow = useCan();
   const {
@@ -1319,8 +1321,8 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
           <DialogHeader>
             <DialogTitle>Gabung Tagihan ke {table?.name ?? "meja ini"}</DialogTitle>
             <DialogDescription>
-              Pesanan meja lain dan pesanan sesi TV bisa dibayar dari panel ini. Biaya rental TV
-              tetap dibayar di panel TV-nya. Bisa dilepas selama belum dibayar.
+              Pesanan meja lain dan pesanan sesi {unit} bisa dibayar dari panel ini. Biaya rental {unit}
+              tetap dibayar di panel {unit}-nya. Bisa dilepas selama belum dibayar.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1370,9 +1372,9 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
               )}
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-semibold">TV yang ada pesanannya</p>
+              <p className="text-sm font-semibold">{unit} yang ada pesanannya</p>
               {mergeStationCandidates.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Belum ada pesanan di sesi TV.</p>
+                <p className="text-sm text-muted-foreground">Belum ada pesanan di sesi {unit}.</p>
               ) : (
                 mergeStationCandidates.map((s) => {
                   const value = (s.session?.orders ?? []).reduce(
@@ -1397,7 +1399,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             title: `Titipkan pesanan ${s.name} ke ${table.name}?`,
                             description: `Pesanan senilai ${formatRupiah(
                               value,
-                            )} dibayar dari ${table.name}. Biaya rental ${s.name} tetap dibayar di panel TV. Total baru ${formatRupiah(
+                            )} dibayar dari ${table.name}. Biaya rental ${s.name} tetap dibayar di panel ${unit}. Total baru ${formatRupiah(
                               total + value,
                             )}.`,
                             actionLabel: "Titipkan",
@@ -1405,7 +1407,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                             onConfirm: () => {
                               if (linkStationToTable(table.id, s.id))
                                 toast.success(`Pesanan ${s.name} dititipkan ke ${table.name}`);
-                              else toast.error("Pesanan TV ini tidak bisa dititipkan");
+                              else toast.error(`Pesanan ${unit} ini tidak bisa dititipkan`);
                             },
                           });
                         }}

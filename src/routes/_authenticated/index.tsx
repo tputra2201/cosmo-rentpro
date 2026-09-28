@@ -1,3 +1,4 @@
+import { useUnitLabel } from "@/lib/billing-store";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Activity, Coins, MonitorPlay } from "lucide-react";
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
+  const unit = useUnitLabel();
   const {
     stations,
     now,
@@ -91,7 +93,7 @@ function Dashboard() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           icon={<MonitorPlay className="size-5" />}
-          label="TV Tersedia"
+          label={`${unit} Tersedia`}
           value={`${available.length} / ${stations.length}`}
         />
         <StatCard

@@ -806,6 +806,16 @@ function ModulesSection() {
           Matikan modul yang tidak dipakai store ini. Menunya disembunyikan, data lama tetap aman.
         </p>
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="unit-label">Sebutan unit sewa</Label>
+        <Input
+          id="unit-label"
+          value={businessProfile.unitLabel}
+          placeholder="Misal: TV, Meja, Lapangan, Ruangan"
+          onChange={(e) => setBusinessProfile({ unitLabel: e.target.value })}
+        />
+        <p className="text-xs text-muted-foreground">Dipakai di Dashboard, layar kasir, dan panel sewa.</p>
+      </div>
       <div className="divide-y divide-border rounded-md border border-border">
         {rows.map(([key, label, hint]) => (
           <label key={key} className="flex items-center justify-between gap-3 p-3">
