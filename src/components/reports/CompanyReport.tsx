@@ -211,7 +211,7 @@ export function CompanyReport({ range }: { range: ReportRange }) {
       </Section>
 
       <Section title="PAY-IN">
-        <p className="mb-2 text-xs text-muted-foreground">Uang masuk yang bukan pendapatan.</p>
+        <p className="mb-2 text-xs text-muted-foreground">PAY-IN yang bukan REVENUE.</p>
         <Rows rows={sorted(payInRows)} countLabel="Transaksi" totalLabel="TOTAL PAY-IN" />
       </Section>
 

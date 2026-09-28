@@ -98,7 +98,7 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
         title="Expenses (Biaya) per kategori & item"
         groups={expenseGroups}
         total={totalExpense}
-        emptyText="Belum ada pengeluaran biaya pada periode ini."
+        emptyText="Belum ada EXPENSES (BIAYA) pada periode ini."
       />
 
       <GroupTables
@@ -109,10 +109,10 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
       />
 
       <section className="surface-panel overflow-x-auto p-4 sm:p-6">
-        <h3 className="mb-4 text-accent text-base font-bold">Detail transaksi pengeluaran</h3>
+        <h3 className="mb-4 text-accent text-base font-bold">DETAIL TRANSAKSI EXPENSES (BIAYA)</h3>
         {expenses.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Belum ada pengeluaran biaya pada periode ini.
+            Belum ada EXPENSES (BIAYA) pada periode ini.
           </p>
         ) : (
           <Table>
