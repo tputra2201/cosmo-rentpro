@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CashHistory, CategoryEditor, GroupEditor } from "@/components/finance/FinanceParts";
+import { AccountMapping, CashHistory, CategoryEditor, GroupEditor } from "@/components/finance/FinanceParts";
 
 export const Route = createFileRoute("/_authenticated/kas")({
   head: () => ({
@@ -29,6 +29,7 @@ function KasPage() {
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="masuk">Uang Masuk</TabsTrigger>
           <TabsTrigger value="keluar">Uang Keluar</TabsTrigger>
+          <TabsTrigger value="mapping">Account Mapping</TabsTrigger>
           <TabsTrigger value="riwayat">Riwayat</TabsTrigger>
         </TabsList>
         <TabsContent value="masuk" className="mt-4 space-y-6">
@@ -38,6 +39,9 @@ function KasPage() {
         <TabsContent value="keluar" className="mt-4 space-y-6">
           <GroupEditor direction="out" />
           <CategoryEditor direction="out" />
+        </TabsContent>
+        <TabsContent value="mapping" className="mt-4">
+          <AccountMapping />
         </TabsContent>
         <TabsContent value="riwayat" className="mt-4">
           <CashHistory />
