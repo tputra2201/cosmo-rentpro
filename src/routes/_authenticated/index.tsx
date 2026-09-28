@@ -136,7 +136,7 @@ function Dashboard() {
             membayar. Kartu bisa digeser untuk mengatur posisinya.
           </p>
         </div>
-        <CafeTables />
+        {businessProfile.modules.cafe && <CafeTables />}
       </section>
 
       <StationDialog

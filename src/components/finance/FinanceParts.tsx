@@ -722,7 +722,7 @@ function AccountSelect({
 
 /** Account Mapping: modul otomatis diarahkan ke item pilihan store. */
 export function AccountMapping() {
-  const { cashCategories, updateCashCategory } = useBilling();
+  const { cashCategories, updateCashCategory, businessProfile, setBusinessProfile } = useBilling();
   return (
     <section className="surface-panel space-y-4 p-4 sm:p-6">
       <SetupHeading title="Account Mapping (Pemetaan Akun Modul)" as="h2" />
@@ -765,9 +765,28 @@ export function AccountMapping() {
           );
         })}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Rental, F&B, dan Additional Rental selalu masuk pos SALES.
-      </p>
+      <div className="space-y-3 border-t border-border pt-4">
+        <p className="font-semibold text-foreground">Nama akun SALES dari transaksi utama</p>
+        <p className="text-xs text-muted-foreground">
+          Selalu masuk pos SALES. Nama ini dipakai di Company Report, misalnya "SEWA MEJA BILIAR".
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {([
+            ["rental", "Sewa unit (timer)"],
+            ["fnb", "Makanan & minuman"],
+            ["addon", "Sewa tambahan"],
+          ] as const).map(([key, label]) => (
+            <div key={key} className="space-y-1.5">
+              <label className="text-sm font-medium" htmlFor={`sales-label-${key}`}>{label}</label>
+              <Input
+                id={`sales-label-${key}`}
+                value={businessProfile.salesLabels[key]}
+                onChange={(e) => setBusinessProfile({ salesLabels: { [key]: e.target.value.toUpperCase() } })}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
