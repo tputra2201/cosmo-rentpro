@@ -312,6 +312,8 @@ function CloseOutForm({
     input: { cashActual: number; balanceNote?: string; nextStartCash?: number },
   ) => unknown;
 }) {
+  const { businessProfile } = useBilling();
+  const cardOn = businessProfile?.modules?.playingCard !== false;
   const [actual, setActual] = useState("");
   const [note, setNote] = useState("");
   // Next start cash mengikuti cash actual yang diinput kasir; 0 bila belum diisi.
