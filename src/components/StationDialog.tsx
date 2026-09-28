@@ -134,6 +134,7 @@ export function StationDialog({
     moveSession,
     voidSession,
     cafeTables,
+    businessProfile,
     mergeStations,
     unmergeStations,
     linkCafeTable,
