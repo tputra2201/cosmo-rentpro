@@ -152,6 +152,7 @@ function LaporanPage() {
     { value: "company", label: "Company Report", key: "laporan.company" },
     { value: "kartu", label: "Laporan Playing Card", key: "laporan.card" },
     { value: "shift", label: "Cash Close Out", key: "laporan.shift" },
+    { value: "expense", label: "Expense Reports", key: "laporan.expense" },
     { value: "member", label: "Laporan Membership", key: "laporan.membership" },
     { value: "qris", label: "Pembayaran QRIS", key: "laporan.qris" },
     { value: "transfer", label: "Transfer Bank", key: "laporan.transfer" },
