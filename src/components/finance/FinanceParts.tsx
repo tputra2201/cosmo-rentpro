@@ -526,7 +526,7 @@ export function CategoryEditor({ direction }: { direction: CashDirection }) {
   const [name, setName] = useState("");
   const [group, setGroup] = useState("");
   const accounts = ACCOUNTS_BY_DIRECTION[direction];
-  const [account, setAccount] = useState<CashAccount>(accounts[direction === "in" ? 1 : 0]);
+  const [account, setAccount] = useState<CashAccount>(accounts[direction === "in" ? 1 : 0] ?? "other");
 
   const add = () => {
     if (!group) {

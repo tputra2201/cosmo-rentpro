@@ -5271,7 +5271,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             if (item.id !== id) {
               // Satu modul hanya boleh dipetakan ke satu item.
               return patch.mapFor && item.mapFor === patch.mapFor
-                ? { ...item, mapFor: undefined }
+                ? (({ mapFor: _drop, ...rest }) => rest)(item)
                 : item;
             }
             const next = { ...item, ...patch };
