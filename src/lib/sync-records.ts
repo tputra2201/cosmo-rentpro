@@ -56,6 +56,7 @@ export const SETTINGS_KEYS = [
   "rolePermissions",
   "operatingHours",
   "sessionSecurity",
+  "businessProfile",
 ] as const;
 
 

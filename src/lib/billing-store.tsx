@@ -560,6 +560,16 @@ export function resolveModuleCategory(categories: CashCategory[], source: Module
   return { ...cat, account, payout: isPayoutAccount(account) };
 }
 
+/** Modul aktif & label akun SALES bawaan per store. */
+export type BusinessProfile = {
+  modules: { cafe: boolean; booking: boolean; playingCard: boolean };
+  salesLabels: { rental: string; fnb: string; addon: string };
+};
+export const DEFAULT_BUSINESS_PROFILE: BusinessProfile = {
+  modules: { cafe: true, booking: true, playingCard: true },
+  salesLabels: { rental: "RENTAL", fnb: "F&B", addon: "ADDITIONAL RENTAL" },
+};
+
 /** Metode pembayaran yang boleh dipakai untuk beli kartu / top up saldo. */
 export const CARD_FUNDING_METHODS = [
   "Cash",
@@ -1085,6 +1095,7 @@ type State = {
   cardMemberDiscountPercent: number;
   /** Mode pembaca kartu USB (keyboard): fokus otomatis + tangkap ketikan cepat. */
   cardUsbReaderMode: boolean;
+  businessProfile: BusinessProfile;
   cashCategories: CashCategory[];
   cashGroups: CashGroup[];
   cashEntries: CashEntry[];
@@ -1202,6 +1213,7 @@ const defaultState: State = {
   cardDiscountPercent: 10,
   cardMemberDiscountPercent: 15,
   cardUsbReaderMode: true,
+  businessProfile: DEFAULT_BUSINESS_PROFILE,
   cashCategories: [
     { id: "cc-lain", name: "Pendapatan Lain", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
     { id: "cc-sewa-alat", name: "Sewa Stik / Alat", direction: "in", payout: false, group: "Pendapatan Lain", active: true },
@@ -1688,6 +1700,10 @@ function migrateState(raw: unknown): State {
     cardMemberDiscountPercent:
       parsed.cardMemberDiscountPercent ?? defaultState.cardMemberDiscountPercent,
     cardUsbReaderMode: parsed.cardUsbReaderMode ?? defaultState.cardUsbReaderMode,
+    businessProfile: {
+      modules: { ...DEFAULT_BUSINESS_PROFILE.modules, ...(parsed.businessProfile?.modules ?? {}) },
+      salesLabels: { ...DEFAULT_BUSINESS_PROFILE.salesLabels, ...(parsed.businessProfile?.salesLabels ?? {}) },
+    },
     cashCategories: (() => {
       const list = (parsed.cashCategories?.length
         ? parsed.cashCategories
@@ -1985,6 +2001,10 @@ type Ctx = State & {
   setCardPrice: (value: number) => void;
   setCardDiscountPercent: (value: number) => void;
   setCardMemberDiscountPercent: (value: number) => void;
+  setBusinessProfile: (patch: {
+    modules?: Partial<BusinessProfile["modules"]>;
+    salesLabels?: Partial<BusinessProfile["salesLabels"]>;
+  }) => void;
   setCardUsbReaderMode: (value: boolean) => void;
   /** Buat cadangan data Playing Card sekarang. */
   createCardBackup: (source?: "manual" | "closing") => CardBackup | null;
@@ -2260,6 +2280,11 @@ const LOG_DESCRIBERS: Record<string, LogDescriber> = {
   setCardDiscountPercent: (a) => ({
     action: "Ubah potongan playing card",
     detail: `${txt(a[0])}%`,
+    coalesce: true,
+  }),
+  setBusinessProfile: () => ({
+    action: "Ubah modul & label akun store",
+    detail: "",
     coalesce: true,
   }),
   setCardMemberDiscountPercent: (a) => ({
@@ -5089,6 +5114,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         update((prev) => ({ ...prev, cardDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
       setCardMemberDiscountPercent: (value) =>
         update((prev) => ({ ...prev, cardMemberDiscountPercent: Math.min(100, Math.max(0, Math.round(value))) })),
+      setBusinessProfile: (patch) =>
+        update((prev) => ({
+          ...prev,
+          businessProfile: {
+            modules: { ...prev.businessProfile.modules, ...(patch.modules ?? {}) },
+            salesLabels: { ...prev.businessProfile.salesLabels, ...(patch.salesLabels ?? {}) },
+          },
+        })),
       setCardUsbReaderMode: (value) => update((prev) => ({ ...prev, cardUsbReaderMode: Boolean(value) })),
       createCardBackup: (source = "manual") => {
         const cards = state.playingCards ?? [];
