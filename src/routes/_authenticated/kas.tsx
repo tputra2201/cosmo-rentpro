@@ -353,7 +353,11 @@ function CashGroup({
 function EntryForm({ direction }: { direction: CashDirection }) {
   const { cashCategories, paymentMethods, addCashEntry } = useBilling();
   const { requireShift } = useShiftGate();
-  const options = cashCategories.filter((c) => c.direction === direction && c.active);
+  // Item otomatis sistem (penjualan & top up kartu, DP reservasi) tidak boleh dicatat manual.
+  const SYSTEM_IDS = new Set(["cc-jual-kartu", "cc-topup-card", "cc-dp-reservasi", "cc-dp-reservasi-pakai"]);
+  const options = cashCategories.filter(
+    (c) => c.direction === direction && c.active && !SYSTEM_IDS.has(c.id),
+  );
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
