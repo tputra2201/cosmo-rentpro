@@ -41,6 +41,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { CompanyReport } from "@/components/reports/CompanyReport";
 import { CardReport } from "@/components/reports/CardReport";
 import { ShiftReport } from "@/components/reports/ShiftReport";
+import { ExpenseReport } from "@/components/reports/ExpenseReport";
 import { MembershipReport } from "@/components/reports/MembershipReport";
 import { MethodReport } from "@/components/reports/MethodReport";
 import { CashierReport } from "@/components/reports/CashierReport";
