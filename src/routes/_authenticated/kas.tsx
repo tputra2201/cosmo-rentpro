@@ -31,6 +31,7 @@ import {
   type CashEntry,
   type CashGroup,
 } from "@/lib/billing-store";
+import { CARD_SALE_CATEGORY_ID } from "@/lib/billing-store";
 import { SetupHeading, SetupTable, DetailField } from "@/components/SetupTable";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useCan } from "@/lib/use-can";
@@ -84,7 +85,7 @@ function KasPage() {
   const sum = (rows: CashEntry[], pick: (e: CashEntry) => boolean) =>
     rows.filter(pick).reduce((s, e) => s + e.amount, 0);
 
-  const incomeToday = sum(today, (e) => e.direction === "in" && !e.payout);
+  const incomeToday = sum(today, (e) => e.direction === "in" && !e.payout && e.categoryId !== CARD_SALE_CATEGORY_ID);
   const expenseToday = sum(today, (e) => e.direction === "out" && !e.payout);
   const payoutIn = sum(today, (e) => e.direction === "in" && e.payout);
   const payoutOut = sum(today, (e) => e.direction === "out" && e.payout);
@@ -279,7 +280,9 @@ function CashGroup({
                         ? "PAY-IN"
                         : "PAY-OUT"
                       : e.direction === "in"
-                        ? "OTHER REVENUE"
+                        ? e.categoryId === CARD_SALE_CATEGORY_ID
+                          ? "SALES · PLAYING CARD"
+                          : "OTHER REVENUE"
                         : "EXPENSES (BIAYA)"}
                   </Badge>
                 </TableCell>
