@@ -114,7 +114,7 @@ export function ShiftReport({ range }: { range: ReportRange }) {
                     <TableCell className="whitespace-nowrap">{stamp(shift.closedAt)}</TableCell>
                     <TableCell className="text-right">{formatRupiah(shift.startCash)}</TableCell>
                     <TableCell className="text-right">{formatRupiah(summary.paidIn)}</TableCell>
-                    <TableCell className="text-right">{formatRupiah(summary.paidOut)}</TableCell>
+                    <TableCell className="text-right">{formatRupiah(summary.ownerDeposit)}</TableCell>
                     <TableCell className="text-right">{formatRupiah(summary.sales)}</TableCell>
                     <TableCell className="text-right">{formatRupiah(summary.expenses)}</TableCell>
                     <TableCell className="text-right font-semibold">
