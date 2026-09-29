@@ -165,16 +165,11 @@ export function CompanyReport({ range }: { range: ReportRange }) {
     }
   }
 
-  // DP yang dipakai adalah cara melunasi nota, bukan penerimaan kas baru.
-  // Pindahkan nilainya dari metode awal ke baris khusus agar pembayaran tetap
-  // sama dengan pendapatan tanpa membuat uang laci terhitung dua kali.
+  // DP yang dipakai sudah ikut tercatat di metode pembayaran nota (QRIS/Cash/…),
+  // jadi tidak ada baris "DP RESERVASI TERPAKAI" terpisah.
   const paymentRows = new Map<string, Row>();
   for (const [, r] of salePayments) bump(paymentRows, r.label, r.amount, r.qty ?? 0);
   for (const e of cash) {
-    if (entrySource(e) === "booking-dp-used" && e.direction === "out") {
-      bump(paymentRows, e.payment || "Cash", -e.amount, -1);
-      bump(paymentRows, "DP RESERVASI TERPAKAI", e.amount, 1);
-    }
     if (e.direction === "in" && !e.payout) {
       bump(paymentRows, e.payment || "Cash", e.amount, 1);
     }
