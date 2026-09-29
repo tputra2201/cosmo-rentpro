@@ -1,0 +1,1 @@
+revoke execute on function public.guard_closed_records() from public, anon, authenticated;
