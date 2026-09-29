@@ -182,7 +182,8 @@ export type SyncStatus = {
   flushNow: () => void;
   /** Paksa cocokkan ulang seluruh data store dengan pusat sekarang. */
   resyncNow: () => void;
-
+  /** Data store sudah dicocokkan dengan pusat (atau perangkat sedang offline). */
+  ready: boolean;
 };
 
 export function useStoreSync(options: {
@@ -835,6 +836,7 @@ export function useStoreSync(options: {
     storeId,
     lastSyncedAt,
     error,
+    ready: Boolean(storeId && readyStoreId === storeId),
     flushNow: () => void sync(),
     resyncNow: () => {
       lastAuditRef.current = 0;
