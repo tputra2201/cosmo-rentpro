@@ -3258,9 +3258,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       const day = (prev.businessDays ?? []).find((d) => d.id === activeBusinessDay.id);
       if (!day || day.closedAt) return prev;
       const stillOpen = prev.shifts.some((s) => !s.closedAt);
+      const nextId = `bday-${limit}`;
+      // Pengaman ganda: bila hari usaha tujuan sudah pernah dibuat, jangan
+      // dibuat ulang. Tanpa ini penutupan otomatis bisa berputar terus dan
+      // membanjiri Log Book dengan catatan yang sama.
+      if (stillOpen && (prev.businessDays ?? []).some((d) => d.id === nextId)) return prev;
       // Bila kasir masih bertugas melewati jam tutup, hari usaha baru langsung dibuka.
       const nextDay: BusinessDay | null = stillOpen
-        ? { id: `bday-${limit}`, openedAt: limit }
+        ? { id: nextId, openedAt: limit }
         : null;
       const closedList = (prev.businessDays ?? []).map((d) =>
         d.id === day.id
@@ -3276,6 +3281,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         ? withLog(next, "Buka hari usaha", new Date(limit).toLocaleString("id-ID"))
         : next;
     });
+
   }, [activeBusinessDay, shiftOpen, now, state.operatingHours, update, withLog]);
 
 
