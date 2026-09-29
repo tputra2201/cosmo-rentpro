@@ -447,9 +447,64 @@ export function useStoreSync(options: {
     // jejaknya masih ada, perangkat ini akan mengirim isi bawaan ke pusat —
     // inilah yang membuat Jenis Konsol & Tarif ter-reset. Paksa ambil ulang.
     if (hasSyncHistory && storageLoaded && hasCompleteBaseline) {
-      bootstrappedRef.current = true;
-      setReadyStoreId(storeId);
-      return;
+      // Tanpa internet: pakai data perangkat supaya kasir tetap bisa bekerja.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        bootstrappedRef.current = true;
+        setReadyStoreId(storeId);
+        return;
+      }
+      // Daring: susul dulu perubahan pusat sejak terakhir tersambung (hanya
+      // baris yang berubah — hemat kuota). Baris yang sudah diubah perangkat
+      // lain selama perangkat ini tidak aktif SELALU mengikuti pusat; antrean
+      // lama untuk baris itu dibuang agar tidak menimpa data kasir aktif.
+      // Transaksi baru yang dibuat saat offline (belum ada di pusat) tetap dikirim.
+      let cancelledFast = false;
+      let retryFast: ReturnType<typeof setTimeout> | null = null;
+      void (async () => {
+        const since = localStorage.getItem(SINCE_KEY) ?? EPOCH;
+        const { data, error: catchError } = await fetchAllStoreData(storeId, since);
+        if (cancelledFast) return;
+        if (catchError) {
+          if (!navigator.onLine) {
+            bootstrappedRef.current = true;
+            setReadyStoreId(storeId);
+            return;
+          }
+          retryFast = setTimeout(() => {
+            if (!cancelledFast) setBootAttempt((n) => n + 1);
+          }, 5000);
+          return;
+        }
+        const remote = (data ?? []) as {
+          kind: string;
+          entity_id: string;
+          payload: Record<string, unknown>;
+          deleted: boolean;
+          updated_at: string;
+        }[];
+        if (remote.length) {
+          const records: SyncRecord[] = remote.map((row) => ({
+            kind: row.kind,
+            entity_id: row.entity_id,
+            payload: row.payload ?? {},
+            deleted: row.deleted,
+          }));
+          for (const r of records) delete outboxRef.current[recordKey(r.kind, r.entity_id)];
+          writeJson(OUTBOX_KEY, outboxRef.current);
+          setPending(Object.keys(outboxRef.current).length);
+          applyRemote((prev) => applyRecords(prev, records));
+          noteShadow(records);
+          const newest = remote.at(-1)?.updated_at;
+          if (newest) localStorage.setItem(SINCE_KEY, newest);
+        }
+        bootstrappedRef.current = true;
+        setError(null);
+        setReadyStoreId(storeId);
+      })();
+      return () => {
+        cancelledFast = true;
+        if (retryFast) clearTimeout(retryFast);
+      };
     }
     if (hasSyncHistory && !storageLoaded) {
       localStorage.removeItem(SHADOW_KEY);
