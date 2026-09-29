@@ -73,6 +73,17 @@ export function packDevice(name: string, code: string): string {
 export function unpackDevice(value: string): { name: string; code: string } {
   const raw = (value ?? "").trim();
   const at = raw.lastIndexOf(CODE_MARK);
-  if (at === -1) return { name: raw, code: "" };
-  return { name: raw.slice(0, at).trim(), code: raw.slice(at + CODE_MARK.length).trim() };
+  if (at !== -1) {
+    return { name: raw.slice(0, at).trim(), code: raw.slice(at + CODE_MARK.length).trim() };
+  }
+  // Catatan lama masih berupa rangkaian teks dengan kode perangkat di ujungnya.
+  const old = raw.match(/^(.*?)(?:\s*·\s*)?([0-9A-F]{2}(?:-[0-9A-F]{2}){5})$/i);
+  if (old) {
+    const parts = (old[1] ?? "")
+      .split("·")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return { name: [...new Set(parts)].join(" · "), code: (old[2] ?? "").trim() };
+  }
+  return { name: raw, code: "" };
 }
