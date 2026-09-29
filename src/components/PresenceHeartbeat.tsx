@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { touchPresence } from "@/lib/presence.functions";
 import { deviceCode } from "@/lib/device-guard";
-import { useStoreInfo } from "@/lib/store-info";
+import { browserName, friendlyDeviceName, packDevice } from "@/lib/device-name";
 
 const MODEL_KEY = "billing.device-model";
 
@@ -13,51 +13,24 @@ async function deviceModel(): Promise<string> {
     const cached = localStorage.getItem(MODEL_KEY);
     if (cached) return cached;
     const uad = (navigator as unknown as {
-      userAgentData?: { getHighEntropyValues: (h: string[]) => Promise<{ model?: string; platform?: string; platformVersion?: string }> };
+      userAgentData?: {
+        getHighEntropyValues: (h: string[]) => Promise<{ model?: string; platform?: string }>;
+      };
     }).userAgentData;
     let model = "";
     if (uad) {
-      const v = await uad.getHighEntropyValues(["model", "platform", "platformVersion"]);
+      const v = await uad.getHighEntropyValues(["model", "platform"]);
       model = (v.model ?? "").trim();
     }
     if (!model) {
       const m = navigator.userAgent.match(/Android [\d.]+; ([^;)]+?)(?: Build|\))/);
       if (m && m[1] && m[1] !== "K") model = m[1].trim();
     }
-    if (!model && /iPad/.test(navigator.userAgent)) model = "iPad";
-    if (!model && /iPhone/.test(navigator.userAgent)) model = "iPhone";
     if (model) localStorage.setItem(MODEL_KEY, model);
     return model;
   } catch {
     return "";
   }
-}
-
-/** Nama perangkat singkat agar mudah dikenali di daftar kehadiran. */
-function deviceLabel(): string {
-  if (typeof navigator === "undefined") return "";
-  const ua = navigator.userAgent;
-  const os = /Android/i.test(ua)
-    ? "Android"
-    : /iPhone|iPad|iPod/i.test(ua)
-      ? "iOS"
-      : /Windows/i.test(ua)
-        ? "Windows"
-        : /Mac OS X/i.test(ua)
-          ? "Mac"
-          : /Linux/i.test(ua)
-            ? "Linux"
-            : "Perangkat";
-  const browser = /Edg\//.test(ua)
-    ? "Edge"
-    : /Chrome\//.test(ua)
-      ? "Chrome"
-      : /Firefox\//.test(ua)
-        ? "Firefox"
-        : /Safari\//.test(ua)
-          ? "Safari"
-          : "Browser";
-  return `${os} · ${browser}`;
 }
 
 /**
@@ -68,19 +41,13 @@ export function PresenceHeartbeat() {
   const { session } = useAuth();
   const touch = useServerFn(touchPresence);
   const userId = session?.user.id;
-  const { store } = useStoreInfo(true);
   const code = typeof window === "undefined" ? "" : deviceCode();
-  const given = (store?.allowed_devices ?? []).find((d) => d.code === code)?.label?.trim() ?? "";
 
   useEffect(() => {
     if (!userId) return;
     let stopped = false;
-    let device = deviceLabel();
-    void deviceModel().then((model) => {
-      const base = deviceLabel();
-      device = [given, model || base, given || model ? base : "", code].filter(Boolean).join(" · ");
-      ping();
-    });
+    const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+    let device = packDevice(`${friendlyDeviceName("", ua)} · ${browserName(ua)}`, code);
     const ping = () => {
       if (stopped || typeof document === "undefined") return;
       if (document.visibilityState === "hidden") return;
@@ -88,6 +55,10 @@ export function PresenceHeartbeat() {
         /* luring: dicoba lagi pada denyut berikutnya */
       });
     };
+    void deviceModel().then((model) => {
+      device = packDevice(`${friendlyDeviceName(model, ua)} · ${browserName(ua)}`, code);
+      ping();
+    });
     ping();
     const timer = window.setInterval(ping, 60_000);
     window.addEventListener("visibilitychange", ping);
@@ -100,7 +71,7 @@ export function PresenceHeartbeat() {
       window.removeEventListener("focus", ping);
       window.removeEventListener("online", ping);
     };
-  }, [userId, touch, given, code]);
+  }, [userId, touch, code]);
 
   return null;
 }

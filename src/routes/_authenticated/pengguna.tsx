@@ -381,23 +381,27 @@ function OnlineNow({
                 {list.map(({ user, presence: p }) => (
                   <div
                     key={p.userId}
-                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                    className="flex flex-wrap items-start justify-between gap-2 border-b border-border/60 pb-2 text-sm last:border-0 last:pb-0"
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span className="font-medium">
-                        {user!.fullName || user!.email}
+                    <span className="flex items-start gap-2">
+                      <span className="mt-1.5 size-2 rounded-full bg-emerald-500" />
+                      <span className="grid">
+                        <span className="font-medium">
+                          {user!.fullName || user!.email}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {roleLabel[user!.role]} · {user!.email}
+                        </span>
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {user!.email}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {roleLabel[user!.role]}
-                      </span>
-
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {p.device || "Perangkat"} · {sinceText(p.lastSeenAt)}
+                    <span className="grid text-right">
+                      <span className="font-medium">
+                        {p.device || "Perangkat"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {sinceText(p.lastSeenAt)}
+                        {p.deviceCode ? ` · ${p.deviceCode}` : ""}
+                      </span>
                     </span>
                   </div>
                 ))}

@@ -1,6 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { unpackDevice } from "@/lib/device-name";
+
+/** Daftar perangkat store dalam bentuk yang aman dibaca. */
+function deviceList(value: unknown): { code: string; label: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return { code: item.trim(), label: "" };
+      const row = item as { code?: unknown; label?: unknown };
+      return {
+        code: typeof row?.code === "string" ? row.code.trim() : "",
+        label: typeof row?.label === "string" ? row.label : "",
+      };
+    })
+    .filter((d) => d.code.length > 0);
+}
 
 type Ctx = { supabase: any; userId: string };
 
@@ -51,7 +67,10 @@ export type PresenceRow = {
   userId: string;
   storeId: string | null;
   lastSeenAt: string;
+  /** Nama perangkat siap tampil: label dari daftar perangkat store, atau merk/tipenya. */
   device: string;
+  /** Kode perangkat, hanya sebagai keterangan kecil. */
+  deviceCode: string;
 };
 
 /** Kehadiran terakhir semua akun yang boleh dilihat pemanggil. */
@@ -78,15 +97,37 @@ export const listPresence = createServerFn({ method: "GET" })
     if (storeId) query = query.eq("store_id", storeId);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return ((data ?? []) as {
+    const rows = (data ?? []) as {
       user_id: string;
       store_id: string | null;
       last_seen_at: string;
       device: string | null;
-    }[]).map((r) => ({
-      userId: r.user_id,
-      storeId: r.store_id,
-      lastSeenAt: r.last_seen_at,
-      device: r.device ?? "",
-    }));
+    }[];
+
+    // Nama perangkat yang diberi Manager di daftar perangkat store selalu menang.
+    const storeIds = [...new Set(rows.map((r) => r.store_id).filter(Boolean))] as string[];
+    const labels = new Map<string, string>();
+    if (storeIds.length > 0) {
+      const { data: stores } = await supabaseAdmin
+        .from("stores")
+        .select("id, allowed_devices")
+        .in("id", storeIds);
+      for (const s of (stores ?? []) as { id: string; allowed_devices: unknown }[]) {
+        for (const d of deviceList(s.allowed_devices)) {
+          if (d.label.trim()) labels.set(`${s.id}|${d.code.toUpperCase()}`, d.label.trim());
+        }
+      }
+    }
+
+    return rows.map((r) => {
+      const { name, code } = unpackDevice(r.device ?? "");
+      const given = code ? labels.get(`${r.store_id}|${code.toUpperCase()}`) : undefined;
+      return {
+        userId: r.user_id,
+        storeId: r.store_id,
+        lastSeenAt: r.last_seen_at,
+        device: given || name || "Perangkat",
+        deviceCode: code,
+      };
+    });
   });

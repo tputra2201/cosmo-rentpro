@@ -4,6 +4,7 @@ import { Store, ImageUp, ShieldCheck, Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeDevices, useStoreInfo, type AllowedDevice } from "@/lib/store-info";
+import { friendlyDeviceName } from "@/lib/device-name";
 
 import { useBilling } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
@@ -379,7 +380,15 @@ function DeviceAccessSection({
             size="sm"
             variant="secondary"
             disabled={!code || thisRegistered}
-            onClick={() => addDevice(code, "Perangkat ini")}
+            onClick={() =>
+              addDevice(
+                code,
+                friendlyDeviceName(
+                  localStorage.getItem("billing.device-model") ?? "",
+                  navigator.userAgent,
+                ),
+              )
+            }
           >
             <Plus className="size-4" />{" "}
             {thisRegistered ? "Perangkat ini sudah terdaftar" : "Tambahkan perangkat ini"}
