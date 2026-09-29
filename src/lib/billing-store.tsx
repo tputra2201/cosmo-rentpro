@@ -36,14 +36,23 @@ import {
 import { ALARM_SOUNDS, type AlarmSound } from "./alarm";
 import { SETTINGS_KEYS } from "./sync-records";
 
-/** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
+/**
+ * Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup.
+ * Hasilnya dijamin selalu SETELAH waktu buka. Tanpa jaminan ini, hari usaha
+ * yang kebetulan dibuka sebelum jam buka (mis. 02:00 saat jam buka 09:00)
+ * bisa mendapat batas tutup yang sama dengan waktu bukanya sendiri, sehingga
+ * penutupan otomatis berulang tanpa henti dan membanjiri Log Book.
+ */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
   const { openHour, closeHour } = normalizeHours(hours);
   const d = businessDate(openedAt, hours);
   d.setDate(d.getDate() + (closeHour <= openHour ? 1 : 0));
   d.setHours(closeHour, 0, 0, 0);
+  // Majukan per hari sampai batas tutup benar-benar melewati waktu buka.
+  while (d.getTime() <= openedAt) d.setDate(d.getDate() + 1);
   return d.getTime();
 }
+
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
@@ -3249,9 +3258,14 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       const day = (prev.businessDays ?? []).find((d) => d.id === activeBusinessDay.id);
       if (!day || day.closedAt) return prev;
       const stillOpen = prev.shifts.some((s) => !s.closedAt);
+      const nextId = `bday-${limit}`;
+      // Pengaman ganda: bila hari usaha tujuan sudah pernah dibuat, jangan
+      // dibuat ulang. Tanpa ini penutupan otomatis bisa berputar terus dan
+      // membanjiri Log Book dengan catatan yang sama.
+      if (stillOpen && (prev.businessDays ?? []).some((d) => d.id === nextId)) return prev;
       // Bila kasir masih bertugas melewati jam tutup, hari usaha baru langsung dibuka.
       const nextDay: BusinessDay | null = stillOpen
-        ? { id: `bday-${limit}`, openedAt: limit }
+        ? { id: nextId, openedAt: limit }
         : null;
       const closedList = (prev.businessDays ?? []).map((d) =>
         d.id === day.id
@@ -3267,6 +3281,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         ? withLog(next, "Buka hari usaha", new Date(limit).toLocaleString("id-ID"))
         : next;
     });
+
   }, [activeBusinessDay, shiftOpen, now, state.operatingHours, update, withLog]);
 
 
