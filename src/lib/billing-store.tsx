@@ -36,14 +36,23 @@ import {
 import { ALARM_SOUNDS, type AlarmSound } from "./alarm";
 import { SETTINGS_KEYS } from "./sync-records";
 
-/** Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup. */
+/**
+ * Waktu batas penutupan otomatis satu hari usaha: tepat pada jam tutup.
+ * Hasilnya dijamin selalu SETELAH waktu buka. Tanpa jaminan ini, hari usaha
+ * yang kebetulan dibuka sebelum jam buka (mis. 02:00 saat jam buka 09:00)
+ * bisa mendapat batas tutup yang sama dengan waktu bukanya sendiri, sehingga
+ * penutupan otomatis berulang tanpa henti dan membanjiri Log Book.
+ */
 function autoCloseAt(openedAt: number, hours?: OperatingHours) {
   const { openHour, closeHour } = normalizeHours(hours);
   const d = businessDate(openedAt, hours);
   d.setDate(d.getDate() + (closeHour <= openHour ? 1 : 0));
   d.setHours(closeHour, 0, 0, 0);
+  // Majukan per hari sampai batas tutup benar-benar melewati waktu buka.
+  while (d.getTime() <= openedAt) d.setDate(d.getDate() + 1);
   return d.getTime();
 }
+
 
 export type ConsoleType = string;
 export type PlayMode = "prepaid" | "open";
