@@ -379,7 +379,15 @@ function DeviceAccessSection({
             size="sm"
             variant="secondary"
             disabled={!code || thisRegistered}
-            onClick={() => addDevice(code, "Perangkat ini")}
+            onClick={() =>
+              addDevice(
+                code,
+                friendlyDeviceName(
+                  localStorage.getItem("billing.device-model") ?? "",
+                  navigator.userAgent,
+                ),
+              )
+            }
           >
             <Plus className="size-4" />{" "}
             {thisRegistered ? "Perangkat ini sudah terdaftar" : "Tambahkan perangkat ini"}
