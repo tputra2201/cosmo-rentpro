@@ -4,6 +4,7 @@ import { Store, ImageUp, ShieldCheck, Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeDevices, useStoreInfo, type AllowedDevice } from "@/lib/store-info";
+import { friendlyDeviceName } from "@/lib/device-name";
 
 import { useBilling } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
