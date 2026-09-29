@@ -78,6 +78,12 @@ type RemoteRow = {
  * Ambil SEMUA baris store per halaman. Pusat hanya mengembalikan maksimal
  * 1000 baris per permintaan; tanpa ini store dengan data banyak kehilangan
  * sebagian unit TV/menu dan tampilannya berubah-ubah.
+ *
+ * Pada pengambilan pertama (`since` kosong) baris bertanda terhapus TIDAK
+ * diambil: isinya kosong dan hanya berguna untuk memberi tahu perangkat yang
+ * sudah punya datanya. Tanpa penyaringan ini, store yang sudah lama berjalan
+ * harus mengunduh puluhan ribu baris kosong dulu sebelum layar terisi,
+ * sehingga aplikasi terasa lambat dan sempat menampilkan data lama.
  */
 async function fetchAllStoreData(
   storeId: string,
@@ -91,6 +97,8 @@ async function fetchAllStoreData(
       .select("kind, entity_id, payload, deleted, updated_at")
       .eq("store_id", storeId);
     if (since) q = q.gt("updated_at", since);
+    else q = q.eq("deleted", false);
+
     const { data, error } = await q
       .order("updated_at", { ascending: true })
       .order("kind", { ascending: true })
