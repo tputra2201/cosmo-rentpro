@@ -113,7 +113,7 @@ export const listPresence = createServerFn({ method: "GET" })
         .select("id, allowed_devices")
         .in("id", storeIds);
       for (const s of (stores ?? []) as { id: string; allowed_devices: unknown }[]) {
-        for (const d of normalizeDevices(s.allowed_devices)) {
+        for (const d of deviceList(s.allowed_devices)) {
           if (d.label.trim()) labels.set(`${s.id}|${d.code.toUpperCase()}`, d.label.trim());
         }
       }
