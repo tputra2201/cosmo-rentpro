@@ -51,7 +51,10 @@ export type PresenceRow = {
   userId: string;
   storeId: string | null;
   lastSeenAt: string;
+  /** Nama perangkat siap tampil: label dari daftar perangkat store, atau merk/tipenya. */
   device: string;
+  /** Kode perangkat, hanya sebagai keterangan kecil. */
+  deviceCode: string;
 };
 
 /** Kehadiran terakhir semua akun yang boleh dilihat pemanggil. */
