@@ -1,8 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizeDevices } from "@/lib/store-info";
 import { unpackDevice } from "@/lib/device-name";
+
+/** Daftar perangkat store dalam bentuk yang aman dibaca. */
+function deviceList(value: unknown): { code: string; label: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return { code: item.trim(), label: "" };
+      const row = item as { code?: unknown; label?: unknown };
+      return {
+        code: typeof row?.code === "string" ? row.code.trim() : "",
+        label: typeof row?.label === "string" ? row.label : "",
+      };
+    })
+    .filter((d) => d.code.length > 0);
+}
 
 type Ctx = { supabase: any; userId: string };
 
