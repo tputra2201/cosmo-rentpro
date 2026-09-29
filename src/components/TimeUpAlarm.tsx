@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlarmClock } from "lucide-react";
 
-import { useBilling, stationStatus } from "@/lib/billing-store";
+import { useBilling, stationStatus, remainingSeconds } from "@/lib/billing-store";
 import { useAuth } from "@/lib/auth";
 import { alarmCycleMs, playAlarm, stopAlarm } from "@/lib/alarm";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,10 @@ import {
  * halaman masuk (sudah keluar) tidak lagi menampilkan notifikasi ini.
  */
 export function TimeUpAlarm() {
-  const { stations, bookings, now, sessionSecurity } = useBilling();
+  const { stations, bookings, now, sessionSecurity, sync } = useBilling();
+  // Waktu aplikasi mulai dibuka di perangkat ini. Waktu habis yang terjadi
+  // jauh sebelum itu sudah ditangani kasir lain — jangan dibunyikan.
+  const mountedAtRef = useRef(Date.now());
   const { session } = useAuth();
   const signedIn = Boolean(session);
   const [dismissed, setDismissed] = useState<string[]>([]);
@@ -45,14 +48,20 @@ export function TimeUpAlarm() {
 
   const due = useMemo(() => {
     if (!signedIn) return null;
+    // Tunggu data terbaru dari pusat (kecuali offline) supaya sesi yang sudah
+    // diakhiri kasir lain tidak ikut berbunyi.
+    if (!sync.ready && sync.online) return null;
+    const graceStart = mountedAtRef.current - 2 * 60 * 1000;
     return (
       stations.find(
         (station) =>
           stationStatus(station, now, bookings) === "timeup" &&
+          station.session &&
+          now + remainingSeconds(station.session, now) * 1000 >= graceStart &&
           !dismissed.includes(keyOf(station)),
       ) ?? null
     );
-  }, [stations, bookings, now, dismissed, signedIn]);
+  }, [stations, bookings, now, dismissed, signedIn, sync.ready, sync.online]);
 
   const key = due ? keyOf(due) : "";
 
