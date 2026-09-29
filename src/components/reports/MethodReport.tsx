@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
+import { entrySource, formatRupiah, useBilling, type HistoryRecord } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 function paidTime(h: HistoryRecord) {
@@ -73,6 +73,9 @@ export function MethodReport({
   for (const e of cashEntries) {
     if (!inRange(e.createdAt, range)) continue;
     if (!match(e.payment)) continue;
+    // DP reservasi sudah ikut di pembayaran nota saat check-in; jangan dihitung dua kali.
+    const src = entrySource(e);
+    if (src === "booking-dp" || src === "booking-dp-used") continue;
     rows.push({
       key: e.id,
       at: e.createdAt,
