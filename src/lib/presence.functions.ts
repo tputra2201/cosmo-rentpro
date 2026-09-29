@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { normalizeDevices } from "@/lib/store-info";
+import { unpackDevice } from "@/lib/device-name";
 
 type Ctx = { supabase: any; userId: string };
 
