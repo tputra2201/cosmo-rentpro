@@ -13,3 +13,5 @@
 - Cash items carry a standard account (sales/other/payin/expense/payout) and automatic modules resolve their item via Account Mapping (mapFor + entry.source); reports must read entryAccount/entrySource, never hardcoded category ids — so stores can name their own COA.
 - Per-store module toggles and SALES labels live in the synced setting businessProfile; nav/route access checks businessProfile.modules — so each store can switch off Kafe/Reservasi/Playing Card.
 - On app open while online, a device first pulls central changes since its last sync; rows changed centrally discard that device's stale queued edits (server wins). Offline uses the local cache. Logout keeps the cache. Why: stale devices overwrote live cashier data without costing a full re-download.
+- Each payment split carries the time it was received (`PaymentSplit.at`), and `shiftSummary` counts cash by that time, so money stays with the shift that received it even when the bill is closed in a later shift.
+- Closing a shift freezes its final figures into `CashShift.snapshot`; closed-shift reports read the snapshot and never recompute.
