@@ -189,10 +189,12 @@ function StatCard({
   icon,
   label,
   value,
+  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  hint?: string;
 }) {
   return (
     <div className="surface-panel flex items-center gap-4 p-5">
@@ -204,6 +206,7 @@ function StatCard({
           {label}
         </p>
         <p className="font-display text-xl font-bold">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
     </div>
   );
