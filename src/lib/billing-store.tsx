@@ -1356,10 +1356,12 @@ export function paidTotal(session: Session | null | undefined) {
 /** Nama metode pembayaran tunai. */
 export const CASH_METHOD = "Cash";
 
-function cashOfRecord(record: HistoryRecord) {
+function cashOfRecord(record: HistoryRecord, within?: (stamp: number) => boolean) {
   if (record.payments?.length) {
     return record.payments
       .filter((p) => p.method === CASH_METHOD)
+      // Uang tetap milik shift yang menerimanya, walau nota ditutup di shift berikutnya.
+      .filter((p) => !within || within(p.at ?? record.paidAt ?? record.endAt))
       .reduce((sum, p) => sum + p.amount, 0);
   }
   return (record.payment ?? "") === CASH_METHOD ? record.total : 0;
