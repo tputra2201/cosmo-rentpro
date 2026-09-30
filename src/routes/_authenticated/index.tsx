@@ -8,6 +8,7 @@ import { StationDialog } from "@/components/StationDialog";
 import { CafeTables } from "@/components/CafeTables";
 import {
   CARD_PAYMENT_NAME,
+  cafeBill,
   formatRupiah,
   paidTotal,
   sessionBill,
@@ -39,6 +40,7 @@ function Dashboard() {
   const unit = useUnitLabel();
   const {
     stations,
+    cafeTables,
     now,
     bookings,
     reorderList,
@@ -80,6 +82,29 @@ function Dashboard() {
     );
     return sum + Math.max(0, bill.total - paidTotal(session));
   }, 0);
+  const cafeOpenBill = businessProfile?.modules?.cafe === false
+    ? 0
+    : cafeTables.reduce((sum, t) => {
+        if (!t.orders.length || t.paidAt) return sum;
+        const usedCard = Boolean(
+          t.settlements?.some(
+            (st) =>
+              st.payment === CARD_PAYMENT_NAME ||
+              st.payments?.some((row) => row.method === CARD_PAYMENT_NAME),
+          ),
+        );
+        const bill = cafeBill(
+          t.orders,
+          now,
+          { consoleDiscounts, menu, promotions, cardDiscountPercent, cardMemberDiscountPercent },
+          { member: false, card: usedCard },
+          undefined,
+          t.promoIds,
+        );
+        const paid = (t.settlements ?? []).reduce((a, st) => a + (st.amount ?? 0), 0);
+        return sum + Math.max(0, bill.total - paid);
+      }, 0);
+  const totalOpenBill = openBill + cafeOpenBill;
   const selected = stations.find((s) => s.id === selectedId) ?? null;
 
   return (
@@ -104,7 +129,12 @@ function Dashboard() {
         <StatCard
           icon={<Coins className="size-5" />}
           label="Tagihan Berjalan"
-          value={formatRupiah(openBill)}
+          value={formatRupiah(totalOpenBill)}
+          hint={
+            businessProfile?.modules?.cafe === false
+              ? undefined
+              : `${unit}: ${formatRupiah(openBill)} · Kafe: ${formatRupiah(cafeOpenBill)}`
+          }
         />
         
       </section>
@@ -159,10 +189,12 @@ function StatCard({
   icon,
   label,
   value,
+  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  hint?: string | undefined;
 }) {
   return (
     <div className="surface-panel flex items-center gap-4 p-5">
@@ -174,6 +206,7 @@ function StatCard({
           {label}
         </p>
         <p className="font-display text-xl font-bold">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
     </div>
   );
