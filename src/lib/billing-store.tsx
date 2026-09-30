@@ -2821,13 +2821,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         ].filter(Boolean);
         const uniqueMethods = Array.from(new Set(methodNames));
         const allSplits: PaymentSplit[] = [
-          ...prior.flatMap((s) =>
-            settlementSplits(s),
-          ),
+          ...prior.flatMap((s) => settlementSplits(s)),
           ...(hasDirect
             ? payments && payments.length
-              ? payments
-              : [{ method: payment || "Cash", amount: directAmount }]
+              ? payments.map((p) => ({ ...p, at: p.at ?? endAt }))
+              : [{ method: payment || "Cash", amount: directAmount, at: endAt }]
             : []),
         ];
         const totalReceived =
