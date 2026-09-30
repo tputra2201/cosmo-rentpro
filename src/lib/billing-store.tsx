@@ -953,7 +953,24 @@ export type LogEntry = {
   detail: string;
 };
 
-export type PaymentSplit = { method: string; amount: number };
+export type PaymentSplit = {
+  method: string;
+  amount: number;
+  /** Waktu uang ini benar-benar diterima kasir (dipakai untuk kas per shift). */
+  at?: number;
+};
+
+/**
+ * Pecahan pembayaran satu pelunasan, lengkap dengan waktu uang diterima.
+ * Dipakai agar uang tetap milik shift yang menerimanya walau nota
+ * baru ditutup di shift berikutnya.
+ */
+export function settlementSplits(s: Settlement): PaymentSplit[] {
+  const list: PaymentSplit[] = s.payments?.length
+    ? s.payments
+    : [{ method: s.payment, amount: s.amount }];
+  return list.map((p) => ({ ...p, at: p.at ?? s.at }));
+}
 
 /** Shift kasir: check-in sampai close out. */
 export type CashShift = {
