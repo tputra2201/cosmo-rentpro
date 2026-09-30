@@ -3900,13 +3900,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ? splits.reduce((sum, p) => sum + p.amount, 0)
             : (input.amountPaid ?? due);
           if (received + 0.5 < due) return { record: null, next: prev };
-          const priorSplits: PaymentSplit[] = prior.flatMap((s) =>
-            settlementSplits(s),
-          );
+          const priorSplits: PaymentSplit[] = prior.flatMap((s) => settlementSplits(s));
           const nowSplits: PaymentSplit[] = splits.length
-            ? splits
+            ? splits.map((p) => ({ ...p, at: p.at ?? endAt }))
             : due > 0
-              ? [{ method: input.payment || "Cash", amount: due }]
+              ? [{ method: input.payment || "Cash", amount: due, at: endAt }]
               : [];
           const allSplits = [...priorSplits, ...nowSplits];
           const label =
