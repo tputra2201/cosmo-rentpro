@@ -953,7 +953,24 @@ export type LogEntry = {
   detail: string;
 };
 
-export type PaymentSplit = { method: string; amount: number };
+export type PaymentSplit = {
+  method: string;
+  amount: number;
+  /** Waktu uang ini benar-benar diterima kasir (dipakai untuk kas per shift). */
+  at?: number;
+};
+
+/**
+ * Pecahan pembayaran satu pelunasan, lengkap dengan waktu uang diterima.
+ * Dipakai agar uang tetap milik shift yang menerimanya walau nota
+ * baru ditutup di shift berikutnya.
+ */
+export function settlementSplits(s: Settlement): PaymentSplit[] {
+  const list: PaymentSplit[] = s.payments?.length
+    ? s.payments
+    : [{ method: s.payment, amount: s.amount }];
+  return list.map((p) => ({ ...p, at: p.at ?? s.at }));
+}
 
 /** Shift kasir: check-in sampai close out. */
 export type CashShift = {
@@ -1339,10 +1356,12 @@ export function paidTotal(session: Session | null | undefined) {
 /** Nama metode pembayaran tunai. */
 export const CASH_METHOD = "Cash";
 
-function cashOfRecord(record: HistoryRecord) {
+function cashOfRecord(record: HistoryRecord, within?: (stamp: number) => boolean) {
   if (record.payments?.length) {
     return record.payments
       .filter((p) => p.method === CASH_METHOD)
+      // Uang tetap milik shift yang menerimanya, walau nota ditutup di shift berikutnya.
+      .filter((p) => !within || within(p.at ?? record.paidAt ?? record.endAt))
       .reduce((sum, p) => sum + p.amount, 0);
   }
   return (record.payment ?? "") === CASH_METHOD ? record.total : 0;
@@ -1375,9 +1394,12 @@ export function shiftSummary(
   const to = shift.closedAt ?? until;
   const within = (stamp: number) => stamp >= from && stamp <= to;
 
-  const sales = history
-    .filter((h) => within(h.paidAt ?? h.endAt))
-    .reduce((sum, h) => sum + cashOfRecord(h), 0);
+  // Nota dengan rincian pembayaran dihitung per waktu uang diterima;
+  // nota lama tanpa rincian tetap memakai waktu pelunasan.
+  const sales = history.reduce((sum, h) => {
+    if (h.payments?.length) return sum + cashOfRecord(h, within);
+    return within(h.paidAt ?? h.endAt) ? sum + cashOfRecord(h) : sum;
+  }, 0);
 
   const cash = cashEntries.filter(
     (e) => e.payment === CASH_METHOD && within(e.createdAt),
@@ -2599,7 +2621,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           card: methods.some((m) => m === CARD_PAYMENT_NAME),
         });
         const splits: PaymentSplit[] = settlements.flatMap((s) =>
-          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          settlementSplits(s),
         );
         const historyId = session.historyId ?? `${station.id}-paid-${at}`;
         added.push({
@@ -2804,13 +2826,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         ].filter(Boolean);
         const uniqueMethods = Array.from(new Set(methodNames));
         const allSplits: PaymentSplit[] = [
-          ...prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
-          ),
+          ...prior.flatMap((s) => settlementSplits(s)),
           ...(hasDirect
             ? payments && payments.length
-              ? payments
-              : [{ method: payment || "Cash", amount: directAmount }]
+              ? payments.map((p) => ({ ...p, at: p.at ?? endAt }))
+              : [{ method: payment || "Cash", amount: directAmount, at: endAt }]
             : []),
         ];
         const totalReceived =
@@ -2937,7 +2957,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         const fullyPaid = paid + 0.5 >= bill.total && bill.total > 0;
         const splits: PaymentSplit[] = settlements.flatMap((s) =>
-          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          settlementSplits(s),
         );
         const historyId = station.session.historyId ?? `${stationId}-paid-${at}`;
         const sess = station.session;
@@ -3885,13 +3905,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             ? splits.reduce((sum, p) => sum + p.amount, 0)
             : (input.amountPaid ?? due);
           if (received + 0.5 < due) return { record: null, next: prev };
-          const priorSplits: PaymentSplit[] = prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
-          );
+          const priorSplits: PaymentSplit[] = prior.flatMap((s) => settlementSplits(s));
           const nowSplits: PaymentSplit[] = splits.length
-            ? splits
+            ? splits.map((p) => ({ ...p, at: p.at ?? endAt }))
             : due > 0
-              ? [{ method: input.payment || "Cash", amount: due }]
+              ? [{ method: input.payment || "Cash", amount: due, at: endAt }]
               : [];
           const allSplits = [...priorSplits, ...nowSplits];
           const label =
@@ -4051,7 +4069,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             };
           }
           const splits: PaymentSplit[] = prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+            settlementSplits(s),
           );
           const label = Array.from(new Set(splits.map((p) => p.method))).join(" + ") || "Cash";
           const completed: HistoryRecord = {
