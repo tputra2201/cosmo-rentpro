@@ -88,6 +88,7 @@ type RemoteRow = {
 async function fetchAllStoreData(
   storeId: string,
   since: string | null,
+  skipDeleted = false,
 ): Promise<{ data: RemoteRow[]; error: { message: string } | null }> {
   const PAGE = 1000;
   const all: RemoteRow[] = [];
@@ -97,7 +98,10 @@ async function fetchAllStoreData(
       .select("kind, entity_id, payload, deleted, updated_at")
       .eq("store_id", storeId);
     if (since) q = q.gt("updated_at", since);
-    else q = q.eq("deleted", false);
+    // Hanya unduhan pertama (perangkat kosong) yang boleh melewati baris
+    // terhapus. Audit penuh WAJIB menerimanya agar penghapusan yang
+    // terlewat tetap dibersihkan dan kursor tidak melompatinya.
+    else if (skipDeleted) q = q.eq("deleted", false);
 
     const { data, error } = await q
       .order("updated_at", { ascending: true })
@@ -522,7 +526,7 @@ export function useStoreSync(options: {
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
     void (async () => {
-      const { data, error: bootstrapError } = await fetchAllStoreData(storeId, null);
+      const { data, error: bootstrapError } = await fetchAllStoreData(storeId, null, true);
       if (cancelled) return;
       if (bootstrapError) {
         setError(bootstrapError.message);
