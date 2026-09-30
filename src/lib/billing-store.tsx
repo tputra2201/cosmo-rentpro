@@ -2616,7 +2616,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           card: methods.some((m) => m === CARD_PAYMENT_NAME),
         });
         const splits: PaymentSplit[] = settlements.flatMap((s) =>
-          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          settlementSplits(s),
         );
         const historyId = session.historyId ?? `${station.id}-paid-${at}`;
         added.push({
@@ -2822,7 +2822,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const uniqueMethods = Array.from(new Set(methodNames));
         const allSplits: PaymentSplit[] = [
           ...prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+            settlementSplits(s),
           ),
           ...(hasDirect
             ? payments && payments.length
@@ -2954,7 +2954,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         });
         const fullyPaid = paid + 0.5 >= bill.total && bill.total > 0;
         const splits: PaymentSplit[] = settlements.flatMap((s) =>
-          s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+          settlementSplits(s),
         );
         const historyId = station.session.historyId ?? `${stationId}-paid-${at}`;
         const sess = station.session;
@@ -3903,7 +3903,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             : (input.amountPaid ?? due);
           if (received + 0.5 < due) return { record: null, next: prev };
           const priorSplits: PaymentSplit[] = prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+            settlementSplits(s),
           );
           const nowSplits: PaymentSplit[] = splits.length
             ? splits
@@ -4068,7 +4068,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             };
           }
           const splits: PaymentSplit[] = prior.flatMap((s) =>
-            s.payments?.length ? s.payments : [{ method: s.payment, amount: s.amount }],
+            settlementSplits(s),
           );
           const label = Array.from(new Set(splits.map((p) => p.method))).join(" + ") || "Cash";
           const completed: HistoryRecord = {
