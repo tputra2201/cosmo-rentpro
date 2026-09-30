@@ -194,7 +194,7 @@ function StatCard({
   icon: React.ReactNode;
   label: string;
   value: string;
-  hint?: string;
+  hint?: string | undefined;
 }) {
   return (
     <div className="surface-panel flex items-center gap-4 p-5">
