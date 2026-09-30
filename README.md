@@ -1,4 +1,4 @@
-# Cosmo RentalPro
+# RenToPlay
 
 Buatkan kode lengkap untuk aplikasi "Billing Rental PS" menggunakan Flutter agar bisa berjalan di Desktop (Windows/Mac) dan Android. 
 
