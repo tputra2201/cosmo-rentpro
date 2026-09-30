@@ -5556,7 +5556,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           ...shift,
           closedAt: closeAt,
           snapshot: shiftSummary(
-            { ...shift, snapshot: undefined },
+            shift,
             state.history,
             state.cashEntries,
             closeAt,
