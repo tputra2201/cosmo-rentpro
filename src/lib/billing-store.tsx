@@ -1394,9 +1394,12 @@ export function shiftSummary(
   const to = shift.closedAt ?? until;
   const within = (stamp: number) => stamp >= from && stamp <= to;
 
-  const sales = history
-    .filter((h) => within(h.paidAt ?? h.endAt))
-    .reduce((sum, h) => sum + cashOfRecord(h), 0);
+  // Nota dengan rincian pembayaran dihitung per waktu uang diterima;
+  // nota lama tanpa rincian tetap memakai waktu pelunasan.
+  const sales = history.reduce((sum, h) => {
+    if (h.payments?.length) return sum + cashOfRecord(h, within);
+    return within(h.paidAt ?? h.endAt) ? sum + cashOfRecord(h) : sum;
+  }, 0);
 
   const cash = cashEntries.filter(
     (e) => e.payment === CASH_METHOD && within(e.createdAt),
