@@ -968,6 +968,8 @@ export type CashShift = {
   nextStartCash?: number;
   closedByName?: string;
   closedById?: string;
+  /** Angka final yang dikunci saat Close Out; riwayat shift tertutup membaca ini. */
+  snapshot?: ShiftSummary;
 };
 
 /**
@@ -1367,6 +1369,8 @@ export function shiftSummary(
   cashEntries: CashEntry[],
   until: number = Date.now(),
 ): ShiftSummary {
+  // Shift yang sudah Close Out bersifat final: jangan hitung ulang.
+  if (shift.closedAt && shift.snapshot) return shift.snapshot;
   const from = shift.openedAt;
   const to = shift.closedAt ?? until;
   const within = (stamp: number) => stamp >= from && stamp <= to;
@@ -5547,9 +5551,16 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       closeShift: (id, input) => {
         const shift = state.shifts.find((s) => s.id === id);
         if (!shift || shift.closedAt) return null;
+        const closeAt = Date.now();
         const closed: CashShift = {
           ...shift,
-          closedAt: Date.now(),
+          closedAt: closeAt,
+          snapshot: shiftSummary(
+            shift,
+            state.history,
+            state.cashEntries,
+            closeAt,
+          ),
           cashActual: Math.max(0, Math.round(input.cashActual)),
           balanceNote: input.balanceNote?.trim() ?? "",
           nextStartCash: Math.max(0, Math.round(input.nextStartCash ?? 0)),
