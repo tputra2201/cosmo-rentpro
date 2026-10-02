@@ -261,8 +261,8 @@ function LaporanPage() {
         <TabsContent value="statistik" className="mt-6">
           <StatsReport range={range} />
         </TabsContent>
-      </Tabs>
       </div>
+      </Tabs>
     </div>
   );
 }
