@@ -1382,6 +1382,39 @@ export type ShiftSummary = {
 };
 
 /** Hitung posisi uang tunai laci untuk satu shift kasir. */
+/**
+ * Uang yang sudah diterima dari meja/unit yang belum lunas (DP/cicilan),
+ * sehingga belum punya nota. Dipakai saat Close Out agar uang itu ikut
+ * dikunci di shift penerimanya.
+ */
+function pendingPaymentRecords(state: {
+  stations: { id: string; name: string; console?: string; session?: { historyId?: string; settlements?: Settlement[] } | null }[];
+  cafeTables?: { id: string; name: string; historyId?: string; settlements?: Settlement[] }[];
+  history: HistoryRecord[];
+}): HistoryRecord[] {
+  const known = new Set(state.history.map((h) => h.id));
+  const groups = [
+    ...state.stations.map((s) => ({ id: s.id, name: s.name, historyId: s.session?.historyId, settlements: s.session?.settlements })),
+    ...(state.cafeTables ?? []).map((t) => ({ id: t.id, name: t.name, historyId: t.historyId, settlements: t.settlements })),
+  ];
+  const out: HistoryRecord[] = [];
+  for (const g of groups) {
+    if (!g.settlements?.length) continue;
+    if (g.historyId && known.has(g.historyId)) continue;
+    const payments = g.settlements.flatMap((s) => settlementSplits(s));
+    const last = g.settlements[g.settlements.length - 1]!.at;
+    out.push({
+      id: `pending-${g.id}`,
+      stationName: g.name,
+      endAt: last,
+      paidAt: last,
+      total: payments.reduce((sum, p) => sum + p.amount, 0),
+      payments,
+    } as unknown as HistoryRecord);
+  }
+  return out;
+}
+
 export function shiftSummary(
   shift: CashShift,
   history: HistoryRecord[],
@@ -5575,7 +5608,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           closedAt: closeAt,
           snapshot: shiftSummary(
             shift,
-            state.history,
+            [...state.history, ...pendingPaymentRecords(state)],
             state.cashEntries,
             closeAt,
           ),
