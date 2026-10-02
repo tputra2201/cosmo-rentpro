@@ -6,11 +6,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CARD_FUNDING_METHODS, useBilling } from "@/lib/billing-store";
+import { useBilling } from "@/lib/billing-store";
+
+/** Metode yang tidak logis untuk mengisi saldo kartu. */
+const EXCLUDED = /playing\s*card|compliment|kartu/i;
 
 /**
  * Pilihan metode pembayaran untuk pembelian kartu baru dan top up saldo:
- * hanya cash, QRIS, dan transfer bank (sesuai tipe pembayaran yang aktif).
+ * semua metode aktif store, kecuali Playing Card dan Compliment.
  */
 export function CardFundingSelect({
   value,
@@ -24,11 +27,11 @@ export function CardFundingSelect({
   label?: string;
 }) {
   const { paymentMethods } = useBilling();
-  const active = paymentMethods.filter((m) => m.active).map((m) => m.name);
-  const options = CARD_FUNDING_METHODS.filter(
-    (name) =>
-      active.some((item) => item.toLowerCase() === name.toLowerCase()) ||
-      name === "Cash",
+  const active = paymentMethods
+    .filter((m) => m.active && !EXCLUDED.test(m.name))
+    .map((m) => m.name);
+  const options = Array.from(
+    new Set(active.some((n) => n.toLowerCase() === "cash") ? active : ["Cash", ...active]),
   );
 
   return (
