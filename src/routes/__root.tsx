@@ -62,6 +62,7 @@ import { ReservationAlert } from "@/components/ReservationAlert";
 import { IdleLogout } from "@/components/IdleLogout";
 import { TimeUpAlarm } from "@/components/TimeUpAlarm";
 import { InstallAppTitle } from "@/components/InstallAppTitle";
+import { AppUpdater } from "@/components/AppUpdater";
 import { appSignature } from "@/lib/app-info";
 import { brandingSignature, useBranding } from "@/lib/branding";
 import { useStoreInfo } from "@/lib/store-info";
@@ -219,6 +220,7 @@ function RootComponent() {
             <PresenceHeartbeat />
             <ReservationAlert />
             <TimeUpAlarm />
+            <AppUpdater />
             <IdleLogout />
             <AndroidPrintFeedback />
             <InstallAppTitle />
