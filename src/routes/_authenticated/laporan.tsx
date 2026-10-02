@@ -174,27 +174,7 @@ function LaporanPage() {
         <h1 className="text-3xl font-bold sm:text-4xl">Riwayat &amp; Laporan</h1>
       </header>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ReportRangePicker range={range} onChange={setRange} />
-        <div className="flex flex-wrap gap-2">
-          {allow("laporan.cetak") && (
-            <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
-          )}
-          <ExportExcelButton
-            targetRef={reportRef}
-            title={`Laporan ${storeName}`}
-            periodText={`Periode: ${rangeLabel(range)}`}
-          />
-        </div>
-      </div>
-
-      {tabs.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          Levelmu belum punya hak akses ke laporan mana pun.
-        </p>
-      )}
-      <div ref={reportRef}>
-      <Tabs key={first} defaultValue={first}>
+      <Tabs key={first} defaultValue={first} className="space-y-4">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-3 lg:grid-cols-5">
           {tabs.map((t) => (
             <TabsTrigger
@@ -206,6 +186,29 @@ function LaporanPage() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {tabs.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Levelmu belum punya hak akses ke laporan mana pun.
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <ReportRangePicker range={range} onChange={setRange} />
+          <div className="flex flex-wrap gap-2">
+            {allow("laporan.cetak") && (
+              <PrintReportButton targetRef={reportRef} title="Laporan" label="Cetak laporan" />
+            )}
+            <ExportExcelButton
+              targetRef={reportRef}
+              title={`Laporan ${storeName}`}
+              periodText={`Periode: ${rangeLabel(range)}`}
+            />
+          </div>
+        </div>
+
+        <div ref={reportRef}>
+
         <TabsContent value="nota" className="mt-6">
           <ReceiptReport range={range} />
         </TabsContent>
@@ -258,8 +261,8 @@ function LaporanPage() {
         <TabsContent value="statistik" className="mt-6">
           <StatsReport range={range} />
         </TabsContent>
-      </Tabs>
       </div>
+      </Tabs>
     </div>
   );
 }
