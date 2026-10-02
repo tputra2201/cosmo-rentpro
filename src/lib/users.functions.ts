@@ -265,7 +265,12 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
       redirectTo: data.redirectTo,
     });
-    if (error) throw new Error(error.message);
+    if (error)
+      throw new Error(
+        /database error/i.test(error.message)
+          ? "Tautan sandi gagal dibuat untuk akun ini. Coba lagi sebentar lagi, atau atur sandi baru langsung lewat Kelola Pengguna."
+          : error.message,
+      );
     return { ok: true };
   });
 

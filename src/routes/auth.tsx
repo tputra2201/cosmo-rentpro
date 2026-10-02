@@ -91,7 +91,12 @@ function AuthPage() {
       if (error) throw error;
       toast.success(`Tautan atur ulang sandi dikirim ke ${email.trim()}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengirim tautan");
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(
+        /database error|unexpected/i.test(msg) || !msg
+          ? "Tautan atur ulang sandi gagal dibuat. Coba lagi sebentar lagi atau hubungi Manager."
+          : msg,
+      );
     } finally {
       setResetBusy(false);
     }
