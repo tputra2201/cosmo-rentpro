@@ -5559,6 +5559,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
           );
         }),
       openShift: (input) => {
+        if (typeof window !== "undefined")
+          window.setTimeout(() => window.dispatchEvent(new Event("rentoplay:shift-change")), 0);
         const name = input.cashierName.trim();
         if (!name) return null;
         if (state.shifts.some((s) => !s.closedAt)) return null;
@@ -5600,6 +5602,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return row;
       },
       closeShift: (id, input) => {
+        if (typeof window !== "undefined")
+          window.setTimeout(() => window.dispatchEvent(new Event("rentoplay:shift-change")), 0);
         const shift = state.shifts.find((s) => s.id === id);
         if (!shift || shift.closedAt) return null;
         const closeAt = Date.now();

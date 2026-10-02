@@ -6,7 +6,7 @@ import { toast } from "sonner";
  * menjalankan versi lama. Komponen ini memeriksa versi terbaru secara berkala
  * dan memuat ulang otomatis saat tidak ada dialog yang sedang dibuka.
  */
-const CHECK_MS = 5 * 60 * 1000;
+const CHECK_MS = 2 * 60 * 1000;
 
 function scriptOf(html: string): string | null {
   const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/);
@@ -52,6 +52,16 @@ export function AppUpdater() {
       }
     };
 
+    // Pergantian shift: saat paling aman untuk memperbarui. Cek versi segera
+    // dan, bila ada versi baru, muat ulang beberapa detik kemudian (setelah
+    // data shift tersimpan) tanpa menunggu dialog ditutup.
+    const onShift = async () => {
+      await check();
+      if (pending) window.setTimeout(() => window.location.reload(), 4000);
+    };
+    const onShiftEvt = () => void onShift();
+    window.addEventListener("rentoplay:shift-change", onShiftEvt);
+
     const t = window.setInterval(() => {
       void check();
       tryReload();
@@ -61,6 +71,7 @@ export function AppUpdater() {
     document.addEventListener("visibilitychange", onVis);
     void check();
     return () => {
+      window.removeEventListener("rentoplay:shift-change", onShiftEvt);
       clearInterval(t);
       clearInterval(idle);
       document.removeEventListener("visibilitychange", onVis);
