@@ -550,6 +550,27 @@ export function entrySource(e: { source?: ModuleSource; categoryId: string }): M
   return MODULE_SOURCES.find((m) => m.defaultId === e.categoryId)?.source;
 }
 
+/**
+ * ID catatan "DP Reservasi" yang sudah dipakai saat check-in (sudah menjadi SALES
+ * di nota sesuai metode bayarnya). Laporan hanya menampilkan DP yang belum terpakai.
+ * Dipasangkan dengan catatan "DP Reservasi dipakai" lewat nominal, metode, dan nama tamu.
+ */
+export function usedBookingDpIds(entries: { id: string; amount: number; payment: string; note?: string; source?: ModuleSource; categoryId: string; createdAt: number }[]): Set<string> {
+  const nameOf = (n?: string) => (n ?? "").replace(/^DP reservasi\s+/i, "").replace(/\s+dipakai di .*$/i, "").trim().toLowerCase();
+  const key = (e: { amount: number; payment: string; note?: string }) => `${e.amount}|${(e.payment || "Cash").toLowerCase()}|${nameOf(e.note)}`;
+  const pending = new Map<string, number>();
+  for (const e of entries) if (entrySource(e) === "booking-dp-used") pending.set(key(e), (pending.get(key(e)) ?? 0) + 1);
+  const used = new Set<string>();
+  for (const e of [...entries].sort((a, b) => a.createdAt - b.createdAt)) {
+    if (entrySource(e) !== "booking-dp") continue;
+    const k = key(e); const n = pending.get(k) ?? 0;
+    if (n > 0) { used.add(e.id); pending.set(k, n - 1); }
+  }
+  return used;
+}
+
+
+
 /** Pos akun sebuah item kas; data lama diturunkan dari arah + tanda payout. */
 export function categoryAccount(c: {
   account?: CashAccount;

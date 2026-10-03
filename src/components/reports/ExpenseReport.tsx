@@ -60,7 +60,8 @@ export function ExpenseReport({ range }: { range: ReportRange }) {
 
   const out = cashEntries.filter((e) => e.direction === "out" && inRange(e.createdAt, range));
   const expenses = out.filter((e) => !e.payout);
-  const payouts = out.filter((e) => e.payout);
+  // "DP Reservasi dipakai" bukan uang keluar sungguhan — DP sudah jadi SALES di nota.
+  const payouts = out.filter((e) => e.payout && entrySource(e) !== "booking-dp-used");
 
   const expenseGroups = groupEntries(expenses);
   const payoutGroups = groupEntries(payouts);
