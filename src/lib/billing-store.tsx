@@ -71,6 +71,21 @@ export type OrderItem = {
   linkedFrom?: { type: "table" | "station"; id: string; name: string };
 };
 
+/** Kunci penggabungan: menu, nama, harga, dan modifier yang sama → satu baris. */
+const orderKey = (o: OrderItem) =>
+  `${o.menuId ?? ""}|${o.name}|${o.price}|${(o.mods ?? []).join("·")}`;
+
+/** Tambahkan pesanan baru; baris identik (bukan titipan) cukup ditambah qty-nya. */
+export function mergeOrders(existing: OrderItem[], added: OrderItem[]): OrderItem[] {
+  const list = [...existing];
+  for (const o of added) {
+    const idx = list.findIndex((e) => !e.linkedFrom && !o.linkedFrom && orderKey(e) === orderKey(o));
+    if (idx >= 0) list[idx] = { ...list[idx], qty: list[idx].qty + o.qty };
+    else list.push(o);
+  }
+  return list;
+}
+
 
 /** Tanda asal pesanan titipan yang ikut tampil di bill, struk, dan label. */
 const linkTag = (from: NonNullable<OrderItem["linkedFrom"]>) =>
@@ -3123,8 +3138,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 ...s,
                 session: {
                   ...s.session,
-                  orders: [
-                    ...s.session.orders,
+                  orders: mergeOrders(s.session.orders, [
                     {
                       id: `${item.id}-${Date.now()}`,
                       menuId: item.id,
@@ -3135,7 +3149,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     },
                     // Promo Buy One Get One: menu hadiah langsung ikut masuk.
                     ...bogoFreeOrders(prev.promotions, prev.menu, Date.now(), item, qty),
-                  ],
+                  ]),
                 },
               }
             : s,
@@ -3757,8 +3771,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               ? {
                   ...t,
                   openedAt: t.openedAt ?? Date.now(),
-                  orders: [
-                    ...t.orders,
+                  orders: mergeOrders(t.orders, [
                     {
                       id: `${item.id}-${Date.now()}`,
                       menuId: item.id,
@@ -3769,7 +3782,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                     },
                     // Promo Buy One Get One: menu hadiah langsung ikut masuk.
                     ...bogoFreeOrders(prev.promotions, prev.menu, Date.now(), item, qty),
-                  ],
+                  ]),
                 }
               : t,
           ),
