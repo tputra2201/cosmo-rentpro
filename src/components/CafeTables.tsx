@@ -539,6 +539,11 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
                     <p className="mt-2 font-display text-2xl font-extrabold text-neon">
                       {formatRupiah(tableTotal(t))}
                     </p>
+                    {t.paidAt && (
+                      <p className="text-xs font-bold uppercase tracking-widest text-accent">
+                        Lunas
+                      </p>
+                    )}
                   </>
                 )}
               </div>
