@@ -20,6 +20,7 @@ import {
   shiftSummary,
   useBilling,
   type HistoryRecord,
+  usedBookingDpIds,
 } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
@@ -146,8 +147,10 @@ export function CompanyReport({ range }: { range: ReportRange }) {
   }
 
   const payInRows = new Map<string, Row>();
+  const usedDp = usedBookingDpIds(cashEntries);
   for (const e of cash) {
     if (e.direction !== "in" || !e.payout) continue;
+    if (usedDp.has(e.id)) continue; // DP sudah check-in → sudah jadi SALES
     const label = entrySource(e) === "booking-dp"
       ? "DP RESERVASI"
       : entrySource(e) === "card-topup"
