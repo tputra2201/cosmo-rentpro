@@ -80,7 +80,8 @@ export function mergeOrders(existing: OrderItem[], added: OrderItem[]): OrderIte
   const list = [...existing];
   for (const o of added) {
     const idx = list.findIndex((e) => !e.linkedFrom && !o.linkedFrom && orderKey(e) === orderKey(o));
-    if (idx >= 0) list[idx] = { ...list[idx], qty: list[idx].qty + o.qty };
+    const hit = idx >= 0 ? list[idx] : undefined;
+    if (hit) list[idx] = { ...hit, qty: hit.qty + o.qty };
     else list.push(o);
   }
   return list;
