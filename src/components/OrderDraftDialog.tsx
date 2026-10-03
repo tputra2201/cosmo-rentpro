@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { OrderModifierDialog, hasMenuOptions } from "@/components/OrderModifierDialog";
 import { useShiftGate } from "@/components/ShiftGate";
-import { formatRupiah, useBilling, type MenuItem } from "@/lib/billing-store";
+import { formatRupiah, useBilling, type MenuItem, type OrderItem } from "@/lib/billing-store";
 
 /** Satu baris pesanan yang sedang disusun kasir, belum dikirim. */
 export type DraftLine = {
@@ -177,7 +177,8 @@ export function OrderDraftDialog({
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
           {category !== null && visible.length === 0 && (
             <p className="col-span-2 text-sm text-muted-foreground">
               Tidak ada menu pada kategori ini.

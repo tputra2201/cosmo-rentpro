@@ -1759,6 +1759,7 @@ export function StationDialog({
         open={orderOpen}
         onOpenChange={setOrderOpen}
         sourceName={station.name}
+        existing={session.orders}
         onSend={(lines) => {
           for (const line of lines) {
             addOrder(station.id, line.item, line.qty, line.mods, line.priceAdd);
