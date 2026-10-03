@@ -33,11 +33,14 @@ export function OrderDraftDialog({
   onOpenChange,
   sourceName,
   onSend,
+  existing = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sourceName: string;
   onSend: (lines: DraftLine[]) => void;
+  /** Pesanan yang sudah ada di TV/meja ini, untuk indikator jumlah. */
+  existing?: OrderItem[];
 }) {
   const { menu, menuCategories } = useBilling();
   const { requireShift } = useShiftGate();
@@ -54,18 +57,29 @@ export function OrderDraftDialog({
     setModItem(null);
   }, [open]);
 
+  const countOf = (id: string) =>
+    existing.filter((o) => o.menuId === id && o.price > 0).reduce((s, o) => s + o.qty, 0) +
+    lines.filter((l) => l.item.id === id).reduce((s, l) => s + l.qty, 0);
+
   const push = (item: MenuItem, mods?: string[], priceAdd = 0) => {
     if (!requireShift()) return;
-    setLines((prev) => [
-      ...prev,
-      {
-        key: `${item.id}-${Date.now()}-${prev.length}`,
-        item,
-        qty: 1,
-        ...(mods && mods.length > 0 ? { mods } : {}),
-        priceAdd,
-      },
-    ]);
+    const modKey = (mods ?? []).join("·");
+    setLines((prev) => {
+      const idx = prev.findIndex(
+        (l) => l.item.id === item.id && l.priceAdd === priceAdd && (l.mods ?? []).join("·") === modKey,
+      );
+      if (idx >= 0) return prev.map((l, i) => (i === idx ? { ...l, qty: l.qty + 1 } : l));
+      return [
+        ...prev,
+        {
+          key: `${item.id}-${Date.now()}-${prev.length}`,
+          item,
+          qty: 1,
+          ...(mods && mods.length > 0 ? { mods } : {}),
+          priceAdd,
+        },
+      ];
+    });
   };
 
   const lineTotal = (line: DraftLine) => (line.item.price + line.priceAdd) * line.qty;
@@ -115,16 +129,21 @@ export function OrderDraftDialog({
         )}
 
         <div className="grid grid-cols-2 gap-2">
-          {visible.map((item) => (
+          {visible.map((item) => {
+            const count = countOf(item.id);
+            return (
             <div key={item.id} className="space-y-1">
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-auto w-full justify-between py-2"
+                className={`h-auto w-full justify-between py-2 shadow-sm transition-all duration-75 active:translate-y-0.5 active:scale-[0.97] active:shadow-inner active:brightness-90 ${count > 0 ? "ring-1 ring-primary/50" : ""}`}
                 onClick={() => push(item)}
               >
-                <span className="flex flex-col items-start text-left">
-                  <span className="truncate">{item.name}</span>
+                <span className="flex min-w-0 flex-col items-start text-left">
+                  <span className={`truncate ${count > 0 ? "font-semibold text-primary" : ""}`}>
+                    {item.name}
+                    {count > 0 && ` (${count})`}
+                  </span>
                   <span className="text-[11px] text-muted-foreground">
                     {formatRupiah(item.price)}
                   </span>
