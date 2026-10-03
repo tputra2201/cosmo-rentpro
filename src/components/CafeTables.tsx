@@ -633,6 +633,7 @@ export function CafeTables({ allowDelete = false }: { allowDelete?: boolean }) {
           if (!open) setOrderTableId(null);
         }}
         sourceName={cafeTables.find((t) => t.id === orderTableId)?.name ?? ""}
+        existing={cafeTables.find((t) => t.id === orderTableId)?.orders ?? []}
         onSend={(lines) => {
           if (!orderTableId) return;
           for (const line of lines) {
