@@ -20,6 +20,7 @@ import {
   shiftSummary,
   useBilling,
   type HistoryRecord,
+  usedBookingDpIds,
 } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 

@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah, useBilling, type CashEntry } from "@/lib/billing-store";
+import { formatRupiah, useBilling, entrySource, type CashEntry } from "@/lib/billing-store";
 import { inRange, rangeLabel, type ReportRange } from "@/lib/report-range";
 
 function timeText(ts: number) {
