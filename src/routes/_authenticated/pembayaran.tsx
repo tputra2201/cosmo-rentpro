@@ -39,6 +39,7 @@ function PembayaranPage() {
     addPaymentMethod,
     updatePaymentMethod,
     removePaymentMethod,
+    reorderList,
     history,
   } = useBilling();
   const [name, setName] = useState("");
@@ -126,6 +127,7 @@ function PembayaranPage() {
                 ),
             },
           ]}
+          onReorder={(activeId, overId) => reorderList("paymentMethods", activeId, overId)}
           onRemove={(p) => {
             removePaymentMethod(p.id);
             toast.success(`${p.name} dihapus`);
